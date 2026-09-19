@@ -16,7 +16,8 @@ import {
   AlertCircle,
   BookOpen,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  X
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useCachedData, clientCache } from '@/lib/cache';
@@ -25,6 +26,15 @@ import { Calendar as BuiltCalendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
 const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const TIME_OPTIONS = [
+  '06:00 AM', '06:30 AM', '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM',
+  '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+  '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
+  '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM',
+  '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM',
+  '09:00 PM', '09:30 PM', '10:00 PM'
+];
 
 interface ClassItem {
   id: string;
@@ -64,8 +74,8 @@ export default function TeacherClassesPage() {
   const [modalError, setModalError] = useState<string | null>(null);
 
   const [selectedDays, setSelectedDays] = useState<string[]>(['Mon', 'Wed', 'Fri']);
-  const [startTime, setStartTime] = useState('18:00');
-  const [endTime, setEndTime] = useState('19:30');
+  const [startTime, setStartTime] = useState('06:00 PM');
+  const [endTime, setEndTime] = useState('07:30 PM');
   const [cohortStartDate, setCohortStartDate] = useState<Date>(new Date());
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
 
@@ -378,23 +388,41 @@ export default function TeacherClassesPage() {
 
       {/* Modal: Create Class */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <Card className="w-full max-w-lg shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-base">Create Live Class Cohort</CardTitle>
-              <CardDescription className="text-xs">
-                Link a cohort to a curriculum course and set its live schedule.
-              </CardDescription>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+          <Card className="w-full max-w-lg max-h-[88vh] flex flex-col shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+            {/* Modal Header */}
+            <CardHeader className="py-3 px-5 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between shrink-0 space-y-0">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
+                  Create Class Cohort
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Configure live schedule, curriculum course, and student capacity.
+                </CardDescription>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  setModalError(null);
+                  setShowCalendarPicker(false);
+                }}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </CardHeader>
-            <CardContent>
+
+            {/* Modal Scrollable Body */}
+            <div className="overflow-y-auto p-5 space-y-4 flex-1">
               {modalError && (
-                <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300">
+                <div className="flex items-center gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300">
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
                   <span>{modalError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleCreateClass} className="space-y-4">
+              <form id="create-class-form" onSubmit={handleCreateClass} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Cohort Name</label>
                   <input
@@ -421,18 +449,18 @@ export default function TeacherClassesPage() {
                 </div>
 
                 {/* Day Chooser, Live Time and Built Calendar */}
-                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-900/50">
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 dark:border-slate-800 dark:bg-slate-900/50">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Class Days & Live Schedule
+                      Weekly Schedule & Live Days
                     </label>
-                    <span className="text-[11px] font-semibold text-[#315b36] dark:text-emerald-400">
+                    <span className="text-[11px] font-bold text-[#315b36] dark:text-emerald-400">
                       {selectedDays.length} day{selectedDays.length === 1 ? '' : 's'} selected
                     </span>
                   </div>
 
                   {/* Day Chooser */}
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="grid grid-cols-7 gap-1">
                     {ALL_DAYS.map((d) => {
                       const isDaySelected = selectedDays.includes(d);
                       return (
@@ -441,7 +469,7 @@ export default function TeacherClassesPage() {
                           type="button"
                           onClick={() => toggleDay(d)}
                           className={cn(
-                            'rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all',
+                            'py-1.5 rounded-lg text-xs font-bold transition-all text-center',
                             isDaySelected
                               ? 'bg-[#315b36] text-white shadow-sm ring-1 ring-[#315b36]'
                               : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300'
@@ -453,25 +481,31 @@ export default function TeacherClassesPage() {
                     })}
                   </div>
 
-                  {/* Time Range */}
-                  <div className="grid grid-cols-2 gap-3 pt-1">
+                  {/* Time Range Dropdowns */}
+                  <div className="grid grid-cols-2 gap-2.5 pt-1">
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-500 mb-1">Start Time</label>
-                      <input
-                        type="time"
+                      <select
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                      />
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                      >
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={`start-${t}`} value={t}>{t}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-500 mb-1">End Time</label>
-                      <input
-                        type="time"
+                      <select
                         value={endTime}
                         onChange={(e) => setEndTime(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                      />
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                      >
+                        {TIME_OPTIONS.map((t) => (
+                          <option key={`end-${t}`} value={t}>{t}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
@@ -484,7 +518,7 @@ export default function TeacherClassesPage() {
                       <button
                         type="button"
                         onClick={() => setShowCalendarPicker(!showCalendarPicker)}
-                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#315b36] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-emerald-400"
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#315b36] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-emerald-400 transition-colors shadow-sm"
                       >
                         <CalendarIcon className="h-3.5 w-3.5" />
                         <span>
@@ -504,9 +538,10 @@ export default function TeacherClassesPage() {
                     </div>
 
                     {showCalendarPicker && (
-                      <div className="mt-3 flex justify-center">
+                      <div className="mt-2.5 flex justify-center">
                         <BuiltCalendar
-                          className="w-full border shadow-md"
+                          compact
+                          className="w-full max-w-sm border shadow-md"
                           selectedDate={cohortStartDate}
                           onSelectDate={(d) => {
                             setCohortStartDate(d);
@@ -536,25 +571,33 @@ export default function TeacherClassesPage() {
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                   />
                 </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setShowModal(false);
-                      setModalError(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" variant="gradient" size="sm" disabled={saving}>
-                    {saving ? 'Creating...' : 'Create Cohort'}
-                  </Button>
-                </div>
               </form>
-            </CardContent>
+            </div>
+
+            {/* Modal Footer (Sticky) */}
+            <div className="py-3 px-5 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowModal(false);
+                  setModalError(null);
+                  setShowCalendarPicker(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="create-class-form"
+                variant="gradient"
+                size="sm"
+                disabled={saving}
+              >
+                {saving ? 'Creating...' : 'Create Cohort'}
+              </Button>
+            </div>
           </Card>
         </div>
       )}

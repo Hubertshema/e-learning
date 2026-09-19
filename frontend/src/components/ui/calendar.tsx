@@ -14,6 +14,7 @@ export interface TimeSlot {
 
 export interface CalendarProps {
   className?: string;
+  compact?: boolean;
   selectedDate?: Date;
   onSelectDate?: (date: Date) => void;
   selectedTimeSlot?: string;
@@ -27,6 +28,7 @@ export interface CalendarProps {
 
 export function Calendar({
   className,
+  compact = false,
   selectedDate: controlledSelectedDate,
   onSelectDate,
   selectedTimeSlot,
@@ -49,7 +51,9 @@ export function Calendar({
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const daysOfWeek = compact
+    ? ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const prevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -123,48 +127,58 @@ export function Calendar({
   return (
     <div
       className={cn(
-        'w-full max-w-md rounded-2xl border border-[#e2ebe2] bg-white p-5 shadow-sm space-y-4',
+        compact
+          ? 'w-full max-w-xs rounded-xl border border-slate-200 bg-white p-3 shadow-md space-y-2 dark:border-slate-800 dark:bg-slate-900'
+          : 'w-full max-w-md rounded-2xl border border-[#e2ebe2] bg-white p-5 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900',
         className
       )}
     >
       {/* Month & Year Navigation Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold text-[#2e3339]">
+          <h3 className={cn('font-bold text-slate-800 dark:text-white', compact ? 'text-xs' : 'text-base text-[#2e3339]')}>
             {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
           </h3>
-          <p className="text-xs text-[#5a5e63]">
-            {selectedDate.toLocaleDateString('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </p>
+          {!compact && (
+            <p className="text-xs text-[#5a5e63] dark:text-slate-400">
+              {selectedDate.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={prevMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e2ebe2] text-[#2e3339] hover:bg-[#eff4ec] hover:text-[#315b36] transition-colors"
+            className={cn(
+              'flex items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 transition-colors',
+              compact ? 'h-6 w-6' : 'h-8 w-8'
+            )}
             aria-label="Previous month"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
           </button>
           <button
             type="button"
             onClick={nextMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e2ebe2] text-[#2e3339] hover:bg-[#eff4ec] hover:text-[#315b36] transition-colors"
+            className={cn(
+              'flex items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 transition-colors',
+              compact ? 'h-6 w-6' : 'h-8 w-8'
+            )}
             aria-label="Next month"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
           </button>
         </div>
       </div>
 
       {/* Days of Week Header */}
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[#5a5e63]">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
         {daysOfWeek.map((day) => (
-          <div key={day} className="py-1">
+          <div key={day} className="py-0.5">
             {day}
           </div>
         ))}
@@ -174,7 +188,7 @@ export function Calendar({
       <div className="grid grid-cols-7 gap-1">
         {/* Leading Empty Cells */}
         {Array.from({ length: firstDayIndex }).map((_, idx) => (
-          <div key={`empty-${idx}`} className="h-9 w-full" />
+          <div key={`empty-${idx}`} className={compact ? 'h-7 w-full' : 'h-9 w-full'} />
         ))}
 
         {/* Days of current month */}
@@ -192,22 +206,23 @@ export function Calendar({
               disabled={disabled}
               onClick={() => handleDayClick(day)}
               className={cn(
-                'relative flex h-9 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-[#315b36] focus:ring-offset-1',
+                'relative flex w-full items-center justify-center rounded-lg font-semibold transition-all focus:outline-none',
+                compact ? 'h-7 text-xs' : 'h-9 text-xs',
                 selected
-                  ? 'bg-[#315b36] text-white shadow-sm font-bold scale-105'
+                  ? 'bg-primary-600 text-white shadow-sm font-bold scale-105'
                   : today
-                  ? 'border border-[#315b36] text-[#315b36] bg-[#eff4ec]/40'
-                  : 'text-[#2e3339] hover:bg-[#eff4ec] hover:text-[#315b36]',
-                highlighted && !selected && 'bg-[#eff4ec] text-[#315b36] font-bold',
-                disabled && 'opacity-30 cursor-not-allowed hover:bg-transparent hover:text-[#2e3339]'
+                  ? 'border border-primary-600 text-primary-600 bg-primary-50 dark:bg-primary-950/30'
+                  : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800',
+                highlighted && !selected && 'bg-primary-50 text-primary-600 font-bold',
+                disabled && 'opacity-25 cursor-not-allowed hover:bg-transparent'
               )}
             >
               <span>{day}</span>
               {highlighted && (
                 <span
                   className={cn(
-                    'absolute bottom-1 h-1 w-1 rounded-full',
-                    selected ? 'bg-white' : 'bg-[#315b36]'
+                    'absolute bottom-0.5 h-1 w-1 rounded-full',
+                    selected ? 'bg-white' : 'bg-primary-600'
                   )}
                 />
               )}
