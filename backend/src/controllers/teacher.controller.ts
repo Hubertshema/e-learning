@@ -6,6 +6,7 @@ import {
   createUnitSchema,
   createLessonSchema,
   createClassSchema,
+  updateClassSchema,
   gradeSubmissionSchema,
   markAttendanceSchema,
   createAssignmentSchema,
@@ -123,12 +124,65 @@ export class TeacherController {
     }
   }
 
+  async getAvailableStudents(req: Request, res: Response, next: NextFunction) {
+    try {
+      const students = await teacherService.getAvailableStudents(req.user!.userId);
+      res.status(200).json({ success: true, data: students });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateCohortCourses(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { classId } = req.params;
+      const { courseIds } = req.body;
+      if (!Array.isArray(courseIds)) {
+        res.status(400).json({ success: false, message: 'courseIds must be an array' });
+        return;
+      }
+      const result = await teacherService.updateCohortCourses(req.user!.userId, classId, courseIds);
+      res.status(200).json({ success: true, data: result, message: 'Cohort courses updated successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateClass(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validated = updateClassSchema.parse(req.body);
+      const updated = await teacherService.updateClass(req.user!.userId, req.params.classId, validated);
+      res.status(200).json({ success: true, data: updated, message: 'Cohort updated successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteClass(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await teacherService.deleteClass(req.user!.userId, req.params.classId);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async removeStudentFromClass(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { classId, studentId } = req.params;
+      const result = await teacherService.removeStudentFromClass(req.user!.userId, classId, studentId);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async enrollStudentInClass(req: Request, res: Response, next: NextFunction) {
     try {
       const { classId } = req.params;
-      const { studentEmail, studentId } = req.body;
-      const result = await teacherService.enrollStudentInClass(req.user!.userId, classId, { studentEmail, studentId });
-      res.status(200).json({ success: true, data: result, message: 'Student successfully enrolled and marked as paid' });
+      const { studentEmail, studentId, studentIds, courseIds } = req.body;
+      const result = await teacherService.enrollStudentInClass(req.user!.userId, classId, { studentEmail, studentId, studentIds, courseIds });
+      res.status(200).json({ success: true, data: result, message: 'Students successfully enrolled and access activated' });
     } catch (error) {
       next(error);
     }

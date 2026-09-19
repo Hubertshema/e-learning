@@ -95,8 +95,28 @@ export class TeacherService {
     return cls;
   }
 
-  async enrollStudentInClass(teacherId: string, classId: string, data: { studentEmail?: string; studentId?: string }) {
+  async getAvailableStudents(teacherId: string) {
+    return teacherRepository.getAvailableStudents(teacherId);
+  }
+
+  async enrollStudentInClass(teacherId: string, classId: string, data: { studentEmail?: string; studentId?: string; studentIds?: string[]; courseIds?: string[] }) {
     return teacherRepository.enrollStudentInClass(teacherId, classId, data);
+  }
+
+  async updateCohortCourses(teacherId: string, classId: string, courseIds: string[]) {
+    return teacherRepository.updateCohortCourses(teacherId, classId, courseIds);
+  }
+
+  async updateClass(teacherId: string, classId: string, data: any) {
+    return teacherRepository.updateClass(teacherId, classId, data);
+  }
+
+  async deleteClass(teacherId: string, classId: string) {
+    return teacherRepository.deleteClass(teacherId, classId);
+  }
+
+  async removeStudentFromClass(teacherId: string, classId: string, studentId: string) {
+    return teacherRepository.removeStudentFromClass(teacherId, classId, studentId);
   }
 
   // Payment Verification Queue

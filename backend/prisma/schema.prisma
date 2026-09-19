@@ -61,6 +61,13 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum SubscriptionStatus {
+  INACTIVE
+  PENDING
+  ACTIVE
+  EXPIRED
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
@@ -276,6 +283,11 @@ model StudentProfile {
   preferredSchedule String?
   learningPreferences Json?      // dailyLearningTargetMinutes, studyDays, studyTimeSlot
   profileVisibility String       @default("TEACHER_ONLY") // PRIVATE, TEACHER_ONLY
+  subscriptionStatus SubscriptionStatus @default(INACTIVE)
+  subscriptionPlan   String?            // "1_MONTH", "2_MONTHS", "3_MONTHS", "6_MONTHS"
+  subscriptionMonths Int?               @default(1)
+  subscriptionStartedAt DateTime?
+  subscriptionExpiresAt DateTime?
   accountDeletionRequested Boolean @default(false)
   deletionRequestedAt      DateTime?
   createdAt       DateTime       @default(now())
@@ -324,6 +336,7 @@ model Course {
   // Curriculum relations
   units           Unit[]
   classes         Class[]
+  classCourses    ClassCourse[]
   enrollments     Enrollment[]
   certificates    Certificate[]
   placementTests  PlacementTest[]
@@ -338,8 +351,8 @@ model Class {
   name            String
   code            String         @unique
   description     String?
-  courseId        String
-  course          Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId        String?
+  course          Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
   teacherId       String
   teacher         TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   startDate       DateTime?
@@ -349,12 +362,27 @@ model Class {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+  courses         ClassCourse[]
   enrollments     Enrollment[]
   attendances     Attendance[]
 
   @@index([courseId])
   @@index([teacherId])
   @@map("classes")
+}
+
+model ClassCourse {
+  id        String   @id @default(uuid())
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([classId, courseId])
+  @@index([classId])
+  @@index([courseId])
+  @@map("class_courses")
 }
 
 model Unit {
@@ -477,12 +505,14 @@ model Enrollment {
 
 model Payment {
   id              String         @id @default(uuid())
-  enrollmentId    String
-  enrollment      Enrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  enrollmentId    String?
+  enrollment      Enrollment?    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   studentId       String
   student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacherId       String
-  teacher         TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId       String?
+  teacher         TeacherProfile? @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  planMonths      Int            @default(1)
+  planName        String?        // e.g. "1 Month Access", "2 Months Access", "3 Months Access"
   amount          Decimal        @db.Decimal(10, 2)
   currency        String         @default("USD")
   status          PaymentStatus  @default(PENDING)

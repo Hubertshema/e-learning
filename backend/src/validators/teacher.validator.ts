@@ -62,11 +62,20 @@ export const CreateClassSchema = z.object({
   description: z.string().optional(),
   schedule: z.string().optional(),
   meetingLink: z.string().optional(),
-  courseId: z.string().min(1, 'Valid Course ID is required'),
+  courseId: z.string().optional(),
+  courseIds: z.array(z.string()).optional(),
+  studentIds: z.array(z.string()).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   capacity: z.number().int().optional(),
   maxStudents: z.number().int().min(1).default(30).optional(),
+});
+
+export const EnrollStudentsInClassSchema = z.object({
+  studentIds: z.array(z.string()).optional(),
+  studentId: z.string().optional(),
+  studentEmail: z.string().email().optional(),
+  courseIds: z.array(z.string()).optional(),
 });
 
 export const UpdateClassSchema = CreateClassSchema.partial();

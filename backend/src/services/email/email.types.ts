@@ -37,7 +37,8 @@ export type EmailTemplateType =
   | 'CourseExpiredEmail'
   | 'CourseCompletedEmail'
   | 'CertificateIssuedEmail'
-  | 'AnnouncementEmail';
+  | 'AnnouncementEmail'
+  | 'CohortEnrollmentEmail';
 
 export interface SendEmailOptions {
   to: string;

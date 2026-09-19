@@ -24,6 +24,10 @@ export class StudentService {
     return studentRepository.submitPaymentProof(userId, input);
   }
 
+  async getSubscription(userId: string) {
+    return studentRepository.getStudentSubscriptionDetails(userId);
+  }
+
   async getPayments(userId: string) {
     return studentRepository.getStudentPayments(userId);
   }

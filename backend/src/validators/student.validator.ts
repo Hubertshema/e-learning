@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 export const submitPaymentProofSchema = z.object({
-  courseId: z.string().uuid(),
+  courseId: z.string().uuid().optional(),
+  planMonths: z.number().int().min(1).default(1),
+  planName: z.string().optional(),
   amount: z.number().positive(),
   currency: z.string().default('USD'),
   paymentMethod: z.enum(['MOBILE_MONEY', 'MTN_MOMO', 'AIRTEL_MONEY', 'BANK_TRANSFER', 'CARD', 'CASH']).default('MOBILE_MONEY'),

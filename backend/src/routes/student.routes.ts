@@ -23,7 +23,8 @@ router.post('/courses/:courseId/renew', studentController.renewCourse);
 // Enrollments Lifecycle
 router.get('/enrollments', studentController.getEnrollments);
 
-// Enrollment & Payment Proof Checkout
+// Enrollment & Payment Proof Checkout & Subscriptions
+router.get('/subscription', studentController.getSubscription);
 router.post('/payments/submit', studentController.submitPaymentProof);
 router.get('/payments', studentController.getPayments);
 

@@ -59,6 +59,15 @@ export class StudentController {
     }
   }
 
+  async getSubscription(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await studentService.getSubscription(req.user!.userId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async completeLesson(req: Request, res: Response, next: NextFunction) {
     try {
       const validated = completeLessonSchema.parse(req.body);
