@@ -32,7 +32,9 @@ export async function connectDatabase(): Promise<void> {
         EXCEPTION
           WHEN duplicate_object THEN null;
         END $$;
+      `);
 
+      await prisma.$executeRawUnsafe(`
         CREATE TABLE IF NOT EXISTS "ai_generations" (
           "id" TEXT NOT NULL PRIMARY KEY,
           "teacherId" TEXT NOT NULL,
@@ -51,8 +53,13 @@ export async function connectDatabase(): Promise<void> {
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT "ai_generations_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "teacher_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE
         );
+      `);
 
+      await prisma.$executeRawUnsafe(`
         CREATE INDEX IF NOT EXISTS "ai_generations_teacherId_idx" ON "ai_generations"("teacherId");
+      `);
+
+      await prisma.$executeRawUnsafe(`
         CREATE INDEX IF NOT EXISTS "ai_generations_type_idx" ON "ai_generations"("type");
       `);
       console.log('✅ ai_generations table structure verified');
