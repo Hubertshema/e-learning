@@ -51,27 +51,24 @@ export function Navbar() {
             : 'max-w-7xl h-16'
         }`}
       >
-        {/* Brand Logo & Left Circular Badge */}
-        <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-          <div
-            className={`flex items-center justify-center rounded-full bg-white shadow-sm border border-slate-200/60 transition-transform group-hover:scale-105 p-1 shrink-0 overflow-hidden ${
-              isScrolled ? 'h-9 w-9 sm:h-10 sm:w-10' : 'h-10 w-10'
-            }`}
-          >
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center group shrink-0">
+          {/* Mobile version: Small emblem icon only */}
+          <div className="flex sm:hidden items-center justify-center rounded-full bg-white shadow-sm border border-slate-200/60 p-1 h-9 w-9 overflow-hidden transition-transform group-hover:scale-105">
             <img
               src="/logo.png"
               alt="LinguaChris Academy"
               className="h-full w-full object-contain"
             />
           </div>
-          <div className="flex flex-col">
-            <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 leading-none">
-              Lingua<span className="text-[#0f3d6a]">Chris</span>
-            </span>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-sky-600 leading-tight">
-              Academy
-            </span>
-          </div>
+          {/* Desktop version: Full real logo (which already includes the text) */}
+          <img
+            src="/real-logo.png"
+            alt="LinguaChris Academy"
+            className={`hidden sm:block w-auto object-contain transition-all group-hover:scale-[1.02] ${
+              isScrolled ? 'h-9 sm:h-10' : 'h-10 sm:h-11'
+            }`}
+          />
         </Link>
 
         {/* Center: Navigation Links */}
