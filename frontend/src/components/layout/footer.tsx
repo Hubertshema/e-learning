@@ -10,25 +10,27 @@ export function Footer() {
           {/* Brand Col */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 text-white shadow-md">
-                <BookOpen className="h-5 w-5" />
-              </div>
+              <img
+                src="/logo.png"
+                alt="LinguaChris Academy Logo"
+                className="h-9 w-auto object-contain"
+              />
               <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Fluent<span className="text-primary-600">Edge</span> Academy
+                Lingua<span className="text-[#0f3d6a] dark:text-sky-400">Chris</span> Academy
               </span>
             </Link>
             <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 max-w-sm">
-              Empowering learners worldwide with structured CEFR English curriculum, teacher-led mastery, interactive practice, and verified certifications.
+              Empowering learners worldwide with structured CEFR English curriculum, interactive multi-skill practice, and verified certifications.
             </p>
             <div className="mt-6 flex gap-4 text-slate-400">
               <div className="flex items-center gap-1.5 text-xs">
-                <Globe className="h-4 w-4 text-primary-500" /> CEFR Certified
+                <Globe className="h-4 w-4 text-sky-500" /> CEFR Certified
               </div>
               <div className="flex items-center gap-1.5 text-xs">
-                <Award className="h-4 w-4 text-primary-500" /> Verifiable Diplomas
+                <Award className="h-4 w-4 text-sky-500" /> Verifiable Diplomas
               </div>
               <div className="flex items-center gap-1.5 text-xs">
-                <ShieldCheck className="h-4 w-4 text-primary-500" /> Secure Payments
+                <ShieldCheck className="h-4 w-4 text-sky-500" /> Secure Payments
               </div>
             </div>
           </div>
@@ -40,16 +42,19 @@ export function Footer() {
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-600 dark:text-slate-400">
               <li>
-                <Link href="/courses" className="hover:text-primary-600">Explore Courses</Link>
+                <Link href="/courses" className="hover:text-sky-600">Explore Courses</Link>
               </li>
               <li>
-                <Link href="/levels" className="hover:text-primary-600">CEFR Levels (Pre-A1 to C2)</Link>
+                <Link href="/quiz" className="hover:text-sky-600">Diagnostic Quiz</Link>
               </li>
               <li>
-                <Link href="/teachers" className="hover:text-primary-600">Find a Teacher</Link>
+                <Link href="/levels" className="hover:text-sky-600">CEFR Levels (Pre-A1 to C2)</Link>
               </li>
               <li>
-                <Link href="/pricing" className="hover:text-primary-600">Pricing & Plans</Link>
+                <Link href="/pricing" className="hover:text-sky-600">Pricing & Plans</Link>
+              </li>
+              <li>
+                <Link href="/about" className="hover:text-sky-600">About Us</Link>
               </li>
             </ul>
           </div>

@@ -28,9 +28,7 @@ export function Navbar() {
     { name: 'Home', href: '/' },
     { name: 'Courses', href: '/courses' },
     { name: 'Diagnostic Quiz', href: '/quiz' },
-    { name: 'Specialized Tracks', href: '/tracks' },
     { name: 'Levels (CEFR)', href: '/levels' },
-    { name: 'Teachers', href: '/teachers' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'About Us', href: '/about' },
   ];

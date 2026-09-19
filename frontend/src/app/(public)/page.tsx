@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   BookOpen,
@@ -21,21 +21,11 @@ import {
   Users,
   Star,
   ChevronRight,
-  RotateCw,
-  Play,
   Check,
   Search,
   Zap,
   Globe,
-  Briefcase,
-  Code2,
-  Stethoscope,
-  Plane,
-  Compass,
-  MessageSquare,
   FileCheck,
-  CalendarCheck,
-  GraduationCap,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -118,61 +108,6 @@ export default function HomePage() {
     },
   ];
 
-  const tracks = [
-    {
-      title: 'Executive Business English & Negotiation',
-      desc: 'Boardroom etiquette, tactful pushback, contract bargaining, and investor pitch decks.',
-      badge: 'B2 – C2 Tier',
-      icon: Briefcase,
-      color: 'from-blue-600 to-indigo-700',
-    },
-    {
-      title: 'English for IT & Software Engineers',
-      desc: 'Agile daily standups, GitHub PR code reviews, system architecture design, and post-mortems.',
-      badge: 'B1 – C1 Tier',
-      icon: Code2,
-      color: 'from-cyan-600 to-blue-700',
-    },
-    {
-      title: 'Medical English & Clinical Communication',
-      desc: 'Empathetic patient intake, ISBAR clinical handovers, pharmacology drills, and diagnostics.',
-      badge: 'B2 – C1 Tier',
-      icon: Stethoscope,
-      color: 'from-teal-600 to-emerald-700',
-    },
-    {
-      title: 'Hospitality, Tourism & Guest Relations',
-      desc: 'Concierge diplomacy, complaint de-escalation, VIP fine dining etiquette, and safari guiding.',
-      badge: 'A2 – B2 Tier',
-      icon: Plane,
-      color: 'from-amber-500 to-orange-600',
-    },
-    {
-      title: 'Global Career & Job Interview Mastery',
-      desc: 'STAR storytelling framework, elevator pitches, LinkedIn profile optimization, and salary bargaining.',
-      badge: 'A2 – C1 Tier',
-      icon: Compass,
-      color: 'from-sky-600 to-blue-800',
-    },
-    {
-      title: 'English for Rwanda & East African Commerce',
-      desc: 'Cross-border trade terminology, EAC customs declarations, Mobile Money invoicing, and ecotourism.',
-      badge: 'A2 – B2 Tier',
-      icon: Globe,
-      color: 'from-emerald-600 to-teal-700',
-    },
-  ];
-
-  const skills = [
-    { name: 'Grammar Mastery', icon: BookOpen, desc: 'Sentence syntax & structure' },
-    { name: 'Vocabulary in Context', icon: BookMarked, desc: '3,000+ Oxford CEFR words' },
-    { name: 'Reading & Analysis', icon: Languages, desc: 'Articles, reports & essays' },
-    { name: 'Listening & Dialects', icon: Headphones, desc: 'Variable-speed audio drills' },
-    { name: 'Spoken Fluency', icon: Mic, desc: 'Voice recording & evaluation' },
-    { name: 'Academic Writing', icon: PenTool, desc: 'Essays, emails & rubrics' },
-    { name: 'Phonetics & Accent', icon: Volume2, desc: 'IPA transcription drills' },
-  ];
-
   return (
     <div className="flex flex-col gap-16 md:gap-24 overflow-hidden bg-white dark:bg-slate-950">
       {/* =========================================================================
@@ -210,7 +145,7 @@ export default function HomePage() {
 
               {/* Descriptive Summary */}
               <p className="max-w-xl text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                Master fluent English with certified instructors, 7 CEFR levels, 6 specialized career tracks, and 16 interactive multi-skill drills designed for real-world fluency and recognized credentials.
+                Master fluent English with structured CEFR curriculum from Pre-A1 to C2, certified instructor guidance, and 16 interactive multi-skill drills engineered for natural fluency and recognized certifications.
               </p>
 
               {/* Dual Action Buttons (Reference Design Style) */}
@@ -252,11 +187,11 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: CIRCULAR GRAPHIC COMPOSITION WITH STUDENT */}
+            {/* RIGHT COLUMN: CIRCULAR GRAPHIC COMPOSITION WITH CHRIS.PNG */}
             <div className="lg:col-span-6 relative flex items-center justify-center lg:justify-end">
               <div className="relative w-full max-w-[480px] aspect-square flex items-center justify-center">
                 
-                {/* Outermost Concentric Deep Blue Ring (from reference design) */}
+                {/* Outermost Concentric Deep Blue Ring */}
                 <div className="absolute inset-0 rounded-full border-[28px] border-[#0f3d6a] opacity-95 shadow-2xl dark:border-sky-800" />
                 
                 {/* Inner Solid Sky Blue Circle */}
@@ -265,16 +200,16 @@ export default function HomePage() {
                 {/* Left Offset Partial Circle Ring */}
                 <div className="absolute -left-10 top-1/3 h-28 w-28 rounded-full border-[12px] border-[#0f3d6a] hidden sm:block pointer-events-none dark:border-sky-900 opacity-80" />
 
-                {/* Hero Student Photograph */}
-                <div className="relative z-10 w-[88%] h-[88%] rounded-full overflow-hidden flex items-center justify-center">
+                {/* Hero Photograph: chris.png */}
+                <div className="relative z-10 w-[90%] h-[90%] rounded-full overflow-hidden flex items-center justify-center">
                   <img
-                    src="/hero-student.jpg"
-                    alt="Student with laptop learning English on LinguaChris Academy"
+                    src="/chris.png"
+                    alt="Chris - LinguaChris Academy Instructor"
                     className="w-full h-full object-cover object-top scale-105"
                   />
                 </div>
 
-                {/* Prominent Floating "50% OFF" Badge (Exact Replica of Reference Design) */}
+                {/* Prominent Floating "50% OFF" Badge */}
                 <div className="absolute -top-2 -right-2 sm:top-2 sm:right-2 z-20 flex h-28 w-28 sm:h-32 sm:w-32 flex-col items-center justify-center rounded-full bg-sky-400 text-white shadow-xl border-4 border-white dark:border-slate-900 transform rotate-6 hover:rotate-0 transition-transform duration-300">
                   <span className="text-[11px] sm:text-xs font-bold italic tracking-tight">The best</span>
                   <span className="text-xs sm:text-sm font-black uppercase tracking-wider">courses</span>
@@ -319,7 +254,7 @@ export default function HomePage() {
             </div>
             <div>
               <p className="text-xl font-black text-slate-900 dark:text-white">100%</p>
-              <p className="text-xs text-slate-500 font-medium">Certified CELTA Teachers</p>
+              <p className="text-xs text-slate-500 font-medium">Certified CELTA Standards</p>
             </div>
           </div>
 
@@ -332,68 +267,6 @@ export default function HomePage() {
               <p className="text-xs text-slate-500 font-medium">CEFR Digital Diplomas</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          SPECIALIZED VOCATIONAL ENGLISH TRACKS
-      ========================================================================= */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
-          <div>
-            <Badge variant="indigo" className="mb-2">Industry-Specific English</Badge>
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-              Specialized Vocational Career Tracks
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
-              Tailored high-impact modules engineered specifically for software engineers, medical professionals, executives, and East African commercial leaders.
-            </p>
-          </div>
-          <Link href="/tracks">
-            <Button variant="outline" className="rounded-full text-xs font-semibold gap-1.5">
-              <span>View All 6 Tracks</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tracks.map((track, i) => {
-            const Icon = track.icon;
-            return (
-              <Card
-                key={i}
-                className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:shadow-xl hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0f3d6a] text-white shadow-md">
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-bold">
-                      {track.badge}
-                    </Badge>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-sky-600 transition-colors">
-                    {track.title}
-                  </h3>
-                  <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {track.desc}
-                  </p>
-                </div>
-                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#0f3d6a] dark:text-sky-400 flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Explore Track Syllabus <ChevronRight className="h-3.5 w-3.5" />
-                  </span>
-                  <Link href={`/register?role=student&track=${i}`}>
-                    <Button size="sm" className="rounded-full bg-slate-100 hover:bg-[#0f3d6a] text-slate-800 hover:text-white dark:bg-slate-800 dark:text-slate-200 text-xs font-bold px-3">
-                      Enroll
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            );
-          })}
         </div>
       </section>
 
@@ -582,7 +455,7 @@ export default function HomePage() {
                       Fluent or persuasive in speaking or writing.
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 italic">
-                      "She delivered an eloquent keynote on cross-border technological education."
+                      "She delivered an eloquent keynote on cross-border education."
                     </p>
                     <p className="text-[10px] text-slate-400 mt-3 font-semibold">Click to flip back</p>
                   </div>
@@ -660,7 +533,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
-                "The English for Software Engineers track transformed my confidence in global sprint standups and async GitHub PR code reviews. I secured a remote role within 3 months."
+                "The B2 Upper Intermediate course transformed my confidence in global sprint standups and async technical collaboration. I secured a remote role within 3 months."
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
@@ -669,7 +542,7 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-900 dark:text-white">Eric Karemera</p>
-                <p className="text-[10px] text-slate-500">Senior Full-Stack Engineer, Kigali</p>
+                <p className="text-[10px] text-slate-500">Full-Stack Developer, Kigali</p>
               </div>
             </div>
           </Card>
@@ -682,7 +555,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
-                "The Medical English module taught me precise ISBAR clinical handover protocols and empathetic patient bedside dialogue. Truly unmatched quality."
+                "The structured grammar and speaking units gave me the natural fluency needed for international conferences and hospital exchange programs."
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
@@ -704,7 +577,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
-                "The Executive Negotiation course gave our corporate sales team the tactful pushback vocabulary needed to close multi-million franc cross-border deals."
+                "The C1 Advanced course gave our executive team the vocabulary and precision needed to negotiate multi-million franc cross-border deals."
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
@@ -730,7 +603,7 @@ export default function HomePage() {
             Choose Your Learning Pathway
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Pay easily with Mobile Money (MTN / Airtel) or Bank Transfer with teacher verification.
+            Pay easily with Mobile Money (MTN / Airtel) or Bank Transfer with instructor verification.
           </p>
         </div>
 
@@ -767,25 +640,25 @@ export default function HomePage() {
               Most Popular
             </div>
             <div>
-              <p className="text-xs font-bold text-sky-600 uppercase tracking-wider">Career Accelerated</p>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-1">Vocational Career Track</h3>
+              <p className="text-xs font-bold text-sky-600 uppercase tracking-wider">Comprehensive Fluency</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-1">Multi-Level Progression</h3>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-3xl font-black text-slate-900 dark:text-white">$79.99</span>
                 <span className="text-xs text-slate-500">/ 180-day access</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                Specialized for Software Engineering, Healthcare, or Business negotiation.
+                Progress seamlessly across 2 consecutive CEFR levels with comprehensive coaching.
               </p>
               <ul className="mt-6 space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Everything in Single Level</li>
-                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Industry Scenario Simulations</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> 2 Consecutive CEFR Syllabi</li>
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> 1-on-1 Instructor Coaching Feedback</li>
-                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Job Interview STAR Drills</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Speaking & Writing Rubrics</li>
               </ul>
             </div>
             <Link href="/register?role=student" className="mt-8">
               <Button className="w-full rounded-full bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold shadow-md dark:bg-sky-600">
-                Enroll in Track
+                Enroll Now
               </Button>
             </Link>
           </div>
@@ -800,13 +673,13 @@ export default function HomePage() {
                 <span className="text-xs text-slate-500">/ 365-day access</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                Unrestricted access to all 7 CEFR levels and all 6 vocational tracks.
+                Unrestricted access to all 7 CEFR levels from Pre-A1 Foundations to C2 Mastery.
               </p>
               <ul className="mt-6 space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Unlimited Course Catalog Access</li>
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Multiple Verified Diplomas</li>
                 <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Priority Instructor Grading</li>
-                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Custom Corporate Invoicing Support</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Custom Invoicing Support</li>
               </ul>
             </div>
             <Link href="/register?role=student" className="mt-8">
@@ -831,7 +704,7 @@ export default function HomePage() {
               Ready to Accelerate Your English Fluency & Career?
             </h2>
             <p className="text-sm text-sky-100 leading-relaxed">
-              Take the free diagnostic placement quiz or register today to join hundreds of professionals learning with LinguaChris Academy.
+              Take the free diagnostic placement quiz or register today to join hundreds of learners mastering English with LinguaChris Academy.
             </p>
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link href="/register?role=student">
@@ -844,9 +717,9 @@ export default function HomePage() {
                   Take Free Quick Test
                 </Button>
               </Link>
-              <Link href="/register?role=teacher">
+              <Link href="/courses">
                 <Button variant="ghost" className="rounded-full text-white/90 hover:bg-white/10 text-xs font-bold">
-                  Apply to Teach ➔
+                  Browse Catalog ➔
                 </Button>
               </Link>
             </div>
