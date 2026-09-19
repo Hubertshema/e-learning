@@ -13,9 +13,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  Sparkles
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData } from '@/lib/cache';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface CalendarEvent {
   id: string;
@@ -27,25 +28,18 @@ interface CalendarEvent {
 }
 
 export default function StudentCalendarPage() {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('ALL');
 
-  useEffect(() => {
-    const fetchCalendar = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<CalendarEvent[]>('/students/calendar');
-        const list: CalendarEvent[] = Array.isArray(res) ? res : (res as any)?.data || [];
-        setEvents(list);
-      } catch (err) {
-        console.error('Failed to load student calendar', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCalendar();
-  }, []);
+  const { data: rawEvents, loading } = useCachedData<CalendarEvent[]>(
+    'student_calendar',
+    async () => {
+      const res = await apiClient.get<CalendarEvent[]>('/students/calendar');
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
+
+  const events = Array.isArray(rawEvents) ? rawEvents : [];
 
   const filteredEvents = events.filter((e) => {
     if (filterType === 'ALL') return true;
@@ -89,8 +83,22 @@ export default function StudentCalendarPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="py-24 text-center text-xs text-slate-400">Loading schedule agenda...</div>
+      {loading && events.length === 0 ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <Skeleton className="h-5 w-64" />
+                <Skeleton className="h-3.5 w-40" />
+              </div>
+              <Skeleton className="h-8 w-28 rounded-lg" />
+            </Card>
+          ))}
+        </div>
       ) : filteredEvents.length > 0 ? (
         <div className="space-y-4">
           {filteredEvents.map((evt) => {

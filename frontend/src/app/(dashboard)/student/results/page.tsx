@@ -13,11 +13,11 @@ import {
   Sparkles,
   TrendingUp,
   Download,
-  BookOpen,
-  Calendar,
-  Layers
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData } from '@/lib/cache';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 interface ResultsData {
   profile: {
@@ -77,27 +77,16 @@ interface ResultsData {
 }
 
 export default function StudentResultsPage() {
-  const [data, setData] = useState<ResultsData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'ALL' | 'ASSIGNMENTS' | 'QUIZZES' | 'DIAGNOSTICS'>('ALL');
 
-  useEffect(() => {
-    const fetchResults = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<ResultsData>('/students/results');
-        const resultsData: ResultsData = (res as any)?.data || res;
-        if (resultsData) {
-          setData(resultsData);
-        }
-      } catch (err) {
-        console.error('Failed to load student results', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchResults();
-  }, []);
+  const { data, loading } = useCachedData<ResultsData | null>(
+    'student_results',
+    async () => {
+      const res = await apiClient.get<ResultsData>('/students/results');
+      return (res as any)?.data || res || null;
+    },
+    { ttl: 120_000 }
+  );
 
   const handleExportTranscript = () => {
     if (!data) return;
@@ -161,8 +150,22 @@ export default function StudentResultsPage() {
         )}
       </div>
 
-      {loading ? (
-        <div className="py-24 text-center text-xs text-slate-400">Loading academic results...</div>
+      {loading && !data ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="p-5 space-y-2">
+                <Skeleton className="h-3.5 w-28" />
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-2.5 w-32" />
+              </Card>
+            ))}
+          </div>
+          <Card className="p-6 space-y-4">
+            <Skeleton className="h-5 w-48" />
+            <TableSkeleton rows={5} columns={5} />
+          </Card>
+        </div>
       ) : data ? (
         <>
           {/* Top KPI Summary Row */}

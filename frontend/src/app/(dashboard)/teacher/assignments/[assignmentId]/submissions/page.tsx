@@ -20,6 +20,7 @@ import {
   Clock
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { RichTextEditor, RichTextRenderer } from '@/components/ui/rich-text-editor';
 
 interface SubmissionItem {
   id: string;
@@ -223,8 +224,8 @@ export default function TeacherAssignmentSubmissionsPage() {
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Student Written Response
                 </label>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-200 whitespace-pre-wrap leading-relaxed min-h-[120px]">
-                  {activeSubmission.content}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-200 leading-relaxed min-h-[120px]">
+                  <RichTextRenderer content={activeSubmission.content} />
                 </div>
               </div>
 
@@ -260,19 +261,14 @@ export default function TeacherAssignmentSubmissionsPage() {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Constructive Feedback & Coaching Notes
-                  </label>
-                  <textarea
-                    rows={4}
-                    placeholder="Provide specific feedback on vocabulary precision, grammatical accuracy, and tone..."
-                    value={gradingFeedback}
-                    onChange={(e) => setGradingFeedback(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white leading-relaxed"
-                    required
-                  />
-                </div>
+                <RichTextEditor
+                  label="Constructive Feedback & Coaching Notes (Markdown & Callouts)"
+                  placeholder="Provide specific feedback on vocabulary precision, grammatical accuracy, and tone..."
+                  value={gradingFeedback}
+                  onChange={setGradingFeedback}
+                  minRows={5}
+                  category="feedback"
+                />
 
                 <div className="flex justify-end">
                   <Button type="submit" variant="gradient" isLoading={submittingGrade}>

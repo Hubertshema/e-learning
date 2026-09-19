@@ -118,6 +118,12 @@ router.get('/newsletter-subscribers', superadminController.getNewsletterSubscrib
 router.get('/contact-messages', superadminController.getContactMessages);
 router.patch('/contact-messages/:id', superadminController.updateContactMessageStatus);
 
+// Class Cohorts & Group Management
+router.get('/classes', superadminController.getClasses);
+router.post('/classes', superadminController.createClass);
+router.patch('/classes/:id', superadminController.updateClass);
+router.delete('/classes/:id', superadminController.deleteClass);
+
 export default router;
 
 

@@ -21,6 +21,8 @@ import {
   Check
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
+import { useCachedData } from '@/lib/cache';
 
 interface QuizQuestion {
   id: string;
@@ -67,9 +69,6 @@ interface QuizResult {
 }
 
 export default function StudentQuizzesPage() {
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [loading, setLoading] = useState(true);
-
   // Active Quiz Taker State
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -81,24 +80,16 @@ export default function StudentQuizzesPage() {
   const [orderedTokens, setOrderedTokens] = useState<Record<string, string[]>>({});
   const [availableTokens, setAvailableTokens] = useState<Record<string, string[]>>({});
 
-  const fetchQuizzes = async () => {
-    try {
-      setLoading(true);
+  const { data: rawQuizzes, loading, refresh } = useCachedData<Quiz[]>(
+    'student_quizzes',
+    async () => {
       const res = await apiClient.get<Quiz[]>('/student/quizzes');
-      if (res) {
-        const payload = (res as any).data || res;
-        setQuizzes(Array.isArray(payload) ? payload : []);
-      }
-    } catch (err) {
-      console.error('Failed to load quizzes', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return (res as any)?.data || res || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchQuizzes();
-  }, []);
+  const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : [];
 
   const handleStartQuiz = (quiz: Quiz) => {
     setActiveQuiz(quiz);
@@ -197,7 +188,7 @@ export default function StudentQuizzesPage() {
       if (res) {
         setResult((res as any).data || res);
       }
-      await fetchQuizzes();
+      await refresh();
     } catch (err) {
       console.error('Failed to submit quiz', err);
     } finally {
@@ -224,7 +215,7 @@ export default function StudentQuizzesPage() {
       {!activeQuiz ? (
         <div className="space-y-4">
           {loading ? (
-            <div className="py-16 text-center text-xs text-slate-400">Loading quizzes...</div>
+            <CardGridSkeleton count={4} columns="2" />
           ) : quizzes.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {quizzes.map((q) => {

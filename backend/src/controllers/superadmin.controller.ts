@@ -489,6 +489,47 @@ export class SuperadminController {
       next(error);
     }
   }
+
+  async getClasses(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const search = req.query.search as string | undefined;
+      const courseId = req.query.courseId as string | undefined;
+      const teacherId = req.query.teacherId as string | undefined;
+      const isActive = req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined;
+
+      const classes = await superadminService.listClasses({ search, courseId, teacherId, isActive });
+      sendSuccess(res, classes, 'Class cohorts retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createClass(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const newClass = await superadminService.createClass(req.body);
+      sendSuccess(res, newClass, 'Class cohort created successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateClass(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const updated = await superadminService.updateClass(req.params.id, req.body);
+      sendSuccess(res, updated, 'Class cohort updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteClass(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await superadminService.deleteClass(req.params.id);
+      sendSuccess(res, null, 'Class cohort deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const superadminController = new SuperadminController();

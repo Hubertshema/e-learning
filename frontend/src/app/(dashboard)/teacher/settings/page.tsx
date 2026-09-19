@@ -23,6 +23,7 @@ import {
   PhoneCall
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 export default function TeacherSettingsPage() {
   const [activeTab, setActiveTab] = useState<'SECURITY' | 'TEACHING' | 'PAYMENT' | 'NOTIFICATIONS'>('SECURITY');
@@ -484,16 +485,14 @@ export default function TeacherSettingsPage() {
                 />
               </div>
 
-              <div className="sm:col-span-2 space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Payment Reference Instructions for Students
-                </label>
-                <textarea
-                  rows={3}
+              <div className="sm:col-span-2">
+                <RichTextEditor
+                  label="Payment Reference Instructions for Students (Markdown & Callouts Supported)"
                   value={paymentInfo.paymentInstructions || ''}
-                  onChange={(e) => setPaymentInfo({ ...paymentInfo, paymentInstructions: e.target.value })}
+                  onChange={(val) => setPaymentInfo({ ...paymentInfo, paymentInstructions: val })}
                   placeholder="Please put your full name and course title in the transaction reference..."
-                  className="w-full rounded-xl border border-input bg-background p-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
+                  minRows={4}
+                  category="general"
                 />
               </div>
             </div>

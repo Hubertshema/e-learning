@@ -15,6 +15,8 @@ import {
   BookOpen
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
+import { useCachedData } from '@/lib/cache';
 
 interface Certificate {
   id: string;
@@ -35,27 +37,18 @@ interface Certificate {
 }
 
 export default function StudentCertificatesPage() {
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
 
-  useEffect(() => {
-    const fetchCertificates = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<Certificate[]>('/student/certificates');
-        if (res) {
-          const payload = (res as any).data || res;
-          setCertificates(Array.isArray(payload) ? payload : []);
-        }
-      } catch (err) {
-        console.error('Failed to load certificates', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCertificates();
-  }, []);
+  const { data: rawCertificates, loading } = useCachedData<Certificate[]>(
+    'student_certificates',
+    async () => {
+      const res = await apiClient.get<Certificate[]>('/student/certificates');
+      return (res as any)?.data || res || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
+
+  const certificates = Array.isArray(rawCertificates) ? rawCertificates : [];
 
   return (
     <div className="space-y-8">
@@ -75,7 +68,7 @@ export default function StudentCertificatesPage() {
       {/* Main Grid */}
       <div className="space-y-6">
         {loading ? (
-          <div className="py-24 text-center text-xs text-slate-400">Loading your credentials...</div>
+          <CardGridSkeleton count={2} columns="2" />
         ) : certificates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {certificates.map((cert) => (

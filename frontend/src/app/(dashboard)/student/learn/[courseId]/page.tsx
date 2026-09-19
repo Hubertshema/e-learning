@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,9 +22,21 @@ import {
   RotateCcw,
   Clock,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Activity as ActivityIcon
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { RichTextRenderer } from '@/components/ui/rich-text-editor';
+import { ActivityContainer, ActivityData } from '@/components/activities/activity-container';
+
+interface LessonSection {
+  id: string;
+  title: string;
+  contentType: string;
+  content: string;
+  mediaUrl?: string;
+  orderIndex?: number;
+}
 
 interface Lesson {
   id: string;
@@ -33,13 +45,8 @@ interface Lesson {
   skill?: string;
   estimatedMinutes: number;
   orderIndex: number;
-  sections?: Array<{
-    id: string;
-    title: string;
-    contentType: 'TEXT' | 'VIDEO' | 'AUDIO' | 'EXERCISE';
-    contentData: string;
-    mediaUrl?: string;
-  }>;
+  objectives?: string[];
+  sections?: LessonSection[];
 }
 
 interface Unit {
@@ -57,7 +64,7 @@ interface CourseLearningData {
     level: string;
     description: string;
     units: Unit[];
-    teacher: {
+    teacher?: {
       user: {
         firstName: string;
         lastName: string;
@@ -79,30 +86,40 @@ interface CourseLearningData {
 
 export default function StudentLearnPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const courseId = params.courseId as string;
+  const targetLessonId = searchParams.get('lesson');
 
   const [data, setData] = useState<CourseLearningData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [activeTab, setActiveTab] = useState<'CONTENT' | 'PRACTICE'>('CONTENT');
+  const [activities, setActivities] = useState<ActivityData[]>([]);
   const [completing, setCompleting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const fetchCourse = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get<CourseLearningData>(`/students/courses/${courseId}`);
+      const res = await apiClient.get<CourseLearningData>(`/student/courses/${courseId}`);
       const learningData: CourseLearningData = (res as any)?.data || res;
       if (learningData && learningData.course) {
         setData(learningData);
 
-        // Find first incomplete lesson or first lesson
-        const allLessons = learningData.course.units.flatMap((u) => u.lessons);
+        const allLessons = (learningData.course.units || []).flatMap((u) => u.lessons || []);
         const completedIds = (learningData.progressRecords || []).filter((p) => p.isCompleted).map((p) => p.lessonId);
-        const nextLesson = allLessons.find((l) => !completedIds.includes(l.id)) || allLessons[0];
 
-        if (nextLesson && !selectedLesson) {
-          setSelectedLesson(nextLesson);
+        let initialLesson: Lesson | undefined;
+        if (targetLessonId) {
+          initialLesson = allLessons.find((l) => l.id === targetLessonId);
+        }
+        if (!initialLesson) {
+          initialLesson = allLessons.find((l) => !completedIds.includes(l.id)) || allLessons[0];
+        }
+
+        if (initialLesson) {
+          setSelectedLesson(initialLesson);
         }
       }
     } catch (err) {
@@ -112,23 +129,72 @@ export default function StudentLearnPage() {
     }
   };
 
+  const fetchLessonActivities = async (lessonId: string, lessonSkill?: string) => {
+    try {
+      const res = await apiClient.get<ActivityData[]>(`/activities/lesson/${lessonId}`);
+      if (res && res.length > 0) {
+        setActivities(res);
+      } else {
+        // Fallback default interactive practice activity for skill
+        const defaultActivity: ActivityData = {
+          id: `act-${lessonId}`,
+          title: `${lessonSkill || 'Grammar'} Contextual Practice Drill`,
+          type: lessonSkill === 'VOCABULARY' ? 'FLASHCARD' : lessonSkill === 'SPEAKING' ? 'SPEAKING_PRACTICE' : lessonSkill === 'READING' ? 'READING_PASSAGE' : 'FILL_BLANKS',
+          skillType: lessonSkill || 'GRAMMAR',
+          instructions: 'Complete this interactive drill to reinforce your learning.',
+          questions: [
+            {
+              id: 'q1',
+              prompt: 'Select the option that best completes the sentence in standard English.',
+              options: [
+                'I have been preparing for this presentation since early morning.',
+                'I am prepare for this presentation since morning.',
+                'I was been prepare for presentation since morning.',
+                'I has preparing presentation morning.',
+              ],
+              correctAnswer: 'I have been preparing for this presentation since early morning.',
+              explanation: 'Present perfect continuous expresses ongoing actions that began in the past.',
+            },
+            {
+              id: 'q2',
+              prompt: 'Which phrase is most appropriate for a formal email closing?',
+              options: ['Best regards,', 'Later,', 'Cheers buddy,', 'Take care dude,'],
+              correctAnswer: 'Best regards,',
+              explanation: '"Best regards" is the standard professional sign-off.',
+            },
+          ],
+        };
+        setActivities([defaultActivity]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch lesson activities', err);
+    }
+  };
+
   useEffect(() => {
     if (courseId) {
       fetchCourse();
     }
   }, [courseId]);
 
+  useEffect(() => {
+    if (selectedLesson) {
+      fetchLessonActivities(selectedLesson.id, selectedLesson.skill);
+    }
+  }, [selectedLesson]);
+
   const handleMarkComplete = async () => {
     if (!selectedLesson) return;
     try {
       setCompleting(true);
-      await apiClient.post(`/students/lessons/${selectedLesson.id}/complete`, {
+      await apiClient.post(`/student/lessons/${selectedLesson.id}/complete`, {
         timeSpentSec: (selectedLesson.estimatedMinutes || 30) * 60,
       });
-      setFeedback('Lesson marked as completed! Study time and progress updated.');
+      setFeedback(`🎉 "${selectedLesson.title}" marked as completed! 7-Skill Progress & attendance updated.`);
       await fetchCourse();
     } catch (err: any) {
       console.error('Failed to complete lesson', err);
+      setFeedback(err.message || 'Failed to update lesson completion status.');
     } finally {
       setCompleting(false);
     }
@@ -136,26 +202,29 @@ export default function StudentLearnPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
-        <div className="text-center text-xs text-slate-400">Loading learning studio...</div>
+      <div className="flex h-[75vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+          <p className="text-xs text-slate-500 font-medium">Loading interactive learning studio...</p>
+        </div>
       </div>
     );
   }
 
   if (!data || !data.course) {
     return (
-      <Card className="p-12 text-center">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-white">Course not found</h3>
+      <Card className="p-12 text-center max-w-md mx-auto my-12">
+        <AlertCircle className="mx-auto h-8 w-8 text-rose-500 mb-2" />
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white">Course Not Found</h3>
+        <p className="text-xs text-slate-500 mt-1 mb-4">The requested curriculum could not be retrieved.</p>
         <Link href="/student/my-courses">
-          <Button size="sm" variant="outline" className="mt-3">
-            Back to My Courses
-          </Button>
+          <Button size="sm" variant="outline">Back to My Courses</Button>
         </Link>
       </Card>
     );
   }
 
-  // If not enrolled or expired
+  // If not enrolled or access inactive
   if (!data.access?.isAccessActive) {
     return (
       <Card className="max-w-xl mx-auto p-8 text-center shadow-2xl mt-12 border-rose-200 dark:border-rose-900">
@@ -163,12 +232,12 @@ export default function StudentLearnPage() {
           <Lock className="h-7 w-7" />
         </div>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-          {data.access?.isExpired ? 'Course Access Expired' : 'Enrollment Required'}
+          {data.access?.isExpired ? 'Course Access Expired' : 'Enrollment & Payment Required'}
         </h2>
-        <p className="text-xs text-slate-500 mt-2 max-w-md mx-auto">
+        <p className="text-xs text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">
           {data.access?.isExpired
-            ? 'Your paid enrollment period has concluded. You can renew access to continue studying lessons and quizzes.'
-            : 'You must submit verification payment to unlock this interactive English curriculum.'}
+            ? 'Your enrollment period has concluded. You can renew access to continue studying lessons and quizzes.'
+            : 'In accordance with academy access policies, curriculum materials are unlocked once your payment proof is verified by the instructor.'}
         </p>
         <div className="mt-6 flex justify-center gap-3">
           <Link href={`/student/payments?courseId=${data.course.id}`}>
@@ -186,7 +255,7 @@ export default function StudentLearnPage() {
     );
   }
 
-  const allLessons = data.course.units.flatMap((u) => u.lessons);
+  const allLessons = (data.course.units || []).flatMap((u) => u.lessons || []);
   const currentIndex = allLessons.findIndex((l) => l.id === selectedLesson?.id);
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
@@ -207,10 +276,12 @@ export default function StudentLearnPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <Badge variant="indigo">Level {data.course.level}</Badge>
-              <span className="text-xs text-slate-400">
-                Instructor: {data.course.teacher.user.firstName} {data.course.teacher.user.lastName}
-              </span>
+              <Badge variant="indigo">CEFR {data.course.level}</Badge>
+              {data.course.teacher?.user && (
+                <span className="text-xs text-slate-400">
+                  Instructor: {data.course.teacher.user.firstName} {data.course.teacher.user.lastName}
+                </span>
+              )}
             </div>
             <h1 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
               {data.course.title}
@@ -223,7 +294,10 @@ export default function StudentLearnPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setSelectedLesson(prevLesson)}
+              onClick={() => {
+                setSelectedLesson(prevLesson);
+                setActiveTab('CONTENT');
+              }}
               className="text-xs"
             >
               <ChevronLeft className="mr-1 h-3.5 w-3.5" />
@@ -234,7 +308,10 @@ export default function StudentLearnPage() {
             <Button
               size="sm"
               variant="gradient"
-              onClick={() => setSelectedLesson(nextLesson)}
+              onClick={() => {
+                setSelectedLesson(nextLesson);
+                setActiveTab('CONTENT');
+              }}
               className="text-xs"
             >
               Next Lesson
@@ -245,7 +322,7 @@ export default function StudentLearnPage() {
       </div>
 
       {feedback && (
-        <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+        <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             <span>{feedback}</span>
@@ -255,55 +332,58 @@ export default function StudentLearnPage() {
       )}
 
       {/* Main Split Player Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Column: Curriculum Units Sidebar Navigator */}
-        <div className="space-y-4">
-          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Curriculum Syllabus
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left 4 Cols: Curriculum Units Sidebar Navigator */}
+        <div className="lg:col-span-4 space-y-4">
+          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <Layers className="h-4 w-4 text-primary-600" /> Curriculum Syllabus ({data.course.units?.length || 0} Units)
           </h2>
 
-          <div className="space-y-3">
-            {data.course.units.map((unit, uIdx) => (
+          <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
+            {(data.course.units || []).map((unit, uIdx) => (
               <Card key={unit.id} className="overflow-hidden border border-slate-200 dark:border-slate-800">
                 <div className="bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
                   <span>Unit {uIdx + 1}: {unit.title}</span>
                   <span className="text-[10px] text-slate-400 font-normal">
-                    {unit.lessons.length} lessons
+                    {unit.lessons?.length || 0} lessons
                   </span>
                 </div>
                 <div className="p-2 space-y-1">
-                  {unit.lessons.map((lesson, lIdx) => {
+                  {(unit.lessons || []).map((lesson, lIdx) => {
                     const isSelected = selectedLesson?.id === lesson.id;
                     const isCompleted = data.progressRecords?.some(
                       (p) => p.lessonId === lesson.id && p.isCompleted
                     );
 
                     return (
-                      <div
+                      <button
                         key={lesson.id}
-                        onClick={() => setSelectedLesson(lesson)}
-                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs transition-all ${
+                        onClick={() => {
+                          setSelectedLesson(lesson);
+                          setActiveTab('CONTENT');
+                        }}
+                        className={`w-full text-left rounded-lg p-2.5 text-xs transition-all flex items-center justify-between ${
                           isSelected
-                            ? 'bg-primary-50 text-primary-900 font-bold dark:bg-primary-950/60 dark:text-primary-300'
-                            : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+                            ? 'bg-primary-600 text-white font-semibold shadow-sm'
+                            : 'hover:bg-slate-100 text-slate-700 dark:hover:bg-slate-800 dark:text-slate-300'
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate">
                           {isCompleted ? (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <CheckCircle2 className={`h-4 w-4 shrink-0 ${isSelected ? 'text-white' : 'text-emerald-500'}`} />
                           ) : (
-                            <span className="flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[9px] text-slate-500 shrink-0">
+                            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold shrink-0 ${isSelected ? 'bg-primary-700 text-white' : 'border border-slate-300 text-slate-500'}`}>
                               {lIdx + 1}
                             </span>
                           )}
                           <span className="truncate">{lesson.title}</span>
                         </div>
                         {lesson.skill && (
-                          <Badge variant="outline" className="text-[9px] py-0 shrink-0 ml-1">
+                          <Badge variant="outline" className={`text-[9px] py-0 shrink-0 ml-1 ${isSelected ? 'border-white text-white' : ''}`}>
                             {lesson.skill}
                           </Badge>
                         )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -312,12 +392,12 @@ export default function StudentLearnPage() {
           </div>
         </div>
 
-        {/* Right Column (3 cols): Selected Lesson Content & Interactive Player */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* Right 8 Cols: Selected Lesson Content & Interactive Player */}
+        <div className="lg:col-span-8 space-y-6">
           {selectedLesson ? (
             <>
-              {/* Lesson Overview Card */}
-              <Card className="p-6 border-l-4 border-l-primary-600 shadow-md">
+              {/* Lesson Header Card */}
+              <Card className="p-6 border-l-4 border-l-primary-600 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -334,7 +414,7 @@ export default function StudentLearnPage() {
                       {selectedLesson.title}
                     </h2>
                     {selectedLesson.description && (
-                      <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+                      <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
                         {selectedLesson.description}
                       </p>
                     )}
@@ -348,76 +428,146 @@ export default function StudentLearnPage() {
                     className="shrink-0"
                   >
                     <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                    {isCurrentLessonCompleted ? 'Completed' : completing ? 'Saving...' : 'Mark as Completed'}
+                    {isCurrentLessonCompleted ? 'Marked Completed' : completing ? 'Saving...' : 'Mark as Completed'}
                   </Button>
                 </div>
               </Card>
 
-              {/* Lesson Media & Sections */}
-              <Card className="p-6 space-y-6">
-                {/* Embedded Video/Audio if present in sections */}
-                {selectedLesson.sections && selectedLesson.sections.length > 0 ? (
-                  selectedLesson.sections.map((sec) => (
-                    <div key={sec.id} className="space-y-3 pt-2">
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        {sec.contentType === 'VIDEO' ? (
-                          <Video className="h-4 w-4 text-blue-500" />
-                        ) : sec.contentType === 'AUDIO' ? (
-                          <Headphones className="h-4 w-4 text-emerald-500" />
-                        ) : (
-                          <FileText className="h-4 w-4 text-primary-600" />
+              {/* Learning Tab Switcher */}
+              <div className="flex border-b border-slate-200 dark:border-slate-800">
+                <button
+                  onClick={() => setActiveTab('CONTENT')}
+                  className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-all ${
+                    activeTab === 'CONTENT'
+                      ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Theory & Content</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('PRACTICE')}
+                  className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-all ${
+                    activeTab === 'PRACTICE'
+                      ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>Interactive Practice Drills ({activities.length})</span>
+                </button>
+              </div>
+
+              {/* Tab 1: Theory & Content */}
+              {activeTab === 'CONTENT' && (
+                <div className="space-y-6">
+                  {selectedLesson.sections && selectedLesson.sections.length > 0 ? (
+                    selectedLesson.sections.map((sec: any) => (
+                      <Card key={sec.id} className="p-6 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            {sec.contentType === 'VIDEO' ? (
+                              <Video className="h-4 w-4 text-blue-500" />
+                            ) : sec.contentType === 'AUDIO' ? (
+                              <Headphones className="h-4 w-4 text-emerald-500" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-primary-600" />
+                            )}
+                            {sec.title}
+                          </h3>
+                          <Badge variant="outline" className="text-[10px]">
+                            {sec.contentType}
+                          </Badge>
+                        </div>
+
+                        {sec.mediaUrl && (
+                          <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                            {sec.contentType === 'VIDEO' ? (
+                              sec.mediaUrl.includes('youtube.com') || sec.mediaUrl.includes('vimeo.com') || sec.mediaUrl.includes('youtu.be') ? (
+                                <div className="aspect-video w-full">
+                                  <iframe
+                                    src={sec.mediaUrl.replace('watch?v=', 'embed/')}
+                                    title={sec.title}
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    className="w-full h-full border-0"
+                                  />
+                                </div>
+                              ) : (
+                                <video controls className="w-full max-h-80 bg-black">
+                                  <source src={sec.mediaUrl} type="video/mp4" />
+                                  Your browser does not support video playback.
+                                </video>
+                              )
+                            ) : sec.contentType === 'AUDIO' ? (
+                              <div className="p-4 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                                <audio controls className="w-full">
+                                  <source src={sec.mediaUrl} />
+                                  Your browser does not support audio playback.
+                                </audio>
+                              </div>
+                            ) : null}
+                          </div>
                         )}
-                        {sec.title}
-                      </h3>
 
-                      {sec.contentType === 'VIDEO' && sec.mediaUrl && (
-                        <div className="aspect-video w-full rounded-xl overflow-hidden bg-black flex items-center justify-center">
-                          <iframe
-                            src={sec.mediaUrl}
-                            title={sec.title}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="w-full h-full border-0"
-                          />
+                        <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed pt-1">
+                          <RichTextRenderer content={sec.content || (sec as any).contentData || ''} />
                         </div>
-                      )}
+                      </Card>
+                    ))
+                  ) : (
+                    <Card className="p-8 text-center text-xs text-slate-500 space-y-2">
+                      <p>No standalone lecture notes provided for this lesson.</p>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setActiveTab('PRACTICE')}
+                        className="mt-2 font-bold"
+                      >
+                        Start Interactive Practice Drill <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                      </Button>
+                    </Card>
+                  )}
 
-                      {sec.contentType === 'AUDIO' && sec.mediaUrl && (
-                        <div className="rounded-xl border border-slate-200 p-4 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
-                          <audio controls className="w-full">
-                            <source src={sec.mediaUrl} />
-                            Your browser does not support the audio element.
-                          </audio>
-                        </div>
-                      )}
-
-                      <div className="prose dark:prose-invert max-w-none text-xs text-slate-700 dark:text-slate-300 font-normal leading-relaxed whitespace-pre-wrap">
-                        {sec.contentData}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="space-y-4">
-                    <div className="rounded-xl bg-slate-50 p-6 text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-300 font-mono whitespace-pre-wrap border border-slate-100 dark:border-slate-800">
-                      {`### Learning Objectives for ${selectedLesson.title}
-
-1. Master key grammatical structures and contextual phrases.
-2. Review essential CEFR ${data.course.level} vocabulary and pronunciation notes.
-3. Complete practice drills and interactive speaking/writing exercises.
-
-Refer to the sidebar to navigate units or complete assignments for this unit.`}
-                    </div>
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setActiveTab('PRACTICE')}
+                      className="font-bold text-xs"
+                    >
+                      Proceed to Interactive Practice
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Button>
                   </div>
-                )}
-              </Card>
+                </div>
+              )}
 
-              {/* Bottom Navigation */}
+              {/* Tab 2: Interactive Activities Drill */}
+              {activeTab === 'PRACTICE' && (
+                <div className="space-y-6">
+                  {activities.map((act) => (
+                    <ActivityContainer
+                      key={act.id}
+                      activity={act}
+                      onFinished={() => {
+                        handleMarkComplete();
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Bottom Nav Bar */}
               <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 {prevLesson ? (
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setSelectedLesson(prevLesson)}
+                    onClick={() => {
+                      setSelectedLesson(prevLesson);
+                      setActiveTab('CONTENT');
+                    }}
                     className="text-xs"
                   >
                     <ChevronLeft className="mr-1 h-3.5 w-3.5" />
@@ -429,7 +579,10 @@ Refer to the sidebar to navigate units or complete assignments for this unit.`}
                   <Button
                     size="sm"
                     variant="gradient"
-                    onClick={() => setSelectedLesson(nextLesson)}
+                    onClick={() => {
+                      setSelectedLesson(nextLesson);
+                      setActiveTab('CONTENT');
+                    }}
                     className="text-xs"
                   >
                     Next: {nextLesson.title}

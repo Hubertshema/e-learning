@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { formatDate, formatPrice } from '@/lib/utils';
 import Link from 'next/link';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+
 
 export default function SuperadminEnrollmentsPage() {
   const [enrollments, setEnrollments] = useState<any[]>([]);
@@ -221,9 +223,12 @@ export default function SuperadminEnrollmentsPage() {
       </div>
 
       {/* Enrollments Table / List */}
-      <Card className="overflow-hidden border border-slate-200 dark:border-slate-800">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+      {loading ? (
+        <TableSkeleton rows={6} columns={7} />
+      ) : (
+        <Card className="overflow-hidden border border-slate-200 dark:border-slate-800">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
             <thead className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
               <tr>
                 <th className="px-5 py-3.5">Learner</th>
@@ -380,6 +385,7 @@ export default function SuperadminEnrollmentsPage() {
           </table>
         </div>
       </Card>
+      )}
 
       {/* Extend Duration Modal */}
       {showExtendModal && selectedEnrollment && (

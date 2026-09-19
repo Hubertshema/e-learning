@@ -9,14 +9,18 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  ExternalLink,
   Eye,
-  Search,
-  Filter,
+  Check,
+  X,
   AlertCircle,
   FileText,
-  DollarSign
+  DollarSign,
+  Search,
+  Filter
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 interface Payment {
   id: string;
@@ -159,7 +163,7 @@ export default function TeacherPaymentsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400">Loading transactions...</div>
+            <TableSkeleton rows={5} columns={7} />
           ) : payments.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">

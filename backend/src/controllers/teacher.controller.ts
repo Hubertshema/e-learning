@@ -299,6 +299,15 @@ export class TeacherController {
     }
   }
 
+  async getLessonDetails(req: Request, res: Response, next: NextFunction) {
+    try {
+      const lesson = await teacherService.getLessonDetails(req.user!.userId, req.params.lessonId);
+      res.status(200).json({ success: true, data: lesson });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async updateLesson(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await teacherService.updateLesson(req.user!.userId, req.params.lessonId, req.body);

@@ -17,6 +17,8 @@ import {
   BookOpen
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 interface ClassItem {
   id: string;
@@ -175,7 +177,18 @@ export default function TeacherClassesPage() {
           </h2>
 
           {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400">Loading classes...</div>
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </Card>
+              ))}
+            </div>
           ) : classes.length > 0 ? (
             <div className="space-y-3">
               {classes.map((cls) => {

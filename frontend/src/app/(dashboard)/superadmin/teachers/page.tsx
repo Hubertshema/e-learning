@@ -24,6 +24,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+
 
 export default function SuperadminTeachersPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -244,8 +246,15 @@ export default function SuperadminTeachersPage() {
       </div>
 
       {/* Teachers List */}
-      <div className="grid grid-cols-1 gap-4">
-        {filteredTeachers.map((teacher) => (
+      {loading ? (
+        <TableSkeleton rows={5} columns={5} />
+      ) : filteredTeachers.length === 0 ? (
+        <Card className="p-12 text-center text-xs text-slate-400">
+          No instructors found matching the current filter.
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredTeachers.map((teacher) => (
           <Card key={teacher.id} className="p-6 transition-all hover:border-slate-300 dark:hover:border-slate-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
@@ -359,13 +368,8 @@ export default function SuperadminTeachersPage() {
             </div>
           </Card>
         ))}
-
-        {filteredTeachers.length === 0 && !loading && (
-          <div className="text-center py-12 text-sm text-slate-500">
-            No instructors found matching your criteria.
-          </div>
-        )}
       </div>
+      )}
 
       {/* Review & Approval Modal Dialog */}
       {selectedTeacher && (

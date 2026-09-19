@@ -21,6 +21,9 @@ import {
   Filter
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
+import { useCachedData } from '@/lib/cache';
+
 
 interface EnrolledCourse {
   id: string;
@@ -87,9 +90,6 @@ interface CatalogCourse {
 
 export default function StudentCoursesPage() {
   const [activeTab, setActiveTab] = useState<'ENROLLED' | 'CATALOG'>('ENROLLED');
-  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
-  const [catalogCourses, setCatalogCourses] = useState<CatalogCourse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
   // Payment Checkout Modal State
@@ -103,27 +103,24 @@ export default function StudentCoursesPage() {
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const fetchCourses = async () => {
-    try {
-      setLoading(true);
+  const {
+    data,
+    loading,
+    refresh,
+    mutate
+  } = useCachedData<{ enrolled: EnrolledCourse[]; catalog: CatalogCourse[] }>(
+    'student_courses_catalog',
+    async () => {
       const res = await apiClient.get<{ enrolled: EnrolledCourse[]; catalog: CatalogCourse[] }>(
         '/student/courses'
       );
-      if (res) {
-        const payload = (res as any).data || res;
-        setEnrolledCourses(payload.enrolled || []);
-        setCatalogCourses(payload.catalog || []);
-      }
-    } catch (err) {
-      console.error('Failed to load courses', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return (res as any)?.data || res || { enrolled: [], catalog: [] };
+    },
+    { ttl: 120_000, initialData: { enrolled: [], catalog: [] } }
+  );
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+  const enrolledCourses = data?.enrolled || [];
+  const catalogCourses = data?.catalog || [];
 
   const handleEnrollAndSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +144,7 @@ export default function StudentCoursesPage() {
       });
       setCheckoutCourse(null);
       setPaymentForm({ paymentMethod: 'MOBILE_MONEY', transactionRef: '', notes: '', receiptUrl: '' });
-      await fetchCourses();
+      await refresh();
       setActiveTab('ENROLLED');
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to submit payment proof' });
@@ -222,7 +219,7 @@ export default function StudentCoursesPage() {
       {activeTab === 'ENROLLED' && (
         <div className="space-y-6">
           {loading ? (
-            <div className="py-16 text-center text-xs text-slate-400">Loading your courses...</div>
+            <CardGridSkeleton count={3} columns="3" />
           ) : enrolledCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {enrolledCourses.map((enr) => {
@@ -335,7 +332,10 @@ export default function StudentCoursesPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading && catalogCourses.length === 0 ? (
+            <CardGridSkeleton count={3} columns="3" />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCatalog.map((c) => {
               const alreadyEnrolled = enrolledCourses.some((e) => e.course.id === c.id);
               return (
@@ -390,7 +390,8 @@ export default function StudentCoursesPage() {
                 </Card>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

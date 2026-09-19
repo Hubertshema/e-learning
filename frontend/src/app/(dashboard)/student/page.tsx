@@ -442,7 +442,7 @@ export default function StudentDashboardPage() {
                 <div className="border-b border-dashed border-[#e2ebe2] w-full flex justify-between">
                   <span>1h</span>
                 </div>
-                <div className="border-b border-[#e2ebe2] w-full flex justify-between">
+                <div className="border-b border-dashed border-[#e2ebe2] w-full flex justify-between">
                   <span>0h</span>
                 </div>
               </div>

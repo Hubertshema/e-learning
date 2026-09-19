@@ -46,6 +46,7 @@ export function errorHandler(
 
   // Prisma Database Known Errors
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    console.error('💥 Prisma Error:', err.code, err.message, err.meta);
     if (err.code === 'P2002') {
       const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : 'field';
       return sendError(res, `A record with this ${target} already exists.`, 'DUPLICATE_RESOURCE', 409);
@@ -53,7 +54,7 @@ export function errorHandler(
     if (err.code === 'P2025') {
       return sendError(res, 'The requested record could not be found.', 'NOT_FOUND', 404);
     }
-    return sendError(res, 'A database error occurred. Please try again.', 'DATABASE_ERROR', 500);
+    return sendError(res, process.env.NODE_ENV === 'production' ? 'A database error occurred. Please try again.' : `Database Error: ${err.message}`, 'DATABASE_ERROR', 500);
   }
 
   // Fallback Internal Server Error

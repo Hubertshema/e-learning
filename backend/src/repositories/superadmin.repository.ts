@@ -688,6 +688,125 @@ export class SuperadminRepository {
       select: { id: true, email: true, firstName: true, lastName: true, role: true },
     });
   }
+
+  async findClasses(params?: { search?: string; courseId?: string; teacherId?: string; isActive?: boolean }) {
+    const where: Prisma.ClassWhereInput = {};
+
+    if (params?.isActive !== undefined) {
+      where.isActive = params.isActive;
+    }
+    if (params?.courseId) {
+      where.courseId = params.courseId;
+    }
+    if (params?.teacherId) {
+      where.teacherId = params.teacherId;
+    }
+    if (params?.search) {
+      where.OR = [
+        { name: { contains: params.search, mode: 'insensitive' } },
+        { code: { contains: params.search, mode: 'insensitive' } },
+        { description: { contains: params.search, mode: 'insensitive' } },
+        { course: { title: { contains: params.search, mode: 'insensitive' } } },
+        { teacher: { user: { firstName: { contains: params.search, mode: 'insensitive' } } } },
+        { teacher: { user: { lastName: { contains: params.search, mode: 'insensitive' } } } },
+      ];
+    }
+
+    return prisma.class.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        course: { select: { id: true, title: true, level: true, price: true, currency: true } },
+        teacher: {
+          include: {
+            user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },
+          },
+        },
+        enrollments: {
+          include: {
+            student: {
+              include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+            },
+          },
+        },
+        _count: { select: { enrollments: true, attendances: true } },
+      },
+    });
+  }
+
+  async createClass(data: {
+    name: string;
+    code?: string;
+    description?: string;
+    courseId: string;
+    teacherId: string;
+    startDate?: string;
+    endDate?: string;
+    maxStudents?: number;
+    isActive?: boolean;
+  }) {
+    const code =
+      data.code ||
+      `CLS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+
+    return prisma.class.create({
+      data: {
+        name: data.name,
+        code,
+        description: data.description,
+        courseId: data.courseId,
+        teacherId: data.teacherId,
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        maxStudents: data.maxStudents || 30,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+      },
+      include: {
+        course: true,
+        teacher: { include: { user: true } },
+      },
+    });
+  }
+
+  async updateClass(
+    id: string,
+    data: Partial<{
+      name: string;
+      code: string;
+      description: string;
+      courseId: string;
+      teacherId: string;
+      startDate: string;
+      endDate: string;
+      maxStudents: number;
+      isActive: boolean;
+    }>
+  ) {
+    return prisma.class.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.code !== undefined && { code: data.code }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.courseId !== undefined && { courseId: data.courseId }),
+        ...(data.teacherId !== undefined && { teacherId: data.teacherId }),
+        ...(data.startDate !== undefined && { startDate: data.startDate ? new Date(data.startDate) : null }),
+        ...(data.endDate !== undefined && { endDate: data.endDate ? new Date(data.endDate) : null }),
+        ...(data.maxStudents !== undefined && { maxStudents: data.maxStudents }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+      include: {
+        course: true,
+        teacher: { include: { user: true } },
+      },
+    });
+  }
+
+  async deleteClass(id: string) {
+    return prisma.class.delete({
+      where: { id },
+    });
+  }
 }
 
 export const superadminRepository = new SuperadminRepository();

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { ActivityContainer, ActivityData } from '@/components/activities/activity-container';
+import { RichTextRenderer } from '@/components/ui/rich-text-editor';
 
 interface LessonSection {
   id: string;
@@ -450,18 +451,30 @@ export default function StudentCoursePlayerPage() {
                           </div>
 
                           {section.content && (
-                            <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                              {section.content}
+                            <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                              <RichTextRenderer content={section.content} />
                             </div>
                           )}
 
                           {section.mediaUrl && (
                             <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
                               {section.contentType === 'VIDEO' ? (
-                                <video controls className="w-full max-h-80 bg-black">
-                                  <source src={section.mediaUrl} type="video/mp4" />
-                                  Your browser does not support video playback.
-                                </video>
+                                section.mediaUrl.includes('youtube.com') || section.mediaUrl.includes('vimeo.com') || section.mediaUrl.includes('youtu.be') ? (
+                                  <div className="aspect-video w-full">
+                                    <iframe
+                                      src={section.mediaUrl.replace('watch?v=', 'embed/')}
+                                      title={section.title}
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                      className="w-full h-full border-0"
+                                    />
+                                  </div>
+                                ) : (
+                                  <video controls className="w-full max-h-80 bg-black">
+                                    <source src={section.mediaUrl} type="video/mp4" />
+                                    Your browser does not support video playback.
+                                  </video>
+                                )
                               ) : section.contentType === 'AUDIO' ? (
                                 <div className="p-4 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
                                   <audio controls className="w-full">

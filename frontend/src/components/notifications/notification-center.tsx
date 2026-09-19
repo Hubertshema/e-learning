@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
 
+import { Skeleton } from '@/components/ui/skeleton';
+
 interface NotificationItem {
   id: string;
   title: string;
@@ -21,7 +23,7 @@ export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
@@ -31,11 +33,13 @@ export function NotificationCenter() {
       );
       if (res) {
         const payload = (res as any).data || res;
-        setNotifications(payload.notifications || []);
-        setUnreadCount(payload.unreadCount || 0);
+        setNotifications(payload.notifications || (res as any).notifications || []);
+        setUnreadCount(payload.unreadCount || (res as any).unreadCount || 0);
       }
     } catch (err) {
-      // Graceful fallback for demo
+      // Graceful fallback
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,7 +124,18 @@ export function NotificationCenter() {
           </div>
 
           <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-            {notifications.length > 0 ? (
+            {loading && notifications.length === 0 ? (
+              <div className="p-3.5 space-y-3">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3.5 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3.5 w-40" />
+                  <Skeleton className="h-3 w-52" />
+                </div>
+              </div>
+            ) : notifications.length > 0 ? (
               notifications.map((n) => (
                 <div
                   key={n.id}

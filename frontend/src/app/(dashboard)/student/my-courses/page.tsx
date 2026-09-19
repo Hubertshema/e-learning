@@ -19,6 +19,8 @@ import {
   FileCheck
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
+import { useCachedData } from '@/lib/cache';
 
 interface EnrolledCourseItem {
   id: string;
@@ -47,27 +49,19 @@ interface EnrolledCourseItem {
 }
 
 export default function MyCoursesPage() {
-  const [courses, setCourses] = useState<EnrolledCourseItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'ALL' | 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'COMPLETED'>('ALL');
   const [search, setSearch] = useState('');
 
-  const fetchEnrollments = async () => {
-    try {
-      setLoading(true);
+  const { data: rawCourses, loading } = useCachedData<EnrolledCourseItem[]>(
+    'student_my_courses',
+    async () => {
       const res = await apiClient.get<EnrolledCourseItem[]>('/students/enrollments');
-      const list: EnrolledCourseItem[] = Array.isArray(res) ? res : (res as any)?.data || [];
-      setCourses(list);
-    } catch (err) {
-      console.error('Failed to load student enrollments', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchEnrollments();
-  }, []);
+  const courses = Array.isArray(rawCourses) ? rawCourses : [];
 
   const filteredCourses = courses.filter((item) => {
     if (activeTab === 'ACTIVE' && (item.status !== 'ACTIVE' || item.isExpired)) return false;
@@ -131,7 +125,7 @@ export default function MyCoursesPage() {
 
       {/* Courses Grid */}
       {loading ? (
-        <div className="py-24 text-center text-xs text-slate-400">Loading your enrolled courses...</div>
+        <CardGridSkeleton count={3} columns="3" />
       ) : filteredCourses.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((item) => {

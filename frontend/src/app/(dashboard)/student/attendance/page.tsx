@@ -15,6 +15,9 @@ import {
   Sparkles
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData } from '@/lib/cache';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 interface AttendanceRecord {
   id: string;
@@ -43,29 +46,17 @@ interface AttendanceData {
 }
 
 export default function StudentAttendancePage() {
-  const [data, setData] = useState<AttendanceData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAttendance = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<AttendanceData>('/students/attendance');
-        const attData: AttendanceData = (res as any)?.data || res;
-        if (attData) {
-          setData(attData);
-        }
-      } catch (err) {
-        console.error('Failed to load student attendance', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAttendance();
-  }, []);
+  const { data, loading } = useCachedData<AttendanceData | null>(
+    'student_attendance_data',
+    async () => {
+      const res = await apiClient.get<AttendanceData>('/students/attendance');
+      return (res as any)?.data || res || null;
+    },
+    { ttl: 120_000 }
+  );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div>
         <Badge variant="indigo">Cohort Participation</Badge>
@@ -77,8 +68,22 @@ export default function StudentAttendancePage() {
         </p>
       </div>
 
-      {loading ? (
-        <div className="py-24 text-center text-xs text-slate-400">Loading attendance history...</div>
+      {loading && !data ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Card key={i} className="p-5 space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-8 w-14" />
+                <Skeleton className="h-2 w-16" />
+              </Card>
+            ))}
+          </div>
+          <Card className="p-6">
+            <Skeleton className="h-5 w-48 mb-4" />
+            <TableSkeleton rows={5} columns={4} />
+          </Card>
+        </div>
       ) : data ? (
         <>
           {/* Top KPI Summary */}

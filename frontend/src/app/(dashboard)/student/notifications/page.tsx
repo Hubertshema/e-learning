@@ -13,10 +13,11 @@ import {
   CreditCard,
   BookOpen,
   ClipboardList,
-  Award,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData } from '@/lib/cache';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface NotificationItem {
   id: string;
@@ -29,30 +30,21 @@ interface NotificationItem {
 }
 
 export default function StudentNotificationsPage() {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
+  const { data: rawNotifications, loading, refresh } = useCachedData<NotificationItem[]>(
+    'student_notifications',
+    async () => {
       const res = await apiClient.get<NotificationItem[]>('/notifications');
-      const list: NotificationItem[] = Array.isArray(res) ? res : (res as any)?.data || [];
-      setNotifications(list);
-    } catch (err) {
-      console.error('Failed to load notifications', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 60_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
+  const notifications = Array.isArray(rawNotifications) ? rawNotifications : [];
 
   const handleMarkAllRead = async () => {
     try {
       await apiClient.patch('/notifications/read-all');
-      await fetchNotifications();
+      await refresh();
     } catch (err) {
       console.error('Failed to mark notifications read', err);
     }
@@ -61,7 +53,7 @@ export default function StudentNotificationsPage() {
   const handleMarkOneRead = async (id: string) => {
     try {
       await apiClient.patch(`/notifications/${id}/read`);
-      await fetchNotifications();
+      await refresh();
     } catch (err) {
       console.error('Failed to mark notification read', err);
     }
@@ -88,8 +80,21 @@ export default function StudentNotificationsPage() {
         )}
       </div>
 
-      {loading ? (
-        <div className="py-24 text-center text-xs text-slate-400">Loading notifications...</div>
+      {loading && notifications.length === 0 ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-4 flex items-start gap-3">
+              <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+                <Skeleton className="h-3.5 w-full" />
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : notifications.length > 0 ? (
         <div className="space-y-3">
           {notifications.map((item) => (

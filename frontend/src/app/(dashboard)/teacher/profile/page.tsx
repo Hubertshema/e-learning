@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 const ALL_CEFR_LEVELS = ['PRE_A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 
@@ -373,18 +374,14 @@ export default function TeacherProfilePage() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Biography & Teaching Philosophy
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={formData.bio}
-                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                    placeholder="Share your pedagogical approach, background in linguistics, certifications, and student achievements..."
-                    className="w-full rounded-xl border border-input bg-background p-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
-                  />
-                </div>
+                <RichTextEditor
+                  label="Biography & Teaching Philosophy (Markdown Supported)"
+                  placeholder="Share your pedagogical approach, background in linguistics, certifications, and student achievements..."
+                  value={formData.bio}
+                  onChange={(val) => setFormData({ ...formData, bio: val })}
+                  minRows={5}
+                  category="general"
+                />
 
                 <Input
                   label="Profile Avatar URL"

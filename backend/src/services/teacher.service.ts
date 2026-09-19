@@ -19,11 +19,12 @@ import { AppError } from '../middleware/error.middleware.js';
 
 export class TeacherService {
   async getDashboardStats(teacherId: string) {
-    const [counts, recentPayments, recentSubmissions, upcomingClasses] = await Promise.all([
+    const [counts, recentPayments, recentSubmissions, upcomingClasses, skillProficiency] = await Promise.all([
       teacherRepository.getDashboardCounts(teacherId),
       teacherRepository.getRecentPayments(teacherId, 5),
       teacherRepository.getRecentSubmissions(teacherId, 5),
       teacherRepository.getUpcomingClasses(teacherId, 5),
+      teacherRepository.getSkillProficiencySummary(teacherId),
     ]);
 
     return {
@@ -31,7 +32,12 @@ export class TeacherService {
       recentPayments,
       recentSubmissions,
       upcomingClasses,
+      skillProficiency,
     };
+  }
+
+  async getTeacherReports(teacherId: string) {
+    return teacherRepository.getTeacherReports(teacherId);
   }
 
   // Course Management
@@ -99,22 +105,32 @@ export class TeacherService {
 
     // Notify Student
     if (result && result.student) {
-      await notificationService.notifyUser({
-        userId: result.student.userId,
-        type: 'PAYMENT_VERIFIED',
-        title: `Payment Verified: ${result.enrollment?.course?.title || 'Course Access'}`,
-        message: `Your payment of ${result.currency || 'USD'} ${result.amount} has been verified and course access is activated.`,
-        link: '/student/courses',
-        emailTemplate: 'PaymentVerifiedEmail',
-        emailData: {
-          studentName: `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim(),
-          courseTitle: result.enrollment?.course?.title || 'Course',
-          amount: String(result.amount),
-          currency: result.currency || 'USD',
-          expiryDate: result.enrollment?.expiresAt ? new Date(result.enrollment.expiresAt).toLocaleDateString() : '90 days from now',
-        },
-        preferenceKey: 'paymentEmails',
-      });
+      const studentName = `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim() || 'Student';
+      const courseTitle = result.course?.title || result.enrollment?.course?.title || 'Course';
+      const amount = String(result.payment?.amount || result.amount || '0');
+      const currency = result.payment?.currency || result.currency || 'USD';
+      const expiryDate = result.enrollment?.expiresAt ? new Date(result.enrollment.expiresAt).toLocaleDateString() : '90 days from now';
+
+      try {
+        await notificationService.notifyUser({
+          userId: result.student.userId,
+          type: 'PAYMENT_VERIFIED',
+          title: `Payment Verified: ${courseTitle}`,
+          message: `Your payment of ${currency} ${amount} has been verified and course access is activated.`,
+          link: '/student/courses',
+          emailTemplate: 'PaymentVerifiedEmail',
+          emailData: {
+            studentName,
+            courseTitle,
+            amount,
+            currency,
+            expiryDate,
+          },
+          preferenceKey: 'paymentEmails',
+        });
+      } catch (notifErr) {
+        console.warn('Could not dispatch payment verification email/notification:', notifErr);
+      }
     }
 
     return result;
@@ -125,20 +141,27 @@ export class TeacherService {
 
     // Notify Student
     if (result && result.student) {
-      await notificationService.notifyUser({
-        userId: result.student.userId,
-        type: 'PAYMENT_REJECTED',
-        title: `Payment Issue: ${result.enrollment?.course?.title || 'Course'}`,
-        message: `Your payment could not be verified: ${reason}`,
-        link: '/student/payments',
-        emailTemplate: 'PaymentRejectedEmail',
-        emailData: {
-          studentName: `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim(),
-          courseTitle: result.enrollment?.course?.title || 'Course',
-          reason,
-        },
-        preferenceKey: 'paymentEmails',
-      });
+      const studentName = `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim() || 'Student';
+      const courseTitle = result.course?.title || result.enrollment?.course?.title || 'Course';
+
+      try {
+        await notificationService.notifyUser({
+          userId: result.student.userId,
+          type: 'PAYMENT_REJECTED',
+          title: `Payment Issue: ${courseTitle}`,
+          message: `Your payment could not be verified: ${reason}`,
+          link: '/student/payments',
+          emailTemplate: 'PaymentRejectedEmail',
+          emailData: {
+            studentName,
+            courseTitle,
+            reason,
+          },
+          preferenceKey: 'paymentEmails',
+        });
+      } catch (notifErr) {
+        console.warn('Could not dispatch payment rejection email/notification:', notifErr);
+      }
     }
 
     return result;
@@ -229,10 +252,6 @@ export class TeacherService {
     return result;
   }
 
-  async getTeacherReports(teacherId: string) {
-    return teacherRepository.getTeacherReports(teacherId);
-  }
-
   // Course Publishing
   async publishCourse(teacherId: string, courseId: string) {
     await this.getCourseById(teacherId, courseId);
@@ -251,6 +270,14 @@ export class TeacherService {
 
   async deleteUnit(teacherId: string, unitId: string) {
     return teacherRepository.deleteUnit(unitId);
+  }
+
+  async getLessonDetails(teacherId: string, lessonId: string) {
+    const lesson = await teacherRepository.getLessonDetails(lessonId);
+    if (!lesson) {
+      throw new AppError('Lesson not found', 404);
+    }
+    return lesson;
   }
 
   async updateLesson(teacherId: string, lessonId: string, data: any) {

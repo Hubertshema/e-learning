@@ -31,8 +31,6 @@ import {
   Bell,
   Mail,
   Megaphone,
-  ChevronLeft,
-  ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';

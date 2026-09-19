@@ -20,6 +20,8 @@ import {
   Filter
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
+
 
 interface QuizItem {
   id: string;
@@ -124,11 +126,7 @@ export default function TeacherQuizzesPage() {
 
       {/* Quizzes Table / List */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-6 h-48 animate-pulse bg-slate-100 dark:bg-slate-900" />
-          ))}
-        </div>
+        <CardGridSkeleton count={3} columns="3" />
       ) : filtered.length === 0 ? (
         <Card className="p-12 text-center space-y-3">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-primary-600 dark:bg-primary-950">

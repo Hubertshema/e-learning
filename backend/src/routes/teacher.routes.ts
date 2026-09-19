@@ -35,6 +35,7 @@ router.patch('/units/:unitId', teacherController.updateUnit);
 router.delete('/units/:unitId', teacherController.deleteUnit);
 
 router.post('/courses/:courseId/units/:unitId/lessons', teacherController.addLesson);
+router.get('/lessons/:lessonId', teacherController.getLessonDetails);
 router.patch('/lessons/:lessonId', teacherController.updateLesson);
 router.delete('/lessons/:lessonId', teacherController.deleteLesson);
 

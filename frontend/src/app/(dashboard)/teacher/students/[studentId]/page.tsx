@@ -24,6 +24,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { RichTextEditor, RichTextRenderer } from '@/components/ui/rich-text-editor';
 
 interface DetailedProgressData {
   student: {
@@ -413,19 +414,14 @@ export default function TeacherStudentDetailPage() {
                 required
               />
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Direct Coaching Note
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Leave actionable insights to help the student advance their CEFR level..."
-                  value={feedbackContent}
-                  onChange={(e) => setFeedbackContent(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-                  required
-                />
-              </div>
+              <RichTextEditor
+                label="Direct Coaching Note (Markdown & Callouts)"
+                placeholder="Leave actionable insights to help the student advance their CEFR level..."
+                value={feedbackContent}
+                onChange={setFeedbackContent}
+                minRows={4}
+                category="feedback"
+              />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
@@ -466,7 +462,9 @@ export default function TeacherStudentDetailPage() {
                           {new Date(fb.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{fb.content}</p>
+                      <div className="text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
+                        <RichTextRenderer content={fb.content} />
+                      </div>
                     </div>
                   ))}
                 </div>

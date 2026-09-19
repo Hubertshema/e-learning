@@ -15,9 +15,11 @@ import {
   Play,
   Layers,
   Sparkles,
-  CreditCard
+  CreditCard,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData } from '@/lib/cache';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface EnrollmentRecord {
   id: string;
@@ -55,24 +57,16 @@ interface EnrollmentRecord {
 }
 
 export default function StudentEnrollmentsPage() {
-  const [enrollments, setEnrollments] = useState<EnrollmentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: rawEnrollments, loading } = useCachedData<EnrollmentRecord[]>(
+    'student_enrollments',
+    async () => {
+      const res = await apiClient.get<EnrollmentRecord[]>('/students/enrollments');
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    const fetchEnrollments = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<EnrollmentRecord[]>('/students/enrollments');
-        const list: EnrollmentRecord[] = Array.isArray(res) ? res : (res as any)?.data || [];
-        setEnrollments(list);
-      } catch (err) {
-        console.error('Failed to load enrollments ledger', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEnrollments();
-  }, []);
+  const enrollments = Array.isArray(rawEnrollments) ? rawEnrollments : [];
 
   return (
     <div className="space-y-8">
@@ -95,8 +89,27 @@ export default function StudentEnrollmentsPage() {
         </Link>
       </div>
 
-      {loading ? (
-        <div className="py-24 text-center text-xs text-slate-400">Loading enrollment ledger...</div>
+      {loading && enrollments.length === 0 ? (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="p-5 space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <Skeleton className="h-5 w-64" />
+                  <Skeleton className="h-3.5 w-48" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-9 w-28 rounded-xl" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : enrollments.length > 0 ? (
         <div className="space-y-4">
           {enrollments.map((enr) => {

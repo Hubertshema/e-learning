@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Users,
   BookOpen,
@@ -15,27 +16,33 @@ import {
   Clock,
   Plus,
   ArrowRight,
-  TrendingUp,
   AlertCircle,
   Calendar,
   Sparkles,
   CalendarCheck,
   Check,
-  Award,
   ChevronRight,
   RefreshCw,
   FolderTree,
   MessageSquare,
   Library,
-  Zap
+  Zap,
+  GraduationCap
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData, clientCache } from '@/lib/cache';
 
 interface TeacherStats {
   totalCourses: number;
+  totalClasses?: number;
   totalStudents: number;
   pendingPaymentsCount: number;
   pendingSubmissionsCount: number;
+  expiringStudentsCount?: number;
+  skillProficiency?: Array<{
+    skill: string;
+    score: number;
+  }>;
   recentPayments: Array<{
     id: string;
     amount: number;
@@ -78,102 +85,48 @@ interface TeacherStats {
 
 export default function TeacherDashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<TeacherStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'PAYMENTS' | 'SUBMISSIONS'>('PAYMENTS');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const fetchDashboardStats = async () => {
-    try {
-      setLoading(true);
+  // Use Stale-While-Revalidate caching for instant rendering and background sync
+  const {
+    data: stats,
+    loading,
+    isValidating,
+    error,
+    refresh,
+    mutate,
+  } = useCachedData<TeacherStats>(
+    user ? `teacher_dashboard_${user.id}` : null,
+    async () => {
       const res = await apiClient.get<TeacherStats>('/teacher/dashboard');
-      if (res) {
-        setStats(res);
-      }
-    } catch {
-      // High-quality fallback state
-      setStats({
-        totalCourses: 4,
-        totalStudents: 38,
-        pendingPaymentsCount: 2,
-        pendingSubmissionsCount: 3,
-        recentPayments: [
-          {
-            id: 'pay-1',
-            amount: 150,
-            currency: 'USD',
-            paymentMethod: 'Mobile Money (MTN)',
-            referenceNumber: 'MOMO-883921',
-            createdAt: new Date().toISOString(),
-            user: { firstName: 'Eric', lastName: 'Habimana', email: 'eric@student.com' },
-            course: { title: 'B2 Upper-Intermediate Business English', level: 'B2' },
-          },
-          {
-            id: 'pay-2',
-            amount: 120,
-            currency: 'USD',
-            paymentMethod: 'Bank Transfer (Equity)',
-            referenceNumber: 'EQ-00928371',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            user: { firstName: 'Claire', lastName: 'Uwase', email: 'claire@student.com' },
-            course: { title: 'IELTS Academic Band 7+ Mastery', level: 'C1' },
-          },
-        ],
-        recentSubmissions: [
-          {
-            id: 'sub-1',
-            submittedAt: new Date(Date.now() - 1800000).toISOString(),
-            status: 'SUBMITTED',
-            assignment: { title: 'Formal Business Email Essay', maxScore: 100 },
-            student: { firstName: 'Eric', lastName: 'Habimana' },
-          },
-          {
-            id: 'sub-2',
-            submittedAt: new Date(Date.now() - 5400000).toISOString(),
-            status: 'SUBMITTED',
-            assignment: { title: 'Opinion Essay: AI in Education', maxScore: 100 },
-            student: { firstName: 'Sonia', lastName: 'Ineza' },
-          },
-          {
-            id: 'sub-3',
-            submittedAt: new Date(Date.now() - 86400000).toISOString(),
-            status: 'SUBMITTED',
-            assignment: { title: 'Pronunciation Audio Recording: Connected Speech', maxScore: 50 },
-            student: { firstName: 'Alex', lastName: 'Kagabo' },
-          },
-        ],
-        upcomingClasses: [
-          {
-            id: 'cls-1',
-            name: 'Cohort Alpha — B2 Business Communication',
-            schedule: 'Mon / Wed / Fri • 18:00 - 19:30 UTC+2',
-            _count: { enrollments: 16 },
-          },
-          {
-            id: 'cls-2',
-            name: 'Cohort Beta — IELTS Band 7+ Intensive',
-            schedule: 'Tue / Thu • 17:00 - 19:00 UTC+2',
-            _count: { enrollments: 22 },
-          },
-        ],
-      });
-    } finally {
-      setLoading(false);
+      return res;
+    },
+    {
+      ttl: 60000, // 1 minute local cache TTL
+      revalidateOnFocus: true,
     }
-  };
-
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
+  );
 
   const handleApprovePayment = async (paymentId: string) => {
     try {
       setActionLoading(paymentId);
       setFeedback(null);
       await apiClient.post(`/teacher/payments/${paymentId}/approve`);
-      setFeedback({ type: 'success', text: 'Payment receipt approved & student course access activated!' });
-      await fetchDashboardStats();
+      setFeedback({ type: 'success', text: 'Payment receipt verified and course access granted to student!' });
+
+      // Optimistic cache update + background revalidation
+      mutate((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          pendingPaymentsCount: Math.max(0, prev.pendingPaymentsCount - 1),
+          recentPayments: prev.recentPayments.filter((p) => p.id !== paymentId),
+        };
+      }, true);
+
+      clientCache.invalidate('teacher_');
     } catch (err: any) {
       setFeedback({ type: 'error', text: err.message || 'Failed to verify payment.' });
     } finally {
@@ -184,7 +137,7 @@ export default function TeacherDashboardPage() {
   const teacherMetrics = [
     {
       label: 'Active Students',
-      value: stats?.totalStudents ?? 38,
+      value: stats?.totalStudents ?? 0,
       sub: 'Enrolled across all classes',
       icon: Users,
       gradient: 'from-indigo-600/15 via-indigo-500/5 to-transparent',
@@ -194,7 +147,7 @@ export default function TeacherDashboardPage() {
     },
     {
       label: 'Published Courses',
-      value: stats?.totalCourses ?? 4,
+      value: stats?.totalCourses ?? 0,
       sub: 'Active CEFR syllabi',
       icon: BookOpen,
       gradient: 'from-blue-600/15 via-blue-500/5 to-transparent',
@@ -204,7 +157,7 @@ export default function TeacherDashboardPage() {
     },
     {
       label: 'Pending Receipts',
-      value: stats?.pendingPaymentsCount ?? 2,
+      value: stats?.pendingPaymentsCount ?? 0,
       sub: 'Awaiting verification',
       icon: CreditCard,
       gradient: 'from-amber-600/15 via-amber-500/5 to-transparent',
@@ -215,7 +168,7 @@ export default function TeacherDashboardPage() {
     },
     {
       label: 'Grading Queue',
-      value: stats?.pendingSubmissionsCount ?? 3,
+      value: stats?.pendingSubmissionsCount ?? 0,
       sub: 'Submissions to grade',
       icon: ClipboardList,
       gradient: 'from-rose-600/15 via-rose-500/5 to-transparent',
@@ -245,33 +198,54 @@ export default function TeacherDashboardPage() {
                   Instructor Active
                 </Badge>
               )}
+              {isValidating && (
+                <span className="flex items-center gap-1 text-[11px] text-indigo-300/80">
+                  <RefreshCw className="h-3 w-3 animate-spin" /> Syncing...
+                </span>
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Welcome back, {user?.firstName} {user?.lastName}!
+              Welcome back{user?.firstName ? `, ${user.firstName} ${user.lastName || ''}` : ''}!
             </h1>
             <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed">
-              Manage your CEFR course cohorts, evaluate 7-skill homework submissions, verify student payment receipts, and publish interactive quizzes.
+              Manage your CEFR course cohorts, evaluate 7-skill homework submissions, verify student payment receipts, and launch AI assistance.
             </p>
           </div>
 
           {/* Quick Action Speed-Dial */}
           <div className="flex flex-wrap sm:flex-nowrap gap-2.5 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refresh()}
+              disabled={isValidating}
+              title="Refresh live dashboard data"
+              className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isValidating ? 'animate-spin' : ''}`} />
+            </Button>
+            <Link href="/teacher/lessons/create">
+              <Button variant="outline" size="sm" className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md">
+                <Plus className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />
+                Create Lesson
+              </Button>
+            </Link>
             <Link href="/teacher/attendance">
               <Button variant="outline" size="sm" className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md">
                 <CalendarCheck className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />
                 Attendance
               </Button>
             </Link>
-            <Link href="/teacher/quizzes/create">
+            <Link href="/teacher/quizzes">
               <Button variant="outline" size="sm" className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md">
-                <Plus className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />
-                New Quiz
+                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />
+                Quizzes
               </Button>
             </Link>
-            <Link href="/teacher/courses">
+            <Link href="/teacher/ai">
               <Button variant="gradient" size="sm" className="shadow-lg shadow-indigo-600/40">
                 <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                Course Studio
+                AI Assistant
               </Button>
             </Link>
           </div>
@@ -279,22 +253,33 @@ export default function TeacherDashboardPage() {
 
         {/* Live Teaching Summary Strip */}
         <div className="mt-6 pt-5 border-t border-indigo-800/60 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="flex items-center gap-2 text-indigo-200">
-            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Active Students: <strong>{stats?.totalStudents ?? 38} Learners</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-indigo-200">
-            <div className="h-2 w-2 rounded-full bg-amber-400" />
-            <span>Pending Receipts: <strong>{stats?.pendingPaymentsCount ?? 0} Proofs</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-indigo-200">
-            <div className="h-2 w-2 rounded-full bg-rose-400" />
-            <span>Grading Queue: <strong>{stats?.pendingSubmissionsCount ?? 0} Items</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-indigo-200">
-            <div className="h-2 w-2 rounded-full bg-blue-400" />
-            <span>Next Live Cohort: <strong>18:00 UTC+2</strong></span>
-          </div>
+          {loading && !stats ? (
+            <>
+              <Skeleton className="h-5 w-full bg-indigo-800/50" />
+              <Skeleton className="h-5 w-full bg-indigo-800/50" />
+              <Skeleton className="h-5 w-full bg-indigo-800/50" />
+              <Skeleton className="h-5 w-full bg-indigo-800/50" />
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 text-indigo-200">
+                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Active Learners: <strong>{stats?.totalStudents ?? 0} Students</strong></span>
+              </div>
+              <div className="flex items-center gap-2 text-indigo-200">
+                <div className={`h-2 w-2 rounded-full ${(stats?.pendingPaymentsCount ?? 0) > 0 ? 'bg-amber-400 animate-pulse' : 'bg-slate-400'}`} />
+                <span>Pending Receipts: <strong>{stats?.pendingPaymentsCount ?? 0} Proofs</strong></span>
+              </div>
+              <div className="flex items-center gap-2 text-indigo-200">
+                <div className={`h-2 w-2 rounded-full ${(stats?.pendingSubmissionsCount ?? 0) > 0 ? 'bg-rose-400 animate-pulse' : 'bg-slate-400'}`} />
+                <span>Grading Queue: <strong>{stats?.pendingSubmissionsCount ?? 0} Items</strong></span>
+              </div>
+              <div className="flex items-center gap-2 text-indigo-200">
+                <div className="h-2 w-2 rounded-full bg-blue-400" />
+                <span>Active Classes: <strong>{stats?.totalClasses ?? (stats?.upcomingClasses?.length || 0)} Cohorts</strong></span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -314,42 +299,69 @@ export default function TeacherDashboardPage() {
         </div>
       )}
 
+      {error && !stats && (
+        <div className="flex items-center justify-between rounded-2xl p-4 text-xs font-semibold shadow-md bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>Could not connect to live backend service. Please check your connection.</span>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => refresh()} className="h-7 text-xs">
+            Retry
+          </Button>
+        </div>
+      )}
+
       {/* 2. Key Metrics Row */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {teacherMetrics.map((m) => {
-          const Icon = m.icon;
-          return (
-            <Link key={m.label} href={m.href}>
-              <Card
-                className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-white dark:bg-slate-900 ${m.borderColor} backdrop-blur-sm ${
-                  m.highlight ? 'ring-2 ring-amber-400/60 dark:ring-amber-500/40' : ''
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {m.label}
-                  </span>
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${m.iconBg}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-                      {m.value}
+        {loading && !stats ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-10 w-10 rounded-xl" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-3 w-36" />
+              </div>
+            </Card>
+          ))
+        ) : (
+          teacherMetrics.map((m) => {
+            const Icon = m.icon;
+            return (
+              <Link key={m.label} href={m.href}>
+                <Card
+                  className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-white dark:bg-slate-900 ${m.borderColor} backdrop-blur-sm ${
+                    m.highlight ? 'ring-2 ring-amber-400/60 dark:ring-amber-500/40' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      {m.label}
                     </span>
-                    <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 flex items-center">
-                      Manage <ChevronRight className="h-3 w-3 ml-0.5" />
-                    </span>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${m.iconBg}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
                   </div>
-                  <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/80 pt-2">
-                    {m.sub}
-                  </p>
-                </div>
-              </Card>
-            </Link>
-          );
-        })}
+                  <div className="mt-4">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                        {m.value}
+                      </span>
+                      <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 flex items-center">
+                        Manage <ChevronRight className="h-3 w-3 ml-0.5" />
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/80 pt-2">
+                      {m.sub}
+                    </p>
+                  </div>
+                </Card>
+              </Link>
+            );
+          })
+        )}
       </div>
 
       {/* 3. Main Workspace Grid */}
@@ -398,10 +410,25 @@ export default function TeacherDashboardPage() {
             </CardHeader>
 
             <CardContent className="p-5 space-y-3.5">
-              {activeTab === 'PAYMENTS' ? (
-                loading ? (
-                  <div className="py-10 text-center text-xs text-slate-400">Loading student receipts...</div>
-                ) : stats?.recentPayments && stats.recentPayments.length > 0 ? (
+              {loading && !stats ? (
+                <div className="space-y-3 py-2">
+                  <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-8 w-28 rounded-lg" />
+                    </div>
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                  <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-8 w-28 rounded-lg" />
+                    </div>
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                </div>
+              ) : activeTab === 'PAYMENTS' ? (
+                stats?.recentPayments && stats.recentPayments.length > 0 ? (
                   stats.recentPayments.map((p) => (
                     <div
                       key={p.id}
@@ -411,14 +438,18 @@ export default function TeacherDashboardPage() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-slate-900 dark:text-white">
-                              {p.user.firstName} {p.user.lastName}
+                              {p.user?.firstName} {p.user?.lastName}
                             </span>
                             <Badge variant="indigo" className="text-[10px] py-0">
                               {p.course?.title || 'Course Enrollment'}
                             </Badge>
                           </div>
                           <p className="text-xs text-slate-500">
-                            Channel: <strong className="text-slate-700 dark:text-slate-300">{p.paymentMethod}</strong> • Amount: <strong className="text-slate-700 dark:text-slate-300">${p.amount} {p.currency}</strong> • Ref: <span className="font-mono text-slate-600 dark:text-slate-400">{p.referenceNumber}</span>
+                            Channel: <strong className="text-slate-700 dark:text-slate-300">{p.paymentMethod || 'Manual'}</strong> • Amount:{' '}
+                            <strong className="text-slate-700 dark:text-slate-300">
+                              ${p.amount} {p.currency}
+                            </strong>{' '}
+                            • Ref: <span className="font-mono text-slate-600 dark:text-slate-400">{p.referenceNumber}</span>
                           </p>
                         </div>
 
@@ -442,17 +473,15 @@ export default function TeacherDashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="py-10 text-center">
-                    <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-500 mb-2" />
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">No Pending Receipts</p>
-                    <p className="text-[11px] text-slate-400">All student bank and mobile payments are fully verified.</p>
+                  <div className="py-12 text-center">
+                    <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500 mb-2" />
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">No Pending Receipts</p>
+                    <p className="text-xs text-slate-400 mt-0.5">All student payments and enrollments are up to date.</p>
                   </div>
                 )
               ) : (
                 /* Submissions Tab */
-                loading ? (
-                  <div className="py-10 text-center text-xs text-slate-400">Loading student homework...</div>
-                ) : stats?.recentSubmissions && stats.recentSubmissions.length > 0 ? (
+                stats?.recentSubmissions && stats.recentSubmissions.length > 0 ? (
                   stats.recentSubmissions.map((sub) => (
                     <div
                       key={sub.id}
@@ -462,14 +491,14 @@ export default function TeacherDashboardPage() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-slate-900 dark:text-white">
-                              {sub.student.firstName} {sub.student.lastName}
+                              {sub.student?.firstName} {sub.student?.lastName}
                             </span>
                             <Badge variant="outline" className="text-[10px] py-0 border-rose-300 text-rose-600">
-                              Max {sub.assignment.maxScore} Pts
+                              Max {sub.assignment?.maxScore || 100} Pts
                             </Badge>
                           </div>
                           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                            {sub.assignment.title}
+                            {sub.assignment?.title || 'Course Assignment'}
                           </p>
                         </div>
 
@@ -482,17 +511,17 @@ export default function TeacherDashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="py-10 text-center">
-                    <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-500 mb-2" />
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Grading Inbox Clear</p>
-                    <p className="text-[11px] text-slate-400">All submitted student tasks have been evaluated.</p>
+                  <div className="py-12 text-center">
+                    <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500 mb-2" />
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Grading Inbox Clear</p>
+                    <p className="text-xs text-slate-400 mt-0.5">All submitted student tasks and homework have been graded.</p>
                   </div>
                 )
               )}
             </CardContent>
 
             <CardFooter className="border-t border-slate-100 p-4 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between text-xs">
-              <span className="text-slate-500">Live evaluation triggers student email alerts</span>
+              <span className="text-slate-500">Real-time sync with database</span>
               <Link
                 href={activeTab === 'PAYMENTS' ? '/teacher/payments' : '/teacher/assignments'}
                 className="font-bold text-primary-600 flex items-center hover:underline"
@@ -573,7 +602,12 @@ export default function TeacherDashboardPage() {
             </CardHeader>
 
             <CardContent className="p-5 space-y-3.5">
-              {stats?.upcomingClasses && stats.upcomingClasses.length > 0 ? (
+              {loading && !stats ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                </div>
+              ) : stats?.upcomingClasses && stats.upcomingClasses.length > 0 ? (
                 stats.upcomingClasses.map((cls) => (
                   <div
                     key={cls.id}
@@ -582,19 +616,20 @@ export default function TeacherDashboardPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">{cls.name}</span>
                       <Badge variant="indigo" className="text-[10px] py-0">
-                        {cls._count.enrollments} Students
+                        {cls._count?.enrollments ?? 0} Students
                       </Badge>
                     </div>
                     <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
                       <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span>{cls.schedule || 'Class schedule configured in syllabus'}</span>
+                      <span>{cls.schedule || 'Regular cohort schedule'}</span>
                     </p>
                   </div>
                 ))
               ) : (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  No active cohorts yet.{' '}
-                  <Link href="/teacher/classes" className="text-primary-600 underline font-semibold">
+                <div className="py-8 text-center space-y-2">
+                  <GraduationCap className="mx-auto h-8 w-8 text-slate-400" />
+                  <p className="text-xs text-slate-500">No active cohorts scheduled yet.</p>
+                  <Link href="/teacher/classes" className="inline-block text-xs text-primary-600 underline font-semibold">
                     Create a cohort
                   </Link>
                 </div>
@@ -613,26 +648,37 @@ export default function TeacherDashboardPage() {
               </div>
               <h3 className="text-base font-bold tracking-tight">Student Proficiency Matrix</h3>
               <p className="text-xs text-indigo-100/80 leading-relaxed">
-                Analyze aggregated performance across Grammar, Vocabulary, Reading, Listening, Writing, Speaking, and Pronunciation.
+                Live performance aggregated across Grammar, Vocabulary, Reading, Listening, Writing, Speaking, and Pronunciation.
               </p>
 
-              <div className="space-y-2 pt-1">
-                {[
-                  { skill: 'Reading & Comprehension', score: 82 },
-                  { skill: 'Grammar Accuracy', score: 85 },
-                  { skill: 'Speaking & Fluency', score: 74 },
-                ].map((s) => (
-                  <div key={s.skill} className="space-y-1">
-                    <div className="flex justify-between text-[11px] text-indigo-200">
-                      <span>{s.skill}</span>
-                      <span className="font-bold text-white">{s.score}%</span>
+              {loading && !stats ? (
+                <div className="space-y-3 pt-2">
+                  <Skeleton className="h-4 w-full bg-indigo-800/60" />
+                  <Skeleton className="h-4 w-full bg-indigo-800/60" />
+                  <Skeleton className="h-4 w-full bg-indigo-800/60" />
+                </div>
+              ) : stats?.skillProficiency && stats.skillProficiency.length > 0 ? (
+                <div className="space-y-2.5 pt-1">
+                  {stats.skillProficiency.slice(0, 4).map((s) => (
+                    <div key={s.skill} className="space-y-1">
+                      <div className="flex justify-between text-[11px] text-indigo-200">
+                        <span>{s.skill}</span>
+                        <span className="font-bold text-white">{s.score}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-indigo-950/80 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(s.score, 0))}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-indigo-950/80 overflow-hidden">
-                      <div className="h-full rounded-full bg-amber-400" style={{ width: `${s.score}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-4 text-center rounded-xl bg-indigo-950/40 p-3">
+                  <p className="text-xs text-indigo-200">Skill benchmarks update automatically as enrolled students complete exercises.</p>
+                </div>
+              )}
 
               <Link href="/teacher/progress" className="block pt-2">
                 <Button size="sm" variant="secondary" className="w-full text-xs font-bold shadow-md">
@@ -646,4 +692,3 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
-

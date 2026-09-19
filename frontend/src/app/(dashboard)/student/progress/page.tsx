@@ -13,9 +13,13 @@ import {
   Clock,
   Sparkles,
   CalendarCheck,
-  GraduationCap
+  GraduationCap,
+  RefreshCw,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+import { useCachedData } from '@/lib/cache';
 
 interface ProgressResponse {
   profile: {
@@ -38,25 +42,14 @@ interface ProgressResponse {
 }
 
 export default function StudentProgressPage() {
-  const [data, setData] = useState<ProgressResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProgress = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<ProgressResponse>('/student/progress');
-        if (res) {
-          setData((res as any).data || res);
-        }
-      } catch (err) {
-        console.error('Failed to load student progress', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProgress();
-  }, []);
+  const { data, loading, refresh } = useCachedData<ProgressResponse | null>(
+    'student_progress',
+    async () => {
+      const res = await apiClient.get<ProgressResponse>('/student/progress');
+      return (res as any)?.data || res || null;
+    },
+    { ttl: 60_000 }
+  );
 
   return (
     <div className="space-y-8">
@@ -71,16 +64,47 @@ export default function StudentProgressPage() {
             Real-time mastery tracking across Reading, Listening, Speaking, Writing, Grammar, Vocabulary, and Pronunciation.
           </p>
         </div>
-        <Link href="/student/placement">
-          <Button variant="gradient" size="sm">
-            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-            Recalibrate Diagnostic Level
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => refresh()}>
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Sync Real-Time
           </Button>
-        </Link>
+          <Link href="/student/placement">
+            <Button variant="gradient" size="sm">
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              Recalibrate Diagnostic Level
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {loading ? (
-        <div className="py-24 text-center text-xs text-slate-400">Loading skill analytics...</div>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="p-4 space-y-3">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-2.5 w-28" />
+              </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-6 space-y-4">
+              <Skeleton className="h-5 w-40" />
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <Skeleton className="h-3.5 w-28" />
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+              ))}
+            </Card>
+            <Card className="p-6 space-y-4">
+              <Skeleton className="h-5 w-40" />
+              <TableSkeleton rows={4} columns={3} />
+            </Card>
+          </div>
+        </div>
       ) : data ? (
         <>
           {/* Summary Stats Row */}

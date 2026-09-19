@@ -18,6 +18,7 @@ import {
   Users
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 interface CourseOption {
   id: string;
@@ -190,19 +191,14 @@ export default function TeacherCreateAssignmentPage() {
             required
           />
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Prompt & Task Instructions
-            </label>
-            <textarea
-              rows={5}
-              placeholder="Provide clear guidelines, expected word count, rubric criteria, and sample vocabulary..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white leading-relaxed"
-              required
-            />
-          </div>
+          <RichTextEditor
+            label="Prompt & Task Instructions (Markdown, Callouts & Rubrics)"
+            placeholder="Provide clear guidelines, expected word count, rubric criteria, and sample vocabulary..."
+            value={description}
+            onChange={setDescription}
+            minRows={7}
+            category="assignment"
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input

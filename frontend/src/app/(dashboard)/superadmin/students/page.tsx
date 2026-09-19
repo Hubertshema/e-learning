@@ -10,17 +10,18 @@ import { Avatar } from '@/components/ui/avatar';
 import {
   GraduationCap,
   Search,
-  ShieldAlert,
-  BookOpen,
-  Award,
   CheckCircle2,
-  AlertCircle,
-  KeyRound,
+  XCircle,
+  Clock,
   Edit3,
-  X,
-  Lock,
+  KeyRound,
+  ShieldCheck,
+  AlertCircle,
+  FileText,
+  UserCheck
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 export default function SuperadminStudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
@@ -179,9 +180,12 @@ export default function SuperadminStudentsPage() {
       )}
 
       {/* Students Table */}
-      <Card className="overflow-hidden border border-slate-200 dark:border-slate-800">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+      {loading ? (
+        <TableSkeleton rows={6} columns={7} />
+      ) : (
+        <Card className="overflow-hidden border border-slate-200 dark:border-slate-800">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
             <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
               <tr>
                 <th className="px-5 py-3.5">Learner Name</th>
@@ -317,6 +321,7 @@ export default function SuperadminStudentsPage() {
           </table>
         </div>
       </Card>
+      )}
 
       {/* Level Override Modal */}
       {selectedStudentForLevel && (
