@@ -734,6 +734,20 @@ export class SuperadminRepository {
     });
   }
 
+  private async generateUniqueClassCode(): Promise<string> {
+    const yy = new Date().getFullYear().toString().slice(-2);
+    for (let i = 0; i < 30; i++) {
+      const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      const code = `NS${yy}${randomNum}`;
+      const existing = await prisma.class.findUnique({ where: { code } });
+      if (!existing) {
+        return code;
+      }
+    }
+    const fallbackNum = Math.floor(1000 + Math.random() * 9000).toString();
+    return `NS${yy}${fallbackNum}`;
+  }
+
   async createClass(data: {
     name: string;
     code?: string;
@@ -745,9 +759,7 @@ export class SuperadminRepository {
     maxStudents?: number;
     isActive?: boolean;
   }) {
-    const code =
-      data.code ||
-      `CLS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+    const code = data.code || (await this.generateUniqueClassCode());
 
     return prisma.class.create({
       data: {

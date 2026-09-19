@@ -8,17 +8,23 @@ import {
   FolderTree,
   Plus,
   Users,
-  Calendar,
+  Calendar as CalendarIcon,
   Clock,
   Video,
   ExternalLink,
   CheckCircle2,
   AlertCircle,
-  BookOpen
+  BookOpen,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Calendar as BuiltCalendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+
+const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 interface ClassItem {
   id: string;
@@ -57,18 +63,40 @@ export default function TeacherClassesPage() {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  const [selectedDays, setSelectedDays] = useState<string[]>(['Mon', 'Wed', 'Fri']);
+  const [startTime, setStartTime] = useState('18:00');
+  const [endTime, setEndTime] = useState('19:30');
+  const [cohortStartDate, setCohortStartDate] = useState<Date>(new Date());
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
+
   const [form, setForm] = useState({
     name: '',
-    code: '',
     courseId: '',
-    schedule: 'Mon, Wed, Fri at 6:00 PM GMT',
     capacity: 25,
-    startDate: '',
-    endDate: '',
   });
 
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const toggleDay = (day: string) => {
+    setSelectedDays((prev) =>
+      prev.includes(day)
+        ? prev.length > 1
+          ? prev.filter((d) => d !== day)
+          : prev
+        : [...prev, day]
+    );
+  };
+
+  const computeScheduleString = () => {
+    const daysStr = selectedDays.length > 0 ? selectedDays.join(', ') : 'Flexible';
+    const dateFormatted = cohortStartDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    return `${daysStr} from ${startTime} to ${endTime} (Starts ${dateFormatted})`;
+  };
 
   const {
     data: classesData,
@@ -119,18 +147,15 @@ export default function TeacherClassesPage() {
     setModalError(null);
     try {
       setSaving(true);
+      const scheduleString = computeScheduleString();
       const payload: any = {
         name: form.name.trim(),
         courseId: form.courseId,
-        schedule: form.schedule.trim(),
+        schedule: scheduleString,
         capacity: Number(form.capacity) || 25,
         maxStudents: Number(form.capacity) || 25,
-        startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,
-        endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
+        startDate: cohortStartDate.toISOString(),
       };
-      if (form.code.trim()) {
-        payload.code = form.code.trim().toUpperCase();
-      }
 
       await apiClient.post('/teacher/classes', payload);
       setFeedback({ type: 'success', message: 'Class cohort created successfully!' });
@@ -138,13 +163,14 @@ export default function TeacherClassesPage() {
       setModalError(null);
       setForm({
         name: '',
-        code: '',
         courseId: courses[0]?.id || '',
-        schedule: 'Mon, Wed, Fri at 6:00 PM GMT',
         capacity: 25,
-        startDate: '',
-        endDate: '',
       });
+      setSelectedDays(['Mon', 'Wed', 'Fri']);
+      setStartTime('18:00');
+      setEndTime('19:30');
+      setCohortStartDate(new Date());
+      setShowCalendarPicker(false);
       clientCache.invalidate('teacher_');
       await fetchData();
     } catch (err: any) {
@@ -394,40 +420,121 @@ export default function TeacherClassesPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class Schedule & Time</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Mon & Thu at 18:00 - 19:30 GMT"
-                    value={form.schedule}
-                    onChange={(e) => setForm({ ...form, schedule: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                  />
+                {/* Day Chooser, Live Time and Built Calendar */}
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-900/50">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Class Days & Live Schedule
+                    </label>
+                    <span className="text-[11px] font-semibold text-[#315b36] dark:text-emerald-400">
+                      {selectedDays.length} day{selectedDays.length === 1 ? '' : 's'} selected
+                    </span>
+                  </div>
+
+                  {/* Day Chooser */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {ALL_DAYS.map((d) => {
+                      const isDaySelected = selectedDays.includes(d);
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => toggleDay(d)}
+                          className={cn(
+                            'rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all',
+                            isDaySelected
+                              ? 'bg-[#315b36] text-white shadow-sm ring-1 ring-[#315b36]'
+                              : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300'
+                          )}
+                        >
+                          {d}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Time Range */}
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">Start Time</label>
+                      <input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1">End Time</label>
+                      <input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Start Date Chooser using Built Custom Calendar */}
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                        Cohort Start Date
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowCalendarPicker(!showCalendarPicker)}
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#315b36] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-emerald-400"
+                      >
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        <span>
+                          {cohortStartDate.toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        {showCalendarPicker ? (
+                          <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                        )}
+                      </button>
+                    </div>
+
+                    {showCalendarPicker && (
+                      <div className="mt-3 flex justify-center">
+                        <BuiltCalendar
+                          className="w-full border shadow-md"
+                          selectedDate={cohortStartDate}
+                          onSelectDate={(d) => {
+                            setCohortStartDate(d);
+                            setShowCalendarPicker(false);
+                          }}
+                          minDate={new Date()}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Computed Schedule Preview */}
+                  <div className="rounded-lg bg-white p-2.5 border border-slate-200/80 text-[11px] text-slate-600 dark:bg-slate-800/80 dark:border-slate-800 dark:text-slate-300">
+                    <span className="font-bold text-slate-800 dark:text-white">Scheduled: </span>
+                    <span>{computeScheduleString()}</span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class Code (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. ENG-ADV-01 (Auto if blank)"
-                      value={form.code}
-                      onChange={(e) => setForm({ ...form, code: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs uppercase focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Max Student Capacity</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      value={form.capacity}
-                      onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 20 })}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Max Student Capacity</label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={form.capacity}
+                    onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 20 })}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                  />
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
