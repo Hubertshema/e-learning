@@ -234,109 +234,116 @@ export class PublicController {
   }
 
   /**
+   * Default built-in diagnostic questions
+   */
+  private static readonly FALLBACK_DIAGNOSTIC_QUESTIONS = [
+    {
+      id: 'diag-q1',
+      category: 'Grammar & Conditional Structures',
+      skill: 'Grammar',
+      difficulty: 'B2',
+      prompt: 'Choose the correct form: "If she _____ earlier, she wouldn\'t have missed the flight."',
+      options: ['had left', 'left', 'has left', 'would leave'],
+      correctAnswer: 'had left',
+      explanation: 'Third conditional requires "had + past participle" in the if-clause to describe an unreal past situation.',
+      orderIndex: 1,
+    },
+    {
+      id: 'diag-q2',
+      category: 'Professional Workplace Vocabulary',
+      skill: 'Vocabulary',
+      difficulty: 'B2',
+      prompt: 'Which word best completes the business context: "We need to _____ cross-functional synergies to optimize output."',
+      options: ['leverage', 'dissolve', 'stagnate', 'diminish'],
+      correctAnswer: 'leverage',
+      explanation: '"Leverage" means to utilize existing resources or strengths to maximum advantage.',
+      orderIndex: 2,
+    },
+    {
+      id: 'diag-q3',
+      category: 'Dependent Prepositions & Collocations',
+      skill: 'Grammar',
+      difficulty: 'B1',
+      prompt: 'Select the correct preposition: "The executive team is committed _____ expanding in East Africa."',
+      options: ['to', 'for', 'with', 'in'],
+      correctAnswer: 'to',
+      explanation: 'The adjective "committed" is followed by the preposition "to" and a gerund (-ing).',
+      orderIndex: 3,
+    },
+    {
+      id: 'diag-q4',
+      category: 'Listening & Spoken Phrasing',
+      skill: 'Listening',
+      difficulty: 'B1',
+      prompt: 'Listen to the audio prompt. Which response represents the most polite clarification during a conference call?',
+      audioText: 'Could you please elaborate on the projected quarterly timeline?',
+      options: [
+        '"Certainly, let me walk you through our Phase 2 milestones."',
+        '"No, I already explained that earlier."',
+        '"Why do you want to know?"',
+        '"I will think if I want to tell you."',
+      ],
+      correctAnswer: '"Certainly, let me walk you through our Phase 2 milestones."',
+      explanation: '"Certainly, let me walk you through..." demonstrates professional courtesy and clear business communication etiquette.',
+      orderIndex: 4,
+    },
+    {
+      id: 'diag-q5',
+      category: 'Tenses & Narrative Discourse',
+      skill: 'Reading & Syntax',
+      difficulty: 'A2',
+      prompt: 'Choose the correct sentence for habitual workplace actions:',
+      options: [
+        'We usually conduct our team sprint retrospectives every alternate Friday.',
+        'We are usually conducting our sprint retrospectives every alternate Friday.',
+        'We conducted usually sprint retrospectives every alternate Friday.',
+        'We will be conduct sprint retrospectives every alternate Friday.',
+      ],
+      correctAnswer: 'We usually conduct our team sprint retrospectives every alternate Friday.',
+      explanation: 'Present Simple with the frequency adverb "usually" describes regular, repeating routines.',
+      orderIndex: 5,
+    },
+    {
+      id: 'diag-q6',
+      category: 'Executive Discourse & Idiomatic Precision',
+      skill: 'Advanced Fluency',
+      difficulty: 'C1',
+      prompt: 'In executive negotiation, what does "playing devil\'s advocate" mean?',
+      options: [
+        'Arguing an opposing viewpoint to test the strength of a business case',
+        'Attacking colleagues personally during a disagreement',
+        'Refusing to compromise under any condition',
+        'Signing a legally binding NDA before talks',
+      ],
+      correctAnswer: 'Arguing an opposing viewpoint to test the strength of a business case',
+      explanation: '"Playing devil\'s advocate" means intentionally advocating an opposite stance to identify potential blind spots.',
+      orderIndex: 6,
+    },
+  ];
+
+  /**
    * Get active diagnostic questions for public test
    */
   async getDiagnosticQuiz(req: Request, res: Response, next: NextFunction) {
     try {
-      let questions = await prisma.diagnosticQuestion.findMany({
-        where: { isActive: true },
-        orderBy: { orderIndex: 'asc' },
-      });
+      let questions: any[] = [];
 
-      // Auto-seed starter questions if table is empty
-      if (questions.length === 0) {
-        const DEFAULT_DIAGNOSTIC_QUESTIONS = [
-          {
-            category: 'Grammar & Conditional Structures',
-            skill: 'Grammar',
-            difficulty: 'B2' as const,
-            prompt: 'Choose the correct form: "If she _____ earlier, she wouldn\'t have missed the flight."',
-            options: ['had left', 'left', 'has left', 'would leave'],
-            correctAnswer: 'had left',
-            explanation: 'Third conditional requires "had + past participle" in the if-clause to describe an unreal past situation.',
-            orderIndex: 1,
-          },
-          {
-            category: 'Professional Workplace Vocabulary',
-            skill: 'Vocabulary',
-            difficulty: 'B2' as const,
-            prompt: 'Which word best completes the business context: "We need to _____ cross-functional synergies to optimize output."',
-            options: ['leverage', 'dissolve', 'stagnate', 'diminish'],
-            correctAnswer: 'leverage',
-            explanation: '"Leverage" means to utilize existing resources or strengths to maximum advantage.',
-            orderIndex: 2,
-          },
-          {
-            category: 'Dependent Prepositions & Collocations',
-            skill: 'Grammar',
-            difficulty: 'B1' as const,
-            prompt: 'Select the correct preposition: "The executive team is committed _____ expanding in East Africa."',
-            options: ['to', 'for', 'with', 'in'],
-            correctAnswer: 'to',
-            explanation: 'The adjective "committed" is followed by the preposition "to" and a gerund (-ing).',
-            orderIndex: 3,
-          },
-          {
-            category: 'Listening & Spoken Phrasing',
-            skill: 'Listening',
-            difficulty: 'B1' as const,
-            prompt: 'Listen to the audio prompt. Which response represents the most polite clarification during a conference call?',
-            audioText: 'Could you please elaborate on the projected quarterly timeline?',
-            options: [
-              '"Certainly, let me walk you through our Phase 2 milestones."',
-              '"No, I already explained that earlier."',
-              '"Why do you want to know?"',
-              '"I will think if I want to tell you."',
-            ],
-            correctAnswer: '"Certainly, let me walk you through our Phase 2 milestones."',
-            explanation: '"Certainly, let me walk you through..." demonstrates professional courtesy and clear business communication etiquette.',
-            orderIndex: 4,
-          },
-          {
-            category: 'Tenses & Narrative Discourse',
-            skill: 'Reading & Syntax',
-            difficulty: 'A2' as const,
-            prompt: 'Choose the correct sentence for habitual workplace actions:',
-            options: [
-              'We usually conduct our team sprint retrospectives every alternate Friday.',
-              'We are usually conducting our sprint retrospectives every alternate Friday.',
-              'We conducted usually sprint retrospectives every alternate Friday.',
-              'We will be conduct sprint retrospectives every alternate Friday.',
-            ],
-            correctAnswer: 'We usually conduct our team sprint retrospectives every alternate Friday.',
-            explanation: 'Present Simple with the frequency adverb "usually" describes regular, repeating routines.',
-            orderIndex: 5,
-          },
-          {
-            category: 'Executive Discourse & Idiomatic Precision',
-            skill: 'Advanced Fluency',
-            difficulty: 'C1' as const,
-            prompt: 'In executive negotiation, what does "playing devil\'s advocate" mean?',
-            options: [
-              'Arguing an opposing viewpoint to test the strength of a business case',
-              'Attacking colleagues personally during a disagreement',
-              'Refusing to compromise under any condition',
-              'Signing a legally binding NDA before talks',
-            ],
-            correctAnswer: 'Arguing an opposing viewpoint to test the strength of a business case',
-            explanation: '"Playing devil\'s advocate" means intentionally advocating an opposite stance to identify potential blind spots.',
-            orderIndex: 6,
-          },
-        ];
-
-        for (const q of DEFAULT_DIAGNOSTIC_QUESTIONS) {
-          await prisma.diagnosticQuestion.create({
-            data: q,
+      try {
+        if ((prisma as any).diagnosticQuestion) {
+          questions = await (prisma as any).diagnosticQuestion.findMany({
+            where: { isActive: true },
+            orderBy: { orderIndex: 'asc' },
           });
         }
-
-        questions = await prisma.diagnosticQuestion.findMany({
-          where: { isActive: true },
-          orderBy: { orderIndex: 'asc' },
-        });
+      } catch (dbErr) {
+        console.warn('Diagnostic questions DB fetch fallback:', dbErr);
       }
 
-      // Return sanitized questions without answer revealing
+      if (!questions || questions.length === 0) {
+        questions = PublicController.FALLBACK_DIAGNOSTIC_QUESTIONS;
+      }
+
+      // Return sanitized questions without revealing correct answer
       const sanitized = questions.map((q) => ({
         id: q.id,
         category: q.category,
@@ -378,11 +385,22 @@ export class PublicController {
 
       const userId = (req as any).user?.id || null;
 
-      // Fetch questions from DB
-      const questionIds = answers.map((a: any) => a.questionId);
-      const dbQuestions = await prisma.diagnosticQuestion.findMany({
-        where: { id: { in: questionIds } },
-      });
+      // Fetch questions from DB or use fallback
+      let dbQuestions: any[] = [];
+      try {
+        if ((prisma as any).diagnosticQuestion) {
+          const questionIds = answers.map((a: any) => a.questionId);
+          dbQuestions = await (prisma as any).diagnosticQuestion.findMany({
+            where: { id: { in: questionIds } },
+          });
+        }
+      } catch (dbErr) {
+        console.warn('DB question query fallback:', dbErr);
+      }
+
+      if (!dbQuestions || dbQuestions.length === 0) {
+        dbQuestions = PublicController.FALLBACK_DIAGNOSTIC_QUESTIONS;
+      }
 
       const questionMap = new Map(dbQuestions.map((q) => [q.id, q]));
 
@@ -391,11 +409,11 @@ export class PublicController {
       const detailedReview: any[] = [];
 
       for (const ans of answers) {
-        const q = questionMap.get(ans.questionId);
+        const q = questionMap.get(ans.questionId) || dbQuestions.find((item) => item.id === ans.questionId);
         if (!q) continue;
 
         let selectedText = '';
-        if (typeof ans.selectedOption === 'number' && q.options[ans.selectedOption] !== undefined) {
+        if (typeof ans.selectedOption === 'number' && q.options && q.options[ans.selectedOption] !== undefined) {
           selectedText = q.options[ans.selectedOption];
         } else {
           selectedText = String(ans.selectedOption || '');
@@ -431,51 +449,64 @@ export class PublicController {
       else if (percentage >= 25) recommendedLevel = 'A2';
       else recommendedLevel = 'A1';
 
-      // Count previous attempts for this IP/user to calculate attempt number
-      const previousAttempts = await prisma.diagnosticAttempt.count({
-        where: userId ? { OR: [{ userId }, { ipAddress }] } : { ipAddress },
-      });
-      const attemptNumber = previousAttempts + 1;
+      let attemptNumber = 1;
+      let attemptId = `diag-attempt-${Date.now()}`;
 
-      // Save attempt in database
-      const attempt = await prisma.diagnosticAttempt.create({
-        data: {
-          ipAddress,
-          userId,
-          attemptNumber,
-          score,
-          totalQuestions,
-          percentage,
-          recommendedLevel,
-          answers: detailedReview,
-        },
-      });
+      try {
+        if ((prisma as any).diagnosticAttempt) {
+          const previousAttempts = await (prisma as any).diagnosticAttempt.count({
+            where: userId ? { OR: [{ userId }, { ipAddress }] } : { ipAddress },
+          });
+          attemptNumber = previousAttempts + 1;
+
+          const savedAttempt = await (prisma as any).diagnosticAttempt.create({
+            data: {
+              ipAddress,
+              userId,
+              attemptNumber,
+              score,
+              totalQuestions,
+              percentage,
+              recommendedLevel,
+              answers: detailedReview,
+            },
+          });
+          attemptId = savedAttempt.id;
+        }
+      } catch (attErr) {
+        console.warn('Could not persist diagnostic attempt:', attErr);
+      }
 
       // Find real matching published course from database
-      const dbCourse =
-        (await prisma.course.findFirst({
-          where: {
-            level: recommendedLevel as any,
-            isPublished: true,
-          },
-          include: {
-            teacher: {
-              include: {
-                user: { select: { firstName: true, lastName: true } },
+      let dbCourse: any = null;
+      try {
+        dbCourse =
+          (await prisma.course.findFirst({
+            where: {
+              level: recommendedLevel as any,
+              isPublished: true,
+            },
+            include: {
+              teacher: {
+                include: {
+                  user: { select: { firstName: true, lastName: true } },
+                },
               },
             },
-          },
-        })) ||
-        (await prisma.course.findFirst({
-          where: { isPublished: true },
-          include: {
-            teacher: {
-              include: {
-                user: { select: { firstName: true, lastName: true } },
+          })) ||
+          (await prisma.course.findFirst({
+            where: { isPublished: true },
+            include: {
+              teacher: {
+                include: {
+                  user: { select: { firstName: true, lastName: true } },
+                },
               },
             },
-          },
-        }));
+          }));
+      } catch (cErr) {
+        console.warn('Could not query recommended course:', cErr);
+      }
 
       const recommendedCourse = dbCourse
         ? {
@@ -486,14 +517,14 @@ export class PublicController {
             price: Number(dbCourse.price),
             currency: dbCourse.currency,
             description: dbCourse.description,
-            instructorName: `${dbCourse.teacher.user.firstName} ${dbCourse.teacher.user.lastName}`,
+            instructorName: dbCourse.teacher?.user ? `${dbCourse.teacher.user.firstName} ${dbCourse.teacher.user.lastName}` : 'LinguaChris Faculty',
           }
         : null;
 
       res.status(200).json({
         success: true,
         data: {
-          attemptId: attempt.id,
+          attemptId,
           attemptNumber,
           score,
           totalQuestions,

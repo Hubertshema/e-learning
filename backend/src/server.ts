@@ -44,6 +44,14 @@ async function startServer(): Promise<void> {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 startServer().catch((err) => {
   console.error('💥 Fatal error during server startup:', err);
   process.exit(1);
