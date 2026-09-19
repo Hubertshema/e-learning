@@ -35,8 +35,7 @@ interface EnrollmentRecord {
     id: string;
     title: string;
     level: string;
-    price: number;
-    currency: string;
+    currency?: string;
     teacher: {
       user: {
         firstName: string;
@@ -186,9 +185,9 @@ export default function StudentEnrollmentsPage() {
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[11px]">Tuition Status</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">
-                      ${enr.course.price} {enr.course.currency} (Verified)
+                    <span className="text-slate-400 block text-[11px]">Enrollment Status</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                      Active Access (Verified)
                     </span>
                   </div>
                 </div>

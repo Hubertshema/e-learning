@@ -73,7 +73,6 @@ export const openApiSpec = {
           title: { type: 'string' },
           description: { type: 'string' },
           level: { type: 'string', enum: ['PRE_A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'] },
-          price: { type: 'number' },
           currency: { type: 'string', example: 'USD' },
           status: { type: 'string', enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'] },
         },

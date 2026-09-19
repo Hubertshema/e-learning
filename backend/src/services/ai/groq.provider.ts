@@ -35,7 +35,7 @@ export class GroqProvider {
       throw new Error('GROQ_API_KEY is not configured.');
     }
 
-    const model = options.model || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    const model = options.model || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
     const response = await fetch(this.API_URL, {
       method: 'POST',

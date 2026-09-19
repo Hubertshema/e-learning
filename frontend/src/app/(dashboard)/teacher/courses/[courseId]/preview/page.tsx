@@ -20,19 +20,26 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { ActivityContainer, ActivityData } from '@/components/activities/activity-container';
+import { RichTextRenderer } from '@/components/ui/rich-text-editor';
+
+interface LessonSection {
+  id: string;
+  title: string;
+  contentType: string;
+  content: string;
+  mediaUrl?: string;
+  orderIndex?: number;
+}
 
 interface Lesson {
   id: string;
   title: string;
+  description?: string;
   skill: string;
+  skills?: string[];
   estimatedMinutes: number;
-  sections: Array<{
-    id: string;
-    title: string;
-    contentType: string;
-    content: string;
-    mediaUrl?: string;
-  }>;
+  isFreePreview?: boolean;
+  sections: LessonSection[];
 }
 
 interface Unit {
@@ -173,6 +180,11 @@ export default function TeacherCoursePreviewSimulatorPage() {
                   <div className="space-y-1">
                     {unit.lessons.map((lesson) => {
                       const isSelected = selectedLesson?.id === lesson.id;
+                      const skillsList =
+                        Array.isArray(lesson.skills) && lesson.skills.length > 0
+                          ? lesson.skills
+                          : [lesson.skill || 'GRAMMAR'];
+
                       return (
                         <button
                           key={lesson.id}
@@ -180,19 +192,29 @@ export default function TeacherCoursePreviewSimulatorPage() {
                             setSelectedLesson(lesson);
                             setActiveTab('CONTENT');
                           }}
-                          className={`w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between ${
+                          className={`w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between gap-2 ${
                             isSelected
                               ? 'bg-primary-600 text-white font-semibold shadow-sm'
                               : 'hover:bg-slate-100 text-slate-700 dark:hover:bg-slate-800 dark:text-slate-300'
                           }`}
                         >
-                          <span className="truncate">{lesson.title}</span>
-                          <Badge
-                            variant={isSelected ? 'secondary' : 'outline'}
-                            className="text-[9px] shrink-0 ml-1"
-                          >
-                            {lesson.skill}
-                          </Badge>
+                          <span className="truncate flex-1">{lesson.title}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Badge
+                              variant={isSelected ? 'secondary' : 'outline'}
+                              className="text-[9px] px-1.5 py-0"
+                            >
+                              {skillsList[0]}
+                            </Badge>
+                            {skillsList.length > 1 && (
+                              <Badge
+                                variant={isSelected ? 'secondary' : 'outline'}
+                                className="text-[8px] px-1 py-0 opacity-85"
+                              >
+                                +{skillsList.length - 1}
+                              </Badge>
+                            )}
+                          </div>
                         </button>
                       );
                     })}
@@ -227,34 +249,131 @@ export default function TeacherCoursePreviewSimulatorPage() {
               </div>
 
               {activeTab === 'CONTENT' ? (
-                <div className="space-y-4">
-                  <Card className="p-6 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                        {selectedLesson.title}
-                      </h2>
-                      <Badge variant="primary">{selectedLesson.skill}</Badge>
+                <div className="space-y-5">
+                  {/* Lesson Hero Header */}
+                  <Card className="p-6 space-y-3 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border-slate-200/80 dark:border-slate-800 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {(Array.isArray(selectedLesson.skills) && selectedLesson.skills.length > 0
+                            ? selectedLesson.skills
+                            : [selectedLesson.skill || 'GRAMMAR']
+                          ).map((sk) => (
+                            <Badge key={sk} variant="primary" className="text-xs font-semibold">
+                              {sk}
+                            </Badge>
+                          ))}
+
+                          {selectedLesson.isFreePreview && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 font-medium"
+                            >
+                              Free Sample Preview
+                            </Badge>
+                          )}
+                        </div>
+
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                          {selectedLesson.title}
+                        </h1>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl self-start sm:self-auto">
+                        <Clock className="h-3.5 w-3.5 text-primary-600" />
+                        <span>{selectedLesson.estimatedMinutes || 30} mins</span>
+                      </div>
                     </div>
                   </Card>
 
-                  {selectedLesson.sections?.map((sec) => (
-                    <Card key={sec.id} className="p-6 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                          {sec.title}
-                        </h3>
-                        <Badge variant="outline" className="text-[10px]">
-                          {sec.contentType}
-                        </Badge>
-                      </div>
+                  {/* Lesson Sections & TinyMCE HTML Content */}
+                  {(() => {
+                    const sectionsToRender: LessonSection[] =
+                      selectedLesson.sections && selectedLesson.sections.length > 0
+                        ? selectedLesson.sections
+                        : (selectedLesson as any).content || (selectedLesson as any).description
+                        ? [
+                            {
+                              id: 'default-content',
+                              title: selectedLesson.title,
+                              contentType: 'HTML',
+                              content:
+                                (selectedLesson as any).content || (selectedLesson as any).description,
+                              mediaUrl: undefined,
+                            },
+                          ]
+                        : [];
 
-                      <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
-                        {sec.content}
-                      </div>
-                    </Card>
-                  ))}
+                    if (sectionsToRender.length === 0) {
+                      return (
+                        <Card className="p-8 text-center space-y-2">
+                          <p className="text-xs text-slate-500 italic">
+                            No content has been authored for this lesson yet.
+                          </p>
+                        </Card>
+                      );
+                    }
+
+                    return sectionsToRender.map((sec, idx) => {
+                      const showSectionTitle =
+                        sectionsToRender.length > 1 &&
+                        sec.title &&
+                        sec.title.trim().toLowerCase() !== selectedLesson.title.trim().toLowerCase();
+
+                      return (
+                        <Card
+                          key={sec.id || idx}
+                          className="p-6 sm:p-8 bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-xs space-y-5"
+                        >
+                          {showSectionTitle && (
+                            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                {sec.title}
+                              </h3>
+                              {sec.contentType && (
+                                <Badge variant="outline" className="text-[10px]">
+                                  {sec.contentType}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Media (Video/Audio) if provided */}
+                          {sec.mediaUrl && (
+                            <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950">
+                              {sec.contentType === 'VIDEO' ||
+                              sec.mediaUrl.match(/\.(mp4|webm|ogg)$|youtube\.com|vimeo\.com/i) ? (
+                                <div className="aspect-video w-full flex items-center justify-center bg-black">
+                                  {sec.mediaUrl.includes('youtube') || sec.mediaUrl.includes('vimeo') ? (
+                                    <iframe
+                                      src={sec.mediaUrl}
+                                      className="w-full h-full"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                    />
+                                  ) : (
+                                    <video controls className="w-full h-full" src={sec.mediaUrl} />
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="p-4 bg-slate-50 dark:bg-slate-800/60 flex items-center gap-3">
+                                  <audio controls className="w-full" src={sec.mediaUrl} />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* TinyMCE Rich Text / HTML Renderer */}
+                          <div className="overflow-x-auto">
+                            <RichTextRenderer content={sec.content} />
+                          </div>
+                        </Card>
+                      );
+                    });
+                  })()}
                 </div>
-              ) : (
+              )
+ : (
                 <div className="space-y-4">
                   <ActivityContainer
                     activity={simulatedActivity}

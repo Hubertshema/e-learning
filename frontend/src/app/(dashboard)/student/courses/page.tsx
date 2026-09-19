@@ -73,7 +73,6 @@ interface CatalogCourse {
   slug: string;
   description: string;
   level: string;
-  price: number;
   currency: string;
   durationDays: number;
   teacher: {
@@ -130,8 +129,8 @@ export default function StudentCoursesPage() {
       setSubmittingPayment(true);
       await apiClient.post('/student/payments/submit', {
         courseId: checkoutCourse.id,
-        amount: Number(checkoutCourse.price),
-        currency: checkoutCourse.currency,
+        amount: (checkoutCourse as any).price ? Number((checkoutCourse as any).price) : 0,
+        currency: checkoutCourse.currency || 'USD',
         paymentMethod: paymentForm.paymentMethod,
         transactionRef: paymentForm.transactionRef,
         notes: paymentForm.notes,
@@ -344,9 +343,6 @@ export default function StudentCoursesPage() {
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                       <div className="flex items-center justify-between mb-2">
                         <Badge variant="indigo">{c.level}</Badge>
-                        <span className="text-sm font-black text-slate-900 dark:text-white">
-                          ${c.price} {c.currency}
-                        </span>
                       </div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-2">
                         {c.title}
@@ -383,7 +379,7 @@ export default function StudentCoursesPage() {
                         onClick={() => setCheckoutCourse(c)}
                       >
                         <CreditCard className="mr-1.5 h-3.5 w-3.5" />
-                        Enroll & Pay ${c.price}
+                        Enroll in Course
                       </Button>
                     )}
                   </div>
@@ -402,9 +398,6 @@ export default function StudentCoursesPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <Badge variant="indigo">{checkoutCourse.level}</Badge>
-                <span className="text-sm font-black text-emerald-600">
-                  ${checkoutCourse.price} {checkoutCourse.currency}
-                </span>
               </div>
               <CardTitle className="text-base mt-1">Course Enrollment Checkout</CardTitle>
               <CardDescription className="text-xs">
@@ -419,7 +412,7 @@ export default function StudentCoursesPage() {
                   Payment Instructions (Mobile Money & Bank Transfer)
                 </p>
                 <div className="space-y-1 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
-                  <p>1. <strong>MTN / Airtel Mobile Money:</strong> Send <strong>${checkoutCourse.price}</strong> to <strong>+250 788 123 456</strong> (FluentEdge Academy).</p>
+                  <p>1. <strong>MTN / Airtel Mobile Money:</strong> Send tuition payment to <strong>+250 788 123 456</strong> (FluentEdge Academy).</p>
                   <p>2. <strong>Bank Transfer:</strong> Bank of Kigali / Equity Bank Account: <strong>00123-4567-8901</strong>.</p>
                   <p>3. Copy the SMS Transaction ID / Bank Reference and enter it below.</p>
                 </div>

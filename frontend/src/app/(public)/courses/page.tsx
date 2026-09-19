@@ -15,7 +15,6 @@ import {
   Layers,
   CheckCircle,
 } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 
 interface PublicCourse {
@@ -24,7 +23,6 @@ interface PublicCourse {
   description: string;
   level: string;
   category: string;
-  price: number;
   currency: string;
   isPublished: boolean;
   durationDays: number;
@@ -258,20 +256,17 @@ export default function CoursesPage() {
                     </div>
                   </div>
 
-                  {/* Teacher & Price Row */}
+                  {/* Teacher Row */}
                   <div className="flex items-center justify-between pt-1">
                     <div>
                       <span className="text-[11px] text-[#5a5e63] block font-medium">Instructor</span>
-                      <span className="text-xs font-bold text-[#2e3339] truncate max-w-[130px] block">
+                      <span className="text-xs font-bold text-[#2e3339] truncate block">
                         {course.instructor?.name || 'LinguaChris Faculty'}
                       </span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[11px] text-[#5a5e63] block font-medium">Tuition Fee</span>
-                      <p className="text-xl font-bold text-[#315b36]">
-                        {formatPrice(course.price)}
-                      </p>
-                    </div>
+                    <span className="rounded-full bg-[#eff4ec] px-2.5 py-0.5 text-[11px] font-semibold text-[#315b36]">
+                      {course.level}
+                    </span>
                   </div>
 
                   {/* Action Button */}

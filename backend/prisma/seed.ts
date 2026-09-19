@@ -96,7 +96,6 @@ async function main() {
         summary: 'Build strong communicative competence at the CEFR A2 level.',
         level: CEFRLevel.A2,
         category: 'Communication English',
-        price: 49.99,
         currency: 'USD',
         durationDays: 90,
         isPublished: true,

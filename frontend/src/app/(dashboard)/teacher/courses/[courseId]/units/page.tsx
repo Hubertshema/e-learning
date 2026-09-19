@@ -335,11 +335,16 @@ export default function TeacherCourseUnitsBuilderPage() {
                             <p className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
                               {lesson.title}
                             </p>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <Badge variant="indigo" className="text-[10px] py-0 font-semibold">
-                                {skillIcon} {lesson.skill}
-                              </Badge>
-                              <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              {((lesson as any).skills && (lesson as any).skills.length > 0
+                                ? (lesson as any).skills
+                                : [lesson.skill]
+                              ).map((sk: string) => (
+                                <Badge key={sk} variant="indigo" className="text-[10px] py-0 font-semibold">
+                                  {skillIcons[sk] || '📝'} {sk}
+                                </Badge>
+                              ))}
+                              <span className="text-[11px] text-slate-400 flex items-center gap-1 ml-1">
                                 <Clock className="h-3 w-3" /> {lesson.estimatedMinutes || 30} mins
                               </span>
                               {lesson.sections && lesson.sections.length > 0 && (

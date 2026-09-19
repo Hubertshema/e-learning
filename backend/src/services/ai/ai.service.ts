@@ -566,4 +566,124 @@ export class AIService {
       totalGenerations: stats.totalCount,
     };
   }
+
+  /**
+   * Draft clean HTML lesson content for TinyMCE based on prompt
+   */
+  public static async draftLessonContent(
+    teacherId: string,
+    params: {
+      prompt: string;
+      title?: string;
+      cefrLevel?: string;
+      skills?: string[];
+    }
+  ) {
+    await this.checkQuotas(teacherId);
+
+    const cefr = params.cefrLevel || 'B1';
+    const skillsStr =
+      params.skills && params.skills.length > 0
+        ? params.skills.join(', ')
+        : 'Grammar, Speaking, Vocabulary';
+
+    const systemPrompt =
+      `You are an elite Cambridge & Oxford accredited English Language Professor and master curriculum designer for FluentEdge Academy. ` +
+      `Your mission is to generate a comprehensive, highly detailed, real-world English lesson in clean HTML format designed directly for display and editing in a TinyMCE rich text editor. ` +
+      `Target CEFR Level: ${cefr}. Target Skills: ${skillsStr}. ` +
+      `Topic / Focus: "${params.prompt}". ` +
+      `\nCRITICAL PEDAGOGICAL REQUIREMENTS: ` +
+      `Generate fully fleshed out, substantive, educational content with NO placeholders, NO generic filler, and NO brevity. Every section must contain genuine, realistic linguistic material. ` +
+      `\nThe HTML document must strictly include: ` +
+      `1. On the very first line: <!--TITLE: Concise, Inspiring & Professional Lesson Title--> ` +
+      `2. <h2>1. Learning Objectives & Can-Do Descriptors</h2>: A bulleted list (<ul><li>) of 3-4 specific linguistic outcomes aligned with CEFR ${cefr}. ` +
+      `3. <h2>2. High-Register Vocabulary & Idiomatic Collocations</h2>: A comprehensive HTML <table> with <thead><tr><th>Expression / Collocation</th><th>Register & Nuance</th><th>Meaning & Pragmatic Function</th><th>Authentic Example</th></tr></thead> and at least 5-6 rich rows in <tbody>. ` +
+      `4. <h2>3. Core Linguistic Patterns & Pragmatic Strategies</h2>: In-depth explanations of grammatical and conversational conventions with sample sentences in <strong> tags and pedagogical advice inside <blockquote><strong>Teacher Pedagogy Tip:</strong> ...</blockquote>. ` +
+      `5. <h2>4. Authentic Situational Dialogue</h2>: A realistic, multi-turn conversation between realistic participants (e.g. <p><strong>Agent / Officer:</strong> ...</p><p><strong>Passenger / Learner:</strong> ...</p>) demonstrating the target vocabulary in action. ` +
+      `6. <h2>5. Practical Application Drills & Role-Play</h2>: Specific exercises including numbered questions (<ol><li>) for sentence completion, error analysis, and roleplay challenge, followed by an expandable or clear answer key. ` +
+      `\nSTRICT FORMAT RULES: ` +
+      `- Return ONLY raw HTML markup. Do NOT wrap in \`\`\`html markdown code blocks. ` +
+      `- Do NOT output <html>, <head>, or <body> wrappers. ` +
+      `- Use clean HTML semantic tags (<h2>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <strong>, <em>, <blockquote>).`;
+
+    const userPrompt = `Create an exhaustive, professional CEFR ${cefr} English lesson on: "${params.prompt}". Include realistic vocabulary, real-world airport/situational conversations, grammar structures, and interactive drills.`;
+
+    let htmlOutput = '';
+    let suggestedTitle = params.title || '';
+    let modelName = 'openai/gpt-oss-120b';
+    let tokensUsed = 1200;
+    const errors: string[] = [];
+
+    // Attempt 1: Groq Provider (Ultra-fast 120b model)
+    if (GroqProvider.isConfigured()) {
+      try {
+        const groqMessages: GroqChatMessage[] = [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ];
+        const res = await GroqProvider.chat(groqMessages, {
+          temperature: 0.6,
+          max_tokens: 3500,
+        });
+        if (res.content && res.content.trim().length > 100) {
+          htmlOutput = res.content;
+          modelName = `groq/${res.model}`;
+          tokensUsed = res.tokensUsed;
+        }
+      } catch (err: any) {
+        console.warn('Groq draft error, failing over to Gemini:', err?.message || err);
+        errors.push(`Groq: ${err?.message || err}`);
+      }
+    }
+
+    // Attempt 2: Google Gemini (gemini-3.6-flash)
+    if (!htmlOutput && GeminiProvider.isConfigured()) {
+      try {
+        const res = await GeminiProvider.generateContent(userPrompt, systemPrompt, {
+          model: 'gemini-3.6-flash',
+          temperature: 0.6,
+        });
+        if (res.content && res.content.trim().length > 100) {
+          htmlOutput = res.content;
+          modelName = `gemini/${res.model}`;
+          tokensUsed = res.tokensUsed;
+        }
+      } catch (err: any) {
+        console.warn('Gemini draft error:', err?.message || err);
+        errors.push(`Gemini: ${err?.message || err}`);
+      }
+    }
+
+    if (!htmlOutput) {
+      throw new Error(
+        `AI Lesson generation failed. Neither Groq nor Gemini could produce a response. Details: ${errors.join(' | ')}`
+      );
+    }
+
+    const titleMatch = htmlOutput.match(/<!--TITLE:\s*(.*?)-->/);
+    if (titleMatch && titleMatch[1]) {
+      suggestedTitle = titleMatch[1].trim();
+      htmlOutput = htmlOutput.replace(/<!--TITLE:.*?-->/, '').trim();
+    }
+
+    htmlOutput = htmlOutput.replace(/^```html\s*/i, '').replace(/\s*```$/, '').trim();
+
+    // Log to AI repository
+    await AIRepository.createGeneration({
+      teacherId,
+      type: 'LESSON',
+      title: suggestedTitle || `Lesson Draft: ${params.prompt.slice(0, 40)}`,
+      prompt: params.prompt,
+      inputContext: { cefrLevel: cefr, skills: params.skills },
+      output: { contentHtml: htmlOutput, title: suggestedTitle },
+      status: 'COMPLETED',
+      model: modelName,
+      tokensUsed,
+    });
+
+    return {
+      title: suggestedTitle || params.title,
+      contentHtml: htmlOutput,
+    };
+  }
 }
