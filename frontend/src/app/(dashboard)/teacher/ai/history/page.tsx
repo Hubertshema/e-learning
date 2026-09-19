@@ -27,6 +27,8 @@ import {
   X,
 } from 'lucide-react';
 
+import { useCachedData, clientCache } from '@/lib/cache';
+
 interface GenerationRecord {
   id: string;
   type: string;
@@ -39,14 +41,17 @@ interface GenerationRecord {
   createdAt: string;
 }
 
+interface HistoryResponse {
+  items: GenerationRecord[];
+  total: number;
+  totalPages: number;
+}
+
 export default function AIHistoryArchivePage() {
-  const [items, setItems] = useState<GenerationRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [submittedSearch, setSubmittedSearch] = useState('');
   const [selectedType, setSelectedType] = useState('ALL');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
 
   const [activeModalItem, setActiveModalItem] = useState<GenerationRecord | null>(null);
   const [copied, setCopied] = useState(false);
@@ -54,37 +59,40 @@ export default function AIHistoryArchivePage() {
 
   const types = ['ALL', 'LESSON', 'ACTIVITY', 'ASSESSMENT', 'EXAM', 'RUBRIC', 'FEEDBACK', 'CHAT'];
 
-  const loadHistory = async () => {
-    try {
-      setLoading(true);
+  const cacheKey = `teacher_ai_history_${page}_${selectedType}_${submittedSearch}`;
+
+  const {
+    data: historyData,
+    loading,
+    refresh: loadHistory
+  } = useCachedData<HistoryResponse>(
+    cacheKey,
+    async () => {
       let query = `/ai/history?page=${page}&limit=12`;
       if (selectedType !== 'ALL') query += `&type=${selectedType}`;
-      if (search.trim()) query += `&search=${encodeURIComponent(search.trim())}`;
+      if (submittedSearch.trim()) query += `&search=${encodeURIComponent(submittedSearch.trim())}`;
 
-      const res = await api.get<{
-        items: GenerationRecord[];
-        total: number;
-        totalPages: number;
-      }>(query);
-
-      setItems(res.items || []);
-      setTotalPages(res.totalPages || 1);
-      setTotalCount(res.total || 0);
-    } catch (err) {
-      console.error('Failed to load history:', err);
-    } finally {
-      setLoading(false);
+      const res = await api.get<HistoryResponse>(query);
+      return {
+        items: res?.items || [],
+        total: res?.total || 0,
+        totalPages: res?.totalPages || 1,
+      };
+    },
+    {
+      ttl: 120_000,
+      initialData: { items: [], total: 0, totalPages: 1 }
     }
-  };
+  );
 
-  useEffect(() => {
-    loadHistory();
-  }, [page, selectedType]);
+  const items = historyData?.items || [];
+  const totalPages = historyData?.totalPages || 1;
+  const totalCount = historyData?.total || 0;
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    loadHistory();
+    setSubmittedSearch(search);
   };
 
   const handleDelete = async (id: string) => {
@@ -92,8 +100,9 @@ export default function AIHistoryArchivePage() {
     try {
       setDeletingId(id);
       await api.delete(`/ai/history/${id}`);
-      setItems((prev) => prev.filter((item) => item.id !== id));
       if (activeModalItem?.id === id) setActiveModalItem(null);
+      clientCache.invalidate('teacher_ai_history');
+      loadHistory();
     } catch (err: any) {
       alert(err.message || 'Failed to delete record');
     } finally {

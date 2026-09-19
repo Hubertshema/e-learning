@@ -19,9 +19,9 @@ import {
   Search,
   Filter
 } from 'lucide-react';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
-
 
 interface QuizItem {
   id: string;
@@ -47,35 +47,31 @@ interface QuizItem {
 }
 
 export default function TeacherQuizzesPage() {
-  const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const fetchQuizzes = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: rawQuizzes,
+    loading,
+    refresh: fetchQuizzes
+  } = useCachedData<QuizItem[]>(
+    'teacher_quizzes_list',
+    async () => {
       const res = await apiClient.get<QuizItem[]>('/teacher/quizzes');
-      if (res) {
-        setQuizzes(res);
-      }
-    } catch (err) {
-      console.error('Failed to load teacher quizzes', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchQuizzes();
-  }, []);
+  const quizzes = rawQuizzes || [];
 
   const handleDelete = async (quizId: string) => {
     if (!confirm('Are you sure you want to delete this quiz? Student attempts will also be removed.')) return;
     try {
       setDeletingId(quizId);
       await apiClient.delete(`/teacher/quizzes/${quizId}`);
-      setQuizzes((prev) => prev.filter((q) => q.id !== quizId));
+      clientCache.invalidate('teacher_');
+      fetchQuizzes();
     } catch (err) {
       alert('Failed to delete quiz');
     } finally {

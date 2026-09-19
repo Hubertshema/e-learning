@@ -19,6 +19,7 @@ import {
   Search,
   Filter
 } from 'lucide-react';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 
@@ -46,8 +47,6 @@ interface Payment {
 }
 
 export default function TeacherPaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'VERIFIED' | 'REJECTED'>('PENDING');
   const [selectedReceipt, setSelectedReceipt] = useState<Payment | null>(null);
   const [rejectModalPayment, setRejectModalPayment] = useState<Payment | null>(null);
@@ -55,32 +54,32 @@ export default function TeacherPaymentsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: rawPayments,
+    loading,
+    refresh: fetchPayments
+  } = useCachedData<Payment[]>(
+    `teacher_payments_${statusFilter}`,
+    async () => {
       const query = statusFilter !== 'ALL' ? `?status=${statusFilter}` : '';
       const res = await apiClient.get<{ payments: Payment[] }>(`/teacher/payments${query}`);
       const paymentList: Payment[] =
         (res as any)?.payments ||
         (res as any)?.data?.payments ||
         (Array.isArray(res) ? res : []);
-      setPayments(paymentList);
-    } catch (err) {
-      console.error('Failed to load payments', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return paymentList;
+    },
+    { ttl: 60_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchPayments();
-  }, [statusFilter]);
+  const payments = rawPayments || [];
 
   const handleApprove = async (paymentId: string) => {
     try {
       setActionLoading(paymentId);
       await apiClient.post(`/teacher/payments/${paymentId}/approve`);
       setFeedback({ type: 'success', message: 'Payment approved and student course enrollment activated!' });
+      clientCache.invalidate('teacher_');
       await fetchPayments();
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to approve payment' });
@@ -98,6 +97,7 @@ export default function TeacherPaymentsPage() {
       setFeedback({ type: 'success', message: 'Payment rejected. Student has been notified.' });
       setRejectModalPayment(null);
       setRejectReason('');
+      clientCache.invalidate('teacher_');
       await fetchPayments();
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to reject payment' });

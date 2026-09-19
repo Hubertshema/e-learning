@@ -15,6 +15,7 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 
 interface ClassItem {
@@ -35,33 +36,14 @@ interface ClassItem {
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
 export default function TeacherAttendancePage() {
-  const [classes, setClasses] = useState<ClassItem[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
   const [studentStatus, setStudentStatus] = useState<Record<string, AttendanceStatus>>({});
   const [studentRemarks, setStudentRemarks] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  const fetchClasses = async () => {
-    try {
-      setLoading(true);
-      const res = await apiClient.get<ClassItem[]>('/teacher/classes');
-      const classList: ClassItem[] = Array.isArray(res) ? res : (res as any)?.data || (res as any)?.classes || [];
-      if (classList.length > 0) {
-        setClasses(classList);
-        setSelectedClassId(classList[0].id);
-        initializeStatuses(classList[0]);
-      }
-    } catch (err) {
-      console.error('Failed to load classes', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const initializeStatuses = (cls: ClassItem) => {
     const initStatus: Record<string, AttendanceStatus> = {};
@@ -74,9 +56,29 @@ export default function TeacherAttendancePage() {
     setStudentRemarks(initRemarks);
   };
 
-  useEffect(() => {
-    fetchClasses();
-  }, []);
+  const {
+    data: rawClasses,
+    loading,
+    refresh: fetchClasses
+  } = useCachedData<ClassItem[]>(
+    'teacher_attendance_classes',
+    async () => {
+      const res = await apiClient.get<ClassItem[]>('/teacher/classes');
+      return Array.isArray(res) ? res : (res as any)?.data || (res as any)?.classes || [];
+    },
+    {
+      ttl: 120_000,
+      initialData: [],
+      onSuccess: (classList) => {
+        if (classList.length > 0 && !selectedClassId) {
+          setSelectedClassId(classList[0].id);
+          initializeStatuses(classList[0]);
+        }
+      }
+    }
+  );
+
+  const classes = rawClasses || [];
 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
@@ -122,6 +124,7 @@ export default function TeacherAttendancePage() {
         records,
       });
 
+      clientCache.invalidate('teacher_');
       setFeedback({
         type: 'success',
         message: `Attendance for ${currentClass.name} on ${selectedDate} recorded successfully!`,

@@ -18,6 +18,7 @@ import {
   Sparkles,
   ClipboardList
 } from 'lucide-react';
+import { useCachedData } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 
 interface ClassData {
@@ -51,27 +52,20 @@ interface ClassData {
 export default function TeacherClassDetailPage() {
   const params = useParams();
   const classId = params.classId as string;
-
-  const [cls, setCls] = useState<ClassData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    const fetchClass = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<ClassData>(`/teacher/classes/${classId}`);
-        if (res) {
-          setCls(res);
-        }
-      } catch (err) {
-        console.error('Failed to load class details', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchClass();
-  }, [classId]);
+  const {
+    data: cls,
+    loading,
+    refresh: fetchClass
+  } = useCachedData<ClassData | null>(
+    classId ? `teacher_class_details_${classId}` : null,
+    async () => {
+      const res = await apiClient.get<ClassData>(`/teacher/classes/${classId}`);
+      return (res as any)?.data || res || null;
+    },
+    { ttl: 120_000 }
+  );
 
   const handleCopyCode = () => {
     if (!cls) return;

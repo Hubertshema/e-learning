@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { clientCache } from '@/lib/cache';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 const ALL_CEFR_LEVELS = ['PRE_A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
@@ -120,6 +121,7 @@ export default function TeacherProfilePage() {
         profileVisibility: formData.profileVisibility,
       });
 
+      clientCache.invalidate('teacher_');
       if (refreshUser) await refreshUser();
       setSuccessMsg('Instructor profile and teaching credentials updated successfully!');
       setTimeout(() => setSuccessMsg(null), 4000);

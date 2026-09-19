@@ -18,6 +18,7 @@ import {
   Layers
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData } from '@/lib/cache';
 
 interface StudentProfile {
   id: string;
@@ -94,51 +95,47 @@ interface StudentOption {
 export default function TeacherProgressPage() {
   const searchParams = useSearchParams();
   const initialStudentId = searchParams.get('studentId') || '';
-
-  const [studentOptions, setStudentOptions] = useState<StudentOption[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>(initialStudentId);
-  const [studentData, setStudentData] = useState<StudentProfile | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  // Load students list
-  useEffect(() => {
-    const fetchStudentsList = async () => {
-      try {
-        const res = await apiClient.get<{ students: StudentOption[] }>('/teacher/students');
-        const studentList: StudentOption[] =
-          (res as any)?.students ||
-          (res as any)?.data?.students ||
-          (Array.isArray(res) ? res : []);
-        setStudentOptions(studentList);
+  const {
+    data: rawStudentOptions,
+    refresh: fetchStudentsList
+  } = useCachedData<StudentOption[]>(
+    'teacher_students_options',
+    async () => {
+      const res = await apiClient.get<{ students: StudentOption[] }>('/teacher/students');
+      const studentList: StudentOption[] =
+        (res as any)?.students ||
+        (res as any)?.data?.students ||
+        (Array.isArray(res) ? res : []);
+      return studentList;
+    },
+    {
+      ttl: 120_000,
+      initialData: [],
+      onSuccess: (studentList) => {
         if (!selectedStudentId && studentList.length > 0) {
           setSelectedStudentId(studentList[0].user?.id || studentList[0].userId);
         }
-      } catch (err) {
-        console.error('Failed to load students list', err);
       }
-    };
-    fetchStudentsList();
-  }, []);
+    }
+  );
 
-  // Load selected student progress details
-  useEffect(() => {
-    if (!selectedStudentId) return;
+  const studentOptions = rawStudentOptions || [];
 
-    const fetchStudentProgress = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<StudentProfile>(`/teacher/students/${selectedStudentId}/progress`);
-        const profile: StudentProfile = (res as any)?.data || res;
-        setStudentData(profile);
-      } catch (err) {
-        console.error('Failed to load student progress', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStudentProgress();
-  }, [selectedStudentId]);
+  const {
+    data: studentData,
+    loading,
+    refresh: fetchStudentProgress
+  } = useCachedData<StudentProfile | null>(
+    selectedStudentId ? `teacher_student_progress_${selectedStudentId}` : null,
+    async () => {
+      if (!selectedStudentId) return null;
+      const res = await apiClient.get<StudentProfile>(`/teacher/students/${selectedStudentId}/progress`);
+      return (res as any)?.data || res || null;
+    },
+    { ttl: 60_000 }
+  );
 
   // Compute 7-Skill Mastery Scores
   const calculateSkillScores = () => {

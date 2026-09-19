@@ -25,6 +25,7 @@ import {
   X,
   RefreshCw
 } from 'lucide-react';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -60,8 +61,6 @@ export default function TeacherCourseUnitsBuilderPage() {
   const courseId = params.courseId as string;
   const router = useRouter();
 
-  const [course, setCourse] = useState<CourseData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showAddUnitModal, setShowAddUnitModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [deletingUnit, setDeletingUnit] = useState<Unit | null>(null);
@@ -72,23 +71,18 @@ export default function TeacherCourseUnitsBuilderPage() {
   const [savingUnit, setSavingUnit] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const fetchCourseUnits = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: course,
+    loading,
+    refresh: fetchCourseUnits
+  } = useCachedData<CourseData | null>(
+    courseId ? `teacher_course_units_${courseId}` : null,
+    async () => {
       const res = await apiClient.get<CourseData>(`/teacher/courses/${courseId}`);
-      if (res) {
-        setCourse(res);
-      }
-    } catch (err) {
-      console.error('Failed to load course units', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCourseUnits();
-  }, [courseId]);
+      return (res as any)?.data || res || null;
+    },
+    { ttl: 120_000 }
+  );
 
   const handleOpenAddUnit = () => {
     setEditingUnit(null);
@@ -126,6 +120,7 @@ export default function TeacherCourseUnitsBuilderPage() {
       }
 
       setShowAddUnitModal(false);
+      clientCache.invalidate('teacher_');
       fetchCourseUnits();
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to save unit.' });
@@ -141,6 +136,7 @@ export default function TeacherCourseUnitsBuilderPage() {
       await apiClient.delete(`/teacher/units/${deletingUnit.id}`);
       setFeedback({ type: 'success', message: `Unit "${deletingUnit.title}" deleted.` });
       setDeletingUnit(null);
+      clientCache.invalidate('teacher_');
       fetchCourseUnits();
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to delete unit.' });
@@ -155,6 +151,7 @@ export default function TeacherCourseUnitsBuilderPage() {
       await apiClient.delete(`/teacher/lessons/${deletingLesson.id}`);
       setFeedback({ type: 'success', message: `Lesson "${deletingLesson.title}" deleted.` });
       setDeletingLesson(null);
+      clientCache.invalidate('teacher_');
       fetchCourseUnits();
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to delete lesson.' });

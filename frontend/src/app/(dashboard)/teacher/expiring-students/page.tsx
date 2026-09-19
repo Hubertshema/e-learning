@@ -16,6 +16,7 @@ import {
   Filter,
   UserCheck
 } from 'lucide-react';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 
 interface ExpiringStudent {
@@ -41,29 +42,24 @@ interface ExpiringStudent {
 }
 
 export default function TeacherExpiringStudentsPage() {
-  const [students, setStudents] = useState<ExpiringStudent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterDays, setFilterDays] = useState(7);
   const [extendingId, setExtendingId] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const fetchExpiring = async (days = filterDays) => {
-    try {
-      setLoading(true);
-      const res = await apiClient.get<ExpiringStudent[]>(`/teacher/expiring-students?days=${days}`);
-      if (res) {
-        setStudents(res);
-      }
-    } catch (err) {
-      console.error('Failed to load expiring students', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: rawStudents,
+    loading,
+    refresh: fetchExpiring
+  } = useCachedData<ExpiringStudent[]>(
+    `teacher_expiring_students_${filterDays}`,
+    async () => {
+      const res = await apiClient.get<ExpiringStudent[]>(`/teacher/expiring-students?days=${filterDays}`);
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchExpiring(filterDays);
-  }, [filterDays]);
+  const students = rawStudents || [];
 
   const handleExtend = async (enrollmentId: string) => {
     try {
@@ -73,7 +69,8 @@ export default function TeacherExpiringStudentsPage() {
         reason: 'Instructor proactive extension from Expiring Watchlist',
       });
       setSuccessMsg('Access successfully extended by 30 days!');
-      fetchExpiring(filterDays);
+      clientCache.invalidate('teacher_');
+      fetchExpiring();
     } catch (err) {
       alert('Failed to extend enrollment.');
     } finally {

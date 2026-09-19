@@ -16,9 +16,9 @@ import {
   Sparkles,
   ExternalLink
 } from 'lucide-react';
+import { useCachedData } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-
 
 interface EnrolledStudent {
   id: string;
@@ -50,30 +50,27 @@ interface EnrolledStudent {
 }
 
 export default function TeacherStudentsPage() {
-  const [students, setStudents] = useState<EnrolledStudent[]>([]);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
 
-  const fetchStudents = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: rawStudents,
+    loading,
+    refresh: fetchStudents
+  } = useCachedData<EnrolledStudent[]>(
+    `teacher_students_${search}`,
+    async () => {
       const query = search ? `?search=${encodeURIComponent(search)}` : '';
       const res = await apiClient.get<{ students: EnrolledStudent[] }>(`/teacher/students${query}`);
       const studentList: EnrolledStudent[] =
         (res as any)?.students ||
         (res as any)?.data?.students ||
         (Array.isArray(res) ? res : []);
-      setStudents(studentList);
-    } catch (err) {
-      console.error('Failed to load students', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return studentList;
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchStudents();
-  }, [search]);
+  const students = rawStudents || [];
 
   return (
     <div className="space-y-8">

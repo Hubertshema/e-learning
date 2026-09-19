@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   TrendingUp
 } from 'lucide-react';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { RichTextEditor, RichTextRenderer } from '@/components/ui/rich-text-editor';
 
@@ -89,9 +90,6 @@ export default function TeacherStudentDetailPage() {
   const params = useParams();
   const studentId = params.studentId as string;
 
-  const [data, setData] = useState<DetailedProgressData | null>(null);
-  const [loading, setLoading] = useState(true);
-
   // Feedback Modal Form
   const [feedbackTitle, setFeedbackTitle] = useState('Instructor Coaching');
   const [feedbackContent, setFeedbackContent] = useState('');
@@ -105,23 +103,18 @@ export default function TeacherStudentDetailPage() {
   const [extending, setExtending] = useState(false);
   const [extendSuccess, setExtendSuccess] = useState<string | null>(null);
 
-  const fetchStudentDetails = async () => {
-    try {
-      setLoading(true);
+  const {
+    data,
+    loading,
+    refresh: fetchStudentDetails
+  } = useCachedData<DetailedProgressData | null>(
+    studentId ? `teacher_student_detail_${studentId}` : null,
+    async () => {
       const res = await apiClient.get<DetailedProgressData>(`/teacher/students/${studentId}/progress`);
-      if (res) {
-        setData(res);
-      }
-    } catch (err) {
-      console.error('Failed to load student detailed progress', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStudentDetails();
-  }, [studentId]);
+      return (res as any)?.data || res || null;
+    },
+    { ttl: 120_000 }
+  );
 
   const handleSendFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +131,7 @@ export default function TeacherStudentDetailPage() {
 
       setFeedbackSuccess('Coaching feedback sent to student successfully!');
       setFeedbackContent('');
+      clientCache.invalidate('teacher_');
       fetchStudentDetails();
     } catch (err) {
       alert('Failed to send coaching feedback.');
@@ -154,6 +148,7 @@ export default function TeacherStudentDetailPage() {
         reason: 'Teacher extended curriculum study window',
       });
       setExtendSuccess(`Access extended by ${extensionDays} days!`);
+      clientCache.invalidate('teacher_');
       fetchStudentDetails();
     } catch (err) {
       alert('Failed to extend enrollment.');

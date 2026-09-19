@@ -15,6 +15,7 @@ import {
   BookOpen,
   Filter
 } from 'lucide-react';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 
 interface EnrollmentItem {
@@ -41,28 +42,24 @@ interface EnrollmentItem {
 }
 
 export default function TeacherEnrollmentsPage() {
-  const [enrollments, setEnrollments] = useState<EnrollmentItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [search, setSearch] = useState('');
 
-  const fetchEnrollments = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: rawEnrollments,
+    loading,
+    refresh: fetchEnrollments,
+    mutate: setEnrollments
+  } = useCachedData<EnrollmentItem[]>(
+    'teacher_enrollments_list',
+    async () => {
       const res = await apiClient.get<EnrollmentItem[]>('/teacher/enrollments');
-      if (res) {
-        setEnrollments(res);
-      }
-    } catch (err) {
-      console.error('Failed to load enrollments', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchEnrollments();
-  }, []);
+  const enrollments = rawEnrollments || [];
 
   const handleSuspend = async (enrollmentId: string) => {
     const reason = prompt('Please enter reason for temporary course access suspension:');
@@ -70,9 +67,8 @@ export default function TeacherEnrollmentsPage() {
 
     try {
       await apiClient.post(`/teacher/enrollments/${enrollmentId}/suspend`, { reason });
-      setEnrollments((prev) =>
-        prev.map((e) => (e.id === enrollmentId ? { ...e, status: 'SUSPENDED' } : e))
-      );
+      clientCache.invalidate('teacher_');
+      fetchEnrollments();
     } catch (err) {
       alert('Failed to suspend enrollment.');
     }
@@ -84,6 +80,7 @@ export default function TeacherEnrollmentsPage() {
         extensionDays: 30,
         reason: 'Instructor grant from enrollments manager',
       });
+      clientCache.invalidate('teacher_');
       fetchEnrollments();
     } catch (err) {
       alert('Failed to extend enrollment.');

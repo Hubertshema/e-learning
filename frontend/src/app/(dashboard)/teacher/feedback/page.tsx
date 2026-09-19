@@ -15,6 +15,7 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
+import { useCachedData } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { RichTextRenderer } from '@/components/ui/rich-text-editor';
 
@@ -36,27 +37,22 @@ interface FeedbackItem {
 }
 
 export default function TeacherFeedbackLogPage() {
-  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  const fetchFeedback = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: rawFeedbacks,
+    loading,
+    refresh: fetchFeedback
+  } = useCachedData<FeedbackItem[]>(
+    'teacher_feedback_list',
+    async () => {
       const res = await apiClient.get<FeedbackItem[]>('/teacher/feedback');
-      if (res) {
-        setFeedbacks(res);
-      }
-    } catch (err) {
-      console.error('Failed to load teacher feedback history', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchFeedback();
-  }, []);
+  const feedbacks = rawFeedbacks || [];
 
   const filtered = feedbacks.filter(
     (f) =>

@@ -22,6 +22,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RichTextEditor, RichTextRenderer } from '@/components/ui/rich-text-editor';
 
 
+import { useCachedData, clientCache } from '@/lib/cache';
+
 interface Assignment {
   id: string;
   title: string;
@@ -72,12 +74,7 @@ const SKILL_CATEGORIES = [
 ];
 
 export default function TeacherAssignmentsPage() {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [courses, setCourses] = useState<CourseOption[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submissionsLoading, setSubmissionsLoading] = useState(false);
 
   // Modals & Grading state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -95,9 +92,13 @@ export default function TeacherAssignmentsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const fetchAssignments = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: assignmentsData,
+    loading,
+    refresh: fetchAssignments
+  } = useCachedData<{ assignments: Assignment[]; courses: CourseOption[] }>(
+    'teacher_assignments_data',
+    async () => {
       const [assRes, courseRes] = await Promise.all([
         apiClient.get<{ assignments: Assignment[] }>('/teacher/assignments'),
         apiClient.get<CourseOption[]>('/teacher/courses')
@@ -108,48 +109,50 @@ export default function TeacherAssignmentsPage() {
         (assRes as any)?.data?.assignments ||
         (Array.isArray(assRes) ? assRes : []);
 
-      setAssignments(assignmentList);
-      if (assignmentList.length > 0 && !selectedAssignment) {
-        setSelectedAssignment(assignmentList[0]);
-      }
-
       const courseList: CourseOption[] =
         Array.isArray(courseRes) ? courseRes : (courseRes as any)?.data || (courseRes as any)?.courses || [];
 
-      setCourses(courseList);
-      if (courseList.length > 0 && !createForm.courseId) {
-        setCreateForm(prev => ({ ...prev, courseId: courseList[0].id }));
+      return {
+        assignments: assignmentList,
+        courses: courseList,
+      };
+    },
+    {
+      ttl: 120_000,
+      initialData: { assignments: [], courses: [] },
+      onSuccess: (data) => {
+        if (data.assignments.length > 0 && !selectedAssignment) {
+          setSelectedAssignment(data.assignments[0]);
+        }
+        if (data.courses.length > 0 && !createForm.courseId) {
+          setCreateForm(prev => ({ ...prev, courseId: data.courses[0].id }));
+        }
       }
-    } catch (err) {
-      console.error('Failed to load assignments', err);
-    } finally {
-      setLoading(false);
     }
-  };
+  );
+
+  const assignments = assignmentsData?.assignments || [];
+  const courses = assignmentsData?.courses || [];
+
+  const {
+    data: rawSubmissions,
+    loading: submissionsLoading,
+    refresh: refreshSubmissions
+  } = useCachedData<Submission[]>(
+    selectedAssignment ? `teacher_assignment_submissions_${selectedAssignment.id}` : null,
+    async () => {
+      if (!selectedAssignment) return [];
+      const res = await apiClient.get<Submission[]>(`/teacher/assignments/${selectedAssignment.id}/submissions`);
+      return Array.isArray(res) ? res : (res as any)?.data || (res as any)?.submissions || [];
+    },
+    { ttl: 60_000, initialData: [] }
+  );
+
+  const submissions = rawSubmissions || [];
 
   const fetchSubmissions = async (assignmentId: string) => {
-    try {
-      setSubmissionsLoading(true);
-      const res = await apiClient.get<Submission[]>(`/teacher/assignments/${assignmentId}/submissions`);
-      const submissionList: Submission[] =
-        Array.isArray(res) ? res : (res as any)?.data || (res as any)?.submissions || [];
-      setSubmissions(submissionList);
-    } catch (err) {
-      console.error('Failed to load submissions', err);
-    } finally {
-      setSubmissionsLoading(false);
-    }
+    refreshSubmissions();
   };
-
-  useEffect(() => {
-    fetchAssignments();
-  }, []);
-
-  useEffect(() => {
-    if (selectedAssignment) {
-      fetchSubmissions(selectedAssignment.id);
-    }
-  }, [selectedAssignment]);
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +169,7 @@ export default function TeacherAssignmentsPage() {
         maxScore: 100,
         dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
       });
+      clientCache.invalidate('teacher_');
       await fetchAssignments();
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to create assignment' });
@@ -182,6 +186,7 @@ export default function TeacherAssignmentsPage() {
       await apiClient.post(`/teacher/submissions/${gradingSubmission.id}/grade`, gradeForm);
       setFeedback({ type: 'success', message: 'Evaluation recorded and student progress updated!' });
       setGradingSubmission(null);
+      clientCache.invalidate('teacher_');
       if (selectedAssignment) {
         await fetchSubmissions(selectedAssignment.id);
       }

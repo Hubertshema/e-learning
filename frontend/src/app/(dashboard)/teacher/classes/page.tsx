@@ -17,8 +17,8 @@ import {
   BookOpen
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { Skeleton } from '@/components/ui/skeleton';
-
 
 interface ClassItem {
   id: string;
@@ -53,9 +53,6 @@ interface CourseOption {
 }
 
 export default function TeacherClassesPage() {
-  const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [courses, setCourses] = useState<CourseOption[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
 
@@ -72,9 +69,13 @@ export default function TeacherClassesPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: classesData,
+    loading,
+    refresh: fetchData
+  } = useCachedData<{ classes: ClassItem[]; courses: CourseOption[] }>(
+    'teacher_classes_list',
+    async () => {
       const [classRes, courseRes] = await Promise.all([
         apiClient.get<ClassItem[]>('/teacher/classes'),
         apiClient.get<CourseOption[]>('/teacher/courses')
@@ -90,24 +91,27 @@ export default function TeacherClassesPage() {
         ? (courseRes as any)
         : [];
 
-      setClasses(classList);
-      if (classList.length > 0 && !selectedClass) {
-        setSelectedClass(classList[0]);
+      return {
+        classes: classList,
+        courses: courseList,
+      };
+    },
+    {
+      ttl: 120_000,
+      initialData: { classes: [], courses: [] },
+      onSuccess: (data) => {
+        if (data.classes.length > 0 && !selectedClass) {
+          setSelectedClass(data.classes[0]);
+        }
+        if (data.courses.length > 0 && !form.courseId) {
+          setForm(prev => ({ ...prev, courseId: data.courses[0].id }));
+        }
       }
-      setCourses(courseList);
-      if (courseList.length > 0 && !form.courseId) {
-        setForm(prev => ({ ...prev, courseId: courseList[0].id }));
-      }
-    } catch (err) {
-      console.error('Failed to fetch classes or courses', err);
-    } finally {
-      setLoading(false);
     }
-  };
+  );
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const classes = classesData?.classes || [];
+  const courses = classesData?.courses || [];
 
   const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,6 +129,7 @@ export default function TeacherClassesPage() {
         startDate: '',
         endDate: '',
       });
+      clientCache.invalidate('teacher_');
       await fetchData();
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to create class' });

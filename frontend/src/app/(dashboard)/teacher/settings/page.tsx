@@ -22,6 +22,7 @@ import {
   Building2,
   PhoneCall
 } from 'lucide-react';
+import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
@@ -69,15 +70,16 @@ export default function TeacherSettingsPage() {
     inAppEnabled: true,
   });
   const [savingPrefs, setSavingPrefs] = useState(false);
-  const [loadingPrefs, setLoadingPrefs] = useState(true);
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const loadAllSettings = async () => {
-    try {
-      setLoadingPrefs(true);
-      setLoadingSessions(true);
-
+  const {
+    data: settingsData,
+    loading: loadingPrefs,
+    refresh: loadAllSettings
+  } = useCachedData(
+    'teacher_settings_data',
+    async () => {
       const [prefRes, teachRes, payRes, sessRes]: any = await Promise.allSettled([
         apiClient.get('/notifications/preferences'),
         apiClient.get('/teacher/preferences'),
@@ -85,9 +87,10 @@ export default function TeacherSettingsPage() {
         apiClient.get('/users/sessions'),
       ]);
 
+      let loadedPrefs = null;
       if (prefRes.status === 'fulfilled' && (prefRes.value.data || prefRes.value)) {
         const d = prefRes.value.data || prefRes.value;
-        setPrefs({
+        loadedPrefs = {
           emailEnabled: d.emailEnabled ?? true,
           enrollmentEmails: d.enrollmentEmails ?? true,
           paymentEmails: d.paymentEmails ?? true,
@@ -97,34 +100,45 @@ export default function TeacherSettingsPage() {
           courseExpirationEmails: d.courseExpirationEmails ?? true,
           announcementEmails: d.announcementEmails ?? true,
           inAppEnabled: d.inAppEnabled ?? true,
-        });
+        };
       }
 
+      let loadedTeaching = null;
       if (teachRes.status === 'fulfilled' && teachRes.value?.data) {
-        const t = teachRes.value.data;
-        if (t.specialties) setSpecialties(t.specialties);
-        if (t.teachingPreferences?.defaultDuration) setDefaultDuration(String(t.teachingPreferences.defaultDuration));
-        if (t.teachingPreferences?.defaultPassingScore) setDefaultPassingScore(String(t.teachingPreferences.defaultPassingScore));
+        loadedTeaching = teachRes.value.data;
       }
 
+      let loadedPayment = null;
       if (payRes.status === 'fulfilled' && payRes.value?.data?.paymentInfo) {
-        setPaymentInfo(payRes.value.data.paymentInfo);
+        loadedPayment = payRes.value.data.paymentInfo;
       }
 
+      let loadedSessions: any[] = [];
       if (sessRes.status === 'fulfilled' && sessRes.value?.sessions) {
-        setActiveSessions(sessRes.value.sessions);
+        loadedSessions = sessRes.value.sessions;
       }
-    } catch (err) {
-      console.warn('Could not load all teacher settings:', err);
-    } finally {
-      setLoadingPrefs(false);
-      setLoadingSessions(false);
-    }
-  };
 
-  useEffect(() => {
-    loadAllSettings();
-  }, []);
+      return {
+        prefs: loadedPrefs,
+        teaching: loadedTeaching,
+        payment: loadedPayment,
+        sessions: loadedSessions,
+      };
+    },
+    {
+      ttl: 120_000,
+      onSuccess: (data) => {
+        if (data.prefs) setPrefs(data.prefs);
+        if (data.teaching) {
+          if (data.teaching.specialties) setSpecialties(data.teaching.specialties);
+          if (data.teaching.teachingPreferences?.defaultDuration) setDefaultDuration(String(data.teaching.teachingPreferences.defaultDuration));
+          if (data.teaching.teachingPreferences?.defaultPassingScore) setDefaultPassingScore(String(data.teaching.teachingPreferences.defaultPassingScore));
+        }
+        if (data.payment) setPaymentInfo(data.payment);
+        if (data.sessions) setActiveSessions(data.sessions);
+      }
+    }
+  );
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,6 +177,7 @@ export default function TeacherSettingsPage() {
         defaultDuration: parseInt(defaultDuration, 10) || 90,
         defaultPassingScore: parseInt(defaultPassingScore, 10) || 75,
       });
+      clientCache.invalidate('teacher_');
       setFeedback({ type: 'success', text: 'Teaching preferences updated and saved!' });
       setTimeout(() => setFeedback(null), 4000);
     } catch (err: any) {
@@ -178,6 +193,7 @@ export default function TeacherSettingsPage() {
     try {
       setSavingPayment(true);
       await apiClient.patch('/teacher/payment-settings', paymentInfo);
+      clientCache.invalidate('teacher_');
       setFeedback({ type: 'success', text: 'Student payment instructions & receiving details saved!' });
       setTimeout(() => setFeedback(null), 4000);
     } catch (err: any) {
@@ -193,6 +209,7 @@ export default function TeacherSettingsPage() {
     try {
       setSavingPrefs(true);
       await apiClient.patch('/notifications/preferences', prefs);
+      clientCache.invalidate('teacher_');
       setFeedback({ type: 'success', text: 'Notification preferences saved in PostgreSQL database!' });
       setTimeout(() => setFeedback(null), 4000);
     } catch (err: any) {

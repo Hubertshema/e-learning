@@ -27,6 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData, clientCache } from '@/lib/cache';
 
 interface DiagnosticQuestion {
   id: string;
@@ -92,9 +93,6 @@ interface AnalyticsData {
 
 export default function TeacherDiagnosticQuizPage() {
   const [activeTab, setActiveTab] = useState<'analytics' | 'questions'>('analytics');
-  const [loading, setLoading] = useState(true);
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  const [questions, setQuestions] = useState<DiagnosticQuestion[]>([]);
   const [selectedLevelFilter, setSelectedLevelFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -122,32 +120,31 @@ export default function TeacherDiagnosticQuizPage() {
     isActive: true,
   });
 
-  const fetchData = async () => {
-    setLoading(true);
-    setActionError(null);
-    try {
+  const {
+    data: quizData,
+    loading,
+    refresh: fetchData
+  } = useCachedData<{ analytics: AnalyticsData | null; questions: DiagnosticQuestion[] }>(
+    'teacher_diagnostic_quiz_data',
+    async () => {
       const [analyticsData, questionsData] = await Promise.all([
         apiClient.get<AnalyticsData>('/teacher/diagnostic-quiz/analytics'),
         apiClient.get<DiagnosticQuestion[]>('/teacher/diagnostic-quiz/questions'),
       ]);
 
-      if (analyticsData) {
-        setAnalytics(analyticsData);
-      }
-      if (Array.isArray(questionsData)) {
-        setQuestions(questionsData);
-      }
-    } catch (err: any) {
-      console.error('Failed to load diagnostic quiz data:', err);
-      setActionError('Failed to fetch data from database. Please verify your connection.');
-    } finally {
-      setLoading(false);
+      return {
+        analytics: analyticsData || null,
+        questions: Array.isArray(questionsData) ? questionsData : [],
+      };
+    },
+    {
+      ttl: 120_000,
+      initialData: { analytics: null, questions: [] },
     }
-  };
+  );
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const analytics = quizData?.analytics || null;
+  const questions = quizData?.questions || [];
 
   const openCreateModal = () => {
     setEditingQuestion(null);
@@ -229,6 +226,7 @@ export default function TeacherDiagnosticQuizPage() {
         setActionSuccess('Diagnostic question created successfully!');
       }
       setIsQuestionModalOpen(false);
+      clientCache.invalidate('teacher_');
       fetchData();
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {
@@ -245,6 +243,7 @@ export default function TeacherDiagnosticQuizPage() {
     try {
       await apiClient.delete(`/teacher/diagnostic-quiz/questions/${id}`);
       setActionSuccess('Question deleted successfully.');
+      clientCache.invalidate('teacher_');
       fetchData();
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {

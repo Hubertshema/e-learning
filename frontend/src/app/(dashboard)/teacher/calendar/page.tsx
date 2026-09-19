@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Plus
 } from 'lucide-react';
+import { useCachedData } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 
 interface CalendarEvent {
@@ -26,26 +27,20 @@ interface CalendarEvent {
 }
 
 export default function TeacherCalendarPage() {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchCalendar = async () => {
-    try {
-      setLoading(true);
+  const {
+    data: rawEvents,
+    loading,
+    refresh: fetchCalendar
+  } = useCachedData<CalendarEvent[]>(
+    'teacher_calendar_events',
+    async () => {
       const res = await apiClient.get<CalendarEvent[]>('/teacher/calendar');
-      if (res) {
-        setEvents(res);
-      }
-    } catch (err) {
-      console.error('Failed to load calendar events', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchCalendar();
-  }, []);
+  const events = rawEvents || [];
 
   const getEventBadge = (type: CalendarEvent['type']) => {
     switch (type) {

@@ -15,6 +15,7 @@ import {
   BarChart3,
   Download
 } from 'lucide-react';
+import { useCachedData } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 
 interface TeacherReportsData {
@@ -32,26 +33,18 @@ interface TeacherReportsData {
 }
 
 export default function TeacherReportsPage() {
-  const [data, setData] = useState<TeacherReportsData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<TeacherReportsData>('/teacher/reports');
-        if (res) {
-          const reportData = (res as any)?.data || res;
-          setData(reportData);
-        }
-      } catch (err) {
-        console.error('Failed to load teacher reports', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReports();
-  }, []);
+  const {
+    data,
+    loading,
+    refresh: fetchReports
+  } = useCachedData<TeacherReportsData | null>(
+    'teacher_reports_data',
+    async () => {
+      const res = await apiClient.get<TeacherReportsData>('/teacher/reports');
+      return (res as any)?.data || res || null;
+    },
+    { ttl: 120_000 }
+  );
 
   const handleExportCSV = () => {
     if (!data || !data.courseBreakdown) return;

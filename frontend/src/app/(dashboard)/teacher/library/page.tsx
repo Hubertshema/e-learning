@@ -29,36 +29,51 @@ interface LibraryResource {
   uploadedAt: string;
 }
 
+import { clientCache } from '@/lib/cache';
+
+const DEFAULT_RESOURCES: LibraryResource[] = [
+  {
+    id: 'res-1',
+    title: 'A2 Essential Workplace English - Grammar Cheat Sheet.pdf',
+    type: 'PDF',
+    size: '1.4 MB',
+    category: 'Worksheets',
+    url: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8',
+    uploadedAt: '2026-09-10',
+  },
+  {
+    id: 'res-2',
+    title: 'Airport Check-in & Boarding Dialogue Clip.mp3',
+    type: 'AUDIO',
+    size: '4.8 MB',
+    category: 'Listening Dialogues',
+    url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4',
+    uploadedAt: '2026-09-12',
+  },
+  {
+    id: 'res-3',
+    title: 'Business Negotiation & Email Etiquette Guide.pdf',
+    type: 'PDF',
+    size: '2.1 MB',
+    category: 'Business English',
+    url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952',
+    uploadedAt: '2026-09-15',
+  },
+];
+
 export default function TeacherLibraryPage() {
-  const [resources, setResources] = useState<LibraryResource[]>([
-    {
-      id: 'res-1',
-      title: 'A2 Essential Workplace English - Grammar Cheat Sheet.pdf',
-      type: 'PDF',
-      size: '1.4 MB',
-      category: 'Worksheets',
-      url: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8',
-      uploadedAt: '2026-09-10',
-    },
-    {
-      id: 'res-2',
-      title: 'Airport Check-in & Boarding Dialogue Clip.mp3',
-      type: 'AUDIO',
-      size: '4.8 MB',
-      category: 'Listening Dialogues',
-      url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4',
-      uploadedAt: '2026-09-12',
-    },
-    {
-      id: 'res-3',
-      title: 'Business Negotiation & Email Etiquette Guide.pdf',
-      type: 'PDF',
-      size: '2.1 MB',
-      category: 'Business English',
-      url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952',
-      uploadedAt: '2026-09-15',
-    },
-  ]);
+  const [resources, setResourcesState] = useState<LibraryResource[]>(() => {
+    const cached = clientCache.get<LibraryResource[]>('teacher_library_resources');
+    return cached || DEFAULT_RESOURCES;
+  });
+
+  const setResources = (newRes: LibraryResource[] | ((prev: LibraryResource[]) => LibraryResource[])) => {
+    setResourcesState((prev) => {
+      const updated = typeof newRes === 'function' ? newRes(prev) : newRes;
+      clientCache.set('teacher_library_resources', updated, 86400000);
+      return updated;
+    });
+  };
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
