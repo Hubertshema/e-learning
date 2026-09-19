@@ -64,8 +64,9 @@ export default function StudentAssignmentsPage() {
     try {
       setLoading(true);
       const res = await apiClient.get<Assignment[]>('/student/assignments');
-      if (res.data) {
-        setAssignments(res.data);
+      if (res) {
+        const payload = (res as any).data || res;
+        setAssignments(Array.isArray(payload) ? payload : []);
       }
     } catch (err) {
       console.error('Failed to load assignments', err);

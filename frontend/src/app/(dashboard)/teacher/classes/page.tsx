@@ -77,17 +77,24 @@ export default function TeacherClassesPage() {
         apiClient.get<ClassItem[]>('/teacher/classes'),
         apiClient.get<CourseOption[]>('/teacher/courses')
       ]);
-      if (classRes.data) {
-        setClasses(classRes.data);
-        if (classRes.data.length > 0 && !selectedClass) {
-          setSelectedClass(classRes.data[0]);
-        }
+      const classList: ClassItem[] = Array.isArray((classRes as any)?.data)
+        ? (classRes as any).data
+        : Array.isArray(classRes)
+        ? (classRes as any)
+        : [];
+      const courseList: CourseOption[] = Array.isArray((courseRes as any)?.data)
+        ? (courseRes as any).data
+        : Array.isArray(courseRes)
+        ? (courseRes as any)
+        : [];
+
+      setClasses(classList);
+      if (classList.length > 0 && !selectedClass) {
+        setSelectedClass(classList[0]);
       }
-      if (courseRes.data) {
-        setCourses(courseRes.data);
-        if (courseRes.data.length > 0 && !form.courseId) {
-          setForm(prev => ({ ...prev, courseId: courseRes.data[0].id }));
-        }
+      setCourses(courseList);
+      if (courseList.length > 0 && !form.courseId) {
+        setForm(prev => ({ ...prev, courseId: courseList[0].id }));
       }
     } catch (err) {
       console.error('Failed to fetch classes or courses', err);

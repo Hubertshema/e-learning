@@ -109,9 +109,10 @@ export default function StudentCoursesPage() {
       const res = await apiClient.get<{ enrolled: EnrolledCourse[]; catalog: CatalogCourse[] }>(
         '/student/courses'
       );
-      if (res.data) {
-        setEnrolledCourses(res.data.enrolled || []);
-        setCatalogCourses(res.data.catalog || []);
+      if (res) {
+        const payload = (res as any).data || res;
+        setEnrolledCourses(payload.enrolled || []);
+        setCatalogCourses(payload.catalog || []);
       }
     } catch (err) {
       console.error('Failed to load courses', err);

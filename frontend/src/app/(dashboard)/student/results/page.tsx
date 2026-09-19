@@ -135,7 +135,9 @@ export default function StudentResultsPage() {
     link.setAttribute('download', `academic_results_transcript_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    if (link.parentNode) {
+      link.parentNode.removeChild(link);
+    }
   };
 
   return (

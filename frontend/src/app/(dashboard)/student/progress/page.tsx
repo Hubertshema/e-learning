@@ -46,8 +46,8 @@ export default function StudentProgressPage() {
       try {
         setLoading(true);
         const res = await apiClient.get<ProgressResponse>('/student/progress');
-        if (res.data) {
-          setData(res.data);
+        if (res) {
+          setData((res as any).data || res);
         }
       } catch (err) {
         console.error('Failed to load student progress', err);

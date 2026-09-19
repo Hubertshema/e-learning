@@ -44,8 +44,9 @@ export default function StudentCertificatesPage() {
       try {
         setLoading(true);
         const res = await apiClient.get<Certificate[]>('/student/certificates');
-        if (res.data) {
-          setCertificates(res.data);
+        if (res) {
+          const payload = (res as any).data || res;
+          setCertificates(Array.isArray(payload) ? payload : []);
         }
       } catch (err) {
         console.error('Failed to load certificates', err);

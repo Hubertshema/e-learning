@@ -85,8 +85,9 @@ export default function StudentQuizzesPage() {
     try {
       setLoading(true);
       const res = await apiClient.get<Quiz[]>('/student/quizzes');
-      if (res.data) {
-        setQuizzes(res.data);
+      if (res) {
+        const payload = (res as any).data || res;
+        setQuizzes(Array.isArray(payload) ? payload : []);
       }
     } catch (err) {
       console.error('Failed to load quizzes', err);
@@ -193,8 +194,8 @@ export default function StudentQuizzesPage() {
         answers: answerPayload,
       });
 
-      if (res.data) {
-        setResult(res.data);
+      if (res) {
+        setResult((res as any).data || res);
       }
       await fetchQuizzes();
     } catch (err) {

@@ -47,8 +47,9 @@ export default function StudentPaymentsPage() {
     try {
       setLoading(true);
       const res = await apiClient.get<Payment[]>('/student/payments');
-      if (res.data) {
-        setPayments(res.data);
+      if (res) {
+        const payload = (res as any).data || res;
+        setPayments(Array.isArray(payload) ? payload : []);
       }
     } catch (err) {
       console.error('Failed to load student payments', err);

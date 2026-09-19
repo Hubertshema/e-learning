@@ -35,14 +35,18 @@ export interface ActivityData {
 interface ActivityContainerProps {
   activity: ActivityData;
   onFinished?: (score: number) => void;
+  onComplete?: (score?: number) => void;
 }
 
-export function ActivityContainer({ activity, onFinished }: ActivityContainerProps) {
+export function ActivityContainer({ activity, onFinished, onComplete }: ActivityContainerProps) {
   const [completedScore, setCompletedScore] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
   const handleActivityComplete = async (score: number) => {
     setCompletedScore(score);
+    if (onComplete) {
+      onComplete(score);
+    }
     try {
       setSaving(true);
       if (activity.id) {

@@ -50,8 +50,9 @@ export default function PublicCertificateVerificationPage() {
       try {
         setLoading(true);
         const res = await apiClient.get<PublicCertificateData>(`/public/certificates/${code}`);
-        if (res.data) {
-          setCert(res.data);
+        if (res) {
+          const payload = (res as any).data || res;
+          setCert(payload);
         }
       } catch (err: any) {
         setError(err.message || 'The requested certificate code could not be verified in our registry.');

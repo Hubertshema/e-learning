@@ -230,8 +230,8 @@ export default function StudentPlacementTestPage() {
         }
       );
 
-      if (res.data) {
-        setResult(res.data);
+      if (res && ((res as any).data || (res as any).recommendedLevel)) {
+        setResult((res as any).data || res);
       } else {
         let rec = 'B1';
         if (score < 40) rec = 'A1';

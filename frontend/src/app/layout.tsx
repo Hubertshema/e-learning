@@ -103,16 +103,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${fontMain.variable} ${fontDisplay.variable}`}>
-      <head>
-        <link rel="icon" href="/logo.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+    <html
+      lang="en"
+      className={`${fontMain.variable} ${fontDisplay.variable}`}
+      suppressHydrationWarning
+    >
+      <body
+        className="min-h-screen bg-emerald-950/5 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 font-sans"
+        suppressHydrationWarning
+      >
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
         />
-      </head>
-      <body className="min-h-screen bg-emerald-950/5 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 font-sans">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

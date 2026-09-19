@@ -29,9 +29,10 @@ export function NotificationCenter() {
       const res = await apiClient.get<{ notifications: NotificationItem[]; unreadCount: number }>(
         '/notifications'
       );
-      if (res.data) {
-        setNotifications(res.data.notifications || []);
-        setUnreadCount(res.data.unreadCount || 0);
+      if (res) {
+        const payload = (res as any).data || res;
+        setNotifications(payload.notifications || []);
+        setUnreadCount(payload.unreadCount || 0);
       }
     } catch (err) {
       // Graceful fallback for demo
