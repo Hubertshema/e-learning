@@ -26,11 +26,10 @@ export function Navbar() {
 
   const navigation = [
     { name: 'Home', href: '/' },
+    { name: 'About Us', href: '/about' },
     { name: 'Courses', href: '/courses' },
     { name: 'Diagnostic Quiz', href: '/quiz' },
     { name: 'Levels (CEFR)', href: '/levels' },
-    { name: 'Pricing', href: '/pricing' },
-    { name: 'About Us', href: '/about' },
   ];
 
   return (

@@ -42,6 +42,9 @@ export function Footer() {
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-600 dark:text-slate-400">
               <li>
+                <Link href="/about" className="hover:text-sky-600">About Us</Link>
+              </li>
+              <li>
                 <Link href="/courses" className="hover:text-sky-600">Explore Courses</Link>
               </li>
               <li>
@@ -49,12 +52,6 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/levels" className="hover:text-sky-600">CEFR Levels (Pre-A1 to C2)</Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="hover:text-sky-600">Pricing & Plans</Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-sky-600">About Us</Link>
               </li>
             </ul>
           </div>
