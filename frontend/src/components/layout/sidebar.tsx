@@ -116,12 +116,14 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       <div>
         {/* Brand Header */}
         <Link href="/" className="flex items-center gap-2.5 px-3 py-2" onClick={onClose}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 text-white shadow-md">
-            <BookOpen className="h-5 w-5" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="LinguaChris Academy Logo"
+            className="h-9 w-auto object-contain"
+          />
           <div>
-            <span className="font-bold text-slate-900 dark:text-white">FluentEdge</span>
-            <span className="ml-1 rounded bg-primary-50 px-1.5 py-0.5 text-[10px] font-bold text-primary-600 dark:bg-primary-950 dark:text-primary-400">
+            <span className="font-bold text-slate-900 dark:text-white">LinguaChris</span>
+            <span className="ml-1 rounded bg-[#EBF2EB] px-1.5 py-0.5 text-[10px] font-bold text-[#3B6748] dark:bg-emerald-950 dark:text-emerald-300">
               {role}
             </span>
           </div>

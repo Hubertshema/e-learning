@@ -358,7 +358,7 @@ export default function StudentPlacementTestPage() {
         </Card>
       ) : (
         /* Results Card */
-        <Card className="p-8 text-center space-y-6 shadow-2xl border-2 border-primary-200 bg-gradient-to-b from-white to-primary-50/20 dark:from-slate-900 dark:to-slate-950">
+        <Card className="p-8 text-center space-y-6 shadow-2xl border-2 border-[#3B6748]/30 bg-[#F4F7F4] dark:bg-emerald-950/20">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
             <Sparkles className="h-8 w-8" />
           </div>
@@ -367,7 +367,7 @@ export default function StudentPlacementTestPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Recommended Starting CEFR Level
             </span>
-            <div className="mt-2 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-primary-600 to-indigo-600 px-6 py-2 text-3xl font-black text-white shadow-lg">
+            <div className="mt-2 inline-flex items-center justify-center rounded-2xl bg-[#3B6748] px-6 py-2 text-3xl font-black text-white shadow-lg">
               {result?.recommendedLevel || 'B1'}
             </div>
             <p className="text-sm font-bold text-slate-900 dark:text-white mt-3">

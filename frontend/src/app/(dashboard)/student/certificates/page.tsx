@@ -138,7 +138,7 @@ export default function StudentCertificatesPage() {
       {/* Certificate Modal View */}
       {selectedCert && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <Card className="w-full max-w-2xl shadow-2xl p-8 bg-gradient-to-br from-white via-slate-50 to-amber-50/20 dark:from-slate-900 dark:to-slate-950 border-4 border-amber-300/40">
+          <Card className="w-full max-w-2xl shadow-2xl p-8 bg-[#F4F7F4] border-4 border-[#3B6748]/40 dark:bg-emerald-950/40">
             <div className="text-center space-y-4">
               <div className="flex justify-center">
                 <div className="h-16 w-16 rounded-2xl bg-amber-100 flex items-center justify-center border-2 border-amber-300 dark:bg-amber-950">

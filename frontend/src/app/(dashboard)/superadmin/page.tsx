@@ -229,10 +229,7 @@ export default function SuperadminDashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       {/* 1. Executive Control Center Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white shadow-2xl border border-indigo-900/40">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary-600/20 blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-3xl bg-[#132519] p-6 sm:p-8 text-white shadow-2xl border border-[#3B6748]/40">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
@@ -321,7 +318,7 @@ export default function SuperadminDashboardPage() {
           return (
             <Card
               key={m.label}
-              className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-gradient-to-b ${m.gradient} ${m.borderColor} backdrop-blur-sm`}
+              className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-white dark:bg-slate-900 ${m.borderColor} backdrop-blur-sm`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">

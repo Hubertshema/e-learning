@@ -199,7 +199,7 @@ export default function HomePage() {
     <div className="space-y-24 pb-20">
       {/* Hero Section with Interactive Activity Preview */}
       <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.indigo.100),theme(colors.white))] dark:bg-[radial-gradient(45rem_50rem_at_top,theme(colors.indigo.950),theme(colors.slate.950))] opacity-60" />
+        <div className="absolute inset-0 -z-10 bg-[#F4F7F4] dark:bg-[#0F1713]" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
@@ -212,7 +212,7 @@ export default function HomePage() {
 
               <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl lg:text-6xl leading-[1.15]">
                 Learn English. <br />
-                <span className="text-gradient">Build Confidence.</span> <br />
+                <span className="text-[#3B6748] dark:text-emerald-400">Build Confidence.</span> <br />
                 Lead Globally.
               </h1>
 
@@ -356,7 +356,7 @@ export default function HomePage() {
               {/* Interactive 3D Flippable Flashcard Demo */}
               <div
                 onClick={() => setIsFlipped(!isFlipped)}
-                className="cursor-pointer rounded-2xl border border-indigo-200 bg-gradient-to-tr from-indigo-50 to-primary-50 p-5 shadow-md dark:border-indigo-900 dark:from-indigo-950/40 dark:to-slate-900 transition hover:shadow-lg"
+                className="cursor-pointer rounded-2xl border border-[#3B6748]/30 bg-[#F4F7F4] p-5 shadow-md dark:border-emerald-900 dark:bg-emerald-950/40 transition hover:shadow-lg"
               >
                 <div className="flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-300 font-semibold">
                   <span className="flex items-center gap-1.5">
@@ -534,7 +534,7 @@ export default function HomePage() {
 
       {/* Public Certificate Live Verification Teaser */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-8 sm:p-12 text-white shadow-2xl">
+        <div className="rounded-3xl border border-[#3B6748]/30 bg-[#1E252D] p-8 sm:p-12 text-white shadow-2xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-7 space-y-4">
               <Badge variant="indigo" className="bg-primary-500/20 text-primary-300 border-primary-500/30">

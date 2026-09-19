@@ -134,7 +134,7 @@ export default function PublicCertificateVerificationPage() {
           </div>
 
           {/* Certificate Credential Card */}
-          <Card className="p-8 sm:p-10 shadow-2xl bg-gradient-to-b from-white via-slate-50/50 to-amber-50/20 border-4 border-amber-300/40 dark:from-slate-900 dark:to-slate-950 space-y-8 text-center">
+          <Card className="p-8 sm:p-10 shadow-2xl bg-[#F4F7F4] border-4 border-[#3B6748]/40 dark:bg-emerald-950/40 space-y-8 text-center">
             {/* Top Seal */}
             <div className="flex justify-center">
               <div className="h-20 w-20 rounded-2xl bg-amber-100 dark:bg-amber-950 border-2 border-amber-300 flex items-center justify-center shadow-md">

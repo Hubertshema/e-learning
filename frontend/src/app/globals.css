@@ -4,65 +4,89 @@
 
 @layer base {
   :root {
-    --background: 220 25% 98%;
-    --foreground: 224 71% 4%;
+    --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Poppins', var(--font-main);
+    
+    /* LinguaChris Brand Palette */
+    --primary-green: #3d6748;
+    --primary-green-dark: #2c4e36;
+    --primary-green-deep: #1e3825;
+    --primary-green-light: #52825e;
+    --accent-sage: #88ad8a;
+    --accent-sage-light: #a4c6a6;
+    --accent-sage-tint: #edf4ef;
+    --accent-sage-soft: #f4f8f5;
+    
+    --bg-gradient-start: #f8faf8;
+    --bg-gradient-mid: #eef4f0;
+    --bg-gradient-end: #e1ebe3;
+    
+    --text-dark: #1b231e;
+    --text-body: #405044;
+    --text-muted: #6a796e;
+    
+    color-scheme: light;
+
+    /* Shadcn UI Variable Mappings */
+    --background: 120 14% 98%;
+    --foreground: 135 13% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 135 13% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 135 13% 12%;
 
-    --primary: 239 84% 67%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 136 26% 32%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 39% 11%;
+    --secondary: 132 15% 94%;
+    --secondary-foreground: 135 13% 12%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 132 15% 94%;
+    --muted-foreground: 134 7% 45%;
 
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 39% 11%;
+    --accent: 132 15% 94%;
+    --accent-foreground: 136 26% 32%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 239 84% 67%;
+    --border: 134 10% 88%;
+    --input: 134 10% 88%;
+    --ring: 136 26% 32%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 210 20% 98%;
+    --background: 135 20% 6%;
+    --foreground: 120 10% 95%;
 
-    --card: 224 71% 6%;
-    --card-foreground: 210 20% 98%;
+    --card: 135 20% 9%;
+    --card-foreground: 120 10% 95%;
 
-    --popover: 224 71% 6%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 135 20% 9%;
+    --popover-foreground: 120 10% 95%;
 
-    --primary: 239 84% 67%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 136 26% 42%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 28% 17%;
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 135 15% 16%;
+    --secondary-foreground: 120 10% 95%;
 
-    --muted: 215 28% 17%;
-    --muted-foreground: 217 19% 65%;
+    --muted: 135 15% 16%;
+    --muted-foreground: 135 10% 65%;
 
-    --accent: 215 28% 17%;
-    --accent-foreground: 210 20% 98%;
+    --accent: 135 15% 16%;
+    --accent-foreground: 120 10% 95%;
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 239 84% 67%;
+    --border: 135 15% 16%;
+    --input: 135 15% 16%;
+    --ring: 136 26% 42%;
   }
 }
 
@@ -71,36 +95,46 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    background-color: var(--bg-gradient-start);
+    color: var(--text-dark);
+    font-family: var(--font-main);
+    @apply antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    color: var(--text-dark);
   }
 }
 
-/* Custom Glassmorphism & UI Accents */
+/* Custom UI Panels & Solid Accents */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(59, 103, 72, 0.15);
 }
 
 .dark .glass-panel {
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(19, 37, 25, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.gradient-brand {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
+/* Solid Brand Utilities (NO GRADIENTS) */
+.brand-solid-primary {
+  background-color: #3B6748;
+  color: #ffffff;
 }
 
-.gradient-subtle {
-  background: linear-gradient(180deg, rgba(238, 242, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%);
+.brand-solid-subtle {
+  background-color: #F4F7F4;
+  color: #1E252D;
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.brand-text-solid {
+  color: #3B6748;
+  font-weight: 700;
 }
+

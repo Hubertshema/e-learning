@@ -163,7 +163,7 @@ export default function TeacherRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-[#F4F7F4] dark:bg-[#0F1713]">
       <Card className="max-w-xl w-full shadow-2xl border-slate-200 dark:border-slate-800">
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-950">

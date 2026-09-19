@@ -94,8 +94,7 @@ export default function SuperadminProfilePage() {
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl pb-16">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl border border-indigo-900/40">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary-600/20 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-[#132519] p-6 sm:p-8 text-white shadow-xl border border-[#3B6748]/40">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -145,7 +144,7 @@ export default function SuperadminProfilePage() {
             <div className="relative mx-auto w-24 h-24">
               <Avatar className="w-24 h-24 text-2xl border-4 border-indigo-100 dark:border-indigo-950 shadow-xl">
                 <AvatarImage src={formData.avatarUrl || ''} />
-                <AvatarFallback className="bg-gradient-to-tr from-indigo-600 to-primary-600 text-white font-black text-2xl">
+                <AvatarFallback className="bg-[#3B6748] text-white font-black text-2xl">
                   {formData.firstName?.[0]}{formData.lastName?.[0]}
                 </AvatarFallback>
               </Avatar>

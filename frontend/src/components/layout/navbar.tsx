@@ -35,14 +35,16 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 transition-transform hover:scale-[1.02]">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white shadow-md shadow-primary-500/20">
-            <BookOpen className="h-5 w-5" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="LinguaChris Academy Logo"
+            className="h-10 w-auto object-contain"
+          />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-              Fluent<span className="text-primary-600">Edge</span>
+              Lingua<span className="text-[#3B6748]">Chris</span>
             </span>
-            <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-[#8EA885]">
               Academy
             </span>
           </div>

@@ -1,20 +1,38 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Plus_Jakarta_Sans, Poppins } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const fontMain = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-main',
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+});
+
+const fontDisplay = Poppins({
+  subsets: ['latin'],
+  variable: '--font-display',
+  weight: ['400', '500', '600', '700', '800', '900'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://fluentedge.edu'),
+  metadataBase: new URL('https://linguachris.edu'),
   title: {
-    default: 'FluentEdge Academy — Professional English Learning & Teacher Platform',
-    template: '%s | FluentEdge Academy',
+    default: 'LinguaChris Academy — Professional English Learning & Teacher Platform',
+    template: '%s | LinguaChris Academy',
   },
   description:
     'Master English with structured CEFR curriculum (Pre-A1 to C2), specialized tracks for Business, Tech & Healthcare, teacher-guided interactive lessons, and accredited certificates.',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/favicon.ico',
+    apple: '/logo.png',
+  },
   keywords: [
+    'LinguaChris Academy',
     'English Learning Platform',
     'CEFR English Courses',
     'Business English',
@@ -22,33 +40,32 @@ export const metadata: Metadata = {
     'Medical English',
     'Online English Teacher Management',
     'Verified English Certificate',
-    'English for Rwanda',
   ],
-  authors: [{ name: 'FluentEdge Academic Council' }],
-  creator: 'FluentEdge Academy',
+  authors: [{ name: 'LinguaChris Academic Council' }],
+  creator: 'LinguaChris Academy',
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://fluentedge.edu',
-    title: 'FluentEdge Academy — Master English from Pre-A1 to C2',
+    url: 'https://linguachris.edu',
+    title: 'LinguaChris Academy — Master English from Pre-A1 to C2',
     description:
       'Learn English with certified instructors, interactive multi-skill exercises, adaptive placement tests, and industry-recognized credentials.',
-    siteName: 'FluentEdge Academy',
+    siteName: 'LinguaChris Academy',
     images: [
       {
-        url: '/og-image.png',
+        url: '/logo.png',
         width: 1200,
         height: 630,
-        alt: 'FluentEdge Academy English Learning Platform',
+        alt: 'LinguaChris Academy Logo',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FluentEdge Academy — Learn English & Empower Instructors',
+    title: 'LinguaChris Academy — Learn English & Empower Instructors',
     description:
       'CEFR English learning platform with interactive multi-skill activities, cohort management, and verified certificates.',
-    creator: '@FluentEdgeLMS',
+    creator: '@LinguaChrisLMS',
   },
   robots: {
     index: true,
@@ -61,14 +78,10 @@ const jsonLdData = {
   '@graph': [
     {
       '@type': 'EducationalOrganization',
-      name: 'FluentEdge Academy',
-      url: 'https://fluentedge.edu',
-      logo: 'https://fluentedge.edu/logo.png',
+      name: 'LinguaChris Academy',
+      url: 'https://linguachris.edu',
+      logo: 'https://linguachris.edu/logo.png',
       description: 'Premier English Learning & Teacher Management Platform',
-      sameAs: [
-        'https://twitter.com/FluentEdgeLMS',
-        'https://linkedin.com/company/fluentedge-academy',
-      ],
     },
     {
       '@type': 'Course',
@@ -77,7 +90,7 @@ const jsonLdData = {
         'Structured 7-skill English curriculum from Pre-A1 Foundations to C2 Executive Fluency with verified accreditation.',
       provider: {
         '@type': 'EducationalOrganization',
-        name: 'FluentEdge Academy',
+        name: 'LinguaChris Academy',
       },
       educationalCredentialAwarded: 'Verified CEFR Diploma & Digital Certificate',
     },
@@ -90,14 +103,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${fontMain.variable} ${fontDisplay.variable}`}>
       <head>
+        <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
         />
       </head>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+      <body className="min-h-screen bg-emerald-950/5 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 font-sans">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

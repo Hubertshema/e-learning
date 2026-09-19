@@ -179,7 +179,7 @@ export default function SuperadminAnnouncementsPage() {
           </h2>
 
           <Card className="overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="bg-gradient-to-r from-primary-600 to-indigo-600 p-4 text-white text-center">
+            <div className="bg-[#3B6748] p-4 text-white text-center">
               <p className="text-sm font-black">FluentEdge Academy</p>
               <p className="text-[10px] opacity-80">Official Announcement</p>
             </div>

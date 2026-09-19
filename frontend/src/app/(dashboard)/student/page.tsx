@@ -246,10 +246,7 @@ export default function StudentDashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       {/* 1. Gamified Fluency Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-primary-950 p-6 sm:p-8 text-white shadow-2xl border border-indigo-800/40">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary-600/20 blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-3xl bg-[#132519] p-6 sm:p-8 text-white shadow-2xl border border-[#3B6748]/40">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
@@ -317,7 +314,7 @@ export default function StudentDashboardPage() {
 
       {/* Placement Test CTA Banner if not completed */}
       {data && !data.stats.hasTakenPlacementTest && (
-        <div className="rounded-3xl bg-gradient-to-r from-indigo-600 via-primary-600 to-indigo-700 p-6 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="rounded-3xl bg-[#3B6748] p-6 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-amber-300" />
@@ -385,7 +382,7 @@ export default function StudentDashboardPage() {
           const Icon = m.icon;
           return (
             <Link key={m.label} href={m.href}>
-              <Card className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-gradient-to-b ${m.gradient} ${m.borderColor} backdrop-blur-sm`}>
+              <Card className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-white dark:bg-slate-900 ${m.borderColor} backdrop-blur-sm`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {m.label}
@@ -420,7 +417,7 @@ export default function StudentDashboardPage() {
           {/* Continue Learning Course Player Card */}
           {primaryEnrollment ? (
             <Card className="rounded-2xl shadow-xl border-primary-200/80 dark:border-primary-900 overflow-hidden bg-white dark:bg-slate-900">
-              <div className="bg-gradient-to-r from-primary-600/10 via-indigo-600/5 to-transparent p-6 border-b border-primary-100 dark:border-primary-950">
+              <div className="bg-[#F4F7F4] dark:bg-emerald-950/20 p-6 border-b border-primary-100 dark:border-primary-950">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">

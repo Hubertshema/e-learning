@@ -6,18 +6,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen">
       {/* Left decorative brand side */}
-      <div className="relative hidden w-1/2 flex-col justify-between bg-slate-900 p-12 text-white lg:flex">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/60 via-slate-900 to-indigo-950/80" />
+      <div className="relative hidden w-1/2 flex-col justify-between bg-[#132519] p-12 text-white lg:flex">
+        <div className="absolute inset-0 bg-[#132519]" />
         
-        {/* Decorative Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30" />
-
         <div className="relative z-10">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white shadow-lg shadow-primary-500/30">
-              <BookOpen className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">FluentEdge Academy</span>
+            <img
+              src="/logo.png"
+              alt="LinguaChris Academy Logo"
+              className="h-10 w-auto object-contain"
+            />
+            <span className="text-xl font-bold tracking-tight">LinguaChris Academy</span>
           </Link>
         </div>
 

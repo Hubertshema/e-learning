@@ -119,7 +119,7 @@ export default function SuperadminReportsPage() {
                         {formatPrice(t.revenue).replace('.00', '')}
                       </span>
                       <div
-                        className="w-full rounded-t-xl bg-gradient-to-t from-primary-700 to-indigo-500 transition-all hover:opacity-90"
+                        className="w-full rounded-t-xl bg-[#3B6748] transition-all hover:opacity-90"
                         style={{ height: `${heightPercent}%` }}
                       />
                       <span className="text-xs font-semibold text-slate-500">{t.month}</span>
@@ -151,7 +151,7 @@ export default function SuperadminReportsPage() {
                 </div>
                 <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-primary-600 to-indigo-500"
+                    className="h-full rounded-full bg-[#3B6748]"
                     style={{ width: `${item.percentage * 3}%` }}
                   />
                 </div>

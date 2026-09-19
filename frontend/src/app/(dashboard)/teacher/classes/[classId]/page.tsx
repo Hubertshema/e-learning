@@ -121,7 +121,7 @@ export default function TeacherClassDetailPage() {
       </div>
 
       {/* Cohort Invite Card */}
-      <Card className="p-6 bg-gradient-to-r from-primary-900 to-indigo-900 text-white space-y-3 border-none shadow-xl">
+      <Card className="p-6 bg-[#132519] border border-[#3B6748]/30 text-white space-y-3 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="text-xs font-semibold text-primary-200 uppercase tracking-wider flex items-center gap-1.5">

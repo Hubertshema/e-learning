@@ -183,7 +183,7 @@ export default function StudentProfilePage() {
               <div className="relative mx-auto w-24 h-24">
                 <Avatar className="w-24 h-24 text-2xl border-4 border-indigo-100 dark:border-indigo-950 shadow-xl">
                   <AvatarImage src={form.avatarUrl || ''} />
-                  <AvatarFallback className="bg-gradient-to-tr from-indigo-600 to-primary-600 text-white font-black text-2xl">
+                  <AvatarFallback className="bg-[#3B6748] text-white font-black text-2xl">
                     {form.firstName?.[0]}{form.lastName?.[0]}
                   </AvatarFallback>
                 </Avatar>

@@ -138,7 +138,7 @@ export default function SuperadminPaymentsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Card className="p-3 px-4 bg-gradient-to-r from-primary-900 to-indigo-950 text-white border-0">
+          <Card className="p-3 px-4 bg-[#132519] border border-[#3B6748]/30 text-white">
             <span className="text-[10px] uppercase font-bold text-indigo-200">Verified Platform Volume</span>
             <p className="text-xl font-black">{formatPrice(totalVolume)}</p>
           </Card>

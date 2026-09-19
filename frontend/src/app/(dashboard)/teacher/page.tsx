@@ -229,10 +229,7 @@ export default function TeacherDashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       {/* 1. Instructor Command Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 p-6 sm:p-8 text-white shadow-2xl border border-indigo-800/40">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-primary-600/20 blur-3xl pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-3xl bg-[#132519] p-6 sm:p-8 text-white shadow-2xl border border-[#3B6748]/40">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
@@ -324,7 +321,7 @@ export default function TeacherDashboardPage() {
           return (
             <Link key={m.label} href={m.href}>
               <Card
-                className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-gradient-to-b ${m.gradient} ${m.borderColor} backdrop-blur-sm ${
+                className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-white dark:bg-slate-900 ${m.borderColor} backdrop-blur-sm ${
                   m.highlight ? 'ring-2 ring-amber-400/60 dark:ring-amber-500/40' : ''
                 }`}
               >
@@ -606,7 +603,7 @@ export default function TeacherDashboardPage() {
           </Card>
 
           {/* 7-Skill English Proficiency Matrix Banner */}
-          <Card className="rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-900 via-primary-900 to-slate-900 text-white border-0 shadow-xl">
+          <Card className="rounded-2xl overflow-hidden bg-[#132519] border border-[#3B6748]/30 text-white shadow-xl">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-300" />

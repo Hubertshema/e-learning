@@ -78,7 +78,7 @@ export function ListeningQuizActivity({
       </div>
 
       {/* Audio Track Player Box */}
-      <Card className="p-6 bg-gradient-to-r from-primary-900 via-indigo-950 to-slate-900 text-white shadow-xl space-y-4">
+      <Card className="p-6 bg-[#132519] border border-[#3B6748]/30 text-white shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-primary-300">

@@ -205,7 +205,7 @@ export function ActivityContainer({ activity, onFinished }: ActivityContainerPro
       {completedScore === null ? (
         renderInnerActivity()
       ) : (
-        <Card className="p-8 text-center space-y-4 max-w-lg mx-auto bg-gradient-to-b from-white to-emerald-50/30 border-2 border-emerald-300 dark:from-slate-900 dark:to-slate-950 shadow-2xl">
+        <Card className="p-8 text-center space-y-4 max-w-lg mx-auto bg-[#F4F7F4] border-2 border-[#3B6748]/30 dark:bg-emerald-950/40 shadow-2xl">
           <div className="mx-auto h-16 w-16 rounded-2xl bg-emerald-100 flex items-center justify-center dark:bg-emerald-950/60">
             <Sparkles className="h-8 w-8 text-emerald-600" />
           </div>
