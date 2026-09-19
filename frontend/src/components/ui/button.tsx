@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'gradient';
+  variant?: 'default' | 'primary' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'gradient' | 'sage';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   isLoading?: boolean;
 }
@@ -10,30 +10,32 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'default', size = 'default', isLoading, children, disabled, ...props }, ref) => {
     const baseStyles =
-      'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]';
+      'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#315b36] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]';
 
     const variants = {
-      default: 'bg-primary-600 text-white shadow hover:bg-primary-700 active:bg-primary-800',
-      destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-      outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
-      secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
-      ghost: 'hover:bg-accent hover:text-accent-foreground',
-      link: 'text-primary-600 underline-offset-4 hover:underline',
-      gradient: 'bg-[#3B6748] text-white shadow-md hover:bg-[#2C5037] active:bg-[#1E3926]',
+      default: 'bg-[#315b36] text-white shadow hover:bg-[#254629] active:bg-[#1b351e]',
+      primary: 'bg-[#315b36] text-white shadow hover:bg-[#254629] active:bg-[#1b351e]',
+      sage: 'bg-[#7ba27a] text-white shadow hover:bg-[#688e67] active:bg-[#577a56]',
+      destructive: 'bg-red-600 text-white shadow-sm hover:bg-red-700',
+      outline: 'border border-[#e2ebe2] bg-transparent text-current shadow-sm hover:bg-[#eff4ec] hover:text-[#315b36] hover:border-[#315b36]/40',
+      secondary: 'bg-[#eff4ec] text-[#315b36] border border-[#e2ebe2] shadow-sm hover:bg-[#d5e4d4]',
+      ghost: 'bg-transparent text-current hover:bg-[#eff4ec] hover:text-[#315b36]',
+      link: 'text-[#315b36] underline-offset-4 hover:underline p-0 h-auto',
+      gradient: 'bg-[#315b36] text-white shadow-md hover:bg-[#254629] active:bg-[#1b351e]',
     };
 
     const sizes = {
-      default: 'h-10 px-4 py-2',
-      sm: 'h-8 rounded-md px-3 text-xs',
-      lg: 'h-12 rounded-xl px-6 text-base font-semibold',
-      icon: 'h-10 w-10',
+      default: 'h-11 px-5 py-2.5 text-sm sm:text-[15px] font-semibold',
+      sm: 'h-9 rounded-xl px-3.5 text-xs sm:text-[13.5px] font-semibold',
+      lg: 'h-13 rounded-xl px-7 text-base sm:text-[16.5px] font-bold',
+      icon: 'h-11 w-11 p-0',
     };
 
     return (
       <button
         ref={ref}
         disabled={disabled || isLoading}
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
+        className={cn(baseStyles, variants[variant] || variants.default, sizes[size], className)}
         {...props}
       >
         {isLoading ? (

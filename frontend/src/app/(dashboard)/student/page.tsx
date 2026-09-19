@@ -3,34 +3,28 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  BookOpen,
-  Award,
-  CheckCircle2,
-  Clock,
+  Search,
+  Bell,
   Play,
   ArrowRight,
-  Sparkles,
+  Clock,
+  BookOpen,
+  Video,
+  MoreVertical,
+  ChevronDown,
   TrendingUp,
-  AlertCircle,
-  ClipboardList,
-  GraduationCap,
+  Sparkles,
+  Award,
+  Users,
   Calendar,
   Flame,
-  Check,
-  ChevronRight,
-  Zap,
-  Target,
-  FileCheck,
-  MessageSquare,
-  BarChart3
+  CheckCircle2,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
-interface DashboardResponse {
+interface DashboardData {
   profile: {
     id: string;
     currentLevel: string;
@@ -41,29 +35,49 @@ interface DashboardResponse {
       firstName: string;
       lastName: string;
       email: string;
+      avatarUrl?: string;
     };
   };
   stats: {
     activeCoursesCount: number;
     totalEnrolledCount: number;
+    completedCoursesCount: number;
     completedLessonsCount: number;
     studyTimeMinutes: number;
+    studyTimeHours: number;
+    streakDays: number;
+    totalActivityHoursText: string;
+    overallProgressPercentage: number;
+    growthPercentage: number;
+    activityDots: boolean[];
+    goalDistance: number;
+    learnTracking: {
+      month: number;
+      week: number;
+      day: number;
+    };
     hasTakenPlacementTest: boolean;
     latestPlacementScore: number | null;
     recommendedLevel: string | null;
   };
-  activeEnrollments: Array<{
+  inProgressCourse?: {
     id: string;
     status: string;
-    expiresAt?: string;
+    totalUnitsCount: number;
+    totalLessonsCount: number;
+    completedLessonsCount: number;
+    progressPercentage: number;
+    totalDurationMinutes: number;
     course: {
       id: string;
       title: string;
       level: string;
-      teacher: {
+      thumbnailUrl?: string;
+      teacher?: {
         user: {
           firstName: string;
           lastName: string;
+          avatarUrl?: string;
         };
       };
       units: Array<{
@@ -77,600 +91,646 @@ interface DashboardResponse {
         }>;
       }>;
     };
+  } | null;
+  activeEnrollments: Array<any>;
+  studyStatistics: Array<{
+    day: string;
+    activeHours: number;
+    goalHours: number;
+    inactiveHours: number;
   }>;
-  recentAssignments: Array<{
+  topMentors: Array<{
     id: string;
-    status: string;
-    score?: number;
-    submittedAt: string;
-    assignment: {
-      title: string;
-      maxScore: number;
-      lesson?: {
-        unit?: {
-          course?: {
-            title: string;
-          };
-        };
-      };
-    };
-  }>;
-  recentQuizzes: Array<{
-    id: string;
-    score: number;
-    passed: boolean;
-    startedAt: string;
-    quiz: {
-      title: string;
-      passingScore: number;
-    };
-  }>;
-  teacherFeedbacks: Array<{
-    id: string;
-    title: string;
-    content: string;
-    strengths: string[];
-    improvements: string[];
-    teacher: {
-      user: {
-        firstName: string;
-        lastName: string;
-      };
-    };
+    name: string;
+    role: string;
+    avatarUrl?: string;
+    courseCount: number;
   }>;
 }
 
 export default function StudentDashboardPage() {
   const { user } = useAuth();
-  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [progressPeriod, setProgressPeriod] = useState<'Month' | 'Week' | 'All Time'>('Month');
+  const [statsPeriod, setStatsPeriod] = useState<'Weekly' | 'Monthly'>('Weekly');
+  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(3); // Wednesday highlighted
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const res = await apiClient.get<DashboardResponse>('/student/dashboard');
+        const res = await apiClient.get<DashboardData>('/student/dashboard');
         if (res) {
           setData(res);
         }
-      } catch {
-        // High quality fallback
-        setData({
-          profile: {
-            id: 'p-1',
-            currentLevel: 'B1',
-            targetLevel: 'C1',
-            learningGoals: ['Business Fluency', 'IELTS 7.5+'],
-            user: {
-              firstName: user?.firstName || 'Alex',
-              lastName: user?.lastName || 'Kagabo',
-              email: user?.email || 'alex@student.com',
-            },
-          },
-          stats: {
-            activeCoursesCount: 2,
-            totalEnrolledCount: 2,
-            completedLessonsCount: 14,
-            studyTimeMinutes: 420,
-            hasTakenPlacementTest: true,
-            latestPlacementScore: 82,
-            recommendedLevel: 'B1',
-          },
-          activeEnrollments: [
-            {
-              id: 'enr-1',
-              status: 'ACTIVE',
-              expiresAt: new Date(Date.now() + 86400000 * 45).toISOString(),
-              course: {
-                id: 'c-1',
-                title: 'B1-B2 Intermediate General & Business English',
-                level: 'B1',
-                teacher: {
-                  user: { firstName: 'Sarah', lastName: 'Jenkins' },
-                },
-                units: [
-                  {
-                    id: 'u-1',
-                    title: 'Unit 3: Professional Negotiations & Meetings',
-                    lessons: [
-                      {
-                        id: 'les-1',
-                        title: 'Tactful Disagreements & Expressing Opinions Politely',
-                        skill: 'SPEAKING',
-                        estimatedMinutes: 25,
-                      },
-                    ],
-                  },
-                ],
-              },
-            },
-          ],
-          recentAssignments: [
-            {
-              id: 'asg-1',
-              status: 'GRADED',
-              score: 92,
-              submittedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-              assignment: {
-                title: 'Formal Business Email Essay',
-                maxScore: 100,
-              },
-            },
-          ],
-          recentQuizzes: [
-            {
-              id: 'q-1',
-              score: 88,
-              passed: true,
-              startedAt: new Date(Date.now() - 86400000).toISOString(),
-              quiz: {
-                title: 'Conditional Sentences & Modal Verbs Test',
-                passingScore: 75,
-              },
-            },
-          ],
-          teacherFeedbacks: [
-            {
-              id: 'fb-1',
-              title: 'Excellent Progress on Business Vocabulary',
-              content:
-                'Great articulation in your recording. Focus on stress timing in multi-syllable adverbs next week.',
-              strengths: ['Intonation Variety', 'Grammar Accuracy'],
-              improvements: ['Word Stress Consistency'],
-              teacher: {
-                user: { firstName: 'Sarah', lastName: 'Jenkins' },
-              },
-            },
-          ],
-        });
+      } catch (err) {
+        console.error('Failed to load student dashboard:', err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchDashboard();
-  }, [user]);
+  }, []);
 
-  const primaryEnrollment = data?.activeEnrollments?.[0];
-  const nextLesson = primaryEnrollment?.course?.units?.[0]?.lessons?.[0];
-
-  const skillMastery = [
-    { skill: 'Grammar Accuracy', score: 85, level: 'B2', color: 'bg-emerald-500' },
-    { skill: 'Vocabulary Range', score: 82, level: 'B2', color: 'bg-emerald-500' },
-    { skill: 'Reading Comprehension', score: 88, level: 'B2+', color: 'bg-emerald-500' },
-    { skill: 'Listening & Audio', score: 78, level: 'B1+', color: 'bg-indigo-500' },
-    { skill: 'Formal Writing', score: 74, level: 'B1', color: 'bg-indigo-500' },
-    { skill: 'Speaking & Fluency', score: 72, level: 'B1', color: 'bg-indigo-500' },
-    { skill: 'Pronunciation & Accent', score: 76, level: 'B1+', color: 'bg-indigo-500' },
-  ];
+  const studentName = data?.profile?.user?.firstName || user?.firstName || 'Student';
+  const activeCourse = data?.inProgressCourse || (data?.activeEnrollments && data.activeEnrollments[0]) || null;
+  const stats = data?.stats;
+  const studyStats = data?.studyStatistics || [];
+  const mentors = data?.topMentors || [];
+  const activityDots = stats?.activityDots || Array(21).fill(false);
 
   return (
-    <div className="space-y-8 animate-fade-in pb-16">
-      {/* 1. Gamified Fluency Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-[#132519] p-6 sm:p-8 text-white shadow-2xl border border-[#3B6748]/40">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="indigo" className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 font-mono text-[11px] px-3 py-1">
-                🌟 Student Learning Hub
-              </Badge>
-              <Badge variant="outline" className="text-white border-white/20 text-[11px] px-2.5 py-0.5 font-bold">
-                Level {data?.profile.currentLevel || user?.studentProfile?.currentLevel || 'B1'}
-              </Badge>
-              {data?.profile.targetLevel && (
-                <Badge variant="success" className="text-[11px] px-2.5 py-0.5 font-bold">
-                  🎯 Target: {data.profile.targetLevel}
-                </Badge>
+    <div className="min-h-full bg-[#eff4ec] p-4 sm:p-6 lg:p-8 space-y-6 text-[#2e3339]">
+      {/* =========================================================================
+          TOP HEADER GREETING BAR
+      ========================================================================= */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg bg-white px-6 py-5 shadow-sm border border-[#e2ebe2]">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#2e3339] flex items-center gap-2">
+            Welcome Back <span className="text-2xl">👋</span>
+          </h1>
+          <p className="text-sm font-medium text-[#5a5e63] mt-1">
+            Let's learn something new today, {studentName}!
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 self-end sm:self-center">
+          <div className="relative hidden md:block">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#7ba27a]" />
+            <input
+              type="text"
+              placeholder="Search syllabus, courses..."
+              className="w-56 lg:w-64 rounded-md border border-[#e2ebe2] bg-[#eff4ec]/50 pl-10 pr-4 py-2 text-sm text-[#2e3339] placeholder:text-[#5a5e63] focus:outline-none focus:border-[#315b36]"
+            />
+          </div>
+
+          <Link href="/student/notifications">
+            <button
+              aria-label="Notifications"
+              className="relative flex h-10 w-10 items-center justify-center rounded-md border border-[#e2ebe2] bg-white text-[#2e3339] hover:bg-[#eff4ec] transition-colors"
+            >
+              <Bell className="h-4.5 w-4.5" />
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#315b36]" />
+            </button>
+          </Link>
+
+          <Link href="/student/profile">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[#315b36] text-white font-bold text-sm shadow-sm overflow-hidden border border-[#315b36]">
+              {data?.profile?.user?.avatarUrl ? (
+                <img
+                  src={data.profile.user.avatarUrl}
+                  alt={studentName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                studentName.charAt(0).toUpperCase()
               )}
-              <div className="flex items-center gap-1 text-amber-400 font-bold text-xs bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
-                <Flame className="h-3.5 w-3.5 fill-amber-400" />
-                <span>5 Day Streak</span>
-              </div>
             </div>
-
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Ready to elevate your English, {user?.firstName || 'Scholar'}?
-            </h1>
-            <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed">
-              Your overall CEFR fluency score is at <strong>78% (Intermediate)</strong>. Complete today's interactive lesson to advance towards {data?.profile.targetLevel || 'C1 Fluency'}.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap sm:flex-nowrap gap-2.5 shrink-0">
-            <Link href="/student/courses">
-              <Button variant="outline" size="sm" className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md">
-                <BookOpen className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />
-                Browse Catalog
-              </Button>
-            </Link>
-            <Link href="/student/placement-test">
-              <Button variant="gradient" size="sm" className="shadow-lg shadow-indigo-600/40 font-bold">
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                {data?.stats.hasTakenPlacementTest ? 'Placement Assessment' : 'Take Diagnostic Test'}
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Live Study Progress Strip */}
-        <div className="mt-6 pt-5 border-t border-indigo-800/60 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="flex items-center gap-2 text-indigo-200">
-            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Completed Lessons: <strong>{data?.stats.completedLessonsCount ?? 14} Modules</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-indigo-200">
-            <div className="h-2 w-2 rounded-full bg-blue-400" />
-            <span>Study Time: <strong>{Math.floor((data?.stats.studyTimeMinutes ?? 420) / 60)}h {(data?.stats.studyTimeMinutes ?? 420) % 60}m</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-indigo-200">
-            <div className="h-2 w-2 rounded-full bg-amber-400" />
-            <span>Active Courses: <strong>{data?.stats.activeCoursesCount ?? 1} Courses</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-indigo-200">
-            <div className="h-2 w-2 rounded-full bg-indigo-400" />
-            <span>Next Live Class: <strong>Mon • 18:00 UTC+2</strong></span>
-          </div>
-        </div>
-      </div>
-
-      {/* Placement Test CTA Banner if not completed */}
-      {data && !data.stats.hasTakenPlacementTest && (
-        <div className="rounded-3xl bg-[#3B6748] p-6 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-300" />
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-100">
-                Diagnostic CEFR Level Test Available
-              </span>
-            </div>
-            <h3 className="text-base font-bold">Discover your exact CEFR English level in 10 minutes</h3>
-            <p className="text-xs text-indigo-100/90">
-              Evaluate Grammar, Vocabulary, Reading, and Listening to receive personalized course recommendations.
-            </p>
-          </div>
-          <Link href="/student/placement-test">
-            <Button size="sm" variant="secondary" className="font-bold text-xs shadow-md">
-              Start Free Diagnostic Test
-            </Button>
           </Link>
         </div>
-      )}
-
-      {/* 2. Key Stats Row */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            label: 'Active Enrollments',
-            value: data?.stats.activeCoursesCount ?? 1,
-            sub: 'CEFR Syllabus Tracks',
-            icon: BookOpen,
-            gradient: 'from-indigo-600/15 via-indigo-500/5 to-transparent',
-            iconBg: 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30',
-            borderColor: 'border-indigo-200/60 dark:border-indigo-900/60',
-            href: '/student/my-courses',
-          },
-          {
-            label: 'Completed Modules',
-            value: data?.stats.completedLessonsCount ?? 14,
-            sub: 'Activities & Drills',
-            icon: CheckCircle2,
-            gradient: 'from-emerald-600/15 via-emerald-500/5 to-transparent',
-            iconBg: 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30',
-            borderColor: 'border-emerald-200/60 dark:border-emerald-900/60',
-            href: '/student/progress',
-          },
-          {
-            label: 'Learning Hours',
-            value: `${Math.floor((data?.stats.studyTimeMinutes ?? 420) / 60)}h ${(data?.stats.studyTimeMinutes ?? 420) % 60}m`,
-            sub: 'Dedicated practice time',
-            icon: Clock,
-            gradient: 'from-blue-600/15 via-blue-500/5 to-transparent',
-            iconBg: 'bg-blue-600 text-white shadow-lg shadow-blue-500/30',
-            borderColor: 'border-blue-200/60 dark:border-blue-900/60',
-            href: '/student/progress',
-          },
-          {
-            label: 'Diagnostic Benchmark',
-            value: data?.profile.currentLevel ?? 'B1',
-            sub: 'CEFR Official Level',
-            icon: GraduationCap,
-            gradient: 'from-amber-600/15 via-amber-500/5 to-transparent',
-            iconBg: 'bg-amber-600 text-white shadow-lg shadow-amber-500/30',
-            borderColor: 'border-amber-200/60 dark:border-amber-900/60',
-            href: '/student/placement-test',
-          },
-        ].map((m) => {
-          const Icon = m.icon;
-          return (
-            <Link key={m.label} href={m.href}>
-              <Card className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl bg-white dark:bg-slate-900 ${m.borderColor} backdrop-blur-sm`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {m.label}
-                  </span>
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${m.iconBg}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-                      {m.value}
-                    </span>
-                    <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 flex items-center">
-                      View <ChevronRight className="h-3 w-3 ml-0.5" />
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/80 pt-2">
-                    {m.sub}
-                  </p>
-                </div>
-              </Card>
-            </Link>
-          );
-        })}
       </div>
 
-      {/* 3. Main Learning Hub Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column (8 cols): Primary Course Player & Study Quests */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Continue Learning Course Player Card */}
-          {primaryEnrollment ? (
-            <Card className="rounded-2xl shadow-xl border-primary-200/80 dark:border-primary-900 overflow-hidden bg-white dark:bg-slate-900">
-              <div className="bg-[#F4F7F4] dark:bg-emerald-950/20 p-6 border-b border-primary-100 dark:border-primary-950">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="success" className="text-[10px] font-bold">
-                        Active Syllabus
-                      </Badge>
-                      <Badge variant="indigo" className="text-[10px] font-bold">
-                        {primaryEnrollment.course.level} Level
-                      </Badge>
-                    </div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                      {primaryEnrollment.course.title}
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Instructor: <strong>{primaryEnrollment.course.teacher.user.firstName} {primaryEnrollment.course.teacher.user.lastName}</strong>
-                    </p>
+      {/* =========================================================================
+          SECTION 1: TWO-COLUMN TOP LAYOUT (Spacious & Balanced)
+      ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* LEFT COLUMN: ACTIVE COURSE CARD */}
+        <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] flex flex-col justify-between space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#315b36] bg-[#eff4ec] px-3 py-1 rounded-md">
+                Active Enrolled Course
+              </span>
+              {activeCourse?.course?.level && (
+                <span className="text-xs font-bold text-[#7ba27a] bg-[#eff4ec] px-2.5 py-1 rounded-md">
+                  CEFR {activeCourse.course.level}
+                </span>
+              )}
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-bold text-[#2e3339] leading-snug">
+              {activeCourse ? activeCourse.course.title : 'No Active Course Enrolled'}
+            </h2>
+
+            {activeCourse ? (
+              <>
+                {/* Meta Chips */}
+                <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#5a5e63] pt-1">
+                  <div className="flex items-center gap-1.5 text-[#315b36] bg-[#eff4ec] px-3 py-1.5 rounded-md">
+                    <Clock className="h-4 w-4 shrink-0" />
+                    <span>
+                      {Math.floor((activeCourse.totalDurationMinutes || 0) / 60)} hr{' '}
+                      {(activeCourse.totalDurationMinutes || 0) % 60} mins
+                    </span>
                   </div>
-
-                  {primaryEnrollment.expiresAt && (
-                    <div className="text-xs text-slate-500 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
-                      Access valid until: <strong>{new Date(primaryEnrollment.expiresAt).toLocaleDateString()}</strong>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <CardContent className="p-6 space-y-6">
-                {nextLesson ? (
-                  <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5 dark:border-indigo-950 dark:bg-indigo-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
-                          Up Next • {primaryEnrollment.course.units[0]?.title || 'Unit 3'}
-                        </span>
-                      </div>
-                      <h4 className="text-base font-bold text-slate-900 dark:text-white">
-                        {nextLesson.title}
-                      </h4>
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <Badge variant="outline" className="text-[10px] py-0 border-indigo-300 text-indigo-700 dark:text-indigo-300">
-                          {nextLesson.skill}
-                        </Badge>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5 text-slate-400" />
-                          {nextLesson.estimatedMinutes} mins estimated
-                        </span>
-                      </div>
-                    </div>
-
-                    <Link href={`/student/courses/${primaryEnrollment.course.id}`} className="shrink-0">
-                      <Button variant="gradient" size="lg" className="shadow-lg shadow-primary-600/30 font-bold text-sm">
-                        <Play className="mr-2 h-4 w-4 fill-current" />
-                        Resume Lesson
-                      </Button>
-                    </Link>
+                  <div className="flex items-center gap-1.5 text-[#315b36] bg-[#eff4ec] px-3 py-1.5 rounded-md">
+                    <BookOpen className="h-4 w-4 shrink-0" />
+                    <span>
+                      {activeCourse.totalUnitsCount || 0} chapter{activeCourse.totalUnitsCount !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                ) : (
-                  <Link href={`/student/courses/${primaryEnrollment.course.id}`}>
-                    <Button variant="gradient" size="lg" className="w-full font-bold">
-                      Open Full Course Curriculum
-                    </Button>
-                  </Link>
-                )}
-
-                {/* Daily Study Quests */}
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
-                    <Target className="h-4 w-4 text-primary-600" /> Daily Fluency Quests
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/30 dark:border-emerald-900/60 flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white">Complete 1 Lesson</p>
-                        <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">+50 Fluency XP</p>
-                      </div>
-                      <div className="h-6 w-6 rounded-full bg-emerald-600 text-white flex items-center justify-center">
-                        <Check className="h-3.5 w-3.5 stroke-[3]" />
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white">Take Daily Quiz</p>
-                        <p className="text-[10px] text-slate-500">+30 Fluency XP</p>
-                      </div>
-                      <Link href="/student/quizzes">
-                        <Button variant="outline" size="sm" className="h-7 text-[10px] px-2">
-                          Start
-                        </Button>
-                      </Link>
-                    </div>
-
-                    <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white">Submit Homework</p>
-                        <p className="text-[10px] text-slate-500">+40 Fluency XP</p>
-                      </div>
-                      <Link href="/student/assignments">
-                        <Button variant="outline" size="sm" className="h-7 text-[10px] px-2">
-                          Open
-                        </Button>
-                      </Link>
-                    </div>
+                  <div className="flex items-center gap-1.5 text-[#315b36] bg-[#eff4ec] px-3 py-1.5 rounded-md">
+                    <Video className="h-4 w-4 shrink-0" />
+                    <span>{activeCourse.totalLessonsCount || 0} lessons</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="p-10 text-center rounded-2xl border-dashed">
-              <BookOpen className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">No active course enrollments</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-5">
-                Explore our catalog of CEFR-aligned English courses from beginner to advanced professional mastery.
+
+                {/* Progress Bar */}
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-[#2e3339]">
+                    <span className="text-xs font-medium text-[#5a5e63]">Syllabus Completion</span>
+                    <span className="text-xs font-bold text-[#315b36]">
+                      {activeCourse.progressPercentage || 0}% Complete
+                    </span>
+                  </div>
+                  <div className="h-2.5 w-full rounded-sm bg-[#e2ebe2] overflow-hidden">
+                    <div
+                      className="h-full rounded-sm bg-[#315b36] transition-all duration-500"
+                      style={{
+                        width: `${activeCourse.progressPercentage || 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-[#5a5e63] leading-relaxed">
+                You do not have any active courses yet. Browse our certified CEFR curriculum to get started.
               </p>
-              <Link href="/student/courses">
-                <Button variant="gradient" size="lg" className="font-bold">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Explore Course Catalog
-                </Button>
-              </Link>
-            </Card>
-          )}
+            )}
+          </div>
 
-          {/* Teacher Coaching Notes */}
-          {data?.teacherFeedbacks && data.teacherFeedbacks.length > 0 && (
-            <Card className="rounded-2xl shadow-lg border-slate-200/80 dark:border-slate-800">
-              <CardHeader className="border-b border-slate-100 p-5 dark:border-slate-800/80">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-amber-500" />
-                    Instructor Coaching & Feedback
-                  </CardTitle>
-                  <Link href="/student/feedback">
-                    <Button variant="ghost" size="sm" className="text-xs text-primary-600">
-                      View All
-                    </Button>
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 space-y-3.5">
-                {data.teacherFeedbacks.map((fb) => (
-                  <div
-                    key={fb.id}
-                    className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">{fb.title}</h4>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        Instructor: {fb.teacher?.user?.firstName} {fb.teacher?.user?.lastName}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{fb.content}</p>
-                    {fb.strengths && fb.strengths.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Strengths:</span>
-                        {fb.strengths.map((s: string, i: number) => (
-                          <Badge key={i} variant="success" className="text-[9px] py-0 font-medium">
-                            {s}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          <div className="pt-4 border-t border-[#e2ebe2]">
+            <Link
+              href={
+                activeCourse
+                  ? `/student/courses/${activeCourse.course.id}`
+                  : '/student/courses'
+              }
+            >
+              <button className="w-full flex items-center justify-between rounded-md bg-[#315b36] text-white hover:bg-[#254629] px-5 py-3 text-xs font-bold transition-colors group shadow-sm">
+                <span>{activeCourse ? 'Continue Learning' : 'Explore Course Catalog'}</span>
+                <Play className="h-4 w-4 fill-current ml-1" />
+              </button>
+            </Link>
+          </div>
         </div>
 
-        {/* Right Column (4 cols): 7-Skill Scorecard & Recent Assessments */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* 7-Skill Mastery Radar Card */}
-          <Card className="rounded-2xl shadow-lg border-slate-200/80 dark:border-slate-800">
-            <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800/80">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-primary-600" />
-                  7-Skill Mastery
-                </CardTitle>
-                <Link href="/student/progress" className="text-xs font-bold text-primary-600 hover:underline">
-                  Matrix
-                </Link>
-              </div>
-              <CardDescription className="text-xs">CEFR English Proficiency Scorecard</CardDescription>
-            </CardHeader>
-
-            <CardContent className="p-5 space-y-3.5">
-              {skillMastery.map((s) => (
-                <div key={s.skill} className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-700 dark:text-slate-300">{s.skill}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">{s.level}</span>
-                      <span className="font-black text-slate-900 dark:text-white">{s.score}%</span>
-                    </div>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                    <div className={`h-full rounded-full ${s.color}`} style={{ width: `${s.score}%` }} />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-
-            <CardFooter className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
-              <Link href="/student/progress" className="w-full">
-                <Button variant="outline" size="sm" className="w-full text-xs font-semibold">
-                  Detailed 7-Skill Analytics
+        {/* RIGHT COLUMN: HERO PROMOTIONAL BANNER */}
+        <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+          <div className="relative z-10 max-w-[62%] space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#7ba27a] bg-[#eff4ec] px-3 py-1 rounded-md inline-block">
+              Daily Inspiration
+            </span>
+            <h3 className="text-xl sm:text-2xl font-bold text-[#2e3339] leading-snug">
+              Keep Learning New Things Everyday
+            </h3>
+            <p className="text-xs text-[#5a5e63] leading-relaxed font-medium">
+              Elevate your English communication with certified international faculty, interactive modules, and CEFR-accredited curriculum.
+            </p>
+            <div className="pt-2">
+              <Link href="/student/courses">
+                <Button className="rounded-md bg-[#2e3339] text-white hover:bg-black text-xs font-bold px-5 py-2.5 h-auto shadow-sm">
+                  Explore Courses ➔
                 </Button>
               </Link>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
 
-          {/* Recent Quizzes Card */}
-          <Card className="rounded-2xl shadow-lg border-slate-200/80 dark:border-slate-800">
-            <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800/80">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-indigo-600" />
-                  Recent Assessments
-                </CardTitle>
-                <Link href="/student/quizzes" className="text-xs font-bold text-primary-600 hover:underline">
-                  All
-                </Link>
+          {/* Student Cutout Image on Right */}
+          <div className="absolute right-0 bottom-0 top-0 w-[40%] pointer-events-none flex items-end justify-end">
+            <img
+              src="/student_hero_promo.jpg"
+              alt="Keep learning"
+              className="h-full max-h-[230px] object-contain object-bottom"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          SECTION 2: PROGRESS & ACTIVITY ROW (TWO COLUMNS)
+      ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* CARD: PROGRESS METRICS SUMMARY */}
+        <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] space-y-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base sm:text-lg font-bold text-[#2e3339]">Learning Progress Summary</h3>
+            <button className="flex items-center gap-1.5 rounded-md border border-[#e2ebe2] bg-[#eff4ec] px-3 py-1 text-xs font-bold text-[#315b36]">
+              <span>{progressPeriod}</span>
+              <ChevronDown className="h-3 w-3" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 my-auto py-2">
+            {/* Stat 1 */}
+            <div className="rounded-md bg-[#eff4ec]/60 p-4 border border-[#e2ebe2] space-y-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#315b36] inline-block" />
+              <p className="text-xl sm:text-2xl font-extrabold text-[#2e3339] leading-tight">
+                {stats?.studyTimeHours ?? 0}h
+              </p>
+              <p className="text-xs font-medium text-[#5a5e63]">Time Spent</p>
+            </div>
+
+            {/* Stat 2 */}
+            <div className="rounded-md bg-[#eff4ec]/60 p-4 border border-[#e2ebe2] space-y-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#7ba27a] inline-block" />
+              <p className="text-xl sm:text-2xl font-extrabold text-[#2e3339] leading-tight">
+                {stats?.completedCoursesCount ?? 0}
+              </p>
+              <p className="text-xs font-medium text-[#5a5e63]">Completed</p>
+            </div>
+
+            {/* Stat 3 */}
+            <div className="rounded-md bg-[#eff4ec]/60 p-4 border border-[#e2ebe2] space-y-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#315b36]/60 inline-block" />
+              <p className="text-xl sm:text-2xl font-extrabold text-[#2e3339] leading-tight">
+                {String(stats?.activeCoursesCount ?? 0).padStart(2, '0')}
+              </p>
+              <p className="text-xs font-medium text-[#5a5e63]">Enrolled</p>
+            </div>
+          </div>
+        </div>
+
+        {/* CARD: YOUR ACTIVITY / STREAK */}
+        <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] space-y-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base sm:text-lg font-bold text-[#2e3339]">Your Study Activity</h3>
+            <span className="text-xs font-bold text-[#7ba27a] bg-[#eff4ec] px-2.5 py-1 rounded-md">
+              Past 21 Days
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 my-auto">
+            <div className="space-y-1">
+              <p className="text-2xl sm:text-3xl font-extrabold text-[#315b36]">
+                {stats?.streakDays ?? 0} <span className="text-sm font-bold text-[#5a5e63]">Day Streak</span>
+              </p>
+              <p className="text-xs font-medium text-[#5a5e63]">
+                Total: {stats?.totalActivityHoursText || '0 hours 0 minutes'}
+              </p>
+            </div>
+
+            {/* 3 rows of 7 activity dots */}
+            <div className="space-y-1.5 p-3 rounded-md bg-[#eff4ec]/50 border border-[#e2ebe2]">
+              <div className="grid grid-cols-7 gap-1.5">
+                {activityDots.slice(0, 7).map((active, i) => (
+                  <span
+                    key={i}
+                    className={`h-2.5 w-2.5 rounded-full mx-auto ${
+                      active ? 'bg-[#315b36]' : 'bg-[#e2ebe2]'
+                    }`}
+                  />
+                ))}
               </div>
-            </CardHeader>
+              <div className="grid grid-cols-7 gap-1.5">
+                {activityDots.slice(7, 14).map((active, i) => (
+                  <span
+                    key={i}
+                    className={`h-2.5 w-2.5 rounded-full mx-auto ${
+                      active ? 'bg-[#315b36]' : 'bg-[#e2ebe2]'
+                    }`}
+                  />
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1.5">
+                {activityDots.slice(14, 21).map((active, i) => (
+                  <span
+                    key={i}
+                    className={`h-2.5 w-2.5 rounded-full mx-auto ${
+                      active ? 'bg-[#315b36]' : 'bg-[#e2ebe2]'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <CardContent className="p-5">
-              {data?.recentQuizzes && data.recentQuizzes.length > 0 ? (
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {data.recentQuizzes.map((q) => (
-                    <div key={q.id} className="py-3 flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white">{q.quiz?.title}</p>
-                        <p className="text-[10px] text-slate-400">
-                          {new Date(q.startedAt).toLocaleDateString()}
+      {/* =========================================================================
+          SECTION 3: STUDY STATISTICS & FACULTY (TWO COLUMNS)
+      ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* COLUMN 1: STUDY STATISTICS + LEARNING PROGRESS */}
+        <div className="space-y-6">
+          {/* CARD 5: STUDY STATISTICS BAR CHART */}
+          <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg font-bold text-[#2e3339]">Study Statistics</h3>
+              <button className="flex items-center gap-1.5 rounded-md border border-[#e2ebe2] bg-[#eff4ec] px-3 py-1.5 text-xs font-bold text-[#315b36]">
+                <span>{statsPeriod}</span>
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Interactive SVG / HTML Bar Chart */}
+            <div className="relative pt-6 pb-2">
+              {/* Y-axis Labels & Guidelines */}
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none text-xs font-bold text-[#7ba27a]">
+                <div className="border-b border-dashed border-[#e2ebe2] w-full flex justify-between">
+                  <span>4h</span>
+                </div>
+                <div className="border-b border-dashed border-[#e2ebe2] w-full flex justify-between">
+                  <span>3h</span>
+                </div>
+                <div className="border-b border-dashed border-[#e2ebe2] w-full flex justify-between">
+                  <span>2h</span>
+                </div>
+                <div className="border-b border-dashed border-[#e2ebe2] w-full flex justify-between">
+                  <span>1h</span>
+                </div>
+                <div className="border-b border-[#e2ebe2] w-full flex justify-between">
+                  <span>0h</span>
+                </div>
+              </div>
+
+              {/* 7 Days Bar Columns */}
+              <div className="relative z-10 grid grid-cols-7 gap-2 sm:gap-4 h-48 items-end pl-8 pr-2">
+                {studyStats.map((item, index) => {
+                  const activeHeightPercent = Math.min(100, Math.round((item.activeHours / 4) * 100));
+                  const isHovered = hoveredBarIndex === index;
+
+                  return (
+                    <div
+                      key={item.day}
+                      className="flex flex-col items-center h-full justify-end group cursor-pointer relative"
+                      onMouseEnter={() => setHoveredBarIndex(index)}
+                    >
+                      {/* Hover Tooltip Popup */}
+                      {isHovered && (
+                        <div className="absolute -top-10 z-30 rounded-md bg-white px-2.5 py-1.5 shadow-lg border border-[#e2ebe2] text-xs font-bold whitespace-nowrap animate-in fade-in zoom-in-95">
+                          <p className="text-[#315b36]">Active: {item.activeHours}h</p>
+                          <p className="text-[#5a5e63]">Target: {item.goalHours}h</p>
+                        </div>
+                      )}
+
+                      {/* Bar Track & Fill */}
+                      <div className="w-full max-w-[32px] h-full rounded-sm bg-[#eff4ec] overflow-hidden flex flex-col justify-end relative">
+                        <div
+                          className={`w-full rounded-sm transition-all duration-300 ${
+                            isHovered ? 'bg-[#254629]' : 'bg-[#315b36]'
+                          }`}
+                          style={{
+                            height: `${activeHeightPercent}%`,
+                            backgroundImage:
+                              'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.3) 3px, rgba(255,255,255,0.3) 6px)',
+                          }}
+                        />
+                      </div>
+
+                      {/* Day Label */}
+                      <span
+                        className={`text-xs font-bold mt-2.5 transition-colors ${
+                          isHovered ? 'text-[#315b36]' : 'text-[#5a5e63]'
+                        }`}
+                      >
+                        {item.day}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Chart Legend */}
+            <div className="flex items-center gap-6 pt-1 text-xs font-bold text-[#5a5e63]">
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-[#315b36]" />
+                <span>Active Study Time</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-[#e2ebe2]" />
+                <span>Daily Target</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CARD 7: LEARNING PROGRESS GAUGE */}
+          <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div className="space-y-2.5 text-center sm:text-left">
+              <h3 className="text-base sm:text-lg font-bold text-[#2e3339]">Overall Learning Progress</h3>
+              <div className="inline-flex items-center gap-1.5 rounded-md bg-[#eff4ec] px-3 py-1 text-xs font-bold text-[#315b36]">
+                <TrendingUp className="h-4 w-4" />
+                <span>+{stats?.growthPercentage || 0}% Growth</span>
+              </div>
+              <p className="text-xs font-medium text-[#5a5e63]">
+                Calculated across all registered CEFR modules
+              </p>
+            </div>
+
+            {/* Semi-Circular Radial Gauge */}
+            <div className="relative flex flex-col items-center justify-center">
+              <svg className="w-40 h-24 overflow-visible" viewBox="0 0 160 90">
+                {/* Background Arc */}
+                <path
+                  d="M 20 80 A 60 60 0 0 1 140 80"
+                  fill="none"
+                  stroke="#e2ebe2"
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                  strokeDasharray="6 6"
+                />
+                {/* Active Progress Arc */}
+                <path
+                  d="M 20 80 A 60 60 0 0 1 140 80"
+                  fill="none"
+                  stroke="#315b36"
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                  strokeDasharray="6 6"
+                  strokeDashoffset={`${188 - (188 * (stats?.overallProgressPercentage || 0)) / 100}`}
+                  className="transition-all duration-1000"
+                />
+              </svg>
+              <div className="absolute bottom-0 text-center">
+                <span className="text-3xl font-extrabold text-[#315b36]">
+                  {stats?.overallProgressPercentage || 0}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* COLUMN 2: LEARN TRACKING + FACULTY LIST */}
+        <div className="space-y-6">
+          {/* CARD 6: LEARN TRACKING */}
+          <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg font-bold text-[#2e3339]">Learn Tracking</h3>
+              <button
+                aria-label="Options"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-[#5a5e63] hover:bg-[#eff4ec]"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Multi-Ring Concentric Circles SVG */}
+            <div className="relative flex items-center justify-center py-3">
+              <svg className="h-40 w-40" viewBox="0 0 160 160">
+                {/* Outer Ring - Month (Dark Green) */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="62"
+                  fill="none"
+                  stroke="#eff4ec"
+                  strokeWidth="8"
+                />
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="62"
+                  fill="none"
+                  stroke="#315b36"
+                  strokeWidth="8"
+                  strokeDasharray={2 * Math.PI * 62}
+                  strokeDashoffset={2 * Math.PI * 62 * (1 - (stats?.learnTracking?.month || 0) / 100)}
+                  strokeLinecap="round"
+                  className="rotate-[-90deg] origin-center transition-all duration-1000"
+                />
+
+                {/* Middle Ring - Week (Sage Green) */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="48"
+                  fill="none"
+                  stroke="#eff4ec"
+                  strokeWidth="8"
+                />
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="48"
+                  fill="none"
+                  stroke="#7ba27a"
+                  strokeWidth="8"
+                  strokeDasharray={2 * Math.PI * 48}
+                  strokeDashoffset={2 * Math.PI * 48 * (1 - (stats?.learnTracking?.week || 0) / 100)}
+                  strokeLinecap="round"
+                  className="rotate-[-90deg] origin-center transition-all duration-1000"
+                />
+
+                {/* Inner Ring - Day (Charcoal/Accent) */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="34"
+                  fill="none"
+                  stroke="#eff4ec"
+                  strokeWidth="8"
+                />
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="34"
+                  fill="none"
+                  stroke="#2e3339"
+                  strokeWidth="8"
+                  strokeDasharray={2 * Math.PI * 34}
+                  strokeDashoffset={2 * Math.PI * 34 * (1 - (stats?.learnTracking?.day || 0) / 100)}
+                  strokeLinecap="round"
+                  className="rotate-[-90deg] origin-center transition-all duration-1000"
+                />
+              </svg>
+
+              {/* Center Text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                <span className="text-2xl font-extrabold text-[#315b36]">
+                  {stats?.goalDistance ?? 100}%
+                </span>
+                <span className="text-xs font-bold text-[#5a5e63]">
+                  Goal Distance
+                </span>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-6 text-xs font-bold text-[#5a5e63]">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#315b36]" />
+                <span>Month</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#7ba27a]" />
+                <span>Week</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#2e3339]" />
+                <span>Day</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CARD 8: TOP MENTORS LIST */}
+          <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg font-bold text-[#2e3339]">Faculty & Mentors</h3>
+              <Link
+                href="/student/courses"
+                className="text-xs font-bold text-[#315b36] hover:underline transition-colors"
+              >
+                View all
+              </Link>
+            </div>
+
+            {mentors.length > 0 ? (
+              <div className="space-y-3 divide-y divide-[#eff4ec]">
+                {mentors.slice(0, 5).map((mentor) => (
+                  <div
+                    key={mentor.id}
+                    className="flex items-center justify-between pt-3 first:pt-0 group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[#eff4ec] text-[#315b36] font-bold text-xs border border-[#e2ebe2] overflow-hidden">
+                        {mentor.avatarUrl ? (
+                          <img
+                            src={mentor.avatarUrl}
+                            alt={mentor.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          mentor.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .slice(0, 2)
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[#2e3339] group-hover:text-[#315b36] transition-colors">
+                          {mentor.name}
+                        </p>
+                        <p className="text-xs text-[#5a5e63] line-clamp-1 max-w-[220px]">
+                          {mentor.role}
                         </p>
                       </div>
-                      <Badge variant={q.passed ? 'success' : 'destructive'} className="text-[10px] font-bold">
-                        {q.score}% {q.passed ? 'Passed' : 'Retry'}
-                      </Badge>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-6 text-center text-xs text-slate-400">
-                  No assessments completed yet.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+
+                    <Link href={`/student/courses`}>
+                      <button
+                        aria-label="View Instructor"
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-[#5a5e63] hover:bg-[#eff4ec] hover:text-[#315b36] transition-colors"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-[#5a5e63] space-y-2">
+                <Users className="h-8 w-8 text-[#7ba27a] mx-auto opacity-70" />
+                <p>Instructors will appear here as you engage in courses.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
-

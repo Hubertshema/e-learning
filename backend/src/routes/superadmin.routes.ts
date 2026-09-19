@@ -113,6 +113,12 @@ router.post('/announcements', superadminController.sendAnnouncement);
 router.get('/email-settings', superadminController.getEmailSettings);
 router.post('/email-settings/test', superadminController.sendTestEmail);
 
+// Newsletter Subscribers & Contact Inquiries
+router.get('/newsletter-subscribers', superadminController.getNewsletterSubscribers);
+router.get('/contact-messages', superadminController.getContactMessages);
+router.patch('/contact-messages/:id', superadminController.updateContactMessageStatus);
+
 export default router;
+
 
 

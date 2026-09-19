@@ -51,9 +51,19 @@ export const VerifyEmailSchema = z.object({
   token: z.string().min(1, 'Verification token is required'),
 });
 
+export const GoogleAuthSchema = z.object({
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  firstName: z.string().min(1, 'First name is required').trim(),
+  lastName: z.string().optional().default(''),
+  role: z.enum(['STUDENT', 'TEACHER']).default('STUDENT'),
+  avatarUrl: z.string().optional(),
+  googleId: z.string().optional(),
+});
+
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type RefreshTokenInput = z.infer<typeof RefreshTokenSchema>;
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
 export type VerifyEmailInput = z.infer<typeof VerifyEmailSchema>;
+export type GoogleAuthInput = z.infer<typeof GoogleAuthSchema>;

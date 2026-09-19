@@ -111,6 +111,7 @@ model User {
   emailLogs               EmailLog[]
   auditLogs               AuditLog[]
   notifications           Notification[]
+  diagnosticAttempts      DiagnosticAttempt[]
 
   @@map("users")
 }
@@ -749,3 +750,87 @@ model PlatformSetting {
 
   @@map("platform_settings")
 }
+
+// ----------------------------------------------------
+// NEWSLETTER & CONTACT US
+// ----------------------------------------------------
+
+enum ContactMessageStatus {
+  UNREAD
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  isActive     Boolean  @default(true)
+  subscribedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("newsletter_subscribers")
+}
+
+model ContactMessage {
+  id        String               @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?              @default("General Inquiry")
+  message   String               @db.Text
+  status    ContactMessageStatus @default(UNREAD)
+  notes     String?              @db.Text
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("contact_messages")
+}
+
+// ----------------------------------------------------
+// DIAGNOSTIC PLACEMENT QUIZ & ATTEMPTS
+// ----------------------------------------------------
+
+model DiagnosticQuestion {
+  id            String    @id @default(uuid())
+  category      String    @default("General Assessment")
+  skill         String    @default("Grammar")
+  difficulty    CEFRLevel @default(B1)
+  prompt        String    @db.Text
+  audioText     String?   @db.Text
+  options       String[]  @default([])
+  correctAnswer String
+  explanation   String?   @db.Text
+  orderIndex    Int       @default(1)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([difficulty])
+  @@index([isActive])
+  @@index([orderIndex])
+  @@map("diagnostic_questions")
+}
+
+model DiagnosticAttempt {
+  id               String    @id @default(uuid())
+  ipAddress        String
+  userId           String?
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  attemptNumber    Int       @default(1)
+  score            Int       @default(0)
+  totalQuestions   Int       @default(6)
+  percentage       Decimal   @db.Decimal(5, 2)
+  recommendedLevel CEFRLevel @default(B1)
+  answers          Json
+  createdAt        DateTime  @default(now())
+
+  @@index([ipAddress])
+  @@index([userId])
+  @@index([attemptNumber])
+  @@index([createdAt])
+  @@map("diagnostic_attempts")
+}
+

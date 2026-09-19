@@ -128,7 +128,7 @@ export default function TeacherRegisterPage() {
               Application Received!
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Thank you, <strong>{formData.firstName}</strong>. Your teacher accreditation application has been submitted to the FluentEdge Academy Academic Board.
+              Thank you, <strong>{formData.firstName}</strong>. Your teacher accreditation application has been submitted to the LinguaChris Academy Academic Board.
             </p>
           </div>
 

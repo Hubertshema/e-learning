@@ -92,7 +92,7 @@ function ResetPasswordContent() {
           Create New Password
         </CardTitle>
         <CardDescription className="text-xs text-slate-500">
-          Enter a strong, secure password for your FluentEdge account.
+          Enter a strong, secure password for your LinguaChris account.
         </CardDescription>
       </CardHeader>
 

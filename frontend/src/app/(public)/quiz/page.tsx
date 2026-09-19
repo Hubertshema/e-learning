@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,117 +13,129 @@ import {
   XCircle,
   Volume2,
   ArrowRight,
-  BookOpen,
-  BrainCircuit,
   GraduationCap,
-  ShieldCheck,
+  HelpCircle,
+  Clock,
+  RefreshCw,
+  AlertCircle,
+  BookOpen,
   Check,
   ChevronRight,
-  HelpCircle,
-  BarChart3,
-  Clock,
+  ShieldCheck,
 } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
 
-interface QuizQuestion {
-  id: number;
+interface DiagnosticQuestion {
+  id: string;
   category: string;
   skill: string;
-  difficulty: 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
+  difficulty: string;
   prompt: string;
-  audioText?: string;
+  audioText?: string | null;
   options: string[];
-  correct: number;
-  explanation: string;
+  orderIndex: number;
 }
 
-const EXTENDED_DIAGNOSTIC_QUIZ: QuizQuestion[] = [
-  {
-    id: 1,
-    category: 'Grammar & Conditional Structures',
-    skill: 'Grammar',
-    difficulty: 'B2',
-    prompt: 'Choose the correct form: "If she _____ earlier, she wouldn\'t have missed the flight."',
-    options: ['had left', 'left', 'has left', 'would leave'],
-    correct: 0,
-    explanation: 'Third conditional requires "had + past participle" in the if-clause to describe an unreal past situation.',
-  },
-  {
-    id: 2,
-    category: 'Professional Workplace Vocabulary',
-    skill: 'Vocabulary',
-    difficulty: 'B2',
-    prompt: 'Which word best completes the business context: "We need to _____ cross-functional synergies to optimize output."',
-    options: ['leverage', 'dissolve', 'stagnate', 'diminish'],
-    correct: 0,
-    explanation: '"Leverage" means to utilize existing resources or strengths to maximum advantage.',
-  },
-  {
-    id: 3,
-    category: 'Dependent Prepositions & Collocations',
-    skill: 'Grammar',
-    difficulty: 'B1',
-    prompt: 'Select the correct preposition: "The executive team is committed _____ expanding in East Africa."',
-    options: ['to', 'for', 'with', 'in'],
-    correct: 0,
-    explanation: 'The adjective "committed" is followed by the preposition "to" and a gerund (-ing).',
-  },
-  {
-    id: 4,
-    category: 'Listening & Spoken Phrasing',
-    skill: 'Listening',
-    difficulty: 'B1',
-    prompt: 'Listen to the audio prompt. Which response represents the most polite clarification during a conference call?',
-    audioText: 'Could you please elaborate on the projected quarterly timeline?',
-    options: [
-      '"Certainly, let me walk you through our Phase 2 milestones."',
-      '"No, I already explained that earlier."',
-      '"Why do you want to know?"',
-      '"I will think if I want to tell you."',
-    ],
-    correct: 0,
-    explanation: '"Certainly, let me walk you through..." demonstrates professional courtesy and clear business communication etiquette.',
-  },
-  {
-    id: 5,
-    category: 'Tenses & Narrative Discourse',
-    skill: 'Reading & Syntax',
-    difficulty: 'A2',
-    prompt: 'Choose the correct sentence for habitual workplace actions:',
-    options: [
-      'We usually conduct our team sprint retrospectives every alternate Friday.',
-      'We are usually conducting our sprint retrospectives every alternate Friday.',
-      'We conducted usually sprint retrospectives every alternate Friday.',
-      'We will be conduct sprint retrospectives every alternate Friday.',
-    ],
-    correct: 0,
-    explanation: 'Present Simple with the frequency adverb "usually" describes regular, repeating routines.',
-  },
-  {
-    id: 6,
-    category: 'Executive Discourse & Idiomatic Precision',
-    skill: 'Advanced Fluency',
-    difficulty: 'C1',
-    prompt: 'In executive negotiation, what does "playing devil\'s advocate" mean?',
-    options: [
-      'Arguing an opposing viewpoint to test the strength of a business case',
-      'Attacking colleagues personally during a disagreement',
-      'Refusing to compromise under any condition',
-      'Signing a legally binding NDA before talks',
-    ],
-    correct: 0,
-    explanation: '"Playing devil\'s advocate" means intentionally advocating an opposite stance to identify potential blind spots.',
-  },
-];
+interface ReviewItem {
+  questionId: string;
+  prompt: string;
+  category: string;
+  skill: string;
+  difficulty: string;
+  selectedAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  explanation?: string;
+}
+
+interface SubmitResult {
+  attemptId: string;
+  attemptNumber: number;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  recommendedLevel: string;
+  ipAddress: string;
+  recommendedCourse?: {
+    id: string;
+    title: string;
+    slug: string;
+    level: string;
+    price: number;
+    currency: string;
+    description: string;
+    instructorName?: string;
+  } | null;
+  review: ReviewItem[];
+}
+
+const QUIZ_CACHE_KEY = 'diagnostic_quiz_questions_cache';
+const QUIZ_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 export default function DiagnosticQuizPage() {
+  const [questions, setQuestions] = useState<DiagnosticQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [userAnswers, setUserAnswers] = useState<Array<{ questionId: number; selected: number; isCorrect: boolean }>>([]);
-  const [quizScore, setQuizScore] = useState(0);
-  const [quizFinished, setQuizFinished] = useState(false);
-  const [hasAnswered, setHasAnswered] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<Array<{ questionId: string; selectedOption: number }>>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [result, setResult] = useState<SubmitResult | null>(null);
 
-  const currentQ = EXTENDED_DIAGNOSTIC_QUIZ[currentQIndex];
+  const fetchQuestions = async () => {
+    setError(null);
+
+    // 1. Check client sessionStorage cache
+    let cachedQuestions: DiagnosticQuestion[] | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem(QUIZ_CACHE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Date.now() - parsed.timestamp < QUIZ_CACHE_TTL && Array.isArray(parsed.data)) {
+            cachedQuestions = parsed.data;
+            setQuestions(parsed.data);
+            setLoading(false);
+          }
+        }
+      } catch (_) { }
+    }
+
+    if (!cachedQuestions) {
+      setLoading(true);
+    }
+
+    try {
+      const data = await apiClient.get<DiagnosticQuestion[]>('/public/diagnostic-quiz', { requiresAuth: false });
+      if (Array.isArray(data) && data.length > 0) {
+        setQuestions(data);
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem(
+              QUIZ_CACHE_KEY,
+              JSON.stringify({ data, timestamp: Date.now() })
+            );
+          } catch (_) { }
+        }
+      } else if (!cachedQuestions) {
+        setError('Failed to load diagnostic quiz questions.');
+      }
+    } catch (err: any) {
+      console.error('Error fetching diagnostic quiz questions:', err);
+      if (!cachedQuestions) {
+        setError('Unable to connect to the examination server. Please check your network.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const currentQ = questions[currentQIndex];
 
   // Text-to-speech helper
   const playTts = (text: string) => {
@@ -136,33 +148,46 @@ export default function DiagnosticQuizPage() {
     }
   };
 
-  const handleOptionSelect = (index: number) => {
-    if (hasAnswered) return;
-    setSelectedOption(index);
-    setHasAnswered(true);
-
-    const isCorrect = index === currentQ.correct;
-    if (isCorrect) {
-      setQuizScore((prev) => prev + 1);
-    }
-
-    setUserAnswers((prev) => [
-      ...prev,
-      {
-        questionId: currentQ.id,
-        selected: index,
-        isCorrect,
-      },
-    ]);
+  const handleOptionSelect = (optionIndex: number) => {
+    setSelectedOption(optionIndex);
   };
 
-  const handleNextQuestion = () => {
-    if (currentQIndex + 1 < EXTENDED_DIAGNOSTIC_QUIZ.length) {
+  const handleNextOrSubmit = async () => {
+    if (selectedOption === null) return;
+
+    const updatedAnswers = [
+      ...userAnswers,
+      {
+        questionId: currentQ.id,
+        selectedOption,
+      },
+    ];
+    setUserAnswers(updatedAnswers);
+
+    if (currentQIndex + 1 < questions.length) {
       setCurrentQIndex((prev) => prev + 1);
       setSelectedOption(null);
-      setHasAnswered(false);
     } else {
-      setQuizFinished(true);
+      // Final question reached: Submit answers to server
+      setIsSubmitting(true);
+      try {
+        const data = await apiClient.post<SubmitResult>(
+          '/public/diagnostic-quiz/submit',
+          { answers: updatedAnswers },
+          { requiresAuth: false }
+        );
+
+        if (data && data.attemptId) {
+          setResult(data);
+        } else {
+          setError('Failed to calculate your assessment benchmark. Please try again.');
+        }
+      } catch (err: any) {
+        console.error('Error submitting quiz answers:', err);
+        setError('Error submitting your test. Please verify connection.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -170,86 +195,139 @@ export default function DiagnosticQuizPage() {
     setCurrentQIndex(0);
     setSelectedOption(null);
     setUserAnswers([]);
-    setQuizScore(0);
-    setQuizFinished(false);
-    setHasAnswered(false);
+    setResult(null);
+    fetchQuestions();
   };
 
-  // Tier calculation based on score
-  const getRecommendedTier = (score: number) => {
-    const percentage = (score / EXTENDED_DIAGNOSTIC_QUIZ.length) * 100;
-    if (percentage >= 85) {
-      return {
-        level: 'C1',
-        title: 'C1 Advanced & Executive Fluency',
-        description: 'You possess strong command of nuanced grammar, executive idiom, and complex sentence structures.',
-        recommendedCourse: 'Executive Business English & Cross-Border Negotiation',
-        slug: 'c1-executive-business-english',
-        badgeColor: 'indigo',
-      };
-    } else if (percentage >= 65) {
-      return {
-        level: 'B2',
-        title: 'B2 Upper Intermediate Fluency',
-        description: 'You have solid grasp of conditionals, collocations, and spontaneous conversational English.',
-        recommendedCourse: 'English for IT, Software Engineering & Global Tech',
-        slug: 'b2-tech-software-engineering',
-        badgeColor: 'primary',
-      };
-    } else if (percentage >= 45) {
-      return {
-        level: 'B1',
-        title: 'B1 Intermediate Operational English',
-        description: 'You communicate well in standard workplace scenarios, with room to refine complex tenses.',
-        recommendedCourse: 'B1 Intermediate Professional English Communication',
-        slug: 'b1-intermediate-workplace-english',
-        badgeColor: 'success',
-      };
-    } else {
-      return {
-        level: 'A2',
-        title: 'A2 Elementary English Foundations',
-        description: 'You understand everyday phrases and basic sentence structures. Ready for structured mastery!',
-        recommendedCourse: 'A2 Practical Everyday & Workplace Fluency',
-        slug: 'a2-elementary-practical-english',
-        badgeColor: 'warning',
-      };
+  const getTierDetails = (level: string) => {
+    switch (level) {
+      case 'C1':
+      case 'C2':
+        return {
+          title: 'C1/C2 Advanced & Executive Mastery',
+          description:
+            'You possess strong command of nuanced grammar, strategic executive idiom, and complex discourse.',
+          recommendedCourse: 'Executive Business English & Cross-Border Negotiation',
+        };
+      case 'B2':
+        return {
+          title: 'B2 Upper Intermediate Fluency',
+          description:
+            'You demonstrate solid command of conditionals, collocations, and spontaneous conversational English.',
+          recommendedCourse: 'English for IT, Software Engineering & Global Tech',
+        };
+      case 'B1':
+        return {
+          title: 'B1 Intermediate Operational English',
+          description:
+            'You communicate well in standard workplace scenarios, with room to refine complex tenses and idiom.',
+          recommendedCourse: 'B1 Intermediate Professional English Communication',
+        };
+      default:
+        return {
+          title: 'A2 Practical Elementary English',
+          description:
+            'You understand everyday routines and basic sentence structures. Ready for structured mastery!',
+          recommendedCourse: 'A2 Practical Everyday & Workplace Fluency',
+        };
     }
   };
 
-  const resultTier = getRecommendedTier(quizScore);
-
   return (
-    <div className="min-h-screen bg-slate-50 py-12">
+    <div className="min-h-screen bg-[#eff4ec]/30 py-10 sm:py-16">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         {/* Header Title Section */}
         <div className="text-center space-y-3 mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-semibold text-sky-700">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Official CEFR Diagnostic Assessment</span>
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Free English Placement & Diagnostic Quiz
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-[#2e3339]">
+            English Placement & Diagnostic Quiz
           </h1>
-          <p className="mx-auto max-w-2xl text-sm text-slate-600">
-            Take this 6-question interactive assessment to discover your estimated CEFR English level (Pre-A1 to C2) and receive personalized course recommendations.
+          <p className="mx-auto max-w-2xl text-sm text-slate-600 font-medium">
+            Take this interactive placement assessment powered by live database evaluation to discover your estimated CEFR English benchmark and personalized curriculum path.
           </p>
         </div>
 
-        {!quizFinished ? (
+        {/* Rich Skeleton Loading State */}
+        {loading && (
+          <div className="space-y-6 animate-pulse">
+            {/* Header / Meta Skeleton Card */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#e2ebe2] bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[#e2ebe2]" />
+                <div className="space-y-1.5">
+                  <div className="h-4 w-36 rounded bg-[#e2ebe2]" />
+                  <div className="h-3 w-28 rounded bg-[#eff4ec]" />
+                </div>
+              </div>
+              <div className="w-full sm:w-48 space-y-1.5">
+                <div className="flex justify-between">
+                  <div className="h-3 w-12 rounded bg-[#eff4ec]" />
+                  <div className="h-3 w-8 rounded bg-[#eff4ec]" />
+                </div>
+                <div className="h-2 w-full rounded-full bg-[#e2ebe2]" />
+              </div>
+            </div>
+
+            {/* Question Card Skeleton */}
+            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-6 sm:p-8 shadow-xl space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="h-5 w-28 rounded-full bg-[#eff4ec]" />
+                <div className="h-6 w-32 rounded-full bg-[#eff4ec]" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="h-6 w-11/12 rounded-lg bg-[#e2ebe2]" />
+                <div className="h-6 w-3/4 rounded-lg bg-[#e2ebe2]" />
+              </div>
+
+              {/* Multiple Choice Option Skeletons */}
+              <div className="space-y-3 pt-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 rounded-2xl border border-[#e2ebe2] bg-[#eff4ec]/30 p-4"
+                  >
+                    <div className="h-7 w-7 rounded-lg bg-[#e2ebe2]" />
+                    <div className="h-4 w-2/3 rounded bg-[#e2ebe2]" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Button Skeleton */}
+              <div className="flex justify-end pt-4 border-t border-[#e2ebe2]">
+                <div className="h-10 w-40 rounded-xl bg-[#e2ebe2]" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {!loading && error && (
+          <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-center shadow-sm space-y-4">
+            <AlertCircle className="h-8 w-8 text-rose-600 mx-auto" />
+            <p className="text-sm font-bold text-rose-900">{error}</p>
+            <Button
+              onClick={fetchQuestions}
+              className="bg-[#315b36] hover:bg-[#254629] text-white text-xs font-bold rounded-xl"
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Retry Loading
+            </Button>
+          </div>
+        )}
+
+        {/* Active Quiz Taking View */}
+        {!loading && !error && !result && questions.length > 0 && (
           <div className="space-y-6">
             {/* Progress & Meta Info Card */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#e2ebe2] bg-white p-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0f3d6a] text-white font-bold text-sm">
-                  {currentQIndex + 1}/{EXTENDED_DIAGNOSTIC_QUIZ.length}
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#315b36] text-white font-bold text-sm shadow-sm">
+                  {currentQIndex + 1}/{questions.length}
                 </span>
                 <div>
-                  <p className="text-xs font-bold text-slate-900">
-                    {currentQ.category}
-                  </p>
+                  <p className="text-xs font-bold text-[#2e3339]">{currentQ.category}</p>
                   <p className="text-[11px] text-slate-500">
-                    Skill: <span className="font-semibold text-primary-600">{currentQ.skill}</span> • Target: <span className="font-semibold">{currentQ.difficulty}</span>
+                    Skill: <span className="font-semibold text-[#315b36]">{currentQ.skill}</span> • Target Level: <span className="font-bold text-[#315b36]">{currentQ.difficulty}</span>
                   </p>
                 </div>
               </div>
@@ -258,13 +336,13 @@ export default function DiagnosticQuizPage() {
               <div className="w-full sm:w-48">
                 <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
                   <span>Progress</span>
-                  <span>{Math.round(((currentQIndex + 1) / EXTENDED_DIAGNOSTIC_QUIZ.length) * 100)}%</span>
+                  <span>{Math.round(((currentQIndex + 1) / questions.length) * 100)}%</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-[#e2ebe2]">
                   <div
-                    className="h-full bg-gradient-to-r from-sky-500 to-[#0f3d6a] transition-all duration-300"
+                    className="h-full bg-[#315b36] transition-all duration-300 rounded-full"
                     style={{
-                      width: `${((currentQIndex + 1) / EXTENDED_DIAGNOSTIC_QUIZ.length) * 100}%`,
+                      width: `${((currentQIndex + 1) / questions.length) * 100}%`,
                     }}
                   />
                 </div>
@@ -272,31 +350,31 @@ export default function DiagnosticQuizPage() {
             </div>
 
             {/* Question Card */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xl">
+            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-6 sm:p-8 shadow-xl">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs">
-                    Question {currentQIndex + 1} of {EXTENDED_DIAGNOSTIC_QUIZ.length}
+                  <Badge variant="outline" className="text-xs border-[#7ba27a]/40 text-[#315b36] font-bold">
+                    Question {currentQIndex + 1} of {questions.length}
                   </Badge>
                   {currentQ.audioText && (
                     <button
                       onClick={() => playTts(currentQ.audioText!)}
-                      className="flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+                      className="flex items-center gap-1.5 rounded-full border border-[#7ba27a]/40 bg-[#eff4ec] px-3 py-1 text-xs font-bold text-[#315b36] transition hover:bg-[#e2ebe2]"
                     >
                       <Volume2 className="h-4 w-4" />
-                      <span>Play Audio Prompt</span>
+                      <span>Play Audio Dialogue</span>
                     </button>
                   )}
                 </div>
 
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-relaxed">
+                <h2 className="text-lg sm:text-xl font-bold text-[#2e3339] leading-relaxed">
                   {currentQ.prompt}
                 </h2>
 
                 {currentQ.audioText && (
-                  <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-3.5">
-                    <p className="text-xs italic text-slate-700">
-                      🎧 Audio dialogue: "{currentQ.audioText}"
+                  <div className="rounded-2xl border border-[#7ba27a]/30 bg-[#eff4ec]/50 p-3.5">
+                    <p className="text-xs italic text-[#2e3339]">
+                      🎧 Spoken prompt: "{currentQ.audioText}"
                     </p>
                   </div>
                 )}
@@ -305,163 +383,253 @@ export default function DiagnosticQuizPage() {
                 <div className="mt-6 space-y-3">
                   {currentQ.options.map((option, idx) => {
                     const isSelected = selectedOption === idx;
-                    const isCorrectOption = idx === currentQ.correct;
-
-                    let btnStyle =
-                      'border-slate-200 bg-white hover:border-[#0f3d6a]/40 hover:bg-slate-50';
-
-                    if (hasAnswered) {
-                      if (isCorrectOption) {
-                        btnStyle =
-                          'border-emerald-500 bg-emerald-50 text-emerald-900';
-                      } else if (isSelected && !isCorrectOption) {
-                        btnStyle =
-                          'border-rose-500 bg-rose-50 text-rose-900';
-                      } else {
-                        btnStyle = 'opacity-50 border-slate-200';
-                      }
-                    }
 
                     return (
                       <button
                         key={idx}
-                        disabled={hasAnswered}
                         onClick={() => handleOptionSelect(idx)}
-                        className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left text-sm font-medium transition-all duration-150 ${btnStyle}`}
+                        className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left text-sm font-medium transition-all duration-150 ${isSelected
+                          ? 'border-[#315b36] bg-[#eff4ec] text-[#2e3339] shadow-sm ring-1 ring-[#315b36]'
+                          : 'border-[#e2ebe2] bg-white hover:border-[#7ba27a]/60 hover:bg-[#eff4ec]/30 text-[#2e3339]'
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <span
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                              isSelected
-                                ? 'bg-[#0f3d6a] text-white'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition ${isSelected
+                              ? 'bg-[#315b36] text-white'
+                              : 'bg-[#e2ebe2] text-[#2e3339]'
+                              }`}
                           >
                             {String.fromCharCode(65 + idx)}
                           </span>
-                          <span className="text-slate-900 font-medium">{option}</span>
+                          <span className="font-semibold">{option}</span>
                         </div>
 
-                        {hasAnswered && (
-                          <div>
-                            {isCorrectOption && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
-                            {isSelected && !isCorrectOption && <XCircle className="h-5 w-5 text-rose-600" />}
-                          </div>
+                        {isSelected && (
+                          <CheckCircle2 className="h-5 w-5 text-[#315b36]" />
                         )}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Explanation Feedback Banner */}
-                {hasAnswered && (
-                  <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 animate-in fade-in">
-                    <div className="flex items-start gap-3">
-                      <HelpCircle className="h-5 w-5 text-sky-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-bold text-slate-900">
-                          Academic Explanation
-                        </p>
-                        <p className="text-xs text-slate-600 mt-1">
-                          {currentQ.explanation}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex justify-end">
-                      <Button
-                        onClick={handleNextQuestion}
-                        className="rounded-xl bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] px-6 text-xs font-bold"
-                      >
-                        <span>
-                          {currentQIndex + 1 < EXTENDED_DIAGNOSTIC_QUIZ.length
-                            ? 'Next Question'
-                            : 'Calculate CEFR Result'}
-                        </span>
-                        <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                {/* Submit / Next Button */}
+                <div className="mt-8 flex justify-end pt-4 border-t border-[#e2ebe2]">
+                  <Button
+                    disabled={selectedOption === null || isSubmitting}
+                    onClick={handleNextOrSubmit}
+                    className="rounded-xl bg-[#315b36] hover:bg-[#254629] text-white px-7 py-2.5 text-xs font-bold shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Evaluating Results...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5">
+                        {currentQIndex + 1 < questions.length
+                          ? 'Next Question'
+                          : 'Calculate Official CEFR Result'}
+                        <ArrowRight className="h-4 w-4" />
+                      </span>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        ) : (
-          /* Results Assessment View */
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-2xl animate-in zoom-in-95">
-            <div className="text-center space-y-4">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-sky-50 text-sky-600 border border-sky-200">
+        )}
+
+        {/* RESULTS ASSESSMENT VIEW */}
+        {result && (
+          <div className="space-y-8 animate-in zoom-in-95">
+            {/* Primary Placement Card */}
+            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-8 sm:p-10 shadow-2xl text-center space-y-6">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#eff4ec] text-[#315b36] border border-[#7ba27a]/40 shadow-sm">
                 <Award className="h-10 w-10" />
               </div>
 
               <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
-                  Your CEFR Benchmark: <span className="text-sky-600">{resultTier.level}</span>
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#eff4ec] px-3.5 py-1 text-xs font-bold text-[#315b36] mb-2 border border-[#7ba27a]/40">
+                  <span>Candidate Placement Recorded • Try #{result.attemptNumber}</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-black text-[#2e3339]">
+                  Your CEFR Benchmark:{' '}
+                  <span className="text-[#315b36]">{result.recommendedLevel}</span>
                 </h2>
-                <p className="text-sm font-semibold text-slate-600 mt-1">
-                  {resultTier.title}
+                <p className="text-sm font-bold text-slate-600 mt-1">
+                  {getTierDetails(result.recommendedLevel).title}
                 </p>
               </div>
 
-              {/* Score Display Card */}
-              <div className="mx-auto max-w-md rounded-2xl border border-slate-100 bg-slate-50 p-5">
+              {/* Score Statistics Box */}
+              <div className="mx-auto max-w-md rounded-2xl border border-[#e2ebe2] bg-[#eff4ec]/40 p-5">
                 <div className="flex items-center justify-around">
                   <div className="text-center">
-                    <p className="text-[11px] text-slate-500">Correct Answers</p>
-                    <p className="text-2xl font-black text-slate-900">
-                      {quizScore} / {EXTENDED_DIAGNOSTIC_QUIZ.length}
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Correct Answers
+                    </p>
+                    <p className="text-2xl font-black text-[#2e3339] mt-0.5">
+                      {result.score} / {result.totalQuestions}
                     </p>
                   </div>
-                  <div className="h-10 w-px bg-slate-200" />
+                  <div className="h-10 w-px bg-[#e2ebe2]" />
                   <div className="text-center">
-                    <p className="text-[11px] text-slate-500">Accuracy Rate</p>
-                    <p className="text-2xl font-black text-emerald-600">
-                      {Math.round((quizScore / EXTENDED_DIAGNOSTIC_QUIZ.length) * 100)}%
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Accuracy Rate
+                    </p>
+                    <p className="text-2xl font-black text-[#315b36] mt-0.5">
+                      {result.percentage}%
                     </p>
                   </div>
                 </div>
-                <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-slate-200">
-                  {resultTier.description}
+                <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-[#e2ebe2] font-medium">
+                  {getTierDetails(result.recommendedLevel).description}
                 </p>
               </div>
 
-              {/* Recommended Course Box */}
-              <div className="mx-auto max-w-lg rounded-2xl border border-sky-200 bg-sky-50/70 p-6 text-left">
-                <div className="flex items-center gap-2 text-xs font-bold text-sky-800">
-                  <GraduationCap className="h-4 w-4" />
-                  <span>Recommended Curriculum Path</span>
+              {/* Recommended Course Box from Database */}
+              <div className="mx-auto max-w-lg rounded-2xl border border-[#7ba27a]/50 bg-[#eff4ec] p-6 text-left shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#315b36]">
+                    <GraduationCap className="h-4 w-4 text-[#315b36]" />
+                    <span>Recommended Curriculum Path</span>
+                  </div>
+                  {result.recommendedCourse && (
+                    <span className="rounded-lg bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#315b36] border border-[#e2ebe2]">
+                      {result.recommendedCourse.currency || '$'} {result.recommendedCourse.price}
+                    </span>
+                  )}
                 </div>
-                <p className="text-base font-bold text-slate-900 mt-1">
-                  {resultTier.recommendedCourse}
+
+                <p className="text-base font-bold text-[#2e3339] mt-2">
+                  {result.recommendedCourse?.title || getTierDetails(result.recommendedLevel).recommendedCourse}
                 </p>
+
                 <p className="text-xs text-slate-600 mt-1">
-                  Complete with teacher instruction, 16 multi-skill drills, and verified accreditation diploma.
+                  {result.recommendedCourse?.description ||
+                    'Includes certified teacher coaching, 16 multi-skill activities, and verified CEFR certificate upon completion.'}
                 </p>
-                <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                  <Link href={`/register?role=student&level=${resultTier.level}`} className="flex-1">
-                    <Button className="w-full rounded-xl bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold shadow-md">
-                      Enroll with {resultTier.level} Placement
+
+                {result.recommendedCourse?.instructorName && (
+                  <p className="text-[11px] font-semibold text-[#315b36] mt-2">
+                    Instructor: {result.recommendedCourse.instructorName}
+                  </p>
+                )}
+
+                <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                  <Link
+                    href={
+                      result.recommendedCourse
+                        ? `/register?role=student&course=${result.recommendedCourse.id}&level=${result.recommendedLevel}`
+                        : `/register?role=student&level=${result.recommendedLevel}`
+                    }
+                    className="flex-1"
+                  >
+                    <Button className="w-full rounded-xl bg-[#315b36] text-white hover:bg-[#254629] text-xs font-bold shadow-md py-2.5">
+                      Enroll with {result.recommendedLevel} Placement
                       <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Button>
                   </Link>
                   <Link href="/courses">
-                    <Button variant="outline" className="w-full rounded-xl text-xs font-semibold">
-                      Explore All Courses
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-xl border-[#e2ebe2] text-[#2e3339] text-xs font-semibold py-2.5 hover:bg-[#e2ebe2]"
+                    >
+                      Explore Courses Catalog
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-center gap-3 pt-4">
-                <Button onClick={resetQuiz} variant="ghost" size="sm" className="text-xs text-slate-500">
-                  <RotateCw className="mr-1.5 h-3.5 w-3.5" /> Retake Diagnostic
+              {/* Retake & Return actions */}
+              <div className="flex justify-center gap-4 pt-2">
+                <Button
+                  onClick={resetQuiz}
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-slate-600 hover:text-[#315b36] hover:bg-[#eff4ec] rounded-xl font-bold"
+                >
+                  <RotateCw className="mr-1.5 h-3.5 w-3.5" />
+                  Retake Diagnostic Assessment
                 </Button>
                 <Link href="/">
-                  <Button variant="ghost" size="sm" className="text-xs text-slate-500">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-slate-600 hover:text-[#315b36] hover:bg-[#eff4ec] rounded-xl font-bold"
+                  >
                     Return to Homepage
                   </Button>
                 </Link>
+              </div>
+            </div>
+
+            {/* Question By Question Academic Feedback Review */}
+            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-6 sm:p-8 shadow-lg space-y-6">
+              <div className="border-b border-[#e2ebe2] pb-4">
+                <h3 className="text-lg font-black text-[#2e3339]">
+                  Detailed Academic Question Review
+                </h3>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Review your answers alongside official academic rationale and grammatical rules.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {result.review.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`rounded-2xl border p-4 space-y-2.5 ${item.isCorrect
+                      ? 'border-emerald-200 bg-emerald-50/40'
+                      : 'border-rose-200 bg-rose-50/40'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-500">
+                        Question {idx + 1} • {item.category} ({item.difficulty})
+                      </span>
+                      {item.isCorrect ? (
+                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-700">
+                          <CheckCircle2 className="h-4 w-4" /> Correct (+1)
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs font-bold text-rose-700">
+                          <XCircle className="h-4 w-4" /> Incorrect (0)
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs font-bold text-[#2e3339]">{item.prompt}</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                      <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                        <span className="text-[10px] font-bold text-slate-500 block">
+                          Your Selected Answer:
+                        </span>
+                        <span
+                          className={`font-bold ${item.isCorrect ? 'text-emerald-700' : 'text-rose-700'
+                            }`}
+                        >
+                          {item.selectedAnswer || '(No answer selected)'}
+                        </span>
+                      </div>
+
+                      <div className="rounded-xl border border-[#7ba27a]/40 bg-[#eff4ec] p-2.5">
+                        <span className="text-[10px] font-bold text-[#315b36] block">
+                          Official Correct Answer:
+                        </span>
+                        <span className="font-bold text-[#315b36]">{item.correctAnswer}</span>
+                      </div>
+                    </div>
+
+                    {item.explanation && (
+                      <p className="text-[11px] text-slate-600 italic pt-1 border-t border-slate-200/60">
+                        💡 {item.explanation}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

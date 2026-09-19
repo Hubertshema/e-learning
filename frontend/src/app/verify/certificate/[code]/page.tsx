@@ -77,11 +77,9 @@ export default function PublicCertificateVerificationPage() {
     <div className="min-h-screen bg-slate-50 py-12 px-4 dark:bg-slate-950 flex flex-col items-center justify-center">
       {/* Brand Header */}
       <div className="mb-8 text-center space-y-2">
-        <Link href="/" className="inline-flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white shadow-lg">
-            <BookOpen className="h-6 w-6" />
-          </div>
-          <span className="text-xl font-bold text-slate-900 dark:text-white">FluentEdge Academy</span>
+        <Link href="/" className="inline-flex items-center gap-2.5">
+          <img src="/logo.png" alt="LinguaChris Academy" className="h-10 w-auto object-contain" />
+          <span className="text-xl font-bold text-[#2E3339]">LinguaChris Academy</span>
         </Link>
         <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">
           Official Public Credential Verification Portal
@@ -90,19 +88,19 @@ export default function PublicCertificateVerificationPage() {
 
       {loading ? (
         <Card className="w-full max-w-lg p-12 text-center shadow-xl">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent mx-auto mb-3" />
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#315B36] border-t-transparent mx-auto mb-3" />
+          <p className="text-xs font-semibold text-slate-600">
             Verifying credential authenticity against registry...
           </p>
         </Card>
       ) : error || !cert ? (
-        <Card className="w-full max-w-lg p-8 text-center space-y-4 shadow-xl border-rose-200 dark:border-rose-900">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-950/60">
+        <Card className="w-full max-w-lg p-8 text-center space-y-4 shadow-xl border-rose-200">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100">
             <XCircle className="h-8 w-8 text-rose-600" />
           </div>
           <div>
             <Badge variant="destructive">Verification Failed</Badge>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-2">
+            <h2 className="text-lg font-bold text-slate-900 mt-2">
               Invalid or Unregistered Certificate
             </h2>
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
@@ -119,13 +117,13 @@ export default function PublicCertificateVerificationPage() {
         /* Verified Certificate Display */
         <div className="w-full max-w-2xl space-y-6">
           {/* Status Alert Banner */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200 shadow-sm">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 shadow-sm">
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="h-6 w-6 text-emerald-600 shrink-0" />
               <div>
                 <span className="text-xs font-bold block">Official Authenticated Credential</span>
-                <span className="text-[11px] text-emerald-700 dark:text-emerald-300">
-                  Verified by FluentEdge Academy Registry • Code: <strong>{cert.certificateCode}</strong>
+                <span className="text-[11px] text-emerald-700">
+                  Verified by LinguaChris Academy Registry • Code: <strong>{cert.certificateCode}</strong>
                 </span>
               </div>
             </div>
@@ -135,20 +133,20 @@ export default function PublicCertificateVerificationPage() {
           </div>
 
           {/* Certificate Credential Card */}
-          <Card className="p-8 sm:p-10 shadow-2xl bg-[#F4F7F4] border-4 border-[#3B6748]/40 dark:bg-emerald-950/40 space-y-8 text-center">
+          <Card className="p-6 sm:p-10 shadow-2xl bg-[#F4F7F4] border-4 border-[#315B36]/30 space-y-6 sm:space-y-8 text-center rounded-3xl">
             {/* Top Seal */}
             <div className="flex justify-center">
-              <div className="h-20 w-20 rounded-2xl bg-amber-100 dark:bg-amber-950 border-2 border-amber-300 flex items-center justify-center shadow-md">
-                <Award className="h-10 w-10 text-amber-600" />
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center shadow-md">
+                <Award className="h-8 w-8 sm:h-10 sm:w-10 text-amber-600" />
               </div>
             </div>
 
             {/* Certificate Body */}
             <div className="space-y-3">
-              <span className="text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
-                FluentEdge Academy International
+              <span className="text-xs font-black uppercase tracking-widest text-[#315B36]">
+                LinguaChris Academy International
               </span>
-              <h1 className="text-2xl sm:text-3xl font-serif font-black text-slate-900 dark:text-white">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-black text-[#2E3339]">
                 Certificate of CEFR English Proficiency
               </h1>
               <p className="text-xs text-slate-500">This official accreditation confirms that</p>

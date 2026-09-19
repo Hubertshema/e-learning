@@ -7,54 +7,54 @@
     --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-display: 'Poppins', var(--font-main);
     
-    /* LinguaChris Brand Palette */
-    --primary-green: #3d6748;
-    --primary-green-dark: #2c4e36;
-    --primary-green-deep: #1e3825;
-    --primary-green-light: #52825e;
-    --accent-sage: #88ad8a;
-    --accent-sage-light: #a4c6a6;
-    --accent-sage-tint: #edf4ef;
-    --accent-sage-soft: #f4f8f5;
+    /* LinguaChris Exact Logo Brand Palette */
+    --primary-green: #315b36;
+    --primary-green-dark: #254629;
+    --primary-green-deep: #1b351e;
+    --primary-green-light: #3e7144;
+    --accent-sage: #7ba27a;
+    --accent-sage-light: #a1c2a0;
+    --accent-sage-tint: #eff4ec;
+    --accent-sage-soft: #f6f9f5;
     
-    --bg-gradient-start: #f8faf8;
-    --bg-gradient-mid: #eef4f0;
-    --bg-gradient-end: #e1ebe3;
+    --bg-gradient-start: #fbfdfb;
+    --bg-gradient-mid: #eff4ec;
+    --bg-gradient-end: #e2ebe2;
     
-    --text-dark: #1b231e;
-    --text-body: #405044;
-    --text-muted: #6a796e;
+    --text-dark: #2e3339;
+    --text-body: #3d4247;
+    --text-muted: #5a5e63;
     
     color-scheme: light;
 
     /* Shadcn UI Variable Mappings */
-    --background: 120 14% 98%;
-    --foreground: 135 13% 12%;
+    --background: 128 20% 99%;
+    --foreground: 216 11% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 135 13% 12%;
+    --card-foreground: 216 11% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 135 13% 12%;
+    --popover-foreground: 216 11% 20%;
 
-    --primary: 136 26% 32%;
+    --primary: 128 30% 27%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 132 15% 94%;
-    --secondary-foreground: 135 13% 12%;
+    --secondary: 128 28% 94%;
+    --secondary-foreground: 216 11% 20%;
 
-    --muted: 132 15% 94%;
-    --muted-foreground: 134 7% 45%;
+    --muted: 128 15% 94%;
+    --muted-foreground: 215 5% 37%;
 
-    --accent: 132 15% 94%;
-    --accent-foreground: 136 26% 32%;
+    --accent: 128 28% 94%;
+    --accent-foreground: 128 30% 27%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 134 10% 88%;
-    --input: 134 10% 88%;
-    --ring: 136 26% 32%;
+    --border: 128 14% 90%;
+    --input: 128 14% 90%;
+    --ring: 128 30% 27%;
 
     --radius: 0.75rem;
   }
@@ -94,16 +94,20 @@
   * {
     @apply border-border;
   }
+  html {
+    font-size: 16.5px;
+  }
   body {
     background-color: var(--bg-gradient-start);
     color: var(--text-dark);
     font-family: var(--font-main);
+    font-size: 1rem;
+    line-height: 1.6;
     @apply antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    color: var(--text-dark);
   }
 }
 
@@ -112,7 +116,7 @@
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(59, 103, 72, 0.15);
+  border: 1px solid rgba(49, 91, 54, 0.15);
 }
 
 .dark .glass-panel {
@@ -124,17 +128,17 @@
 
 /* Solid Brand Utilities (NO GRADIENTS) */
 .brand-solid-primary {
-  background-color: #3B6748;
+  background-color: #315b36;
   color: #ffffff;
 }
 
 .brand-solid-subtle {
-  background-color: #F4F7F4;
-  color: #1E252D;
+  background-color: #eff4ec;
+  color: #2e3339;
 }
 
 .brand-text-solid {
-  color: #3B6748;
+  color: #315b36;
   font-weight: 700;
 }
 

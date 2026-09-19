@@ -453,6 +453,96 @@ export class AuthService {
     };
   }
 
+  async googleLogin(
+    input: { email: string; firstName: string; lastName?: string; role?: 'STUDENT' | 'TEACHER'; avatarUrl?: string; googleId?: string },
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<{ user: AuthenticatedUser; tokens: AuthTokens }> {
+    let existingUser = await userRepository.findByEmail(input.email);
+
+    if (!existingUser) {
+      const generatedPassword = crypto.randomBytes(16).toString('hex') + 'A1!';
+      const passwordHash = await hashPassword(generatedPassword);
+      const role = input.role || 'STUDENT';
+      const initialStatus: UserStatusType = role === 'TEACHER' ? 'PENDING_APPROVAL' : 'ACTIVE';
+
+      const created = await userRepository.createUserWithProfile(
+        {
+          email: input.email,
+          password: generatedPassword,
+          firstName: input.firstName || 'Google',
+          lastName: input.lastName || 'User',
+          role,
+        },
+        passwordHash,
+        initialStatus,
+        false
+      );
+
+      // Mark user as verified since email was verified via Google
+      await prisma.user.update({
+        where: { id: created.id },
+        data: {
+          isVerified: true,
+          avatarUrl: input.avatarUrl || created.avatarUrl,
+        },
+      });
+
+      existingUser = await userRepository.findById(created.id);
+    }
+
+    if (!existingUser) {
+      throw new AppError('Failed to initialize account with Google credentials.', 500);
+    }
+
+    if (existingUser.status === 'SUSPENDED') {
+      throw new AppError('Your account is currently suspended. Please contact support.', 403, 'ACCOUNT_SUSPENDED');
+    }
+
+    await auditService.log({
+      userId: existingUser.id,
+      action: 'USER_LOGIN',
+      entity: 'USER',
+      entityId: existingUser.id,
+      ipAddress,
+      userAgent,
+      metadata: { provider: 'GOOGLE' },
+    });
+
+    const tokens = await tokenService.generateAuthTokens({
+      id: existingUser.id,
+      email: existingUser.email,
+      role: existingUser.role as RoleType,
+      status: existingUser.status as UserStatusType,
+    });
+
+    const formattedUser: AuthenticatedUser = {
+      id: existingUser.id,
+      email: existingUser.email,
+      firstName: existingUser.firstName,
+      lastName: existingUser.lastName,
+      role: existingUser.role as RoleType,
+      status: existingUser.status as UserStatusType,
+      isVerified: existingUser.isVerified,
+      avatarUrl: existingUser.avatarUrl,
+      teacherProfile: existingUser.teacherProfile
+        ? {
+            id: existingUser.teacherProfile.id,
+            isApproved: existingUser.teacherProfile.isApproved,
+            headline: existingUser.teacherProfile.headline,
+          }
+        : null,
+      studentProfile: existingUser.studentProfile
+        ? {
+            id: existingUser.studentProfile.id,
+            currentLevel: existingUser.studentProfile.currentLevel,
+          }
+        : null,
+    };
+
+    return { user: formattedUser, tokens };
+  }
+
   async logout(refreshToken: string, userId?: string): Promise<void> {
     if (refreshToken) {
       await tokenService.revokeToken(refreshToken);

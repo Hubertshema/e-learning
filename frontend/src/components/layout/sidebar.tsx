@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
@@ -31,6 +31,10 @@ import {
   Bell,
   Mail,
   Megaphone,
+  ChevronLeft,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 
 interface NavItem {
@@ -48,6 +52,25 @@ interface SidebarProps {
 export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Sync with localStorage
+  useEffect(() => {
+    setIsMounted(true);
+    const savedState = localStorage.getItem('linguachris_sidebar_collapsed');
+    if (savedState !== null) {
+      setCollapsed(savedState === 'true');
+    }
+  }, []);
+
+  const toggleCollapsed = () => {
+    const nextState = !collapsed;
+    setCollapsed(nextState);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('linguachris_sidebar_collapsed', String(nextState));
+    }
+  };
 
   const superadminNav: NavItem[] = [
     { name: 'Overview', href: '/superadmin', icon: LayoutDashboard },
@@ -69,6 +92,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     { name: 'My Classes', href: '/teacher/classes', icon: FolderTree },
     { name: 'Courses & Syllabus', href: '/teacher/courses', icon: BookOpen },
     { name: 'Quizzes & Tests', href: '/teacher/quizzes', icon: CheckCircle2 },
+    { name: 'Diagnostic Placement', href: '/teacher/diagnostic-quiz', icon: FileCheck },
     { name: 'Assignments & Grading', href: '/teacher/assignments', icon: ClipboardList },
     { name: 'Students Directory', href: '/teacher/students', icon: Users },
     { name: 'Enrollments & Access', href: '/teacher/enrollments', icon: UserCheck },
@@ -84,103 +108,201 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     { name: 'Settings', href: '/teacher/settings', icon: Settings },
   ];
 
-  const studentNav: NavItem[] = [
-    { name: 'My Learning Hub', href: '/student', icon: LayoutDashboard },
+  const studentMainMenu: NavItem[] = [
+    { name: 'Dashboard', href: '/student', icon: LayoutDashboard },
     { name: 'My Courses', href: '/student/my-courses', icon: BookOpen },
-    { name: 'Explore Courses', href: '/student/courses', icon: Sparkles },
-    { name: 'Placement Test', href: '/student/placement-test', icon: GraduationCap },
-    { name: 'Assignments', href: '/student/assignments', icon: ClipboardList },
+    { name: 'Assignment', href: '/student/assignments', icon: ClipboardList },
+    { name: 'Progress', href: '/student/progress', icon: TrendingUp },
+    { name: 'Calendar', href: '/student/calendar', icon: Calendar },
+  ];
+
+  const studentOtherMenu: NavItem[] = [
     { name: 'Quizzes & Tests', href: '/student/quizzes', icon: CheckCircle2 },
-    { name: '7-Skill Progress', href: '/student/progress', icon: TrendingUp },
-    { name: 'Academic Results', href: '/student/results', icon: Award },
-    { name: 'Attendance Record', href: '/student/attendance', icon: CalendarCheck },
-    { name: 'Teacher Feedback', href: '/student/feedback', icon: MessageSquare },
-    { name: 'My Enrollments', href: '/student/enrollments', icon: UserCheck },
-    { name: 'Payment History', href: '/student/payments', icon: CreditCard },
+    { name: 'Placement Test', href: '/student/placement-test', icon: GraduationCap },
     { name: 'Certificates', href: '/student/certificates', icon: FileCheck },
-    { name: 'Learning Calendar', href: '/student/calendar', icon: Calendar },
-    { name: 'Notifications', href: '/student/notifications', icon: Bell },
-    { name: 'Student Profile', href: '/student/profile', icon: UserCheck },
+    { name: 'Help Center', href: '/student/feedback', icon: MessageSquare },
     { name: 'Settings', href: '/student/settings', icon: Settings },
   ];
 
+  const isStudent = role === 'STUDENT';
   const navItems =
     role === 'SUPERADMIN'
       ? superadminNav
       : role === 'TEACHER'
       ? teacherNav
-      : studentNav;
+      : studentMainMenu;
 
   const sidebarContent = (
-    <div className="flex h-full w-64 flex-col justify-between border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-lg md:shadow-none">
-      <div>
-        {/* Brand Header */}
-        <Link href="/" className="flex items-center gap-2.5 px-3 py-2" onClick={onClose}>
-          <img
-            src="/logo.png"
-            alt="LinguaChris Academy Logo"
-            className="h-9 w-auto object-contain"
-          />
-          <div>
-            <span className="font-bold text-slate-900 dark:text-white">LinguaChris</span>
-            <span className="ml-1 rounded bg-[#EBF2EB] px-1.5 py-0.5 text-[10px] font-bold text-[#3B6748] dark:bg-emerald-950 dark:text-emerald-300">
-              {role}
-            </span>
-          </div>
-        </Link>
+    <div
+      className={cn(
+        'flex h-full flex-col justify-between border-r border-[#e2ebe2] bg-white transition-all duration-300 ease-in-out shadow-sm',
+        collapsed ? 'w-20 p-3' : 'w-64 p-4'
+      )}
+    >
+      <div className="space-y-6 overflow-y-auto overflow-x-hidden">
+        {/* Brand Header with Collapse Toggle */}
+        <div className="flex items-center justify-between px-1">
+          <Link
+            href={isStudent ? '/student' : '/'}
+            className={cn('flex items-center gap-3', collapsed ? 'justify-center w-full' : '')}
+            onClick={onClose}
+            title="LinguaChris Academy"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#315b36] text-white shadow-sm overflow-hidden p-1.5">
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="h-full w-full object-contain filter brightness-0 invert"
+              />
+            </div>
+            {!collapsed && (
+              <div className="overflow-hidden">
+                <span className="font-bold text-base tracking-tight text-[#2e3339] block leading-tight truncate">
+                  LinguaChris
+                </span>
+                <span className="text-xs font-semibold text-[#7ba27a] block truncate">
+                  Student Dashboard
+                </span>
+              </div>
+            )}
+          </Link>
 
-        {/* Navigation list */}
-        <nav className="mt-6 space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-primary-50 text-primary-700 shadow-sm dark:bg-primary-950/60 dark:text-primary-300'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                )}
-              >
-                <Icon
+          {!collapsed && (
+            <button
+              onClick={toggleCollapsed}
+              className="hidden md:flex h-8 w-8 items-center justify-center rounded-md text-[#5a5e63] hover:bg-[#eff4ec] hover:text-[#315b36] transition-colors"
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="h-4.5 w-4.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Collapsed Expand Toggle Button */}
+        {collapsed && (
+          <div className="hidden md:flex justify-center pb-1">
+            <button
+              onClick={toggleCollapsed}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-[#5a5e63] hover:bg-[#eff4ec] hover:text-[#315b36] transition-colors"
+              title="Expand sidebar"
+              aria-label="Expand sidebar"
+            >
+              <PanelLeftOpen className="h-4.5 w-4.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Student Categorized Menus */}
+        {isStudent ? (
+          <div className="space-y-6">
+            {/* MAIN MENU */}
+            <div>
+              {!collapsed && (
+                <p className="px-3 text-xs font-bold uppercase tracking-wider text-[#7a8188] mb-2">
+                  Main Menu
+                </p>
+              )}
+              <nav className="space-y-1.5">
+                {studentMainMenu.map((item) => {
+                  const isActive = pathname === item.href;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={onClose}
+                      title={collapsed ? item.name : undefined}
+                      className={cn(
+                        'flex items-center gap-3 rounded-md py-2.5 text-sm font-semibold transition-all',
+                        collapsed ? 'justify-center px-2' : 'px-3.5',
+                        isActive
+                          ? 'bg-[#315b36] text-white shadow-sm font-bold'
+                          : 'text-[#2e3339] hover:bg-[#eff4ec] hover:text-[#315b36]'
+                      )}
+                    >
+                      <Icon className="h-4.5 w-4.5 shrink-0" />
+                      {!collapsed && <span className="truncate">{item.name}</span>}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* OTHER MENU */}
+            <div>
+              {!collapsed && (
+                <p className="px-3 text-xs font-bold uppercase tracking-wider text-[#7a8188] mb-2">
+                  Other Menu
+                </p>
+              )}
+              <nav className="space-y-1.5">
+                {studentOtherMenu.map((item) => {
+                  const isActive = pathname === item.href;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={onClose}
+                      title={collapsed ? item.name : undefined}
+                      className={cn(
+                        'flex items-center gap-3 rounded-md py-2.5 text-sm font-semibold transition-all',
+                        collapsed ? 'justify-center px-2' : 'px-3.5',
+                        isActive
+                          ? 'bg-[#315b36] text-white shadow-sm font-bold'
+                          : 'text-[#2e3339] hover:bg-[#eff4ec] hover:text-[#315b36]'
+                      )}
+                    >
+                      <Icon className="h-4.5 w-4.5 shrink-0" />
+                      {!collapsed && <span className="truncate">{item.name}</span>}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+        ) : (
+          <nav className="space-y-1.5">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={onClose}
+                  title={collapsed ? item.name : undefined}
                   className={cn(
-                    'h-5 w-5',
-                    isActive ? 'text-primary-600' : 'text-slate-400 dark:text-slate-500'
+                    'flex items-center gap-3 rounded-md py-2.5 text-sm font-semibold transition-all',
+                    collapsed ? 'justify-center px-2' : 'px-3',
+                    isActive
+                      ? 'bg-[#315b36] text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-[#eff4ec] hover:text-[#315b36]'
                   )}
-                />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
+                >
+                  <Icon className={cn('h-4.5 w-4.5 shrink-0', isActive ? 'text-white' : 'text-slate-400')} />
+                  {!collapsed && <span className="truncate">{item.name}</span>}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
       </div>
 
       {/* Footer Profile & Logout */}
-      <div className="border-t border-slate-200 pt-4 dark:border-slate-800">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              {user ? `${user.firstName[0]}${user.lastName[0]}` : 'U'}
-            </div>
-            <div className="truncate">
-              <p className="truncate text-xs font-semibold text-slate-900 dark:text-white">
-                {user?.firstName} {user?.lastName}
-              </p>
-              <p className="truncate text-[11px] text-slate-500">{user?.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => logout()}
-            title="Sign Out"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-destructive dark:hover:bg-slate-800"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
+      <div className="border-t border-[#e2ebe2] pt-3 space-y-2">
+        <button
+          onClick={() => logout()}
+          title="Logout"
+          className={cn(
+            'w-full flex items-center gap-2.5 py-2.5 rounded-md text-sm font-bold text-[#e63946] hover:bg-[#fee2e2] transition-colors',
+            collapsed ? 'justify-center px-2' : 'px-3'
+          )}
+        >
+          <LogOut className="h-4.5 w-4.5 shrink-0" />
+          {!collapsed && <span>Logout</span>}
+        </button>
       </div>
     </div>
   );

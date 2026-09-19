@@ -9,6 +9,7 @@ import {
   ForgotPasswordSchema,
   ResetPasswordSchema,
   VerifyEmailSchema,
+  GoogleAuthSchema,
 } from '../validators/auth.validator.js';
 
 const router = Router();
@@ -16,6 +17,7 @@ const router = Router();
 // Public auth endpoints
 router.post('/register', validate(RegisterSchema), authController.register);
 router.post('/login', validate(LoginSchema), authController.login);
+router.post('/google', validate(GoogleAuthSchema), authController.googleLogin);
 router.post('/refresh-token', validate(RefreshTokenSchema), authController.refreshToken);
 router.post('/logout', authController.logout);
 

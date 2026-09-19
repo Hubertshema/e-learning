@@ -228,7 +228,7 @@ export class SuperadminService {
     notes?: string,
     ipAddress?: string
   ) {
-    const result = await superadminRepository.verifyPayment(paymentId, status, notes);
+    const result = (await superadminRepository.verifyPayment(paymentId, status, notes)) as any;
 
     await auditService.log({
       userId: adminUserId,
@@ -239,44 +239,46 @@ export class SuperadminService {
       metadata: {
         status,
         notes,
-        amount: result.amount,
-        studentEmail: result.student.user.email,
+        amount: result?.amount,
+        studentEmail: result?.student?.user?.email,
       },
     });
 
     // Notify student of payment status
-    if (status === PaymentStatus.VERIFIED) {
-      await notificationService.notifyUser({
-        userId: result.student.userId,
-        type: 'PAYMENT_VERIFIED',
-        title: `Payment Verified: ${result.enrollment.course.title}`,
-        message: `Your payment of ${result.currency} ${result.amount} has been verified and course access is activated.`,
-        link: '/student/courses',
-        emailTemplate: 'PaymentVerifiedEmail',
-        emailData: {
-          studentName: `${result.student.user.firstName} ${result.student.user.lastName}`,
-          courseTitle: result.enrollment.course.title,
-          amount: String(result.amount),
-          currency: result.currency,
-          expiryDate: result.enrollment.expiresAt ? new Date(result.enrollment.expiresAt).toLocaleDateString() : '90 days from now',
-        },
-        preferenceKey: 'paymentEmails',
-      });
-    } else if (status === PaymentStatus.REJECTED) {
-      await notificationService.notifyUser({
-        userId: result.student.userId,
-        type: 'PAYMENT_REJECTED',
-        title: `Payment Verification Issue: ${result.enrollment.course.title}`,
-        message: `Your payment could not be verified: ${notes || 'Receipt invalid or illegible.'}`,
-        link: '/student/payments',
-        emailTemplate: 'PaymentRejectedEmail',
-        emailData: {
-          studentName: `${result.student.user.firstName} ${result.student.user.lastName}`,
-          courseTitle: result.enrollment.course.title,
-          reason: notes || 'Receipt illegible or transaction not found.',
-        },
-        preferenceKey: 'paymentEmails',
-      });
+    if (result && result.student) {
+      if (status === PaymentStatus.VERIFIED) {
+        await notificationService.notifyUser({
+          userId: result.student.userId,
+          type: 'PAYMENT_VERIFIED',
+          title: `Payment Verified: ${result.enrollment?.course?.title || 'Course Access'}`,
+          message: `Your payment of ${result.currency || 'USD'} ${result.amount} has been verified and course access is activated.`,
+          link: '/student/courses',
+          emailTemplate: 'PaymentVerifiedEmail',
+          emailData: {
+            studentName: `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim(),
+            courseTitle: result.enrollment?.course?.title || 'Course',
+            amount: String(result.amount),
+            currency: result.currency || 'USD',
+            expiryDate: result.enrollment?.expiresAt ? new Date(result.enrollment.expiresAt).toLocaleDateString() : '90 days from now',
+          },
+          preferenceKey: 'paymentEmails',
+        });
+      } else if (status === PaymentStatus.REJECTED) {
+        await notificationService.notifyUser({
+          userId: result.student.userId,
+          type: 'PAYMENT_REJECTED',
+          title: `Payment Verification Issue: ${result.enrollment?.course?.title || 'Course'}`,
+          message: `Your payment could not be verified: ${notes || 'Receipt invalid or illegible.'}`,
+          link: '/student/payments',
+          emailTemplate: 'PaymentRejectedEmail',
+          emailData: {
+            studentName: `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim(),
+            courseTitle: result.enrollment?.course?.title || 'Course',
+            reason: notes || 'Receipt illegible or transaction not found.',
+          },
+          preferenceKey: 'paymentEmails',
+        });
+      }
     }
 
     return result;
@@ -492,7 +494,7 @@ export class SuperadminService {
 
   async sendTestEmail(targetEmail: string, superadminId: string) {
     if (!targetEmail) {
-      throw new AppError(400, 'Target email address is required');
+      throw new AppError('Target email address is required', 400);
     }
 
     const testHtml = `

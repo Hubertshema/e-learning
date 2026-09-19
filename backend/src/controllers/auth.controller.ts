@@ -40,6 +40,20 @@ export class AuthController {
     }
   }
 
+  async googleLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input = req.body;
+      const ip = req.ip || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+
+      const result = await authService.googleLogin(input, ip, userAgent);
+
+      sendSuccess(res, result, 'Google authentication successful');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { refreshToken } = req.body as RefreshTokenInput;

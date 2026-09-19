@@ -40,7 +40,7 @@ export class StudentRepository {
     const profile = await this.getOrCreateStudentProfile(userId);
     const studentId = profile.id;
 
-    const [enrollments, assignments, quizAttempts, attendances, placementAttempts, feedbacks] =
+    const [enrollments, assignments, quizAttempts, attendances, placementAttempts, feedbacks, topTeacherProfiles] =
       await Promise.all([
         prisma.enrollment.findMany({
           where: { studentId },
@@ -91,7 +91,7 @@ export class StudentRepository {
           where: { studentId },
           include: { class: true },
           orderBy: { date: 'desc' },
-          take: 5,
+          take: 7,
         }),
         prisma.placementAttempt.findMany({
           where: { studentId },
@@ -104,21 +104,146 @@ export class StudentRepository {
           orderBy: { createdAt: 'desc' },
           take: 3,
         }),
+        prisma.teacherProfile.findMany({
+          where: { isApproved: true },
+          include: {
+            user: { select: { firstName: true, lastName: true, avatarUrl: true } },
+            courses: { select: { id: true, title: true } },
+          },
+          take: 6,
+        }),
       ]);
 
-    // Compute progress
-    const activeEnrollments = enrollments.filter(
-      (e) => e.status === 'ACTIVE' && (!e.expiresAt || new Date(e.expiresAt) > new Date())
-    );
-
+    // Compute progress per enrollment
     const lessonProgress = await prisma.progress.findMany({
       where: { studentId },
     });
+
+    const completedLessonIds = new Set(
+      lessonProgress.filter((p) => p.isCompleted).map((p) => p.lessonId)
+    );
+
+    const activeEnrollments = enrollments
+      .filter((e) => e.status === 'ACTIVE' && (!e.expiresAt || new Date(e.expiresAt) > new Date()))
+      .map((enr) => {
+        const allLessons = enr.course.units.flatMap((u) => u.lessons);
+        const completedCount = allLessons.filter((l) => completedLessonIds.has(l.id)).length;
+        const totalLessons = allLessons.length;
+        const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+        const totalDurationMinutes = allLessons.reduce((acc, l) => acc + (l.estimatedMinutes || 20), 0);
+
+        return {
+          ...enr,
+          totalUnitsCount: enr.course.units.length,
+          totalLessonsCount: totalLessons,
+          completedLessonsCount: completedCount,
+          progressPercentage,
+          totalDurationMinutes,
+        };
+      });
+
+    // In-progress active course (the primary course the student is currently learning)
+    const inProgressCourse =
+      activeEnrollments.find((e) => e.progressPercentage < 100) ||
+      activeEnrollments[0] ||
+      null;
 
     const completedLessonCount = lessonProgress.filter((p) => p.isCompleted).length;
     const totalStudyTimeMinutes = Math.round(
       lessonProgress.reduce((acc, curr) => acc + (curr.timeSpentSec || 0), 0) / 60
     );
+
+    const completedCoursesCount = activeEnrollments.filter((e) => e.progressPercentage >= 100).length;
+
+    // Calculate streak & 21-day activity dots
+    const activeDates = new Set<string>();
+    lessonProgress.forEach((p) => {
+      if (p.updatedAt) activeDates.add(new Date(p.updatedAt).toISOString().split('T')[0]);
+    });
+    attendances.forEach((a) => {
+      if (a.date) activeDates.add(new Date(a.date).toISOString().split('T')[0]);
+    });
+    quizAttempts.forEach((q) => {
+      if (q.startedAt) activeDates.add(new Date(q.startedAt).toISOString().split('T')[0]);
+    });
+    assignments.forEach((sub) => {
+      if (sub.submittedAt) activeDates.add(new Date(sub.submittedAt).toISOString().split('T')[0]);
+    });
+
+    // Calculate streak from active dates
+    const now = new Date();
+    let streakDays = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      if (activeDates.has(key)) {
+        streakDays++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+
+    // 21 activity dots based on actual active dates
+    const activityDots: boolean[] = [];
+    for (let i = 20; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      activityDots.push(activeDates.has(key));
+    }
+
+    // Weekly study statistics for Sun..Sat of current week
+    const currentDayOfWeek = now.getDay();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const studyStatistics = dayNames.map((day, index) => {
+      const d = new Date(now);
+      const diff = index - currentDayOfWeek;
+      d.setDate(d.getDate() + diff);
+      const key = d.toISOString().split('T')[0];
+
+      // Calculate actual hours recorded for that day
+      let minutesOnDate = 0;
+      lessonProgress.forEach((p) => {
+        if (p.updatedAt && new Date(p.updatedAt).toISOString().split('T')[0] === key) {
+          minutesOnDate += Math.round((p.timeSpentSec || 1200) / 60);
+        }
+      });
+      attendances.forEach((a) => {
+        if (a.date && new Date(a.date).toISOString().split('T')[0] === key) {
+          minutesOnDate += 60;
+        }
+      });
+
+      const hours = Number((minutesOnDate / 60).toFixed(1));
+      const goalHours = 4.0;
+      return {
+        day,
+        activeHours: hours,
+        goalHours,
+        inactiveHours: Number(Math.max(0, goalHours - hours).toFixed(1)),
+      };
+    });
+
+    // Overall learning progress percentage
+    const avgProgress =
+      activeEnrollments.length > 0
+        ? Math.round(
+            activeEnrollments.reduce((sum, e) => sum + e.progressPercentage, 0) /
+              activeEnrollments.length
+          )
+        : 0;
+
+    const formattedMentors = topTeacherProfiles.map((t) => ({
+      id: t.id,
+      name: `${t.user.firstName} ${t.user.lastName}`,
+      role: t.headline || (t.specialties && t.specialties[0]) || 'Certified Instructor',
+      avatarUrl: t.user.avatarUrl,
+      courseCount: t.courses.length,
+    }));
+
+    const hoursTotal = Math.floor(totalStudyTimeMinutes / 60);
+    const minsTotal = totalStudyTimeMinutes % 60;
 
     return {
       profile: {
@@ -132,13 +257,29 @@ export class StudentRepository {
       stats: {
         activeCoursesCount: activeEnrollments.length,
         totalEnrolledCount: enrollments.length,
+        completedCoursesCount,
         completedLessonsCount: completedLessonCount,
         studyTimeMinutes: totalStudyTimeMinutes,
+        studyTimeHours: hoursTotal,
+        streakDays,
+        totalActivityHoursText: `${hoursTotal} hours ${minsTotal} minutes`,
+        overallProgressPercentage: avgProgress,
+        growthPercentage: completedLessonCount > 0 ? Math.min(100, completedLessonCount * 5) : 0,
+        activityDots,
+        goalDistance: Math.max(0, 100 - avgProgress),
+        learnTracking: {
+          month: Math.min(100, Math.round((completedLessonCount / 12) * 100)) || 0,
+          week: Math.min(100, Math.round((completedLessonCount / 4) * 100)) || 0,
+          day: streakDays > 0 ? 100 : 0,
+        },
         hasTakenPlacementTest: placementAttempts.length > 0,
         latestPlacementScore: placementAttempts[0]?.score || null,
         recommendedLevel: placementAttempts[0]?.recommendedLevel || null,
       },
+      inProgressCourse,
       activeEnrollments,
+      studyStatistics,
+      topMentors: formattedMentors,
       recentAssignments: assignments,
       recentQuizzes: quizAttempts,
       recentAttendances: attendances,
@@ -816,70 +957,6 @@ export class StudentRepository {
     });
   }
 
-  /**
-   * Get Student Profile Details
-   */
-  async getStudentProfile(userId: string) {
-    const profile = await this.getOrCreateStudentProfile(userId);
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        phone: true,
-        country: true,
-        city: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
-    });
-
-    return {
-      user,
-      profile,
-    };
-  }
-
-  /**
-   * Update Student Profile
-   */
-  async updateStudentProfile(userId: string, input: any) {
-    const profile = await this.getOrCreateStudentProfile(userId);
-
-    // Update user info if provided
-    if (input.firstName || input.lastName || input.phone || input.country || input.city || input.avatarUrl !== undefined) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          firstName: input.firstName,
-          lastName: input.lastName,
-          phone: input.phone,
-          country: input.country,
-          city: input.city,
-          avatarUrl: input.avatarUrl,
-        },
-      });
-    }
-
-    // Update profile info
-    const updatedProfile = await prisma.studentProfile.update({
-      where: { id: profile.id },
-      data: {
-        nativeLanguage: input.nativeLanguage,
-        targetLevel: input.targetLevel,
-        learningGoals: input.learningGoals,
-        preferredSchedule: input.preferredSchedule,
-        englishExperience: input.englishExperience,
-        bio: input.bio,
-      },
-      include: { user: true },
-    });
-
-    return updatedProfile;
-  }
 
   /**
    * Get Student Full Enrollment History & Lifecycle

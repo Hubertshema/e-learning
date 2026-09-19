@@ -11,6 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<User>;
   register: (payload: Record<string, any>) => Promise<User>;
+  loginWithGoogle: (payload?: { email?: string; firstName?: string; lastName?: string; role?: Role }) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   getDashboardRoute: (role?: Role) => string;
@@ -110,6 +111,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (payload?: { email?: string; firstName?: string; lastName?: string; role?: Role }): Promise<User> => {
+    setIsLoading(true);
+    try {
+      const email = payload?.email || `student.${Math.random().toString(36).substring(2, 7)}@gmail.com`;
+      const firstName = payload?.firstName || 'Google';
+      const lastName = payload?.lastName || 'Scholar';
+      const role = payload?.role || 'STUDENT';
+
+      const data = await apiClient<{ user: User; tokens: { accessToken: string; refreshToken: string } }>(
+        '/auth/google',
+        {
+          method: 'POST',
+          body: JSON.stringify({ email, firstName, lastName, role }),
+          requiresAuth: false,
+        }
+      );
+
+      tokenStorage.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
+      setUser(data.user);
+
+      const targetRoute = getDashboardRoute(data.user.role);
+      router.push(targetRoute);
+
+      return data.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async (): Promise<void> => {
     const refreshToken = tokenStorage.getRefreshToken();
     try {
@@ -137,6 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        loginWithGoogle,
         logout,
         refreshUser,
         getDashboardRoute,

@@ -253,7 +253,7 @@ export class TeacherRepository {
         currency: data.currency || 'USD',
         durationDays: data.durationDays || 90,
         thumbnailUrl: data.thumbnailUrl,
-        isPublished: data.published ?? data.isPublished ?? true,
+        isPublished: (data as any).published ?? data.isPublished ?? true,
         teacherId: profile.id,
       },
     });
@@ -290,7 +290,7 @@ export class TeacherRepository {
         courseId,
         title: data.title,
         description: data.description,
-        orderIndex: data.order ?? data.orderIndex ?? 1,
+        orderIndex: (data as any).order ?? data.orderIndex ?? 1,
         isPublished: data.isPublished ?? true,
       },
     });
@@ -302,9 +302,9 @@ export class TeacherRepository {
         unitId,
         title: data.title,
         description: data.description,
-        skill: (data.skillType || data.skill || 'GRAMMAR') as SkillType,
-        orderIndex: data.order ?? data.orderIndex ?? 1,
-        estimatedMinutes: data.durationMinutes ?? data.estimatedMinutes ?? 30,
+        skill: ((data as any).skillType || data.skill || 'GRAMMAR') as SkillType,
+        orderIndex: (data as any).order ?? data.orderIndex ?? 1,
+        estimatedMinutes: (data as any).durationMinutes ?? data.estimatedMinutes ?? 30,
         isPublished: data.isPublished ?? true,
         sections: {
           create: data.sections && data.sections.length > 0
@@ -316,24 +316,24 @@ export class TeacherRepository {
                 orderIndex: s.orderIndex ?? idx + 1,
               }))
             : [
-                ...(data.content ? [{
+                ...((data as any).content ? [{
                   title: 'Lesson Text & Grammar Rules',
                   contentType: 'MARKDOWN',
-                  content: data.content,
+                  content: (data as any).content,
                   orderIndex: 1,
                 }] : []),
-                ...(data.videoUrl ? [{
+                ...((data as any).videoUrl ? [{
                   title: 'Video Lecture Stream',
                   contentType: 'VIDEO',
                   content: 'Watch the video overview and practice following the speaker.',
-                  mediaUrl: data.videoUrl,
+                  mediaUrl: (data as any).videoUrl,
                   orderIndex: 2,
                 }] : []),
-                ...(data.audioUrl ? [{
+                ...((data as any).audioUrl ? [{
                   title: 'Audio Listening Practice',
                   contentType: 'AUDIO',
                   content: 'Listen attentively to native pronunciation and repeat key phrases.',
-                  mediaUrl: data.audioUrl,
+                  mediaUrl: (data as any).audioUrl,
                   orderIndex: 3,
                 }] : []),
               ],
@@ -393,10 +393,10 @@ export class TeacherRepository {
         courseId: data.courseId,
         name: data.name,
         code: data.code || code,
-        description: data.schedule || data.description,
+        description: (data as any).schedule || data.description,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
-        maxStudents: data.capacity || data.maxStudents || 30,
+        maxStudents: (data as any).capacity || data.maxStudents || 30,
       },
       include: { course: true },
     });
@@ -410,7 +410,7 @@ export class TeacherRepository {
     const profile = await this.getOrCreateTeacherProfile(userId);
     const where: Prisma.PaymentWhereInput = {
       teacherId: profile.id,
-      ...(filters.status && filters.status !== 'ALL' && { status: filters.status as PaymentStatus }),
+      ...(filters.status && (filters.status as any) !== 'ALL' && { status: filters.status as PaymentStatus }),
     };
 
     const payments = await prisma.payment.findMany({
@@ -599,12 +599,12 @@ export class TeacherRepository {
 
     // Find first lesson of course if courseId provided
     let targetLessonId = data.lessonId;
-    if (!targetLessonId && data.courseId) {
+    if (!targetLessonId && (data as any).courseId) {
       const course = await prisma.course.findUnique({
-        where: { id: data.courseId },
+        where: { id: (data as any).courseId },
         include: { units: { include: { lessons: true } } },
       });
-      targetLessonId = course?.units?.[0]?.lessons?.[0]?.id;
+      targetLessonId = course?.units?.[0]?.lessons?.[0]?.id || '';
     }
 
     if (!targetLessonId) {
@@ -759,14 +759,14 @@ export class TeacherRepository {
           },
           update: {
             status: record.status as AttendanceStatus,
-            note: record.remarks || record.note,
+            note: (record as any).remarks || record.note,
           },
           create: {
             classId: data.classId,
             studentId: studentProfile.id,
             date: sessionDate,
             status: record.status as AttendanceStatus,
-            note: record.remarks || record.note,
+            note: (record as any).remarks || record.note,
           },
         });
         results.push(entry);
@@ -785,7 +785,7 @@ export class TeacherRepository {
       course: { teacherId: profile.id },
       ...(filters.courseId && { courseId: filters.courseId }),
       ...(filters.classId && { classId: filters.classId }),
-      ...(filters.status && filters.status !== 'ALL' && { status: filters.status as EnrollmentStatus }),
+      ...((filters as any).status && (filters as any).status !== 'ALL' && { status: (filters as any).status as EnrollmentStatus }),
       ...(filters.search && {
         student: {
           user: {
@@ -1154,11 +1154,11 @@ export class TeacherRepository {
     const quiz = await this.getQuizDetails(userId, quizId);
     const attempts = quiz.attempts;
     const totalAttempts = attempts.length;
-    const scores = attempts.map((a) => Number(a.scorePercentage));
+    const scores = attempts.map((a: any) => Number(a.scorePercentage || a.score || 0));
     const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
     const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
     const minScore = scores.length > 0 ? Math.min(...scores) : 0;
-    const passedAttempts = attempts.filter((a) => a.isPassed).length;
+    const passedAttempts = attempts.filter((a: any) => a.isPassed || a.passed).length;
     const passRate = totalAttempts > 0 ? Math.round((passedAttempts / totalAttempts) * 100) : 0;
 
     return {
@@ -1244,8 +1244,8 @@ export class TeacherRepository {
       data: {
         userId,
         action: 'ENROLLMENT_EXTENDED',
-        resourceType: 'ENROLLMENT',
-        resourceId: enrollmentId,
+        entity: 'ENROLLMENT',
+        entityId: enrollmentId,
         metadata: {
           extensionDays,
           previousExpiry: enrollment.expiresAt,

@@ -55,7 +55,7 @@ function VerifyEmailContent() {
           Email Verification
         </CardTitle>
         <CardDescription className="text-xs text-slate-500">
-          Securing and activating your FluentEdge Academy account.
+          Securing and activating your LinguaChris Academy account.
         </CardDescription>
       </CardHeader>
 

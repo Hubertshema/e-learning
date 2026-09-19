@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-              <span className="hidden sm:inline">FluentEdge LMS</span>
+              <span className="hidden sm:inline">LinguaChris LMS</span>
               <span className="hidden sm:inline">/</span>
               <span className="text-slate-900 dark:text-white capitalize">
                 {pathname.split('/')[1] || 'Dashboard'}
@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {pathname.split('/')[2] && (
                 <>
                   <span>/</span>
-                  <span className="text-primary-600 dark:text-primary-400 capitalize">
+                  <span className="text-[#315B36] capitalize">
                     {pathname.split('/')[2].replace(/-/g, ' ')}
                   </span>
                 </>
@@ -102,7 +102,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
 
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 font-bold text-xs text-white shadow-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#315B36] font-bold text-xs text-white shadow-sm">
                 {user.firstName[0]}
                 {user.lastName[0]}
               </div>
@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Scrollable Dashboard Body */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 lg:p-10">{children}</main>
       </div>
     </div>
   );

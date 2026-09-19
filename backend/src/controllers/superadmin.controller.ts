@@ -14,6 +14,7 @@ import {
   UpdateSettingsInput,
 } from '../validators/superadmin.validator.js';
 import { UserStatus, PaymentStatus, EnrollmentStatus, CEFRLevel } from '@prisma/client';
+import { prisma } from '../config/database.js';
 
 export class SuperadminController {
   async getOverview(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -394,8 +395,103 @@ export class SuperadminController {
       next(error);
     }
   }
+
+  async getNewsletterSubscribers(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 20));
+      const search = (req.query.search as string) || '';
+
+      const whereClause: any = {};
+      if (search) {
+        whereClause.email = { contains: search, mode: 'insensitive' };
+      }
+
+      const [subscribers, total] = await Promise.all([
+        prisma.newsletterSubscriber.findMany({
+          where: whereClause,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { subscribedAt: 'desc' },
+        }),
+        prisma.newsletterSubscriber.count({ where: whereClause }),
+      ]);
+
+      sendSuccess(
+        res,
+        { subscribers, total },
+        'Newsletter subscribers retrieved successfully',
+        200,
+        { page, limit, total, totalPages: Math.ceil(total / limit) }
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getContactMessages(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 20));
+      const status = req.query.status as any;
+      const search = (req.query.search as string) || '';
+
+      const whereClause: any = {};
+      if (status && status !== 'ALL') {
+        whereClause.status = status;
+      }
+      if (search) {
+        whereClause.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { message: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      const [messages, total, unreadCount] = await Promise.all([
+        prisma.contactMessage.findMany({
+          where: whereClause,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.contactMessage.count({ where: whereClause }),
+        prisma.contactMessage.count({ where: { status: 'UNREAD' } }),
+      ]);
+
+      sendSuccess(
+        res,
+        { messages, total, unreadCount },
+        'Contact messages retrieved successfully',
+        200,
+        { page, limit, total, totalPages: Math.ceil(total / limit) }
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateContactMessageStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { status, notes } = req.body;
+
+      const updated = await prisma.contactMessage.update({
+        where: { id },
+        data: {
+          ...(status && { status }),
+          ...(notes !== undefined && { notes }),
+        },
+      });
+
+      sendSuccess(res, updated, 'Contact message updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const superadminController = new SuperadminController();
+
 
 

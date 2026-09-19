@@ -46,7 +46,7 @@ export class SuperadminRepository {
       financials: {
         totalPayments,
         totalRevenue: Number(verifiedRevenue._sum.amount || 0),
-        currency: inMemoryPlatformSettings.defaultCurrency || 'USD',
+        currency: 'USD',
       },
       recentAuditLogs,
     };
@@ -377,7 +377,6 @@ export class SuperadminRepository {
         include: {
           student: { include: { user: true } },
           enrollment: true,
-          course: false,
         },
       });
 

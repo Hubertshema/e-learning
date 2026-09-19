@@ -131,7 +131,7 @@ export default function StudentRegisterPage() {
             <GraduationCap className="h-6 w-6" />
           </div>
           <h1 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">
-            Join FluentEdge Academy
+            Join LinguaChris Academy
           </h1>
           <p className="mt-1 text-xs text-slate-500">
             Create your Student Account and unlock CEFR-aligned English mastery

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { Check } from 'lucide-react';
 
 export default function LevelsPage() {
@@ -50,37 +49,42 @@ export default function LevelsPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 space-y-12">
-      <div className="space-y-4 max-w-3xl">
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:py-16 sm:px-6 lg:px-8 space-y-10 sm:space-y-12">
+      <div className="space-y-3 max-w-3xl">
+        <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#315B36] bg-[#EFF4EC] rounded-full border border-[#E2EBE2]">
+          Proficiency Scale
+        </span>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#2E3339]">
           The CEFR Language Progression Framework
         </h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          The Common European Framework of Reference for Languages (CEFR) is the international standard for describing language ability.
+        <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+          The Common European Framework of Reference for Languages (CEFR) is the international standard for describing language ability, ensuring transparent, measurable progress for every student.
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {levels.map((lvl) => (
-          <Card key={lvl.code} className="p-6 transition-all hover:border-[#0f3d6a]">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+          <Card key={lvl.code} className="p-5 sm:p-6 bg-white border border-[#E2EBE2] shadow-sm rounded-2xl hover:border-[#315B36] transition-colors">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-start">
               <div className="md:col-span-4 space-y-2">
-                <span className="inline-block rounded-full bg-sky-50 text-[#0f3d6a] border border-sky-200 px-3 py-0.5 text-xs font-bold dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800">
+                <span className="inline-block rounded-full bg-[#EFF4EC] text-[#315B36] border border-[#E2EBE2] px-3 py-0.5 text-xs font-bold">
                   {lvl.code}
                 </span>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{lvl.title}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{lvl.description}</p>
+                <h2 className="text-lg font-bold text-[#2E3339]">{lvl.title}</h2>
+                <p className="text-xs sm:text-sm text-slate-600">{lvl.description}</p>
               </div>
 
               <div className="md:col-span-8">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
                   Key Competencies & Outcomes:
-                </h4>
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {lvl.outcomes.map((outcome, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300">
-                      <Check className="h-4 w-4 shrink-0 text-emerald-500 mt-0.5" />
-                      <span>{outcome}</span>
+                    <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
+                      <div className="p-0.5 rounded-full bg-[#EFF4EC] text-[#315B36] shrink-0 mt-0.5">
+                        <Check className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="leading-snug">{outcome}</span>
                     </div>
                   ))}
                 </div>

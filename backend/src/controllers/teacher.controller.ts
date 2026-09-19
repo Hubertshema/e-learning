@@ -465,7 +465,54 @@ export class TeacherController {
       next(error);
     }
   }
+
+  // Diagnostic Placement Quiz CRUD & Analytics
+  async getDiagnosticQuestions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const questions = await teacherService.getDiagnosticQuestions();
+      res.status(200).json({ success: true, data: questions });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createDiagnosticQuestion(req: Request, res: Response, next: NextFunction) {
+    try {
+      const question = await teacherService.createDiagnosticQuestion(req.body);
+      res.status(201).json({ success: true, data: question, message: 'Diagnostic question created successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateDiagnosticQuestion(req: Request, res: Response, next: NextFunction) {
+    try {
+      const question = await teacherService.updateDiagnosticQuestion(req.params.id, req.body);
+      res.status(200).json({ success: true, data: question, message: 'Diagnostic question updated successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteDiagnosticQuestion(req: Request, res: Response, next: NextFunction) {
+    try {
+      await teacherService.deleteDiagnosticQuestion(req.params.id);
+      res.status(200).json({ success: true, message: 'Diagnostic question deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getDiagnosticAnalytics(req: Request, res: Response, next: NextFunction) {
+    try {
+      const analytics = await teacherService.getDiagnosticAnalytics();
+      res.status(200).json({ success: true, data: analytics });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const teacherController = new TeacherController();
+
 

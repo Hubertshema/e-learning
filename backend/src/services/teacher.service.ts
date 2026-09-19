@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import { teacherRepository } from '../repositories/teacher.repository.js';
+import { notificationService } from './notification.service.js';
 import {
   CreateCourseInput,
   UpdateCourseInput,
@@ -94,23 +95,23 @@ export class TeacherService {
   }
 
   async approvePayment(teacherId: string, paymentId: string, notes?: string) {
-    const result = await teacherRepository.approvePayment(paymentId, teacherId, notes);
+    const result = (await teacherRepository.approvePayment(paymentId, teacherId, notes)) as any;
 
     // Notify Student
-    if (result) {
+    if (result && result.student) {
       await notificationService.notifyUser({
         userId: result.student.userId,
         type: 'PAYMENT_VERIFIED',
-        title: `Payment Verified: ${result.enrollment.course.title}`,
-        message: `Your payment of ${result.currency} ${result.amount} has been verified and course access is activated.`,
+        title: `Payment Verified: ${result.enrollment?.course?.title || 'Course Access'}`,
+        message: `Your payment of ${result.currency || 'USD'} ${result.amount} has been verified and course access is activated.`,
         link: '/student/courses',
         emailTemplate: 'PaymentVerifiedEmail',
         emailData: {
-          studentName: `${result.student.user.firstName} ${result.student.user.lastName}`,
-          courseTitle: result.enrollment.course.title,
+          studentName: `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim(),
+          courseTitle: result.enrollment?.course?.title || 'Course',
           amount: String(result.amount),
-          currency: result.currency,
-          expiryDate: result.enrollment.expiresAt ? new Date(result.enrollment.expiresAt).toLocaleDateString() : '90 days from now',
+          currency: result.currency || 'USD',
+          expiryDate: result.enrollment?.expiresAt ? new Date(result.enrollment.expiresAt).toLocaleDateString() : '90 days from now',
         },
         preferenceKey: 'paymentEmails',
       });
@@ -120,20 +121,20 @@ export class TeacherService {
   }
 
   async rejectPayment(teacherId: string, paymentId: string, reason: string) {
-    const result = await teacherRepository.rejectPayment(paymentId, teacherId, reason);
+    const result = (await teacherRepository.rejectPayment(paymentId, teacherId, reason)) as any;
 
     // Notify Student
-    if (result) {
+    if (result && result.student) {
       await notificationService.notifyUser({
         userId: result.student.userId,
         type: 'PAYMENT_REJECTED',
-        title: `Payment Issue: ${result.enrollment.course.title}`,
+        title: `Payment Issue: ${result.enrollment?.course?.title || 'Course'}`,
         message: `Your payment could not be verified: ${reason}`,
         link: '/student/payments',
         emailTemplate: 'PaymentRejectedEmail',
         emailData: {
-          studentName: `${result.student.user.firstName} ${result.student.user.lastName}`,
-          courseTitle: result.enrollment.course.title,
+          studentName: `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim(),
+          courseTitle: result.enrollment?.course?.title || 'Course',
           reason,
         },
         preferenceKey: 'paymentEmails',
@@ -157,19 +158,19 @@ export class TeacherService {
   }
 
   async gradeSubmission(teacherId: string, submissionId: string, data: GradeSubmissionInput) {
-    const result = await teacherRepository.gradeSubmission(teacherId, submissionId, data);
+    const result = (await teacherRepository.gradeSubmission(teacherId, submissionId, data)) as any;
 
-    if (result) {
+    if (result && result.student) {
       await notificationService.notifyUser({
         userId: result.student.userId,
         type: 'ASSIGNMENT_GRADED',
-        title: `Assignment Graded: ${result.assignment.title}`,
-        message: `Your assignment "${result.assignment.title}" received a score of ${result.score}%.`,
+        title: `Assignment Graded: ${result.assignment?.title || 'Assignment'}`,
+        message: `Your assignment "${result.assignment?.title || 'Assignment'}" received a score of ${result.score}%.`,
         link: '/student/assignments',
         emailTemplate: 'AssignmentGradedEmail',
         emailData: {
-          studentName: `${result.student.user.firstName} ${result.student.user.lastName}`,
-          assignmentTitle: result.assignment.title,
+          studentName: `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim(),
+          assignmentTitle: result.assignment?.title || 'Assignment',
           score: Number(result.score),
           feedback: data.feedback,
         },
@@ -206,9 +207,9 @@ export class TeacherService {
     strengths: string[],
     improvements: string[]
   ) {
-    const result = await teacherRepository.createStudentFeedback(teacherId, studentId, title, content, strengths, improvements);
+    const result = (await teacherRepository.createStudentFeedback(teacherId, studentId, title, content, strengths, improvements)) as any;
 
-    if (result) {
+    if (result && result.student) {
       await notificationService.notifyUser({
         userId: result.student.userId,
         type: 'TEACHER_FEEDBACK',
@@ -217,8 +218,8 @@ export class TeacherService {
         link: '/student/feedback',
         emailTemplate: 'TeacherFeedbackEmail',
         emailData: {
-          studentName: `${result.student.user.firstName} ${result.student.user.lastName}`,
-          teacherName: `${result.teacher.user.firstName} ${result.teacher.user.lastName}`,
+          studentName: `${result.student.user?.firstName || ''} ${result.student.user?.lastName || ''}`.trim(),
+          teacherName: `${result.teacher?.user?.firstName || ''} ${result.teacher?.user?.lastName || ''}`.trim(),
           comment: content,
         },
         preferenceKey: 'feedbackEmails',
@@ -356,7 +357,152 @@ export class TeacherService {
       },
     });
   }
+
+  // Diagnostic Placement Quiz Studio & Performance Analytics
+  async getDiagnosticQuestions() {
+    return prisma.diagnosticQuestion.findMany({
+      orderBy: { orderIndex: 'asc' },
+    });
+  }
+
+  async createDiagnosticQuestion(data: any) {
+    return prisma.diagnosticQuestion.create({
+      data: {
+        category: data.category || 'General Assessment',
+        skill: data.skill || 'Grammar',
+        difficulty: data.difficulty || 'B1',
+        prompt: data.prompt,
+        audioText: data.audioText || null,
+        options: Array.isArray(data.options) ? data.options : [],
+        correctAnswer: data.correctAnswer,
+        explanation: data.explanation || null,
+        orderIndex: Number(data.orderIndex) || 1,
+        isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
+      },
+    });
+  }
+
+  async updateDiagnosticQuestion(id: string, data: any) {
+    return prisma.diagnosticQuestion.update({
+      where: { id },
+      data: {
+        ...(data.category !== undefined && { category: data.category }),
+        ...(data.skill !== undefined && { skill: data.skill }),
+        ...(data.difficulty !== undefined && { difficulty: data.difficulty }),
+        ...(data.prompt !== undefined && { prompt: data.prompt }),
+        ...(data.audioText !== undefined && { audioText: data.audioText }),
+        ...(data.options !== undefined && { options: data.options }),
+        ...(data.correctAnswer !== undefined && { correctAnswer: data.correctAnswer }),
+        ...(data.explanation !== undefined && { explanation: data.explanation }),
+        ...(data.orderIndex !== undefined && { orderIndex: Number(data.orderIndex) }),
+        ...(data.isActive !== undefined && { isActive: Boolean(data.isActive) }),
+      },
+    });
+  }
+
+  async deleteDiagnosticQuestion(id: string) {
+    return prisma.diagnosticQuestion.delete({
+      where: { id },
+    });
+  }
+
+  async getDiagnosticAnalytics() {
+    const [allAttempts, uniqueIps, totalQuestionsCount] = await Promise.all([
+      prisma.diagnosticAttempt.findMany({
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              avatarUrl: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.diagnosticAttempt.groupBy({
+        by: ['ipAddress'],
+        _count: { id: true },
+      }),
+      prisma.diagnosticQuestion.count({ where: { isActive: true } }),
+    ]);
+
+    const totalAttempts = allAttempts.length;
+    const totalUniqueParticipants = uniqueIps.length;
+
+    // Global average percentage
+    const totalPercentageSum = allAttempts.reduce((acc, curr) => acc + Number(curr.percentage), 0);
+    const globalAverageScore = totalAttempts > 0 ? Number((totalPercentageSum / totalAttempts).toFixed(1)) : 0;
+
+    // Group performance by attempt number (Try 1, Try 2, Try 3, Try 4+)
+    const tryBuckets: { [key: number]: { count: number; totalPercent: number; totalScore: number } } = {
+      1: { count: 0, totalPercent: 0, totalScore: 0 },
+      2: { count: 0, totalPercent: 0, totalScore: 0 },
+      3: { count: 0, totalPercent: 0, totalScore: 0 },
+      4: { count: 0, totalPercent: 0, totalScore: 0 }, // 4 and above
+    };
+
+    allAttempts.forEach((att) => {
+      const bucket = att.attemptNumber >= 4 ? 4 : att.attemptNumber;
+      if (!tryBuckets[bucket]) {
+        tryBuckets[bucket] = { count: 0, totalPercent: 0, totalScore: 0 };
+      }
+      tryBuckets[bucket].count += 1;
+      tryBuckets[bucket].totalPercent += Number(att.percentage);
+      tryBuckets[bucket].totalScore += att.score;
+    });
+
+    const averageScoreByTry = [
+      {
+        tryLabel: 'Try #1 (First Attempt)',
+        tryNumber: 1,
+        attemptsCount: tryBuckets[1].count,
+        avgPercentage: tryBuckets[1].count > 0 ? Number((tryBuckets[1].totalPercent / tryBuckets[1].count).toFixed(1)) : 0,
+        avgScore: tryBuckets[1].count > 0 ? Number((tryBuckets[1].totalScore / tryBuckets[1].count).toFixed(1)) : 0,
+      },
+      {
+        tryLabel: 'Try #2 (Second Attempt)',
+        tryNumber: 2,
+        attemptsCount: tryBuckets[2].count,
+        avgPercentage: tryBuckets[2].count > 0 ? Number((tryBuckets[2].totalPercent / tryBuckets[2].count).toFixed(1)) : 0,
+        avgScore: tryBuckets[2].count > 0 ? Number((tryBuckets[2].totalScore / tryBuckets[2].count).toFixed(1)) : 0,
+      },
+      {
+        tryLabel: 'Try #3 (Third Attempt)',
+        tryNumber: 3,
+        attemptsCount: tryBuckets[3].count,
+        avgPercentage: tryBuckets[3].count > 0 ? Number((tryBuckets[3].totalPercent / tryBuckets[3].count).toFixed(1)) : 0,
+        avgScore: tryBuckets[3].count > 0 ? Number((tryBuckets[3].totalScore / tryBuckets[3].count).toFixed(1)) : 0,
+      },
+      {
+        tryLabel: 'Try #4+ (Repeated Attempts)',
+        tryNumber: 4,
+        attemptsCount: tryBuckets[4].count,
+        avgPercentage: tryBuckets[4].count > 0 ? Number((tryBuckets[4].totalPercent / tryBuckets[4].count).toFixed(1)) : 0,
+        avgScore: tryBuckets[4].count > 0 ? Number((tryBuckets[4].totalScore / tryBuckets[4].count).toFixed(1)) : 0,
+      },
+    ];
+
+    // Recommended level breakdown
+    const levelCounts: Record<string, number> = {};
+    allAttempts.forEach((att) => {
+      const lvl = att.recommendedLevel || 'A2';
+      levelCounts[lvl] = (levelCounts[lvl] || 0) + 1;
+    });
+
+    return {
+      totalUniqueParticipants,
+      totalAttempts,
+      globalAverageScore,
+      totalQuestionsCount,
+      averageScoreByTry,
+      levelDistribution: levelCounts,
+      recentAttempts: allAttempts.slice(0, 100),
+    };
+  }
 }
 
 export const teacherService = new TeacherService();
+
 

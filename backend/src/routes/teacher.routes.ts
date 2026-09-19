@@ -45,6 +45,13 @@ router.get('/quizzes/:quizId', teacherController.getQuizDetails);
 router.delete('/quizzes/:quizId', teacherController.deleteQuiz);
 router.get('/quizzes/:quizId/analytics', teacherController.getQuizAnalytics);
 
+// Diagnostic Placement Quiz CRUD & Performance Analytics
+router.get('/diagnostic-quiz/questions', teacherController.getDiagnosticQuestions);
+router.post('/diagnostic-quiz/questions', teacherController.createDiagnosticQuestion);
+router.put('/diagnostic-quiz/questions/:id', teacherController.updateDiagnosticQuestion);
+router.delete('/diagnostic-quiz/questions/:id', teacherController.deleteDiagnosticQuestion);
+router.get('/diagnostic-quiz/analytics', teacherController.getDiagnosticAnalytics);
+
 // Classes & Cohorts
 router.get('/classes', teacherController.getClasses);
 router.post('/classes', teacherController.createClass);
