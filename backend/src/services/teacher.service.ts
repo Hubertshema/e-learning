@@ -95,6 +95,10 @@ export class TeacherService {
     return cls;
   }
 
+  async enrollStudentInClass(teacherId: string, classId: string, data: { studentEmail?: string; studentId?: string }) {
+    return teacherRepository.enrollStudentInClass(teacherId, classId, data);
+  }
+
   // Payment Verification Queue
   async getPayments(teacherId: string, filters: PaymentFilterInput) {
     return teacherRepository.getPayments(teacherId, filters);

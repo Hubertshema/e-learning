@@ -123,6 +123,17 @@ export class TeacherController {
     }
   }
 
+  async enrollStudentInClass(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { classId } = req.params;
+      const { studentEmail, studentId } = req.body;
+      const result = await teacherService.enrollStudentInClass(req.user!.userId, classId, { studentEmail, studentId });
+      res.status(200).json({ success: true, data: result, message: 'Student successfully enrolled and marked as paid' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Payments
   async getPayments(req: Request, res: Response, next: NextFunction) {
     try {

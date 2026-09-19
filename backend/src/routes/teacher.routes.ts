@@ -57,6 +57,7 @@ router.get('/diagnostic-quiz/analytics', teacherController.getDiagnosticAnalytic
 router.get('/classes', teacherController.getClasses);
 router.post('/classes', teacherController.createClass);
 router.get('/classes/:classId', teacherController.getClassDetails);
+router.post('/classes/:classId/enroll', teacherController.enrollStudentInClass);
 
 // Enrollments & Expiring Students Watchlist
 router.get('/enrollments', teacherController.getEnrollments);

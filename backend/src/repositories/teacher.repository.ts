@@ -416,6 +416,119 @@ export class TeacherRepository {
     });
   }
 
+  async enrollStudentInClass(userId: string, classId: string, data: { studentEmail?: string; studentId?: string }) {
+    const profile = await this.getOrCreateTeacherProfile(userId);
+    const classItem = await prisma.class.findUnique({
+      where: { id: classId },
+      include: { course: true },
+    });
+
+    if (!classItem) {
+      throw new AppError('Class cohort not found', 404);
+    }
+
+    let studentProfile: any;
+    if (data.studentId) {
+      studentProfile = await prisma.studentProfile.findUnique({
+        where: { id: data.studentId },
+        include: { user: true },
+      });
+    } else if (data.studentEmail) {
+      const email = data.studentEmail.trim().toLowerCase();
+      const user = await prisma.user.findUnique({
+        where: { email },
+        include: { studentProfile: true },
+      });
+
+      if (!user) {
+        throw new AppError(`No registered student account found with email: ${data.studentEmail}`, 404);
+      }
+
+      if (!user.studentProfile) {
+        studentProfile = await prisma.studentProfile.create({
+          data: { userId: user.id },
+          include: { user: true },
+        });
+      } else {
+        studentProfile = { ...user.studentProfile, user };
+      }
+    }
+
+    if (!studentProfile) {
+      throw new AppError('Please provide a valid student email or student ID', 400);
+    }
+
+    const durationDays = classItem.course?.durationDays || 90;
+    const activatedAt = new Date();
+    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+
+    // Upsert active enrollment record
+    const enrollment = await prisma.enrollment.upsert({
+      where: {
+        studentId_courseId: {
+          studentId: studentProfile.id,
+          courseId: classItem.courseId,
+        },
+      },
+      create: {
+        studentId: studentProfile.id,
+        courseId: classItem.courseId,
+        classId: classItem.id,
+        status: 'ACTIVE',
+        enrolledAt: new Date(),
+        activatedAt,
+        expiresAt,
+      },
+      update: {
+        classId: classItem.id,
+        status: 'ACTIVE',
+        activatedAt,
+        expiresAt,
+      },
+      include: {
+        student: {
+          include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+        },
+        course: { select: { id: true, title: true, level: true } },
+        class: true,
+      },
+    });
+
+    // Create a verified payment record so student is counted as paid
+    await prisma.payment.create({
+      data: {
+        enrollmentId: enrollment.id,
+        studentId: studentProfile.id,
+        teacherId: profile.id,
+        amount: classItem.course?.price || 0,
+        currency: classItem.course?.currency || 'USD',
+        status: PaymentStatus.VERIFIED,
+        paymentMethod: 'DIRECT_ENROLLMENT',
+        notes: `Enrolled directly by instructor into cohort: ${classItem.name}`,
+        verifiedAt: new Date(),
+      },
+    });
+
+    // Send notification to student
+    if (studentProfile.userId) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: studentProfile.userId,
+            title: `Enrolled in ${classItem.course?.title || 'Class Cohort'}`,
+            message: `You have been enrolled into ${classItem.name}. Your active course access is now ready!`,
+            type: 'ENROLLMENT_CONFIRMED',
+            link: '/student/dashboard',
+          },
+        });
+      } catch (err) {
+        console.warn('Failed to send enrollment notification:', err);
+      }
+    }
+
+    return enrollment;
+  }
+
   // ----------------------------------------------------
   // PAYMENTS & VERIFICATION QUEUE
   // ----------------------------------------------------

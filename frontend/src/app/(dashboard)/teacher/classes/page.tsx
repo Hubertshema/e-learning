@@ -17,7 +17,8 @@ import {
   BookOpen,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  UserPlus
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useCachedData, clientCache } from '@/lib/cache';
@@ -72,6 +73,11 @@ export default function TeacherClassesPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [enrollStudentEmail, setEnrollStudentEmail] = useState('');
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollError, setEnrollError] = useState<string | null>(null);
 
   const [selectedDays, setSelectedDays] = useState<string[]>(['Mon', 'Wed', 'Fri']);
   const [startTime, setStartTime] = useState('06:00 PM');
@@ -177,8 +183,8 @@ export default function TeacherClassesPage() {
         capacity: 25,
       });
       setSelectedDays(['Mon', 'Wed', 'Fri']);
-      setStartTime('18:00');
-      setEndTime('19:30');
+      setStartTime('06:00 PM');
+      setEndTime('07:30 PM');
       setCohortStartDate(new Date());
       setShowCalendarPicker(false);
       clientCache.invalidate('teacher_');
@@ -187,6 +193,30 @@ export default function TeacherClassesPage() {
       setModalError(err.message || 'Failed to create class cohort. Please verify your inputs.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleEnrollStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClass) return;
+    setEnrollError(null);
+    try {
+      setEnrolling(true);
+      await apiClient.post(`/teacher/classes/${selectedClass.id}/enroll`, {
+        studentEmail: enrollStudentEmail.trim(),
+      });
+      setFeedback({
+        type: 'success',
+        message: `Student (${enrollStudentEmail.trim()}) enrolled in ${selectedClass.name} and marked as paid!`,
+      });
+      setShowEnrollModal(false);
+      setEnrollStudentEmail('');
+      clientCache.invalidate('teacher_');
+      await fetchData();
+    } catch (err: any) {
+      setEnrollError(err.message || 'Failed to enroll student. Please check the email address.');
+    } finally {
+      setEnrolling(false);
     }
   };
 
@@ -315,7 +345,7 @@ export default function TeacherClassesPage() {
                     <h2 className="text-lg font-black text-slate-900 dark:text-white mt-1">
                       {selectedClass.name}
                     </h2>
-                    <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5 text-slate-400" />
                         {selectedClass.schedule}
@@ -324,6 +354,18 @@ export default function TeacherClassesPage() {
                         <Users className="h-3.5 w-3.5 text-slate-400" />
                         {selectedClass.enrollments?.length || 0} / {selectedClass.capacity} Students Enrolled
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEnrollError(null);
+                          setEnrollStudentEmail('');
+                          setShowEnrollModal(true);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-900/50 transition-colors shadow-sm"
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                        + Enroll Student
+                      </button>
                     </div>
                   </div>
 
@@ -341,14 +383,29 @@ export default function TeacherClassesPage() {
 
               {/* Enrolled Students Roster */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Users className="h-4 w-4 text-primary-600" />
-                    Enrolled Students Roster
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Students currently active in this cohort
-                  </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary-600" />
+                      Enrolled Students Roster
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Students currently active in this cohort
+                    </CardDescription>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="gradient"
+                    onClick={() => {
+                      setEnrollError(null);
+                      setEnrollStudentEmail('');
+                      setShowEnrollModal(true);
+                    }}
+                    className="flex items-center gap-1.5 text-xs shadow-sm"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Enroll Student
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {selectedClass.enrollments && selectedClass.enrollments.length > 0 ? (
@@ -371,8 +428,21 @@ export default function TeacherClassesPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="py-8 text-center text-xs text-slate-400">
-                      No students enrolled in this cohort yet.
+                    <div className="py-10 text-center text-xs text-slate-400 space-y-3">
+                      <p>No students enrolled in this cohort yet.</p>
+                      <Button
+                        size="sm"
+                        variant="gradient"
+                        onClick={() => {
+                          setEnrollError(null);
+                          setEnrollStudentEmail('');
+                          setShowEnrollModal(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 text-xs shadow-sm"
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                        Enroll First Student
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -598,6 +668,87 @@ export default function TeacherClassesPage() {
                 {saving ? 'Creating...' : 'Create Cohort'}
               </Button>
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal: Enroll Student */}
+      {showEnrollModal && selectedClass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+          <Card className="w-full max-w-md shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+            <CardHeader className="py-3.5 px-5 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between shrink-0 space-y-0">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-primary-600" />
+                  Enroll Student in Cohort
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 mt-0.5">
+                  {selectedClass.name} • {selectedClass.course?.title}
+                </CardDescription>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEnrollModal(false);
+                  setEnrollError(null);
+                }}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </CardHeader>
+
+            <form onSubmit={handleEnrollStudent} className="p-5 space-y-4">
+              {enrollError && (
+                <div className="flex items-center gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                  <span>{enrollError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Student Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. student@gmail.com"
+                  value={enrollStudentEmail}
+                  onChange={(e) => setEnrollStudentEmail(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                />
+              </div>
+
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300 flex items-start gap-2.5">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                <p className="leading-relaxed">
+                  Enrolling this student will activate their course access immediately and record their enrollment tuition as <strong>fully paid</strong>.
+                </p>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowEnrollModal(false);
+                    setEnrollError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="gradient"
+                  size="sm"
+                  disabled={enrolling}
+                >
+                  {enrolling ? 'Enrolling...' : 'Confirm Enrollment'}
+                </Button>
+              </div>
+            </form>
           </Card>
         </div>
       )}
