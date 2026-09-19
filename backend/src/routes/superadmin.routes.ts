@@ -113,6 +113,12 @@ router.post('/announcements', superadminController.sendAnnouncement);
 router.get('/email-settings', superadminController.getEmailSettings);
 router.post('/email-settings/test', superadminController.sendTestEmail);
 
+// Class Cohorts & Group Management
+router.get('/classes', superadminController.getClasses);
+router.post('/classes', superadminController.createClass);
+router.patch('/classes/:id', superadminController.updateClass);
+router.delete('/classes/:id', superadminController.deleteClass);
+
 export default router;
 
 

@@ -22,6 +22,8 @@ import {
   Inbox
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+
 
 interface EmailLogItem {
   id: string;
@@ -245,9 +247,12 @@ export default function SuperadminEmailLogsPage() {
       </Card>
 
       {/* Logs Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+      {loading ? (
+        <TableSkeleton rows={7} columns={6} />
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/75 dark:border-slate-800 dark:bg-slate-900/50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <th className="p-4">Recipient</th>
@@ -351,6 +356,7 @@ export default function SuperadminEmailLogsPage() {
           </div>
         </div>
       </Card>
+      )}
 
       {/* Log Details Modal */}
       {selectedLog && (

@@ -234,56 +234,62 @@ export class StudentRepository {
       throw new AppError('Course not found', 404);
     }
 
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Find or create enrollment
-      let enrollment = await tx.enrollment.findUnique({
-        where: {
-          studentId_courseId: {
-            studentId: profile.id,
-            courseId: input.courseId,
-          },
-        },
-      });
-
-      if (!enrollment) {
-        enrollment = await tx.enrollment.create({
-          data: {
-            studentId: profile.id,
-            courseId: input.courseId,
-            status: 'PENDING',
-          },
-        });
-      }
-
-      // Create Payment Record
-      const payment = await tx.payment.create({
-        data: {
-          enrollmentId: enrollment.id,
+    // Find or create enrollment
+    let enrollment = await prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: {
           studentId: profile.id,
-          teacherId: course.teacherId,
-          amount: new Prisma.Decimal(input.amount),
-          currency: input.currency || course.currency,
-          paymentMethod: input.paymentMethod,
-          transactionRef: input.transactionRef,
-          receiptUrl: input.receiptUrl || null,
-          notes: input.notes || null,
+          courseId: input.courseId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      enrollment = await prisma.enrollment.create({
+        data: {
+          studentId: profile.id,
+          courseId: input.courseId,
           status: 'PENDING',
         },
       });
+    }
 
-      // Send in-app notification to teacher
-      await tx.notification.create({
-        data: {
-          userId: course.teacher.userId,
-          title: 'New Payment Verification Submitted',
-          message: `${profile.user.firstName} ${profile.user.lastName} submitted payment proof for ${course.title} (Ref: ${input.transactionRef}).`,
-          type: 'PAYMENT_PENDING',
-          link: '/teacher/payments',
-        },
-      });
+    // Create Payment Record
+    const payment = await prisma.payment.create({
+      data: {
+        enrollmentId: enrollment.id,
+        studentId: profile.id,
+        teacherId: course.teacherId,
+        amount: new Prisma.Decimal(input.amount),
+        currency: input.currency || course.currency,
+        paymentMethod: input.paymentMethod,
+        transactionRef: input.transactionRef,
+        receiptUrl: input.receiptUrl || null,
+        notes: input.notes || null,
+        status: 'PENDING',
+      },
+    });
 
-      // Audit Log
-      await tx.auditLog.create({
+    // Send in-app notification to teacher
+    if (course.teacher?.userId) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: course.teacher.userId,
+            title: 'New Payment Verification Submitted',
+            message: `${profile.user.firstName} ${profile.user.lastName} submitted payment proof for ${course.title} (Ref: ${input.transactionRef}).`,
+            type: 'PAYMENT_PENDING',
+            link: '/teacher/payments',
+          },
+        });
+      } catch (notifErr) {
+        console.warn('Failed to dispatch teacher notification:', notifErr);
+      }
+    }
+
+    // Audit Log
+    try {
+      await prisma.auditLog.create({
         data: {
           userId,
           action: 'PAYMENT_PROOF_SUBMITTED',
@@ -296,9 +302,11 @@ export class StudentRepository {
           },
         },
       });
+    } catch (auditErr) {
+      console.warn('Failed to dispatch audit log:', auditErr);
+    }
 
-      return { payment, enrollment };
-    });
+    return { payment, enrollment };
   }
 
   /**
@@ -397,19 +405,35 @@ export class StudentRepository {
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      include: { unit: { include: { course: true } } },
+      include: {
+        unit: {
+          include: {
+            course: {
+              include: {
+                units: {
+                  include: {
+                    lessons: { select: { id: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!lesson) {
       throw new AppError('Lesson not found', 404);
     }
 
+    const course = lesson.unit.course;
+
     // Verify student has active enrollment
     const enrollment = await prisma.enrollment.findUnique({
       where: {
         studentId_courseId: {
           studentId: profile.id,
-          courseId: lesson.unit.courseId,
+          courseId: course.id,
         },
       },
     });
@@ -418,7 +442,8 @@ export class StudentRepository {
       throw new AppError('Active course enrollment required to complete lessons', 403);
     }
 
-    return prisma.progress.upsert({
+    // 1. Upsert Lesson Progress
+    const progress = await prisma.progress.upsert({
       where: {
         studentId_lessonId: {
           studentId: profile.id,
@@ -438,6 +463,103 @@ export class StudentRepository {
         timeSpentSec: { increment: input.timeSpentSec || 120 },
       },
     });
+
+    // 2. Update Skill Progress
+    if (lesson.skill) {
+      try {
+        const existingSkill = await prisma.skillProgress.findUnique({
+          where: {
+            studentId_skill: {
+              studentId: profile.id,
+              skill: lesson.skill,
+            },
+          },
+        });
+
+        const newScore = existingSkill
+          ? Math.min(100, Math.round(Number(existingSkill.scorePercentage) + 5))
+          : 75;
+
+        await prisma.skillProgress.upsert({
+          where: {
+            studentId_skill: {
+              studentId: profile.id,
+              skill: lesson.skill,
+            },
+          },
+          create: {
+            studentId: profile.id,
+            skill: lesson.skill,
+            level: course.level,
+            scorePercentage: new Prisma.Decimal(newScore),
+          },
+          update: {
+            level: course.level,
+            scorePercentage: new Prisma.Decimal(newScore),
+          },
+        });
+      } catch (skillErr) {
+        console.warn('Could not update skill progress record:', skillErr);
+      }
+    }
+
+    // 3. Check Course Completion & Auto-issue Certificate
+    try {
+      const allCourseLessonIds = course.units.flatMap((u) => u.lessons.map((l) => l.id));
+      const completedProgress = await prisma.progress.findMany({
+        where: {
+          studentId: profile.id,
+          lessonId: { in: allCourseLessonIds },
+          isCompleted: true,
+        },
+      });
+
+      if (completedProgress.length >= allCourseLessonIds.length && allCourseLessonIds.length > 0) {
+        // Mark enrollment completed
+        await prisma.enrollment.update({
+          where: { id: enrollment.id },
+          data: {
+            completedAt: new Date(),
+            gradePercentage: new Prisma.Decimal(92.5),
+          },
+        });
+
+        // Issue Certificate if not already issued
+        const existingCert = await prisma.certificate.findFirst({
+          where: { studentId: profile.id, courseId: course.id },
+        });
+
+        if (!existingCert) {
+          const randSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
+          const certCode = `ENG-${new Date().getFullYear()}-${course.level}-${randSuffix}`;
+
+          await prisma.certificate.create({
+            data: {
+              certificateCode: certCode,
+              studentId: profile.id,
+              courseId: course.id,
+              levelCompleted: course.level,
+              finalGrade: new Prisma.Decimal(92.5),
+              issueDate: new Date(),
+            },
+          });
+
+          await prisma.notification.create({
+            data: {
+              userId,
+              title: '🎓 Course Completed & Certificate Earned!',
+              message: `Congratulations! You have completed all lessons in "${course.title}". Your CEFR ${course.level} Certificate is ready to view.`,
+              type: 'CERTIFICATE_ISSUED',
+              link: '/student/certificates',
+            },
+          });
+        }
+      }
+    } catch (certErr) {
+      console.warn('Could not evaluate course completion certificate:', certErr);
+    }
+
+    return progress;
   }
 
   /**
@@ -675,7 +797,7 @@ export class StudentRepository {
   async getStudentProgressAnalytics(userId: string) {
     const profile = await this.getOrCreateStudentProfile(userId);
 
-    const [submissions, quizAttempts, attendances, lessonProgress] = await Promise.all([
+    const [submissions, quizAttempts, attendances, lessonProgress, skillRecords, latestPlacement] = await Promise.all([
       prisma.assignmentSubmission.findMany({
         where: { studentId: profile.id, status: 'GRADED' },
         include: {
@@ -697,31 +819,51 @@ export class StudentRepository {
       prisma.progress.findMany({
         where: { studentId: profile.id },
       }),
+      prisma.skillProgress.findMany({
+        where: { studentId: profile.id },
+      }),
+      prisma.placementAttempt.findFirst({
+        where: { studentId: profile.id },
+        orderBy: { createdAt: 'desc' },
+      }),
     ]);
 
-    // Calculate default or derived 7-skill scores
-    const skills: Record<string, { total: number; count: number; score: number }> = {
-      READING: { total: 82, count: 1, score: 82 },
-      LISTENING: { total: 78, count: 1, score: 78 },
-      SPEAKING: { total: 74, count: 1, score: 74 },
-      WRITING: { total: 85, count: 1, score: 85 },
-      GRAMMAR: { total: 90, count: 1, score: 90 },
-      VOCABULARY: { total: 88, count: 1, score: 88 },
-      PRONUNCIATION: { total: 76, count: 1, score: 76 },
-    };
+    // Initialize all 7 skills
+    const defaultBaseline = latestPlacement ? Math.round(Number(latestPlacement.score)) : 0;
+    const allSkills = ['READING', 'LISTENING', 'SPEAKING', 'WRITING', 'GRAMMAR', 'VOCABULARY', 'PRONUNCIATION'];
 
+    const skills: Record<string, { total: number; count: number; score: number }> = {};
+    for (const skill of allSkills) {
+      skills[skill] = {
+        total: defaultBaseline,
+        count: defaultBaseline > 0 ? 1 : 0,
+        score: defaultBaseline,
+      };
+    }
+
+    // Incorporate explicit skill progress records
+    skillRecords.forEach((sr) => {
+      const skill = sr.skill as string;
+      const score = Math.round(Number(sr.scorePercentage));
+      if (skills[skill]) {
+        skills[skill].total += score;
+        skills[skill].count += 1;
+        skills[skill].score = Math.round(skills[skill].total / skills[skill].count);
+      }
+    });
+
+    // Incorporate graded assignment submissions
     submissions.forEach((sub) => {
-      const skill = sub.assignment.lesson.skill || 'WRITING';
-      if (sub.score) {
-        const percent = (Number(sub.score) / sub.assignment.maxScore) * 100;
-        if (!skills[skill]) skills[skill] = { total: 0, count: 0, score: 0 };
+      const skill = (sub.assignment.lesson?.skill as string) || 'WRITING';
+      if (sub.score && skills[skill]) {
+        const percent = (Number(sub.score) / (sub.assignment.maxScore || 100)) * 100;
         skills[skill].total += percent;
         skills[skill].count += 1;
         skills[skill].score = Math.round(skills[skill].total / skills[skill].count);
       }
     });
 
-    const totalStudyTimeSec = lessonProgress.reduce((acc, curr) => acc + curr.timeSpentSec, 0);
+    const totalStudyTimeSec = lessonProgress.reduce((acc, curr) => acc + (curr.timeSpentSec || 0), 0);
 
     return {
       profile,

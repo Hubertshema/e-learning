@@ -16,6 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { RichTextRenderer } from '@/components/ui/rich-text-editor';
 
 interface FeedbackItem {
   id: string;
@@ -144,9 +145,9 @@ export default function TeacherFeedbackLogPage() {
                 </span>
               </div>
 
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                {fb.content}
-              </p>
+              <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                <RichTextRenderer content={fb.content} />
+              </div>
 
               {(fb.strengths?.length > 0 || fb.improvements?.length > 0) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">

@@ -18,6 +18,9 @@ import {
   Sparkles
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RichTextEditor, RichTextRenderer } from '@/components/ui/rich-text-editor';
+
 
 interface Assignment {
   id: string;
@@ -233,7 +236,18 @@ export default function TeacherAssignmentsPage() {
           </h2>
 
           {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400">Loading assignments...</div>
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </Card>
+              ))}
+            </div>
           ) : assignments.length > 0 ? (
             <div className="space-y-3">
               {assignments.map((ass) => {
@@ -296,9 +310,9 @@ export default function TeacherAssignmentsPage() {
                     <h2 className="text-lg font-black text-slate-900 dark:text-white mt-1">
                       {selectedAssignment.title}
                     </h2>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                      {selectedAssignment.description}
-                    </p>
+                    <div className="text-xs text-slate-600 dark:text-slate-300 mt-1.5">
+                      <RichTextRenderer content={selectedAssignment.description} />
+                    </div>
                   </div>
                   <div className="text-right">
                     <Badge variant="outline" className="text-xs">
@@ -362,13 +376,14 @@ export default function TeacherAssignmentsPage() {
                           </div>
 
                           {/* Student Content Snippet */}
-                          <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-300 font-mono whitespace-pre-wrap border border-slate-100 dark:border-slate-800">
-                            {sub.content}
+                          <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-300 border border-slate-100 dark:border-slate-800">
+                            <RichTextRenderer content={sub.content} />
                           </div>
 
                           {sub.feedback && (
-                            <div className="rounded-lg bg-emerald-50/50 p-2.5 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900">
-                              <strong>Teacher Feedback:</strong> {sub.feedback}
+                            <div className="rounded-lg bg-emerald-50/50 p-3 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900">
+                              <strong className="block mb-1">Teacher Feedback:</strong>
+                              <RichTextRenderer content={sub.feedback} />
                             </div>
                           )}
                         </div>
@@ -477,19 +492,14 @@ export default function TeacherAssignmentsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Instructions & Prompt Guidelines
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Write 200-250 words arguing both perspectives. Use at least 3 formal connectors (e.g. Furthermore, In contrast)."
-                    value={createForm.description}
-                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                  />
-                </div>
+                <RichTextEditor
+                  label="Instructions, Prompt Guidelines & Rubric"
+                  placeholder="Write 200-250 words arguing both perspectives. Use at least 3 formal connectors (e.g. Furthermore, In contrast)..."
+                  value={createForm.description}
+                  onChange={(val) => setCreateForm({ ...createForm, description: val })}
+                  minRows={5}
+                  category="assignment"
+                />
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowCreateModal(false)}>
@@ -539,19 +549,14 @@ export default function TeacherAssignmentsPage() {
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Constructive Teacher Feedback & Correction
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Praise strengths and note specific grammar/vocabulary improvements..."
-                    value={gradeForm.feedback}
-                    onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
-                  />
-                </div>
+                <RichTextEditor
+                  label="Constructive Teacher Feedback, Rubric Scores & Corrections"
+                  placeholder="Praise strengths and note specific grammar/vocabulary improvements..."
+                  value={gradeForm.feedback}
+                  onChange={(val) => setGradeForm({ ...gradeForm, feedback: val })}
+                  minRows={4}
+                  category="feedback"
+                />
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => setGradingSubmission(null)}>
                     Cancel

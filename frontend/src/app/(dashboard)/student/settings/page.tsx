@@ -25,6 +25,7 @@ import {
   Target
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -370,7 +371,24 @@ export default function StudentSettingsPage() {
             </div>
 
             <div className="space-y-2.5 pt-2">
-              {activeSessions.length > 0 ? (
+              {loadingSessions ? (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 p-3.5 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <Skeleton className="h-4 w-12 rounded-full" />
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 p-3.5 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <Skeleton className="h-4 w-12 rounded-full" />
+                  </div>
+                </div>
+              ) : activeSessions.length > 0 ? (
                 activeSessions.map((session) => (
                   <div
                     key={session.id}
@@ -399,7 +417,7 @@ export default function StudentSettingsPage() {
                 ))
               ) : (
                 <div className="py-6 text-center text-xs text-slate-400">
-                  {loadingSessions ? 'Loading active sessions...' : 'Single active session.'}
+                  Single active session.
                 </div>
               )}
             </div>
@@ -420,60 +438,85 @@ export default function StudentSettingsPage() {
               </CardDescription>
             </CardHeader>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Daily Learning Target
-                </label>
-                <select
-                  value={dailyTarget}
-                  onChange={(e) => setDailyTarget(e.target.value)}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-xs font-bold"
-                >
-                  <option value="15">15 minutes / day (Casual)</option>
-                  <option value="30">30 minutes / day (Standard)</option>
-                  <option value="45">45 minutes / day (Intensive)</option>
-                  <option value="60">60 minutes / day (Immersion)</option>
-                </select>
+            {loadingPrefs ? (
+              <div className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-10 w-full rounded-xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-10 w-full rounded-xl" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <div className="flex flex-wrap gap-2">
+                    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                      <Skeleton key={i} className="h-8 w-20 rounded-xl" />
+                    ))}
+                  </div>
+                </div>
               </div>
-
-              <Input
-                label="Preferred Study Hours"
-                placeholder="e.g. 18:00 – 20:00 (Evening)"
-                value={preferredTimeSlot}
-                onChange={(e) => setPreferredTimeSlot(e.target.value)}
-              />
-            </div>
-
-            {/* Study Days Selector */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Preferred Weekly Study Days
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {WEEKDAYS.map((day) => {
-                  const isSelected = selectedDays.includes(day);
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() => toggleDay(day)}
-                      className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
-                        isSelected
-                          ? 'bg-primary-600 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                      }`}
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Daily Learning Target
+                    </label>
+                    <select
+                      value={dailyTarget}
+                      onChange={(e) => setDailyTarget(e.target.value)}
+                      className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-xs font-bold"
                     >
-                      {day}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                      <option value="15">15 minutes / day (Casual)</option>
+                      <option value="30">30 minutes / day (Standard)</option>
+                      <option value="45">45 minutes / day (Intensive)</option>
+                      <option value="60">60 minutes / day (Immersion)</option>
+                    </select>
+                  </div>
+
+                  <Input
+                    label="Preferred Study Hours"
+                    placeholder="e.g. 18:00 – 20:00 (Evening)"
+                    value={preferredTimeSlot}
+                    onChange={(e) => setPreferredTimeSlot(e.target.value)}
+                  />
+                </div>
+
+                {/* Study Days Selector */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Preferred Weekly Study Days
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {WEEKDAYS.map((day) => {
+                      const isSelected = selectedDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleDay(day)}
+                          className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+                            isSelected
+                              ? 'bg-primary-600 text-white shadow-sm'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" variant="gradient" disabled={savingStudy}>
+            <Button type="submit" variant="gradient" disabled={savingStudy || loadingPrefs}>
               <Save className="mr-1.5 h-4 w-4" />
               {savingStudy ? 'Saving...' : 'Save Study Routine'}
             </Button>
@@ -494,76 +537,90 @@ export default function StudentSettingsPage() {
               </CardDescription>
             </CardHeader>
 
-            <div className="space-y-3 pt-2">
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">Master Email Notifications</p>
-                  <p className="text-[11px] text-slate-500">Enable or pause non-critical academic emails</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={prefs.emailEnabled}
-                  onChange={(e) => setPrefs({ ...prefs, emailEnabled: e.target.checked })}
-                  className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                />
-              </label>
+            {loadingPrefs ? (
+              <div className="space-y-3 pt-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-64" />
+                    </div>
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3 pt-2">
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Master Email Notifications</p>
+                    <p className="text-[11px] text-slate-500">Enable or pause non-critical academic emails</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prefs.emailEnabled}
+                    onChange={(e) => setPrefs({ ...prefs, emailEnabled: e.target.checked })}
+                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">Assignment Reminders & Feedback</p>
-                  <p className="text-[11px] text-slate-500">Alerts when assignments are published or evaluated</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={prefs.assignmentEmails}
-                  onChange={(e) => setPrefs({ ...prefs, assignmentEmails: e.target.checked })}
-                  className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                />
-              </label>
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Assignment Reminders & Feedback</p>
+                    <p className="text-[11px] text-slate-500">Alerts when assignments are published or evaluated</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prefs.assignmentEmails}
+                    onChange={(e) => setPrefs({ ...prefs, assignmentEmails: e.target.checked })}
+                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">Quiz Deadlines & Results</p>
-                  <p className="text-[11px] text-slate-500">Alert when a quiz evaluation is ready</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={prefs.quizEmails}
-                  onChange={(e) => setPrefs({ ...prefs, quizEmails: e.target.checked })}
-                  className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                />
-              </label>
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Quiz Deadlines & Results</p>
+                    <p className="text-[11px] text-slate-500">Alert when a quiz evaluation is ready</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prefs.quizEmails}
+                    onChange={(e) => setPrefs({ ...prefs, quizEmails: e.target.checked })}
+                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">Course Expiration Warnings</p>
-                  <p className="text-[11px] text-slate-500">Alerts 7 days, 3 days, and 1 day before course validity ends</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={prefs.courseExpirationEmails}
-                  onChange={(e) => setPrefs({ ...prefs, courseExpirationEmails: e.target.checked })}
-                  className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                />
-              </label>
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Course Expiration Warnings</p>
+                    <p className="text-[11px] text-slate-500">Alerts 7 days, 3 days, and 1 day before course validity ends</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prefs.courseExpirationEmails}
+                    onChange={(e) => setPrefs({ ...prefs, courseExpirationEmails: e.target.checked })}
+                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
+                  />
+                </label>
 
-              <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">Instructor Coaching Notes</p>
-                  <p className="text-[11px] text-slate-500">Notifies when your instructor provides personalized coaching feedback</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={prefs.feedbackEmails}
-                  onChange={(e) => setPrefs({ ...prefs, feedbackEmails: e.target.checked })}
-                  className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                />
-              </label>
-            </div>
+                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Instructor Coaching Notes</p>
+                    <p className="text-[11px] text-slate-500">Notifies when your instructor provides personalized coaching feedback</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prefs.feedbackEmails}
+                    onChange={(e) => setPrefs({ ...prefs, feedbackEmails: e.target.checked })}
+                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
+                  />
+                </label>
+              </div>
+            )}
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" variant="gradient" disabled={savingPrefs}>
+            <Button type="submit" variant="gradient" disabled={savingPrefs || loadingPrefs}>
               <Save className="mr-1.5 h-4 w-4" />
               {savingPrefs ? 'Saving...' : 'Save Preferences'}
             </Button>
@@ -584,57 +641,71 @@ export default function StudentSettingsPage() {
               </CardDescription>
             </CardHeader>
 
-            <div className="space-y-3 pt-2">
-              <label
-                className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs cursor-pointer transition-all ${
-                  profileVisibility === 'TEACHER_ONLY'
-                    ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 font-bold text-primary-900 dark:text-primary-200'
-                    : 'border-slate-100 dark:border-slate-800'
-                }`}
-              >
-                <div>
-                  <p className="font-bold">Course Instructors Only (Recommended)</p>
-                  <p className="text-[11px] text-slate-500 font-normal">
-                    Only faculty members whose classes you are enrolled in can inspect your learning profile.
-                  </p>
-                </div>
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="TEACHER_ONLY"
-                  checked={profileVisibility === 'TEACHER_ONLY'}
-                  onChange={() => setProfileVisibility('TEACHER_ONLY')}
-                  className="h-4 w-4 text-primary-600 accent-primary-600"
-                />
-              </label>
+            {loadingPrefs ? (
+              <div className="space-y-3 pt-2">
+                {[1, 2].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-52" />
+                      <Skeleton className="h-3 w-80" />
+                    </div>
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3 pt-2">
+                <label
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs cursor-pointer transition-all ${
+                    profileVisibility === 'TEACHER_ONLY'
+                      ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 font-bold text-primary-900 dark:text-primary-200'
+                      : 'border-slate-100 dark:border-slate-800'
+                  }`}
+                >
+                  <div>
+                    <p className="font-bold">Course Instructors Only (Recommended)</p>
+                    <p className="text-[11px] text-slate-500 font-normal">
+                      Only faculty members whose classes you are enrolled in can inspect your learning profile.
+                    </p>
+                  </div>
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="TEACHER_ONLY"
+                    checked={profileVisibility === 'TEACHER_ONLY'}
+                    onChange={() => setProfileVisibility('TEACHER_ONLY')}
+                    className="h-4 w-4 text-primary-600 accent-primary-600"
+                  />
+                </label>
 
-              <label
-                className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs cursor-pointer transition-all ${
-                  profileVisibility === 'PRIVATE'
-                    ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 font-bold text-primary-900 dark:text-primary-200'
-                    : 'border-slate-100 dark:border-slate-800'
-                }`}
-              >
-                <div>
-                  <p className="font-bold">Private (Restricted)</p>
-                  <p className="text-[11px] text-slate-500 font-normal">
-                    Hide goals from peer rosters. Instructors can still see quiz and grading progress.
-                  </p>
-                </div>
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="PRIVATE"
-                  checked={profileVisibility === 'PRIVATE'}
-                  onChange={() => setProfileVisibility('PRIVATE')}
-                  className="h-4 w-4 text-primary-600 accent-primary-600"
-                />
-              </label>
-            </div>
+                <label
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs cursor-pointer transition-all ${
+                    profileVisibility === 'PRIVATE'
+                      ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 font-bold text-primary-900 dark:text-primary-200'
+                      : 'border-slate-100 dark:border-slate-800'
+                  }`}
+                >
+                  <div>
+                    <p className="font-bold">Private (Restricted)</p>
+                    <p className="text-[11px] text-slate-500 font-normal">
+                      Hide goals from peer rosters. Instructors can still see quiz and grading progress.
+                    </p>
+                  </div>
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="PRIVATE"
+                    checked={profileVisibility === 'PRIVATE'}
+                    onChange={() => setProfileVisibility('PRIVATE')}
+                    className="h-4 w-4 text-primary-600 accent-primary-600"
+                  />
+                </label>
+              </div>
+            )}
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" variant="gradient" disabled={savingPrivacy}>
+            <Button type="submit" variant="gradient" disabled={savingPrivacy || loadingPrefs}>
               <Save className="mr-1.5 h-4 w-4" />
               {savingPrivacy ? 'Saving...' : 'Save Privacy Setting'}
             </Button>

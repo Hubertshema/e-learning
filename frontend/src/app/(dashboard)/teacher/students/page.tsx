@@ -17,6 +17,8 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+
 
 interface EnrolledStudent {
   id: string;
@@ -111,7 +113,7 @@ export default function TeacherStudentsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400">Loading student directory...</div>
+            <TableSkeleton rows={5} columns={6} />
           ) : students.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">

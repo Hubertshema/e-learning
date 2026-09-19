@@ -5,7 +5,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { Sidebar } from '@/components/layout/sidebar';
 
+import { DashboardSkeleton } from '@/components/layout/dashboard-skeleton';
 import { NotificationCenter } from '@/components/notifications/notification-center';
+import { UserDropdown } from '@/components/layout/user-dropdown';
 import Link from 'next/link';
 import { Sparkles, ShieldCheck, Menu } from 'lucide-react';
 
@@ -22,14 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [isLoading, isAuthenticated, router, pathname]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
-          <p className="text-xs font-medium text-slate-500">Loading your learning workspace...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!user) {
@@ -62,8 +57,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         onClose={() => setMobileSidebarOpen(false)}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top Navbar Header */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 md:px-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
+        {/* Top Navbar Header with high z-index to overlay main content */}
+        <header className="relative z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 md:px-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
           <div className="flex items-center gap-3">
             {/* Mobile Hamburger Drawer Trigger */}
             <button
@@ -101,18 +96,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
 
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 font-bold text-xs text-white shadow-sm">
-                {user.firstName[0]}
-                {user.lastName[0]}
-              </div>
-              <div className="hidden lg:block text-left">
-                <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
-                  {user.firstName} {user.lastName}
-                </p>
-                <p className="text-[10px] text-slate-500 leading-tight">{user.email}</p>
-              </div>
-            </div>
+            {/* Profile, Settings & Logout User Dropdown */}
+            <UserDropdown />
           </div>
         </header>
 

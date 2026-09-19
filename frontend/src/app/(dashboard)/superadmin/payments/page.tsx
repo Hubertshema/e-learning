@@ -23,6 +23,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 export default function SuperadminPaymentsPage() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -195,8 +196,13 @@ export default function SuperadminPaymentsPage() {
 
       {/* Transactions Table */}
       <Card className="overflow-hidden border border-slate-200 dark:border-slate-800">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        {loading ? (
+          <div className="p-6">
+            <TableSkeleton rows={6} columns={8} />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
             <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
               <tr>
                 <th className="px-5 py-3.5">Txn Reference</th>
@@ -312,6 +318,7 @@ export default function SuperadminPaymentsPage() {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
 
       {/* Reject Payment Modal */}

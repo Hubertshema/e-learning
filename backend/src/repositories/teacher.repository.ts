@@ -407,9 +407,12 @@ export class TeacherRepository {
   // ----------------------------------------------------
 
   async getPayments(userId: string, filters: PaymentFilterInput) {
-    const profile = await this.getOrCreateTeacherProfile(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId }, include: { teacherProfile: true } });
+    const isSuperAdmin = user?.role === 'SUPERADMIN';
+    const profile = user?.teacherProfile || (await this.getOrCreateTeacherProfile(userId));
+
     const where: Prisma.PaymentWhereInput = {
-      teacherId: profile.id,
+      ...(isSuperAdmin ? {} : { teacherId: profile.id }),
       ...(filters.status && filters.status !== 'ALL' && { status: filters.status as PaymentStatus }),
     };
 
@@ -441,10 +444,10 @@ export class TeacherRepository {
       notes: p.notes || undefined,
       createdAt: p.createdAt.toISOString(),
       user: {
-        id: p.student.user.id,
-        firstName: p.student.user.firstName,
-        lastName: p.student.user.lastName,
-        email: p.student.user.email,
+        id: p.student?.user?.id || p.studentId,
+        firstName: p.student?.user?.firstName || 'Student',
+        lastName: p.student?.user?.lastName || '',
+        email: p.student?.user?.email || '',
       },
       course: p.enrollment?.course ? {
         id: p.enrollment.course.id,
@@ -457,54 +460,72 @@ export class TeacherRepository {
   }
 
   async approvePayment(paymentId: string, userId: string, notes?: string) {
-    const profile = await this.getOrCreateTeacherProfile(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId }, include: { teacherProfile: true } });
+    const isSuperAdmin = user?.role === 'SUPERADMIN';
+    const profile = user?.teacherProfile || (await this.getOrCreateTeacherProfile(userId));
 
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const payment = await tx.payment.findFirst({
-        where: { id: paymentId, teacherId: profile.id },
-        include: {
-          enrollment: { include: { course: true } },
-          student: { include: { user: true } },
-        },
-      });
+    const payment = await prisma.payment.findFirst({
+      where: isSuperAdmin ? { id: paymentId } : { id: paymentId, teacherId: profile.id },
+      include: {
+        enrollment: { include: { course: true } },
+        student: { include: { user: true } },
+      },
+    });
 
-      if (!payment) {
-        throw new AppError('Payment record not found or unauthorized', 404);
+    if (!payment) {
+      throw new AppError('Payment record not found or unauthorized', 404);
+    }
+
+    const activatedAt = new Date();
+    const durationDays = payment.enrollment?.course?.durationDays || 90;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+    const updatedPayment = await prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: PaymentStatus.VERIFIED,
+        verifiedAt: activatedAt,
+        notes: notes || payment.notes,
+      },
+    });
+
+    let updatedEnrollment = null;
+    if (payment.enrollmentId) {
+      try {
+        updatedEnrollment = await prisma.enrollment.update({
+          where: { id: payment.enrollmentId },
+          data: {
+            status: EnrollmentStatus.ACTIVE,
+            activatedAt,
+            expiresAt,
+          },
+        });
+      } catch (enrollErr) {
+        console.error('Failed to update enrollment status:', enrollErr);
       }
+    }
 
-      const activatedAt = new Date();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + (payment.enrollment.course.durationDays || 90));
+    const courseTitle = payment.enrollment?.course?.title || 'Language Course';
 
-      const updatedPayment = await tx.payment.update({
-        where: { id: paymentId },
-        data: {
-          status: PaymentStatus.VERIFIED,
-          verifiedAt: activatedAt,
-          notes: notes || payment.notes,
-        },
-      });
+    if (payment.student?.userId) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: payment.student.userId,
+            title: 'Course Access Activated! 🎓',
+            message: `Your payment for "${courseTitle}" was verified. Full curriculum is unlocked until ${expiresAt.toLocaleDateString()}.`,
+            type: 'PAYMENT_VERIFIED',
+            link: payment.enrollment?.courseId ? `/student/courses/${payment.enrollment.courseId}` : '/student/courses',
+          },
+        });
+      } catch (notifErr) {
+        console.warn('Failed to create notification:', notifErr);
+      }
+    }
 
-      const updatedEnrollment = await tx.enrollment.update({
-        where: { id: payment.enrollmentId },
-        data: {
-          status: EnrollmentStatus.ACTIVE,
-          activatedAt,
-          expiresAt,
-        },
-      });
-
-      await tx.notification.create({
-        data: {
-          userId: payment.student.userId,
-          title: 'Course Access Activated! 🎓',
-          message: `Your payment for "${payment.enrollment.course.title}" was verified. Full curriculum is unlocked until ${expiresAt.toLocaleDateString()}.`,
-          type: 'PAYMENT_VERIFIED',
-          link: `/student/courses/${payment.enrollment.courseId}`,
-        },
-      });
-
-      await tx.auditLog.create({
+    try {
+      await prisma.auditLog.create({
         data: {
           userId,
           action: 'TEACHER_APPROVED_PAYMENT',
@@ -513,44 +534,64 @@ export class TeacherRepository {
           metadata: { enrollmentId: payment.enrollmentId, amount: Number(payment.amount) },
         },
       });
+    } catch (auditErr) {
+      console.warn('Failed to create audit log:', auditErr);
+    }
 
-      return { payment: updatedPayment, enrollment: updatedEnrollment };
-    });
+    return {
+      payment: updatedPayment,
+      enrollment: updatedEnrollment || payment.enrollment,
+      student: payment.student,
+      course: payment.enrollment?.course,
+    };
   }
 
   async rejectPayment(paymentId: string, userId: string, reason: string) {
-    const profile = await this.getOrCreateTeacherProfile(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId }, include: { teacherProfile: true } });
+    const isSuperAdmin = user?.role === 'SUPERADMIN';
+    const profile = user?.teacherProfile || (await this.getOrCreateTeacherProfile(userId));
 
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const payment = await tx.payment.findFirst({
-        where: { id: paymentId, teacherId: profile.id },
-        include: { student: { include: { user: true } }, enrollment: { include: { course: true } } },
-      });
-
-      if (!payment) {
-        throw new AppError('Payment record not found', 404);
-      }
-
-      const updated = await tx.payment.update({
-        where: { id: paymentId },
-        data: {
-          status: PaymentStatus.REJECTED,
-          notes: reason,
-        },
-      });
-
-      await tx.notification.create({
-        data: {
-          userId: payment.student.userId,
-          title: 'Payment Verification Update',
-          message: `Your payment submission for "${payment.enrollment.course.title}" was rejected: ${reason}`,
-          type: 'PAYMENT_REJECTED',
-          link: `/student/payments`,
-        },
-      });
-
-      return updated;
+    const payment = await prisma.payment.findFirst({
+      where: isSuperAdmin ? { id: paymentId } : { id: paymentId, teacherId: profile.id },
+      include: { student: { include: { user: true } }, enrollment: { include: { course: true } } },
     });
+
+    if (!payment) {
+      throw new AppError('Payment record not found', 404);
+    }
+
+    const updated = await prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: PaymentStatus.REJECTED,
+        notes: reason,
+      },
+    });
+
+    const courseTitle = payment.enrollment?.course?.title || 'Course';
+
+    if (payment.student?.userId) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: payment.student.userId,
+            title: 'Payment Verification Update',
+            message: `Your payment submission for "${courseTitle}" was rejected: ${reason}`,
+            type: 'PAYMENT_REJECTED',
+            link: `/student/payments`,
+          },
+        });
+      } catch (notifErr) {
+        console.warn('Failed to create notification:', notifErr);
+      }
+    }
+
+    return {
+      payment: updated,
+      enrollment: payment.enrollment,
+      student: payment.student,
+      course: payment.enrollment?.course,
+    };
   }
 
   // ----------------------------------------------------
@@ -1044,9 +1085,36 @@ export class TeacherRepository {
 
   async updateLesson(lessonId: string, data: any) {
     const { sections, ...lessonData } = data;
+
+    const updatePayload: Prisma.LessonUpdateInput = {};
+
+    if (lessonData.title !== undefined) updatePayload.title = lessonData.title;
+    if (lessonData.description !== undefined) updatePayload.description = lessonData.description;
+    
+    if (lessonData.skill !== undefined) {
+      updatePayload.skill = lessonData.skill as SkillType;
+    } else if (lessonData.skillType !== undefined) {
+      updatePayload.skill = lessonData.skillType as SkillType;
+    }
+
+    if (lessonData.estimatedMinutes !== undefined) {
+      updatePayload.estimatedMinutes = Number(lessonData.estimatedMinutes);
+    } else if (lessonData.durationMinutes !== undefined) {
+      updatePayload.estimatedMinutes = Number(lessonData.durationMinutes);
+    }
+
+    if (lessonData.orderIndex !== undefined) {
+      updatePayload.orderIndex = Number(lessonData.orderIndex);
+    } else if (lessonData.order !== undefined) {
+      updatePayload.orderIndex = Number(lessonData.order);
+    }
+
+    if (lessonData.isPublished !== undefined) updatePayload.isPublished = Boolean(lessonData.isPublished);
+    if (lessonData.isFreePreview !== undefined) updatePayload.isFreePreview = Boolean(lessonData.isFreePreview);
+
     const updated = await prisma.lesson.update({
       where: { id: lessonId },
-      data: lessonData,
+      data: updatePayload,
     });
 
     if (sections && Array.isArray(sections)) {
@@ -1064,6 +1132,30 @@ export class TeacherRepository {
     }
 
     return updated;
+  }
+
+  async getLessonDetails(lessonId: string) {
+    return prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        sections: {
+          orderBy: { orderIndex: 'asc' },
+        },
+        activities: {
+          orderBy: { orderIndex: 'asc' },
+          include: {
+            questions: {
+              orderBy: { orderIndex: 'asc' },
+            },
+          },
+        },
+        unit: {
+          include: {
+            course: true,
+          },
+        },
+      },
+    });
   }
 
   async deleteLesson(lessonId: string) {
@@ -1347,7 +1439,100 @@ export class TeacherRepository {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  // --- Skill Proficiency & Reports ---
+  async getSkillProficiencySummary(userId: string) {
+    const profile = await this.getOrCreateTeacherProfile(userId);
+    const enrollments = await prisma.enrollment.findMany({
+      where: { course: { teacherId: profile.id } },
+      select: { studentId: true },
+    });
+
+    const studentIds = [...new Set(enrollments.map((e) => e.studentId))];
+    if (studentIds.length === 0) {
+      return [
+        { skill: 'Grammar', score: 0 },
+        { skill: 'Vocabulary', score: 0 },
+        { skill: 'Reading', score: 0 },
+        { skill: 'Listening', score: 0 },
+        { skill: 'Writing', score: 0 },
+        { skill: 'Speaking', score: 0 },
+        { skill: 'Pronunciation', score: 0 },
+      ];
+    }
+
+    const aggregated = await prisma.skillProgress.groupBy({
+      by: ['skill'],
+      where: { studentId: { in: studentIds } },
+      _avg: { scorePercentage: true },
+    });
+
+    const skillMap = new Map(aggregated.map((a) => [a.skill, Math.round(Number(a._avg.scorePercentage || 0))]));
+    const allSkills: SkillType[] = [
+      SkillType.GRAMMAR,
+      SkillType.VOCABULARY,
+      SkillType.READING,
+      SkillType.LISTENING,
+      SkillType.WRITING,
+      SkillType.SPEAKING,
+      SkillType.PRONUNCIATION,
+    ];
+
+    return allSkills.map((sk) => ({
+      skill: sk.charAt(0) + sk.slice(1).toLowerCase().replace('_', ' '),
+      score: skillMap.get(sk) ?? 0,
+    }));
+  }
+
+  async getTeacherReports(userId: string) {
+    const profile = await this.getOrCreateTeacherProfile(userId);
+    const teacherId = profile.id;
+
+    const [
+      coursesCount,
+      classesCount,
+      activeEnrollments,
+      completedEnrollments,
+      totalPayments,
+      gradedSubmissions,
+      skillProficiency,
+    ] = await Promise.all([
+      prisma.course.count({ where: { teacherId } }),
+      prisma.class.count({ where: { teacherId } }),
+      prisma.enrollment.count({ where: { course: { teacherId }, status: EnrollmentStatus.ACTIVE } }),
+      prisma.enrollment.count({ where: { course: { teacherId }, status: EnrollmentStatus.COMPLETED } }),
+      prisma.payment.aggregate({
+        where: { teacherId, status: PaymentStatus.APPROVED },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      prisma.assignmentSubmission.aggregate({
+        where: {
+          assignment: { lesson: { unit: { course: { teacherId } } } },
+          status: SubmissionStatus.GRADED,
+        },
+        _avg: { score: true },
+        _count: { id: true },
+      }),
+      this.getSkillProficiencySummary(userId),
+    ]);
+
+    return {
+      overview: {
+        totalCourses: coursesCount,
+        totalClasses: classesCount,
+        activeStudents: activeEnrollments,
+        completedStudents: completedEnrollments,
+        totalRevenue: Number(totalPayments._sum.amount || 0),
+        approvedPaymentsCount: totalPayments._count.id,
+        averageAssignmentScore: Math.round(Number(gradedSubmissions._avg.score || 0)),
+        totalGradedSubmissions: gradedSubmissions._count.id,
+      },
+      skillProficiency,
+    };
+  }
 }
 
 export const teacherRepository = new TeacherRepository();
+
 

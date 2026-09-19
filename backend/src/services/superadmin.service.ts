@@ -536,6 +536,45 @@ export class SuperadminService {
       return { success: true, queued: true, jobId };
     }
   }
+
+  async listClasses(params?: { search?: string; courseId?: string; teacherId?: string; isActive?: boolean }) {
+    return superadminRepository.findClasses(params);
+  }
+
+  async createClass(data: {
+    name: string;
+    code?: string;
+    description?: string;
+    courseId: string;
+    teacherId: string;
+    startDate?: string;
+    endDate?: string;
+    maxStudents?: number;
+    isActive?: boolean;
+  }) {
+    return superadminRepository.createClass(data);
+  }
+
+  async updateClass(
+    id: string,
+    data: Partial<{
+      name: string;
+      code: string;
+      description: string;
+      courseId: string;
+      teacherId: string;
+      startDate: string;
+      endDate: string;
+      maxStudents: number;
+      isActive: boolean;
+    }>
+  ) {
+    return superadminRepository.updateClass(id, data);
+  }
+
+  async deleteClass(id: string) {
+    return superadminRepository.deleteClass(id);
+  }
 }
 
 export const superadminService = new SuperadminService();

@@ -16,6 +16,8 @@ import {
   DollarSign
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+import { useCachedData } from '@/lib/cache';
 
 interface Payment {
   id: string;
@@ -40,26 +42,16 @@ interface Payment {
 }
 
 export default function StudentPaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
+  const { data: rawPayments, loading } = useCachedData<Payment[]>(
+    'student_payments',
+    async () => {
       const res = await apiClient.get<Payment[]>('/student/payments');
-      if (res.data) {
-        setPayments(res.data);
-      }
-    } catch (err) {
-      console.error('Failed to load student payments', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return (res as any)?.data || res || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchPayments();
-  }, []);
+  const payments = Array.isArray(rawPayments) ? rawPayments : [];
 
   return (
     <div className="space-y-8">
@@ -95,7 +87,7 @@ export default function StudentPaymentsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="py-16 text-center text-xs text-slate-400">Loading payment history...</div>
+            <TableSkeleton rows={4} columns={6} />
           ) : payments.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">

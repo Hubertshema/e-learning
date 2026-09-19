@@ -256,6 +256,7 @@ model TeacherProfile {
   classes         Class[]
   payments        Payment[]
   feedbacks       TeacherFeedback[]
+  aiGenerations   AIGeneration[]
 
   @@map("teacher_profiles")
 }
@@ -725,6 +726,44 @@ model PlacementAttempt {
   @@map("placement_attempts")
 }
 
+enum AIGenerationType {
+  LESSON
+  ACTIVITY
+  ASSIGNMENT
+  QUIZ
+  EXAM
+  ASSESSMENT
+  RUBRIC
+  ANSWER_KEY
+  FEEDBACK
+  GRADING_SUGGESTION
+  CHAT
+  PERFORMANCE_RECOMMENDATION
+}
+
+model AIGeneration {
+  id            String           @id @default(uuid())
+  teacherId     String
+  teacher       TeacherProfile   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  type          AIGenerationType
+  title         String
+  prompt        String           @db.Text
+  inputContext  Json?
+  output        Json
+  status        String           @default("COMPLETED") // PENDING, COMPLETED, FAILED, DRAFT, SAVED, PUBLISHED
+  model         String           @default("fluentedge-curriculum-engine")
+  tokensUsed    Int              @default(0)
+  courseId      String?
+  unitId        String?
+  lessonId      String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([teacherId])
+  @@index([type])
+  @@map("ai_generations")
+}
+
 model PlatformSetting {
   id                        String   @id @default("default")
   platformName              String   @default("FluentEdge Academy")
@@ -744,6 +783,7 @@ model PlatformSetting {
   paymentSettings           Json?
   emailSettings             Json?
   securitySettings          Json?
+  aiSettings                Json?
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 

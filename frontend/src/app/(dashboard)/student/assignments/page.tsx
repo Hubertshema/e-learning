@@ -17,6 +17,8 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
+import { useCachedData } from '@/lib/cache';
 
 interface Assignment {
   id: string;
@@ -47,8 +49,6 @@ interface Assignment {
 }
 
 export default function StudentAssignmentsPage() {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [submittingAssignment, setSubmittingAssignment] = useState<Assignment | null>(null);
   const [viewingEvaluation, setViewingEvaluation] = useState<Assignment | null>(null);
 
@@ -60,23 +60,16 @@ export default function StudentAssignmentsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const fetchAssignments = async () => {
-    try {
-      setLoading(true);
+  const { data: rawAssignments, loading, refresh } = useCachedData<Assignment[]>(
+    'student_assignments',
+    async () => {
       const res = await apiClient.get<Assignment[]>('/student/assignments');
-      if (res.data) {
-        setAssignments(res.data);
-      }
-    } catch (err) {
-      console.error('Failed to load assignments', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return (res as any)?.data || res || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    fetchAssignments();
-  }, []);
+  const assignments = Array.isArray(rawAssignments) ? rawAssignments : [];
 
   const handleSubmitAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +81,7 @@ export default function StudentAssignmentsPage() {
       setFeedback({ type: 'success', message: 'Assignment submitted! Your instructor has been notified for grading.' });
       setSubmittingAssignment(null);
       setForm({ content: '', attachmentUrl: '' });
-      await fetchAssignments();
+      await refresh();
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to submit assignment' });
     } finally {
@@ -130,7 +123,7 @@ export default function StudentAssignmentsPage() {
       {/* Assignment Grid */}
       <div className="space-y-4">
         {loading ? (
-          <div className="py-16 text-center text-xs text-slate-400">Loading assignments...</div>
+          <CardGridSkeleton count={4} columns="2" />
         ) : assignments.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {assignments.map((ass) => {

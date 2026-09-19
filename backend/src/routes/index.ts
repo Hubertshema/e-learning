@@ -7,6 +7,7 @@ import studentRoutes from './student.routes.js';
 import activityRoutes from './activity.routes.js';
 import notificationRoutes from './notification.routes.js';
 import publicRoutes from './public.routes.js';
+import aiRoutes from './ai.routes.js';
 import { sendSuccess } from '../utils/response.util.js';
 
 const router = Router();
@@ -52,5 +53,6 @@ router.use('/student', studentRoutes);
 router.use('/students', studentRoutes);
 router.use('/activities', activityRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/ai', aiRoutes);
 
 export default router;

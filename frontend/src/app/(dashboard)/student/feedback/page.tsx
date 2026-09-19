@@ -15,6 +15,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useCachedData } from '@/lib/cache';
 
 interface TeacherFeedbackItem {
   id: string;
@@ -34,24 +36,16 @@ interface TeacherFeedbackItem {
 }
 
 export default function StudentFeedbackPage() {
-  const [feedbacks, setFeedbacks] = useState<TeacherFeedbackItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: rawFeedbacks, loading } = useCachedData<TeacherFeedbackItem[]>(
+    'student_feedback',
+    async () => {
+      const res = await apiClient.get<TeacherFeedbackItem[]>('/students/feedback');
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
 
-  useEffect(() => {
-    const fetchFeedback = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get<TeacherFeedbackItem[]>('/students/feedback');
-        const list: TeacherFeedbackItem[] = Array.isArray(res) ? res : (res as any)?.data || [];
-        setFeedbacks(list);
-      } catch (err) {
-        console.error('Failed to load teacher feedback', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFeedback();
-  }, []);
+  const feedbacks = Array.isArray(rawFeedbacks) ? rawFeedbacks : [];
 
   return (
     <div className="space-y-8">
@@ -67,7 +61,20 @@ export default function StudentFeedbackPage() {
       </div>
 
       {loading ? (
-        <div className="py-24 text-center text-xs text-slate-400">Loading coaching notes...</div>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="p-6 space-y-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-xl" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-56" />
+                </div>
+              </div>
+              <Skeleton className="h-16 w-full rounded-xl" />
+            </Card>
+          ))}
+        </div>
       ) : feedbacks.length > 0 ? (
         <div className="space-y-4">
           {feedbacks.map((item) => (

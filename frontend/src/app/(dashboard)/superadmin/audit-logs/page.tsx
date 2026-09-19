@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, Search, RefreshCw, Terminal, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+
 
 export default function SuperadminAuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -14,50 +16,16 @@ export default function SuperadminAuditLogsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
 
-  const fallbackLogs = [
-    {
-      id: 'a-1',
-      action: 'TEACHER_APPROVED',
-      entity: 'TEACHER_PROFILE',
-      entityId: 't-1',
-      ipAddress: '197.243.12.8',
-      createdAt: new Date().toISOString(),
-      user: { firstName: 'Platform', lastName: 'Superadmin', email: 'admin@platform.com', role: 'SUPERADMIN' },
-      metadata: { hourlyRate: 35, teacherEmail: 'teacher@platform.com' },
-    },
-    {
-      id: 'a-2',
-      action: 'USER_REGISTERED',
-      entity: 'USER',
-      entityId: 's-1',
-      ipAddress: '105.178.44.19',
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      user: { firstName: 'Alex', lastName: 'Kagabo', email: 'student@platform.com', role: 'STUDENT' },
-      metadata: { role: 'STUDENT', currentLevel: 'A2' },
-    },
-    {
-      id: 'a-3',
-      action: 'PASSWORD_CHANGED',
-      entity: 'USER',
-      entityId: 't-1',
-      ipAddress: '197.243.12.8',
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      user: { firstName: 'Sarah', lastName: 'Jenkins', email: 'teacher@platform.com', role: 'TEACHER' },
-      metadata: {},
-    },
-  ];
 
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
       const data = await apiClient<any[]>('/superadmin/audit-logs');
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setLogs(data);
-      } else {
-        setLogs(fallbackLogs);
       }
     } catch {
-      setLogs(fallbackLogs);
+      // Graceful error handling
     } finally {
       setIsLoading(false);
     }
@@ -108,9 +76,12 @@ export default function SuperadminAuditLogsPage() {
       </div>
 
       {/* Logs Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+      {isLoading ? (
+        <TableSkeleton rows={6} columns={6} />
+      ) : (
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
             <thead className="border-b border-slate-200 bg-slate-50/70 text-slate-500 dark:border-slate-800 dark:bg-slate-900/50">
               <tr>
                 <th className="px-6 py-3.5 font-semibold">Timestamp</th>
@@ -161,6 +132,7 @@ export default function SuperadminAuditLogsPage() {
           </table>
         </div>
       </Card>
+      )}
 
       {/* Metadata Payload Modal */}
       {selectedLog && (
