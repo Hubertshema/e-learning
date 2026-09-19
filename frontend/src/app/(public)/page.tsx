@@ -25,62 +25,32 @@ import {
   Play,
   Check,
   Search,
-  Sparkle,
   Zap,
+  Globe,
+  Briefcase,
+  Code2,
+  Stethoscope,
+  Plane,
+  Compass,
+  MessageSquare,
+  FileCheck,
+  CalendarCheck,
+  GraduationCap,
 } from 'lucide-react';
 
-interface Question {
-  id: number;
-  prompt: string;
-  options: string[];
-  correct: number;
-  explanation: string;
-}
-
-const SAMPLE_QUIZ: Question[] = [
-  {
-    id: 1,
-    prompt: 'Choose the correct form: "If she _____ earlier, she wouldn\'t have missed the flight."',
-    options: ['had left', 'left', 'has left', 'would leave'],
-    correct: 0,
-    explanation: 'Third conditional requires "had + past participle" in the condition clause.',
-  },
-  {
-    id: 2,
-    prompt: 'Which word best completes the business context: "We need to _____ cross-functional synergies."',
-    options: ['leverage', 'dissolve', 'stagnate', 'diminish'],
-    correct: 0,
-    explanation: '"Leverage" means to utilize something to maximum advantage in professional English.',
-  },
-  {
-    id: 3,
-    prompt: 'Select the correct preposition: "The executive team is committed _____ expanding in Kigali."',
-    options: ['to', 'for', 'with', 'in'],
-    correct: 0,
-    explanation: 'The adjective "committed" takes the preposition "to" followed by a gerund (-ing).',
-  },
-];
-
 export default function HomePage() {
-  // 1. Interactive Micro Placement Diagnostic State
-  const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [quizScore, setQuizScore] = useState(0);
-  const [quizFinished, setQuizFinished] = useState(false);
-  const [hasAnswered, setHasAnswered] = useState(false);
-
-  // 2. Interactive Flashcard Demo State
+  // 1. Interactive Flashcard Demo State
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // 3. Interactive CEFR Level Tab State
+  // 2. Interactive CEFR Level Tab State
   const [activeLevelIndex, setActiveLevelIndex] = useState(3); // Default B1
 
-  // 4. Interactive Quick Certificate Search
+  // 3. Interactive Quick Certificate Search
   const [certQuery, setCertQuery] = useState('ENG-2026-X7Y9');
 
   // Text to Speech Audio Helper
   const playTts = (text: string) => {
-    if ('speechSynthesis' in window) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
@@ -89,39 +59,11 @@ export default function HomePage() {
     }
   };
 
-  const handleOptionSelect = (index: number) => {
-    if (hasAnswered) return;
-    setSelectedOption(index);
-    setHasAnswered(true);
-
-    if (index === SAMPLE_QUIZ[currentQIndex].correct) {
-      setQuizScore((prev: number) => prev + 1);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (currentQIndex + 1 < SAMPLE_QUIZ.length) {
-      setCurrentQIndex((prev: number) => prev + 1);
-      setSelectedOption(null);
-      setHasAnswered(false);
-    } else {
-      setQuizFinished(true);
-    }
-  };
-
-  const resetQuiz = () => {
-    setCurrentQIndex(0);
-    setSelectedOption(null);
-    setQuizScore(0);
-    setQuizFinished(false);
-    setHasAnswered(false);
-  };
-
   const levels = [
     {
       code: 'Pre-A1',
       name: 'Foundations',
-      desc: 'Alphabet, phonetic awareness, numbers 1-100, and essential greetings.',
+      desc: 'Alphabet, phonetic awareness, numbers 1-100, basic introductions, and survival greetings.',
       samplePhrase: 'Hello, my name is Eric. Nice to meet you.',
       vocab: ['Greeting', 'Alphabet', 'Number', 'Family'],
       targetSkill: 'Basic Phonetics & Recognition',
@@ -129,479 +71,792 @@ export default function HomePage() {
     {
       code: 'A1',
       name: 'Beginner',
-      desc: 'Everyday expressions, asking for directions, personal background, and simple shopping.',
-      samplePhrase: 'Where is the library? How much is this book?',
+      desc: 'Everyday expressions, asking for directions, personal background, and simple shopping transactions.',
+      samplePhrase: 'Where is the central library? How much is this notebook?',
       vocab: ['Direction', 'Price', 'Schedule', 'Occupation'],
       targetSkill: 'Daily Survival English',
     },
     {
       code: 'A2',
       name: 'Elementary',
-      desc: 'Routine exchanges, past experiences, describing surroundings, and simple work tasks.',
-      samplePhrase: 'I worked as a marketing assistant last year in Kigali.',
+      desc: 'Routine workplace exchanges, past experiences, describing surroundings, and simple work tasks.',
+      samplePhrase: 'I worked as a project coordinator last year in Kigali.',
       vocab: ['Experience', 'Routine', 'Travel', 'Hobbies'],
       targetSkill: 'Routine Social Dialogue',
     },
     {
       code: 'B1',
       name: 'Intermediate',
-      desc: 'Workplace interactions, travel readiness, explaining opinions, and writing coherent emails.',
-      samplePhrase: 'I believe we should reschedule our team standup to Tuesday morning.',
-      vocab: ['Reschedule', 'Feedback', 'Proposal', 'Opinion'],
-      targetSkill: 'Independent Professional Communication',
+      desc: 'Workplace interactions, agile standups, travel autonomy, explaining viewpoints, and writing clear emails.',
+      samplePhrase: 'I believe we should reschedule our team sync to Tuesday morning.',
+      vocab: ['Reschedule', 'Feedback', 'Proposal', 'Objective'],
+      targetSkill: 'Independent Professional English',
     },
     {
       code: 'B2',
       name: 'Upper Intermediate',
-      desc: 'Spontaneous fluency, technical discussions, negotiation, and complex text synthesis.',
-      samplePhrase: 'Although the initial budget was tight, we mitigated the delay effectively.',
-      vocab: ['Mitigate', 'Synergy', 'Feasibility', 'Consensus'],
-      targetSkill: 'Spontaneous Executive Dialogue',
+      desc: 'Technical discussions, cross-functional collaboration, nuance comprehension, and spontaneous fluency.',
+      samplePhrase: 'Let us leverage cross-functional synergies to optimize our deployment cycle.',
+      vocab: ['Synergy', 'Constraint', 'Feasibility', 'Consensus'],
+      targetSkill: 'Spontaneous Technical Discourse',
     },
     {
       code: 'C1',
       name: 'Advanced',
-      desc: 'Nuanced professional discourse, complex academic arguments, and idiomatic precision.',
-      samplePhrase: 'The empirical evidence corroborates our hypothesis on market expansion.',
-      vocab: ['Corroborate', 'Empirical', 'Pragmatic', 'Paradigm'],
-      targetSkill: 'High-Level Strategic Fluency',
+      desc: 'Complex executive negotiation, academic synthesis, subtle cultural idioms, and strategic persuasion.',
+      samplePhrase: 'The proposed cross-border partnership hinges upon stringent compliance safeguards.',
+      vocab: ['Safeguard', 'Nuance', 'Prerequisite', 'Bargaining'],
+      targetSkill: 'Executive Strategic Fluency',
     },
     {
       code: 'C2',
       name: 'Mastery',
-      desc: 'Effortless native-level expression, subtle cultural humor, and persuasive eloquence.',
-      samplePhrase: 'His extemporaneous address resonated profoundly across the symposium.',
-      vocab: ['Extemporaneous', 'Nuance', 'Eloquence', 'Symposium'],
-      targetSkill: 'Native Bilingual Mastery',
+      desc: 'Native-level precision, effortless idiomatic expression, literary analysis, and diplomatic rhetoric.',
+      samplePhrase: 'His argumentation was punctuated by eloquent rhetoric and uncompromising rigor.',
+      vocab: ['Eloquent', 'Articulate', 'Impeccable', 'Rhetoric'],
+      targetSkill: 'Mastery & Diplomatic Precision',
+    },
+  ];
+
+  const tracks = [
+    {
+      title: 'Executive Business English & Negotiation',
+      desc: 'Boardroom etiquette, tactful pushback, contract bargaining, and investor pitch decks.',
+      badge: 'B2 – C2 Tier',
+      icon: Briefcase,
+      color: 'from-blue-600 to-indigo-700',
+    },
+    {
+      title: 'English for IT & Software Engineers',
+      desc: 'Agile daily standups, GitHub PR code reviews, system architecture design, and post-mortems.',
+      badge: 'B1 – C1 Tier',
+      icon: Code2,
+      color: 'from-cyan-600 to-blue-700',
+    },
+    {
+      title: 'Medical English & Clinical Communication',
+      desc: 'Empathetic patient intake, ISBAR clinical handovers, pharmacology drills, and diagnostics.',
+      badge: 'B2 – C1 Tier',
+      icon: Stethoscope,
+      color: 'from-teal-600 to-emerald-700',
+    },
+    {
+      title: 'Hospitality, Tourism & Guest Relations',
+      desc: 'Concierge diplomacy, complaint de-escalation, VIP fine dining etiquette, and safari guiding.',
+      badge: 'A2 – B2 Tier',
+      icon: Plane,
+      color: 'from-amber-500 to-orange-600',
+    },
+    {
+      title: 'Global Career & Job Interview Mastery',
+      desc: 'STAR storytelling framework, elevator pitches, LinkedIn profile optimization, and salary bargaining.',
+      badge: 'A2 – C1 Tier',
+      icon: Compass,
+      color: 'from-sky-600 to-blue-800',
+    },
+    {
+      title: 'English for Rwanda & East African Commerce',
+      desc: 'Cross-border trade terminology, EAC customs declarations, Mobile Money invoicing, and ecotourism.',
+      badge: 'A2 – B2 Tier',
+      icon: Globe,
+      color: 'from-emerald-600 to-teal-700',
     },
   ];
 
   const skills = [
-    { name: 'Reading', icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/50', example: 'Synthesizing complex editorial passages' },
-    { name: 'Listening', icon: Headphones, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/50', example: 'Deciphering rapid native podcasts & lectures' },
-    { name: 'Speaking', icon: Mic, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/50', example: 'Boardroom impromptu pitching & STAR drills' },
-    { name: 'Writing', icon: PenTool, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/50', example: 'Drafting formal executive proposals & essays' },
-    { name: 'Grammar', icon: BookMarked, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/50', example: 'Mastering conditionals, subjunctives & inversions' },
-    { name: 'Vocabulary', icon: Languages, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/50', example: 'Building 5,000+ high-frequency industry terms' },
-    { name: 'Pronunciation', icon: Volume2, color: 'text-cyan-500 bg-cyan-50 dark:bg-cyan-950/50', example: 'Intonation contours & connected speech reduction' },
-  ];
-
-  const workflowSteps = [
-    { step: '01', title: 'Create Account', desc: 'Register in seconds as a student or certified teacher.' },
-    { step: '02', title: 'Find Course', desc: 'Browse CEFR-aligned courses tailored to your specific goals.' },
-    { step: '03', title: 'Enroll & Pay', desc: 'Submit enrollment with Mobile Money or Bank Transfer.' },
-    { step: '04', title: 'Teacher Activates', desc: 'Your instructor verifies payment and unlocks course modules.' },
-    { step: '05', title: 'Start Learning', desc: 'Engage with 16 interactive exercise types and live feedback.' },
-    { step: '06', title: 'Earn Diploma', desc: 'Measure skill benchmarks and receive accredited verifiable diplomas.' },
+    { name: 'Grammar Mastery', icon: BookOpen, desc: 'Sentence syntax & structure' },
+    { name: 'Vocabulary in Context', icon: BookMarked, desc: '3,000+ Oxford CEFR words' },
+    { name: 'Reading & Analysis', icon: Languages, desc: 'Articles, reports & essays' },
+    { name: 'Listening & Dialects', icon: Headphones, desc: 'Variable-speed audio drills' },
+    { name: 'Spoken Fluency', icon: Mic, desc: 'Voice recording & evaluation' },
+    { name: 'Academic Writing', icon: PenTool, desc: 'Essays, emails & rubrics' },
+    { name: 'Phonetics & Accent', icon: Volume2, desc: 'IPA transcription drills' },
   ];
 
   return (
-    <div className="space-y-24 pb-20">
-      {/* Hero Section with Interactive Activity Preview */}
-      <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28">
-        <div className="absolute inset-0 -z-10 bg-[#F4F7F4] dark:bg-[#0F1713]" />
-
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-            {/* Hero Left Content */}
-            <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50/80 px-3.5 py-1 text-xs font-semibold text-primary-700 dark:border-primary-800 dark:bg-primary-950/80 dark:text-primary-300">
-                <Sparkles className="h-3.5 w-3.5 text-primary-600 animate-pulse" />
-                <span>CEFR Pre-A1 to C2 • 16 Interactive Activity Types</span>
-              </div>
-
-              <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl lg:text-6xl leading-[1.15]">
-                Learn English. <br />
-                <span className="text-[#3B6748] dark:text-emerald-400">Build Confidence.</span> <br />
-                Lead Globally.
-              </h1>
-
-              <p className="max-w-xl text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
-                Connect with certified instructors, complete interactive multi-skill exercises, and earn accredited, verifiable certificates recognized worldwide.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                <Link href="/register?role=student">
-                  <Button variant="gradient" size="lg" className="w-full sm:w-auto shadow-lg shadow-primary-500/20">
-                    <span>Start Free Placement Test</span>
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/tracks">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Explore Specialized Tracks
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-3 gap-4 text-left">
-                <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">7 Levels</p>
-                  <p className="text-xs text-slate-500">Pre-A1 to C2 Mastery</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">16 Types</p>
-                  <p className="text-xs text-slate-500">Interactive Drills</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">100%</p>
-                  <p className="text-xs text-slate-500">Verifiable Diplomas</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Hero Right: Interactive Micro-Quiz & Flashcard Widget */}
-            <div className="lg:col-span-6 space-y-6">
-              {/* Interactive Micro Diagnostic Card */}
-              <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-2xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-white font-bold text-xs">
-                      <Zap className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                        Try a Live English Placement Drill
-                      </h3>
-                      <p className="text-[10px] text-slate-500">
-                        {quizFinished
-                          ? 'Diagnostic Finished'
-                          : `Question ${currentQIndex + 1} of ${SAMPLE_QUIZ.length}`}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="indigo" className="text-[10px]">
-                    Interactive
-                  </Badge>
-                </div>
-
-                {!quizFinished ? (
-                  <div className="mt-4 space-y-4">
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                      {SAMPLE_QUIZ[currentQIndex].prompt}
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {SAMPLE_QUIZ[currentQIndex].options.map((opt, idx) => {
-                        let btnStyle = 'border-slate-200 hover:border-primary-400 bg-white dark:bg-slate-800 dark:border-slate-700';
-
-                        if (hasAnswered) {
-                          if (idx === SAMPLE_QUIZ[currentQIndex].correct) {
-                            btnStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 font-bold';
-                          } else if (idx === selectedOption) {
-                            btnStyle = 'border-rose-500 bg-rose-50 dark:bg-rose-950/50 text-rose-700';
-                          }
-                        }
-
-                        return (
-                          <button
-                            key={idx}
-                            onClick={() => handleOptionSelect(idx)}
-                            className={`flex items-center justify-between rounded-xl border p-3 text-left text-xs font-medium transition ${btnStyle}`}
-                          >
-                            <span>{opt}</span>
-                            {hasAnswered && idx === SAMPLE_QUIZ[currentQIndex].correct && (
-                              <Check className="h-4 w-4 text-emerald-600" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {hasAnswered && (
-                      <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300 animate-in fade-in">
-                        <p className="font-semibold text-slate-900 dark:text-white">Explanation:</p>
-                        <p className="mt-0.5">{SAMPLE_QUIZ[currentQIndex].explanation}</p>
-                        <Button
-                          onClick={handleNextQuestion}
-                          size="sm"
-                          className="mt-3 w-full bg-primary-600 hover:bg-primary-700 text-white font-bold"
-                        >
-                          {currentQIndex + 1 < SAMPLE_QUIZ.length ? 'Next Question' : 'View Placement Result'}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-4 text-center space-y-3 py-4 animate-in zoom-in-95">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950">
-                      <Award className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p className="text-base font-bold text-slate-900 dark:text-white">
-                        Diagnostic Score: {quizScore} / {SAMPLE_QUIZ.length}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Recommended Entry Tier:{' '}
-                        <span className="font-bold text-primary-600">
-                          {quizScore === 3 ? 'B2 (Upper Intermediate)' : quizScore >= 1 ? 'B1 (Intermediate)' : 'A2 (Elementary)'}
-                        </span>
-                      </p>
-                    </div>
-                    <div className="flex gap-2 justify-center pt-2">
-                      <Button onClick={resetQuiz} variant="outline" size="sm" className="text-xs">
-                        <RotateCw className="mr-1 h-3.5 w-3.5" /> Retake
-                      </Button>
-                      <Link href="/register?role=student">
-                        <Button variant="gradient" size="sm" className="text-xs">
-                          Save & Complete Full Diagnostic
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Interactive 3D Flippable Flashcard Demo */}
-              <div
-                onClick={() => setIsFlipped(!isFlipped)}
-                className="cursor-pointer rounded-2xl border border-[#3B6748]/30 bg-[#F4F7F4] p-5 shadow-md dark:border-emerald-900 dark:bg-emerald-950/40 transition hover:shadow-lg"
-              >
-                <div className="flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-300 font-semibold">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>Interactive 3D Flashcard Demo (Click to flip)</span>
-                  </span>
-                  <button
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      playTts('Eloquent');
-                    }}
-                    className="p-1 rounded-full bg-white text-indigo-600 shadow hover:scale-105 dark:bg-slate-800 dark:text-indigo-300"
-                    title="Pronounce Word"
-                  >
-                    <Volume2 className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div className="mt-4 text-center py-2">
-                  {!isFlipped ? (
-                    <div>
-                      <p className="text-2xl font-black text-slate-900 dark:text-white">Eloquent</p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">/ˈel.ə.kwənt/</p>
-                      <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-2 font-medium">
-                        Click card to reveal definition & example ➔
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1 animate-in fade-in">
-                      <p className="text-xs font-bold text-slate-900 dark:text-white">
-                        Fluent or persuasive in speaking or writing.
-                      </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 italic">
-                        "She gave an eloquent speech on cross-border education."
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-2">Click to flip back</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive CEFR Progression Framework */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <Badge variant="indigo">Global Standard Curriculum</Badge>
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            Interactive CEFR Level Explorer
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Click any level from Pre-A1 to C2 to inspect target competencies, core vocabulary, and interactive speaking prompts.
-          </p>
-        </div>
-
-        {/* Level Selector Tabs */}
-        <div className="mt-8 flex flex-wrap justify-center gap-2">
-          {levels.map((lvl, idx) => (
-            <button
-              key={lvl.code}
-              onClick={() => setActiveLevelIndex(idx)}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                activeLevelIndex === idx
-                  ? 'bg-primary-600 text-white shadow-md scale-105'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
-              }`}
-            >
-              <span>{lvl.code}</span>
-              <span className="ml-1 text-[10px] opacity-80">({lvl.name})</span>
-            </button>
+    <div className="flex flex-col gap-16 md:gap-24 overflow-hidden bg-white dark:bg-slate-950">
+      {/* =========================================================================
+          HERO SECTION — EXACT MODERN GEOMETRIC STYLE MATCHING REFERENCE DESIGN
+      ========================================================================= */}
+      <section className="relative w-full overflow-hidden bg-white pt-6 pb-12 sm:pt-10 sm:pb-16 lg:py-16 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+        {/* Top-Right Decorative Dot Matrix Grid */}
+        <div className="absolute top-6 right-[44%] hidden xl:grid grid-cols-6 gap-2 opacity-60 z-0 pointer-events-none">
+          {Array.from({ length: 24 }).map((_, i) => (
+            <div key={i} className="h-1.5 w-1.5 rounded-full bg-sky-500" />
           ))}
         </div>
 
-        {/* Active Level Detail Showcase */}
-        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900 transition-all">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 text-white font-extrabold text-lg">
-                  {levels[activeLevelIndex].code}
-                </span>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                    {levels[activeLevelIndex].name} Tier
-                  </h3>
-                  <p className="text-xs text-primary-600 font-semibold">
-                    {levels[activeLevelIndex].targetSkill}
-                  </p>
+        {/* Bottom-Center Decorative Dot Matrix Grid */}
+        <div className="absolute bottom-4 left-[46%] hidden xl:grid grid-cols-6 gap-2 opacity-60 z-0 pointer-events-none">
+          {Array.from({ length: 24 }).map((_, i) => (
+            <div key={i} className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+          ))}
+        </div>
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            
+            {/* LEFT COLUMN: HERO HEADLINE & CALL TO ACTIONS */}
+            <div className="lg:col-span-6 space-y-6 sm:space-y-7 text-left">
+              {/* Pill Subheading */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-bold text-sky-700 dark:border-sky-900 dark:bg-sky-950/60 dark:text-sky-300 shadow-sm">
+                <Sparkles className="h-3.5 w-3.5 text-sky-500" />
+                <span>ACCORDANCE WITH CEFR PRE-A1 TO C2</span>
+              </div>
+
+              {/* Main Headline styled exactly as reference */}
+              <div className="space-y-1">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-sky-500 leading-none">
+                  E-Learning
+                </h1>
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#0f3d6a] dark:text-white leading-tight">
+                  Online Courses
+                </h2>
+              </div>
+
+              {/* Descriptive Summary */}
+              <p className="max-w-xl text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                Master fluent English with certified instructors, 7 CEFR levels, 6 specialized career tracks, and 16 interactive multi-skill drills designed for real-world fluency and recognized credentials.
+              </p>
+
+              {/* Dual Action Buttons (Reference Design Style) */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Link href="/login">
+                  <button className="rounded-full bg-[#0f3d6a] text-white px-8 py-3.5 font-black text-xs uppercase tracking-wider shadow-lg hover:bg-[#0b2b4f] transition-all hover:scale-105 active:scale-95 dark:bg-sky-600 dark:hover:bg-sky-700">
+                    SIGN IN
+                  </button>
+                </Link>
+
+                <Link href="/courses">
+                  <button className="rounded-full border-2 border-[#0f3d6a] text-[#0f3d6a] px-8 py-3 font-black text-xs uppercase tracking-wider hover:bg-[#0f3d6a] hover:text-white transition-all hover:scale-105 active:scale-95 dark:border-sky-400 dark:text-sky-400 dark:hover:bg-sky-500 dark:hover:text-white">
+                    READ MORE
+                  </button>
+                </Link>
+
+                <Link href="/quiz">
+                  <button className="rounded-full bg-sky-50 text-sky-700 border border-sky-200 px-5 py-3 font-bold text-xs hover:bg-sky-100 transition-all flex items-center gap-1.5 shadow-sm dark:bg-slate-800 dark:text-sky-300 dark:border-slate-700">
+                    <Sparkles className="h-3.5 w-3.5 text-sky-500" />
+                    <span>Free Quick Diagnostic</span>
+                  </button>
+                </Link>
+              </div>
+
+              {/* Social Media Preview & Website Link Strip */}
+              <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <div className="flex items-center gap-3 text-slate-500 text-xs font-semibold">
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-700 text-[10px] font-black dark:bg-slate-800 dark:text-slate-200">f</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-700 text-[10px] font-black dark:bg-slate-800 dark:text-slate-200">in</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-700 text-[10px] font-black dark:bg-slate-800 dark:text-slate-200">𝕏</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-700 text-[10px] font-black dark:bg-slate-800 dark:text-slate-200">yt</span>
+                  </div>
+                  <span className="text-slate-600 dark:text-slate-400">/linguachris</span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  For more information visit us at <span className="font-bold text-[#0f3d6a] dark:text-sky-400">WWW.LINGUACHRIS.EDU</span>
+                </p>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: CIRCULAR GRAPHIC COMPOSITION WITH STUDENT */}
+            <div className="lg:col-span-6 relative flex items-center justify-center lg:justify-end">
+              <div className="relative w-full max-w-[480px] aspect-square flex items-center justify-center">
+                
+                {/* Outermost Concentric Deep Blue Ring (from reference design) */}
+                <div className="absolute inset-0 rounded-full border-[28px] border-[#0f3d6a] opacity-95 shadow-2xl dark:border-sky-800" />
+                
+                {/* Inner Solid Sky Blue Circle */}
+                <div className="absolute inset-8 rounded-full bg-gradient-to-br from-sky-400 to-[#0284c7] opacity-90 overflow-hidden" />
+
+                {/* Left Offset Partial Circle Ring */}
+                <div className="absolute -left-10 top-1/3 h-28 w-28 rounded-full border-[12px] border-[#0f3d6a] hidden sm:block pointer-events-none dark:border-sky-900 opacity-80" />
+
+                {/* Hero Student Photograph */}
+                <div className="relative z-10 w-[88%] h-[88%] rounded-full overflow-hidden flex items-center justify-center">
+                  <img
+                    src="/hero-student.jpg"
+                    alt="Student with laptop learning English on LinguaChris Academy"
+                    className="w-full h-full object-cover object-top scale-105"
+                  />
+                </div>
+
+                {/* Prominent Floating "50% OFF" Badge (Exact Replica of Reference Design) */}
+                <div className="absolute -top-2 -right-2 sm:top-2 sm:right-2 z-20 flex h-28 w-28 sm:h-32 sm:w-32 flex-col items-center justify-center rounded-full bg-sky-400 text-white shadow-xl border-4 border-white dark:border-slate-900 transform rotate-6 hover:rotate-0 transition-transform duration-300">
+                  <span className="text-[11px] sm:text-xs font-bold italic tracking-tight">The best</span>
+                  <span className="text-xs sm:text-sm font-black uppercase tracking-wider">courses</span>
+                  <span className="text-lg sm:text-2xl font-black leading-none mt-0.5">50%</span>
+                  <span className="text-[10px] sm:text-xs font-extrabold uppercase">OFF</span>
                 </div>
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                {levels[activeLevelIndex].desc}
-              </p>
-              <Link href={`/register?role=student&level=${levels[activeLevelIndex].code}`}>
-                <Button variant="gradient" size="sm" className="mt-2">
-                  Start Level {levels[activeLevelIndex].code} Syllabus
-                </Button>
-              </Link>
             </div>
 
-            {/* Interactive Audio Sample */}
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/50 space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                <span>Sample Native Speaking Model</span>
-                <button
-                  onClick={() => playTts(levels[activeLevelIndex].samplePhrase)}
-                  className="flex items-center gap-1 text-primary-600 hover:text-primary-700 font-semibold"
-                >
-                  <Volume2 className="h-4 w-4" />
-                  <span>Listen</span>
-                </button>
-              </div>
-              <p className="text-sm font-medium italic text-slate-900 dark:text-white leading-relaxed">
-                "{levels[activeLevelIndex].samplePhrase}"
-              </p>
-            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Vocabulary Pill Cloud */}
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/50 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Core Milestone Lexicon
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {levels[activeLevelIndex].vocab.map((v) => (
-                  <span
-                    key={v}
-                    onClick={() => playTts(v)}
-                    className="cursor-pointer inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm border border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700 hover:border-primary-500"
-                    title="Click to pronounce"
-                  >
-                    <Volume2 className="h-3 w-3 text-slate-400" />
-                    <span>{v}</span>
-                  </span>
-                ))}
-              </div>
+      {/* =========================================================================
+          KEY PLATFORM CAPABILITIES & STATS BAR
+      ========================================================================= */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950 dark:text-sky-300">
+              <Award className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-black text-slate-900 dark:text-white">7 Levels</p>
+              <p className="text-xs text-slate-500 font-medium">Pre-A1 to C2 Framework</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300">
+              <Zap className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-black text-slate-900 dark:text-white">16 Drills</p>
+              <p className="text-xs text-slate-500 font-medium">Interactive Activity Suite</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
+              <Users className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-black text-slate-900 dark:text-white">100%</p>
+              <p className="text-xs text-slate-500 font-medium">Certified CELTA Teachers</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300">
+              <FileCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-black text-slate-900 dark:text-white">Verified</p>
+              <p className="text-xs text-slate-500 font-medium">CEFR Digital Diplomas</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 7 Core English Skills Section */}
+      {/* =========================================================================
+          SPECIALIZED VOCATIONAL ENGLISH TRACKS
+      ========================================================================= */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-3">
-          <Badge variant="indigo">Holistic Mastery</Badge>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            The 7 Core English Competencies
-          </h2>
-          <p className="mx-auto max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Every lesson integrates receptive, productive, and communicative exercises to ensure complete fluency.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+          <div>
+            <Badge variant="indigo" className="mb-2">Industry-Specific English</Badge>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              Specialized Vocational Career Tracks
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
+              Tailored high-impact modules engineered specifically for software engineers, medical professionals, executives, and East African commercial leaders.
+            </p>
+          </div>
+          <Link href="/tracks">
+            <Button variant="outline" className="rounded-full text-xs font-semibold gap-1.5">
+              <span>View All 6 Tracks</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {skills.map((skill) => {
-            const Icon = skill.icon;
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tracks.map((track, i) => {
+            const Icon = track.icon;
             return (
-              <div
-                key={skill.name}
-                className="group flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-primary-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+              <Card
+                key={i}
+                className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:shadow-xl hover:-translate-y-1 dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between"
               >
                 <div>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl transition group-hover:scale-110 ${skill.color}`}>
-                    <Icon className="h-5 w-5" />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0f3d6a] text-white shadow-md">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-bold">
+                      {track.badge}
+                    </Badge>
                   </div>
-                  <h3 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">{skill.name}</h3>
-                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">{skill.example}</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-sky-600 transition-colors">
+                    {track.title}
+                  </h3>
+                  <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {track.desc}
+                  </p>
                 </div>
-              </div>
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#0f3d6a] dark:text-sky-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Explore Track Syllabus <ChevronRight className="h-3.5 w-3.5" />
+                  </span>
+                  <Link href={`/register?role=student&track=${i}`}>
+                    <Button size="sm" className="rounded-full bg-slate-100 hover:bg-[#0f3d6a] text-slate-800 hover:text-white dark:bg-slate-800 dark:text-slate-200 text-xs font-bold px-3">
+                      Enroll
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
             );
           })}
         </div>
       </section>
 
-      {/* Public Certificate Live Verification Teaser */}
+      {/* =========================================================================
+          7-SKILL MATRIX & INTERACTIVE CEFR LEVEL EXPLORER
+      ========================================================================= */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-[#3B6748]/30 bg-[#1E252D] p-8 sm:p-12 text-white shadow-2xl">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-7 space-y-4">
-              <Badge variant="indigo" className="bg-primary-500/20 text-primary-300 border-primary-500/30">
-                Instant Public Verification
-              </Badge>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                Accredited Digital Certificates with Instant Validation
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Employers and academic institutions can verify student credentials, final CEFR scores, and instructor seals in real time without login credentials.
-              </p>
-            </div>
+        <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-8 sm:p-10 dark:border-slate-800 dark:bg-slate-900/60">
+          <div className="text-center space-y-3 max-w-2xl mx-auto mb-8">
+            <Badge variant="indigo">Global Standard Curriculum</Badge>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              Interactive CEFR Level Explorer
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Click any level from Pre-A1 to C2 to inspect target competencies, core vocabulary, and native speaking audio models.
+            </p>
+          </div>
 
-            <div className="lg:col-span-5 bg-white/10 backdrop-blur-md p-5 rounded-2xl border border-white/15 space-y-3">
-              <label className="text-xs font-semibold text-slate-200">
-                Test Certificate Verification Lookup
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={certQuery}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCertQuery(e.target.value)}
-                  placeholder="Enter code (e.g. ENG-2026-X7Y9)"
-                  className="flex-1 rounded-xl border border-white/20 bg-slate-900/80 px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <Link href={`/verify/certificate/${certQuery}`}>
-                  <Button size="sm" variant="gradient" className="font-bold">
-                    <Search className="h-3.5 w-3.5 mr-1" />
-                    Verify
+          {/* Level Selector Tabs */}
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            {levels.map((lvl, idx) => (
+              <button
+                key={lvl.code}
+                onClick={() => setActiveLevelIndex(idx)}
+                className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                  activeLevelIndex === idx
+                    ? 'bg-[#0f3d6a] text-white shadow-md scale-105 dark:bg-sky-600'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                }`}
+              >
+                <span>{lvl.code}</span>
+                <span className="ml-1 text-[10px] opacity-80">({lvl.name})</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Active Level Detail Showcase */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-md dark:border-slate-800 dark:bg-slate-900 transition-all">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0f3d6a] text-white font-extrabold text-lg dark:bg-sky-600">
+                    {levels[activeLevelIndex].code}
+                  </span>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                      {levels[activeLevelIndex].name} Tier
+                    </h3>
+                    <p className="text-xs text-sky-600 font-semibold">
+                      {levels[activeLevelIndex].targetSkill}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {levels[activeLevelIndex].desc}
+                </p>
+                <Link href={`/register?role=student&level=${levels[activeLevelIndex].code}`}>
+                  <Button className="rounded-full bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold px-5 dark:bg-sky-600">
+                    Start Level {levels[activeLevelIndex].code} Syllabus
                   </Button>
                 </Link>
               </div>
-              <p className="text-[10px] text-slate-400">
-                Try default demo code: <span className="font-mono text-primary-300">ENG-2026-X7Y9</span>
-              </p>
+
+              {/* Interactive Audio Sample */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/50 space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <span>Native Speaking Model</span>
+                  <button
+                    onClick={() => playTts(levels[activeLevelIndex].samplePhrase)}
+                    className="flex items-center gap-1 text-sky-600 hover:text-sky-700 font-semibold"
+                  >
+                    <Volume2 className="h-4 w-4" />
+                    <span>Listen</span>
+                  </button>
+                </div>
+                <p className="text-sm font-medium italic text-slate-900 dark:text-white leading-relaxed">
+                  "{levels[activeLevelIndex].samplePhrase}"
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  Click 'Listen' to trigger real-time Web Speech synthesis.
+                </p>
+              </div>
+
+              {/* Vocabulary Pill Cloud */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/50 space-y-3">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Core Oxford Vocabulary Focus
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {levels[activeLevelIndex].vocab.map((v, idx) => (
+                    <span
+                      key={idx}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm border border-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700"
+                    >
+                      {v}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Includes spaced-repetition flashcards and contextual quizzes.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
+      {/* =========================================================================
+          16 INTERACTIVE MULTI-SKILL ACTIVITIES DEMO & FLASHCARD
+      ========================================================================= */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-3">
-          <Badge variant="indigo">Transparent & Structured</Badge>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            How FluentEdge Works
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="lg:col-span-6 space-y-6">
+            <Badge variant="indigo">Interactive Pedagogy Suite</Badge>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              16 Multi-Skill Interactive Activity Types
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              Every lesson combines 16 active cognitive drills: 3D spaced-repetition flashcards, dynamic gap filling, audio speed manipulation, drag-and-drop word scrambles, and live voice recording.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="rounded-2xl border border-slate-200 p-3.5 bg-white dark:border-slate-800 dark:bg-slate-900 flex items-center gap-2.5">
+                <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">3D Flashcard Flips</span>
+              </div>
+              <div className="rounded-2xl border border-slate-200 p-3.5 bg-white dark:border-slate-800 dark:bg-slate-900 flex items-center gap-2.5">
+                <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Speaking Waveforms</span>
+              </div>
+              <div className="rounded-2xl border border-slate-200 p-3.5 bg-white dark:border-slate-800 dark:bg-slate-900 flex items-center gap-2.5">
+                <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Matching Connectors</span>
+              </div>
+              <div className="rounded-2xl border border-slate-200 p-3.5 bg-white dark:border-slate-800 dark:bg-slate-900 flex items-center gap-2.5">
+                <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Sentence Unscrambler</span>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Link href="/quiz">
+                <Button className="rounded-full bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold px-6">
+                  Test Your English Now (Free Quiz)
+                  <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Interactive 3D Flippable Flashcard Demo Box */}
+          <div className="lg:col-span-6">
+            <div
+              onClick={() => setIsFlipped(!isFlipped)}
+              className="cursor-pointer rounded-3xl border-2 border-dashed border-[#0f3d6a]/40 bg-gradient-to-br from-sky-50 to-blue-50/40 p-8 shadow-xl dark:border-sky-800 dark:bg-slate-900/90 transition hover:shadow-2xl hover:scale-[1.01]"
+            >
+              <div className="flex items-center justify-between text-xs text-[#0f3d6a] dark:text-sky-300 font-bold">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-sky-500" />
+                  <span>Interactive 3D Flashcard (Click to flip)</span>
+                </span>
+                <button
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    playTts('Eloquent');
+                  }}
+                  className="p-1.5 rounded-full bg-white text-[#0f3d6a] shadow hover:scale-110 dark:bg-slate-800 dark:text-sky-300 transition"
+                  title="Pronounce Word"
+                >
+                  <Volume2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-8 text-center py-6">
+                {!isFlipped ? (
+                  <div className="space-y-2">
+                    <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Eloquent</p>
+                    <p className="text-sm text-slate-500 font-mono">/ˈel.ə.kwənt/</p>
+                    <p className="text-xs font-bold text-sky-600 dark:text-sky-400 mt-4">
+                      Click card to reveal Oxford definition & example ➔
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 animate-in fade-in">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                      Fluent or persuasive in speaking or writing.
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 italic">
+                      "She delivered an eloquent keynote on cross-border technological education."
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-3 font-semibold">Click to flip back</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          PUBLIC CERTIFICATE VERIFICATION WIDGET
+      ========================================================================= */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-lg dark:border-slate-800 dark:bg-slate-900">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-7 space-y-3">
+              <Badge variant="indigo">Public Security Registry</Badge>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+                Tamper-Proof Certificate Verification Portal
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Employers and academic institutions worldwide can instantly verify student credentials, CEFR grade, issue date, and instructor accreditation without logging in.
+              </p>
+            </div>
+
+            <div className="lg:col-span-5">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/60 space-y-3">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Enter Certificate Serial Code:
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={certQuery}
+                    onChange={(e) => setCertQuery(e.target.value.toUpperCase())}
+                    placeholder="e.g. ENG-2026-X7Y9"
+                    className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0f3d6a] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  />
+                  <Link href={`/verify/certificate/${certQuery.trim() || 'ENG-2026-X7Y9'}`}>
+                    <Button className="rounded-xl bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold">
+                      <Search className="h-3.5 w-3.5 mr-1" /> Verify
+                    </Button>
+                  </Link>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Sample verified code: <span className="font-mono font-bold text-sky-600">ENG-2026-X7Y9</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          STUDENT TESTIMONIALS & SUCCESS STORIES
+      ========================================================================= */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center space-y-3 max-w-2xl mx-auto mb-10">
+          <Badge variant="indigo">Verified Student Outcomes</Badge>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            Trusted by Professionals & Learners Across East Africa
           </h2>
-          <p className="mx-auto max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            A direct, teacher-moderated learning flow engineered for academic rigor and verifiable outcomes.
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Real feedback from graduates who accelerated their global careers and passed CEFR accreditations.
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {workflowSteps.map((item) => (
-            <div
-              key={item.step}
-              className="relative rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
-              <div className="text-3xl font-black text-primary-200 dark:text-primary-950">
-                {item.step}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
               </div>
-              <h3 className="mt-2 text-base font-bold text-slate-900 dark:text-white">{item.title}</h3>
-              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                {item.desc}
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                "The English for Software Engineers track transformed my confidence in global sprint standups and async GitHub PR code reviews. I secured a remote role within 3 months."
               </p>
             </div>
-          ))}
+            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0f3d6a] text-white font-bold text-xs">
+                EK
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">Eric Karemera</p>
+                <p className="text-[10px] text-slate-500">Senior Full-Stack Engineer, Kigali</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                "The Medical English module taught me precise ISBAR clinical handover protocols and empathetic patient bedside dialogue. Truly unmatched quality."
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-700 text-white font-bold text-xs">
+                CM
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">Dr. Claire Mutoni</p>
+                <p className="text-[10px] text-slate-500">Clinical Specialist, Rwanda</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                "The Executive Negotiation course gave our corporate sales team the tactful pushback vocabulary needed to close multi-million franc cross-border deals."
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-700 text-white font-bold text-xs">
+                PN
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">Patrick Ndahiro</p>
+                <p className="text-[10px] text-slate-500">Managing Director, East Africa Logistics</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          TRANSPARENT TUITION & ENROLLMENT PLANS
+      ========================================================================= */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center space-y-3 max-w-2xl mx-auto mb-10">
+          <Badge variant="indigo">Transparent Tuition</Badge>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            Choose Your Learning Pathway
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Pay easily with Mobile Money (MTN / Airtel) or Bank Transfer with teacher verification.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Plan 1 */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Foundation Tier</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-1">Single Level Mastery</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-3xl font-black text-slate-900 dark:text-white">$49.99</span>
+                <span className="text-xs text-slate-500">/ 90-day access</span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                Ideal for learners focused on a specific CEFR milestone (e.g. A2 or B1).
+              </p>
+              <ul className="mt-6 space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Full 10-Unit Syllabus</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> 16 Interactive Drills</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Teacher Assignment Grading</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Verified CEFR Certificate</li>
+              </ul>
+            </div>
+            <Link href="/register?role=student" className="mt-8">
+              <Button variant="outline" className="w-full rounded-full text-xs font-bold">
+                Get Started
+              </Button>
+            </Link>
+          </div>
+
+          {/* Plan 2: Highlighted */}
+          <div className="rounded-3xl border-2 border-[#0f3d6a] bg-white p-6 shadow-xl dark:border-sky-500 dark:bg-slate-900 flex flex-col justify-between relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0f3d6a] text-white px-3 py-0.5 text-[10px] font-black uppercase tracking-wider dark:bg-sky-600">
+              Most Popular
+            </div>
+            <div>
+              <p className="text-xs font-bold text-sky-600 uppercase tracking-wider">Career Accelerated</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-1">Vocational Career Track</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-3xl font-black text-slate-900 dark:text-white">$79.99</span>
+                <span className="text-xs text-slate-500">/ 180-day access</span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                Specialized for Software Engineering, Healthcare, or Business negotiation.
+              </p>
+              <ul className="mt-6 space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Everything in Single Level</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Industry Scenario Simulations</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> 1-on-1 Instructor Coaching Feedback</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Job Interview STAR Drills</li>
+              </ul>
+            </div>
+            <Link href="/register?role=student" className="mt-8">
+              <Button className="w-full rounded-full bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold shadow-md dark:bg-sky-600">
+                Enroll in Track
+              </Button>
+            </Link>
+          </div>
+
+          {/* Plan 3 */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Executive All-Access</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-1">Full Academy Pass</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-3xl font-black text-slate-900 dark:text-white">$149.99</span>
+                <span className="text-xs text-slate-500">/ 365-day access</span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                Unrestricted access to all 7 CEFR levels and all 6 vocational tracks.
+              </p>
+              <ul className="mt-6 space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Unlimited Course Catalog Access</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Multiple Verified Diplomas</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Priority Instructor Grading</li>
+                <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500" /> Custom Corporate Invoicing Support</li>
+              </ul>
+            </div>
+            <Link href="/register?role=student" className="mt-8">
+              <Button variant="outline" className="w-full rounded-full text-xs font-bold">
+                Get All-Access Pass
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          FINAL CALL TO ACTION BANNER (MATCHING THE 50% PROMO THEME)
+      ========================================================================= */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-8">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0f3d6a] via-[#0284c7] to-sky-500 p-8 sm:p-12 text-white shadow-2xl">
+          <div className="relative z-10 max-w-2xl space-y-4">
+            <span className="inline-block rounded-full bg-white/20 px-3.5 py-1 text-xs font-black uppercase tracking-wider backdrop-blur-sm">
+              Limited Time 50% Discount Available
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+              Ready to Accelerate Your English Fluency & Career?
+            </h2>
+            <p className="text-sm text-sky-100 leading-relaxed">
+              Take the free diagnostic placement quiz or register today to join hundreds of professionals learning with LinguaChris Academy.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Link href="/register?role=student">
+                <Button className="rounded-full bg-white text-[#0f3d6a] hover:bg-slate-100 px-8 py-3 font-extrabold text-xs uppercase tracking-wider shadow-lg">
+                  Join as a Student
+                </Button>
+              </Link>
+              <Link href="/quiz">
+                <Button variant="outline" className="rounded-full border-2 border-white text-white hover:bg-white/20 px-6 py-3 font-extrabold text-xs uppercase tracking-wider">
+                  Take Free Quick Test
+                </Button>
+              </Link>
+              <Link href="/register?role=teacher">
+                <Button variant="ghost" className="rounded-full text-white/90 hover:bg-white/10 text-xs font-bold">
+                  Apply to Teach ➔
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </div>

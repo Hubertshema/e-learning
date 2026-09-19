@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
@@ -14,24 +15,28 @@ import {
   LayoutDashboard,
   User as UserIcon,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 
 export function Navbar() {
   const { user, isAuthenticated, logout, getDashboardRoute } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const pathname = usePathname();
 
   const navigation = [
+    { name: 'Home', href: '/' },
     { name: 'Courses', href: '/courses' },
+    { name: 'Diagnostic Quiz', href: '/quiz' },
     { name: 'Specialized Tracks', href: '/tracks' },
     { name: 'Levels (CEFR)', href: '/levels' },
     { name: 'Teachers', href: '/teachers' },
     { name: 'Pricing', href: '/pricing' },
-    { name: 'About', href: '/about' },
+    { name: 'About Us', href: '/about' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 transition-transform hover:scale-[1.02]">
@@ -42,25 +47,32 @@ export function Navbar() {
           />
           <div className="flex flex-col">
             <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-              Lingua<span className="text-[#3B6748]">Chris</span>
+              Lingua<span className="text-[#0f3d6a] dark:text-sky-400">Chris</span>
             </span>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-[#8EA885]">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-sky-600 dark:text-sky-400">
               Academy
             </span>
           </div>
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className="text-sm font-medium text-slate-600 transition-colors hover:text-primary-600 dark:text-slate-300 dark:hover:text-white"
-            >
-              {item.name}
-            </Link>
-          ))}
+        <nav className="hidden lg:flex items-center gap-1.5">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  isActive
+                    ? 'bg-[#0f3d6a] text-white shadow-sm dark:bg-sky-600'
+                    : 'text-slate-600 hover:text-[#0f3d6a] hover:bg-slate-100/70 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                }`}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* User Actions / Auth */}
