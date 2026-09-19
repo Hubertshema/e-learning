@@ -220,18 +220,18 @@ export default function DiagnosticQuizPage() {
   const resultTier = getRecommendedTier(quizScore);
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         {/* Header Title Section */}
         <div className="text-center space-y-3 mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-semibold text-sky-700 dark:border-sky-900 dark:bg-sky-950/60 dark:text-sky-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-semibold text-sky-700">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Official CEFR Diagnostic Assessment</span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
             Free English Placement & Diagnostic Quiz
           </h1>
-          <p className="mx-auto max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          <p className="mx-auto max-w-2xl text-sm text-slate-600">
             Take this 6-question interactive assessment to discover your estimated CEFR English level (Pre-A1 to C2) and receive personalized course recommendations.
           </p>
         </div>
@@ -239,13 +239,13 @@ export default function DiagnosticQuizPage() {
         {!quizFinished ? (
           <div className="space-y-6">
             {/* Progress & Meta Info Card */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0f3d6a] text-white font-bold text-sm">
                   {currentQIndex + 1}/{EXTENDED_DIAGNOSTIC_QUIZ.length}
                 </span>
                 <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">
+                  <p className="text-xs font-bold text-slate-900">
                     {currentQ.category}
                   </p>
                   <p className="text-[11px] text-slate-500">
@@ -260,7 +260,7 @@ export default function DiagnosticQuizPage() {
                   <span>Progress</span>
                   <span>{Math.round(((currentQIndex + 1) / EXTENDED_DIAGNOSTIC_QUIZ.length) * 100)}%</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                   <div
                     className="h-full bg-gradient-to-r from-sky-500 to-[#0f3d6a] transition-all duration-300"
                     style={{
@@ -272,7 +272,7 @@ export default function DiagnosticQuizPage() {
             </div>
 
             {/* Question Card */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xl">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-xs">
@@ -281,7 +281,7 @@ export default function DiagnosticQuizPage() {
                   {currentQ.audioText && (
                     <button
                       onClick={() => playTts(currentQ.audioText!)}
-                      className="flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300"
+                      className="flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
                     >
                       <Volume2 className="h-4 w-4" />
                       <span>Play Audio Prompt</span>
@@ -289,13 +289,13 @@ export default function DiagnosticQuizPage() {
                   )}
                 </div>
 
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-relaxed">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-relaxed">
                   {currentQ.prompt}
                 </h2>
 
                 {currentQ.audioText && (
-                  <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-3.5 dark:border-sky-950 dark:bg-sky-950/30">
-                    <p className="text-xs italic text-slate-700 dark:text-slate-300">
+                  <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-3.5">
+                    <p className="text-xs italic text-slate-700">
                       🎧 Audio dialogue: "{currentQ.audioText}"
                     </p>
                   </div>
@@ -308,17 +308,17 @@ export default function DiagnosticQuizPage() {
                     const isCorrectOption = idx === currentQ.correct;
 
                     let btnStyle =
-                      'border-slate-200 bg-white hover:border-[#0f3d6a]/40 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/80';
+                      'border-slate-200 bg-white hover:border-[#0f3d6a]/40 hover:bg-slate-50';
 
                     if (hasAnswered) {
                       if (isCorrectOption) {
                         btnStyle =
-                          'border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-100 dark:border-emerald-700';
+                          'border-emerald-500 bg-emerald-50 text-emerald-900';
                       } else if (isSelected && !isCorrectOption) {
                         btnStyle =
-                          'border-rose-500 bg-rose-50 text-rose-900 dark:bg-rose-950/60 dark:text-rose-100 dark:border-rose-700';
+                          'border-rose-500 bg-rose-50 text-rose-900';
                       } else {
-                        btnStyle = 'opacity-50 border-slate-200 dark:border-slate-800';
+                        btnStyle = 'opacity-50 border-slate-200';
                       }
                     }
 
@@ -334,12 +334,12 @@ export default function DiagnosticQuizPage() {
                             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                               isSelected
                                 ? 'bg-[#0f3d6a] text-white'
-                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                : 'bg-slate-100 text-slate-700'
                             }`}
                           >
                             {String.fromCharCode(65 + idx)}
                           </span>
-                          <span className="text-slate-900 dark:text-white font-medium">{option}</span>
+                          <span className="text-slate-900 font-medium">{option}</span>
                         </div>
 
                         {hasAnswered && (
@@ -355,14 +355,14 @@ export default function DiagnosticQuizPage() {
 
                 {/* Explanation Feedback Banner */}
                 {hasAnswered && (
-                  <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/60 animate-in fade-in">
+                  <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 animate-in fade-in">
                     <div className="flex items-start gap-3">
                       <HelpCircle className="h-5 w-5 text-sky-600 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white">
+                        <p className="text-xs font-bold text-slate-900">
                           Academic Explanation
                         </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                        <p className="text-xs text-slate-600 mt-1">
                           {currentQ.explanation}
                         </p>
                       </div>
@@ -388,31 +388,31 @@ export default function DiagnosticQuizPage() {
           </div>
         ) : (
           /* Results Assessment View */
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in zoom-in-95">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-2xl animate-in zoom-in-95">
             <div className="text-center space-y-4">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-sky-50 text-sky-600 border border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-sky-50 text-sky-600 border border-sky-200">
                 <Award className="h-10 w-10" />
               </div>
 
               <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
                   Your CEFR Benchmark: <span className="text-sky-600">{resultTier.level}</span>
                 </h2>
-                <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">
+                <p className="text-sm font-semibold text-slate-600 mt-1">
                   {resultTier.title}
                 </p>
               </div>
 
               {/* Score Display Card */}
-              <div className="mx-auto max-w-md rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800/50">
+              <div className="mx-auto max-w-md rounded-2xl border border-slate-100 bg-slate-50 p-5">
                 <div className="flex items-center justify-around">
                   <div className="text-center">
                     <p className="text-[11px] text-slate-500">Correct Answers</p>
-                    <p className="text-2xl font-black text-slate-900 dark:text-white">
+                    <p className="text-2xl font-black text-slate-900">
                       {quizScore} / {EXTENDED_DIAGNOSTIC_QUIZ.length}
                     </p>
                   </div>
-                  <div className="h-10 w-px bg-slate-200 dark:bg-slate-700" />
+                  <div className="h-10 w-px bg-slate-200" />
                   <div className="text-center">
                     <p className="text-[11px] text-slate-500">Accuracy Rate</p>
                     <p className="text-2xl font-black text-emerald-600">
@@ -420,21 +420,21 @@ export default function DiagnosticQuizPage() {
                     </p>
                   </div>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-slate-200">
                   {resultTier.description}
                 </p>
               </div>
 
               {/* Recommended Course Box */}
-              <div className="mx-auto max-w-lg rounded-2xl border border-sky-200 bg-sky-50/70 p-6 text-left dark:border-sky-900 dark:bg-sky-950/40">
-                <div className="flex items-center gap-2 text-xs font-bold text-sky-800 dark:text-sky-300">
+              <div className="mx-auto max-w-lg rounded-2xl border border-sky-200 bg-sky-50/70 p-6 text-left">
+                <div className="flex items-center gap-2 text-xs font-bold text-sky-800">
                   <GraduationCap className="h-4 w-4" />
                   <span>Recommended Curriculum Path</span>
                 </div>
-                <p className="text-base font-bold text-slate-900 dark:text-white mt-1">
+                <p className="text-base font-bold text-slate-900 mt-1">
                   {resultTier.recommendedCourse}
                 </p>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   Complete with teacher instruction, 16 multi-skill drills, and verified accreditation diploma.
                 </p>
                 <div className="mt-4 flex flex-col sm:flex-row gap-3">
