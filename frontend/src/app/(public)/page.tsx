@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   BookOpen,
   Headphones,
@@ -276,7 +275,6 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-8 sm:p-10 dark:border-slate-800 dark:bg-slate-900/60">
           <div className="text-center space-y-3 max-w-2xl mx-auto mb-8">
-            <Badge variant="indigo">Global Standard Curriculum</Badge>
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
               Interactive CEFR Level Explorer
             </h2>
@@ -380,7 +378,6 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-6 space-y-6">
-            <Badge variant="indigo">Interactive Pedagogy Suite</Badge>
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
               16 Multi-Skill Interactive Activity Types
             </h2>
@@ -473,7 +470,6 @@ export default function HomePage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-lg dark:border-slate-800 dark:bg-slate-900">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-7 space-y-3">
-              <Badge variant="indigo">Public Security Registry</Badge>
               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
                 Tamper-Proof Certificate Verification Portal
               </h2>
@@ -515,7 +511,6 @@ export default function HomePage() {
       ========================================================================= */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-3 max-w-2xl mx-auto mb-10">
-          <Badge variant="indigo">Verified Student Outcomes</Badge>
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             Trusted by Professionals & Learners Across East Africa
           </h2>
@@ -598,7 +593,6 @@ export default function HomePage() {
       ========================================================================= */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-3 max-w-2xl mx-auto mb-10">
-          <Badge variant="indigo">Transparent Tuition</Badge>
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             Choose Your Learning Pathway
           </h2>

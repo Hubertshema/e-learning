@@ -52,7 +52,6 @@ export default function LevelsPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 space-y-12">
       <div className="space-y-4 max-w-3xl">
-        <Badge variant="indigo">CEFR Global Standard</Badge>
         <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
           The CEFR Language Progression Framework
         </h1>
@@ -63,10 +62,12 @@ export default function LevelsPage() {
 
       <div className="space-y-6">
         {levels.map((lvl) => (
-          <Card key={lvl.code} className="p-6 transition-all hover:border-primary-400">
+          <Card key={lvl.code} className="p-6 transition-all hover:border-[#0f3d6a]">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
               <div className="md:col-span-4 space-y-2">
-                <Badge variant="indigo">{lvl.code}</Badge>
+                <span className="inline-block rounded-full bg-sky-50 text-[#0f3d6a] border border-sky-200 px-3 py-0.5 text-xs font-bold dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800">
+                  {lvl.code}
+                </span>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">{lvl.title}</h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400">{lvl.description}</p>
               </div>

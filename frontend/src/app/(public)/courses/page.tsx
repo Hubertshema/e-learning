@@ -65,21 +65,22 @@ export default function CoursesPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 space-y-12">
       <div className="space-y-4">
-        <Badge variant="indigo">Course Catalog</Badge>
         <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
           Explore Structured English Courses
         </h1>
         <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
-          Select a course matching your current CEFR level or professional focus. Enroll and complete teacher-verified access to begin.
+          Select a course matching your current CEFR level or professional focus. Enroll and complete instructor-verified access to begin.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2">
         {sampleCourses.map((course) => (
-          <Card key={course.id} className="flex flex-col justify-between overflow-hidden border-slate-200/80 transition-all hover:border-primary-400 hover:shadow-lg dark:border-slate-800">
+          <Card key={course.id} className="flex flex-col justify-between overflow-hidden border-slate-200/80 transition-all hover:border-[#0f3d6a] hover:shadow-lg dark:border-slate-800">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <Badge variant="indigo">{course.level}</Badge>
+                <span className="inline-block rounded-full bg-sky-50 text-[#0f3d6a] border border-sky-200 px-3 py-0.5 text-xs font-bold dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800">
+                  {course.level}
+                </span>
                 <span className="text-xs font-semibold text-slate-500">{course.category}</span>
               </div>
 

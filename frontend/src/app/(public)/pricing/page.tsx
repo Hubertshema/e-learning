@@ -58,7 +58,6 @@ export default function PricingPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 space-y-12">
       <div className="text-center space-y-4 max-w-3xl mx-auto">
-        <Badge variant="indigo">Affordable & Value-Packed</Badge>
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
           Transparent Pricing for Every Learner
         </h1>

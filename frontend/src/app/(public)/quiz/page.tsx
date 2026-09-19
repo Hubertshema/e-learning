@@ -395,7 +395,6 @@ export default function DiagnosticQuizPage() {
               </div>
 
               <div>
-                <Badge variant="indigo" className="mb-2">Diagnostic Assessment Report</Badge>
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                   Your CEFR Benchmark: <span className="text-sky-600">{resultTier.level}</span>
                 </h2>
