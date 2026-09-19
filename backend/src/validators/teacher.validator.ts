@@ -58,12 +58,15 @@ export const UpdateLessonSchema = CreateLessonSchema.partial();
 
 export const CreateClassSchema = z.object({
   name: z.string().min(2, 'Class name is required').trim(),
-  code: z.string().min(2, 'Class code is required').toUpperCase().trim(),
+  code: z.string().trim().optional(),
   description: z.string().optional(),
-  courseId: z.string().uuid('Valid Course ID is required'),
+  schedule: z.string().optional(),
+  meetingLink: z.string().optional(),
+  courseId: z.string().min(1, 'Valid Course ID is required'),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  maxStudents: z.number().int().min(1).default(30),
+  capacity: z.number().int().optional(),
+  maxStudents: z.number().int().min(1).default(30).optional(),
 });
 
 export const UpdateClassSchema = CreateClassSchema.partial();

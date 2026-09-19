@@ -55,12 +55,13 @@ interface CourseOption {
 export default function TeacherClassesPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: '',
+    code: '',
     courseId: '',
     schedule: 'Mon, Wed, Fri at 6:00 PM GMT',
-    meetingLink: '',
     capacity: 25,
     startDate: '',
     endDate: '',
@@ -115,16 +116,31 @@ export default function TeacherClassesPage() {
 
   const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
+    setModalError(null);
     try {
       setSaving(true);
-      await apiClient.post('/teacher/classes', form);
+      const payload: any = {
+        name: form.name.trim(),
+        courseId: form.courseId,
+        schedule: form.schedule.trim(),
+        capacity: Number(form.capacity) || 25,
+        maxStudents: Number(form.capacity) || 25,
+        startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,
+        endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
+      };
+      if (form.code.trim()) {
+        payload.code = form.code.trim().toUpperCase();
+      }
+
+      await apiClient.post('/teacher/classes', payload);
       setFeedback({ type: 'success', message: 'Class cohort created successfully!' });
       setShowModal(false);
+      setModalError(null);
       setForm({
         name: '',
+        code: '',
         courseId: courses[0]?.id || '',
         schedule: 'Mon, Wed, Fri at 6:00 PM GMT',
-        meetingLink: '',
         capacity: 25,
         startDate: '',
         endDate: '',
@@ -132,7 +148,7 @@ export default function TeacherClassesPage() {
       clientCache.invalidate('teacher_');
       await fetchData();
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Failed to create class' });
+      setModalError(err.message || 'Failed to create class cohort. Please verify your inputs.');
     } finally {
       setSaving(false);
     }
@@ -148,10 +164,17 @@ export default function TeacherClassesPage() {
             Class Cohorts & Schedules
           </h1>
           <p className="text-xs text-slate-500">
-            Organize live student groups, manage meeting links, and inspect cohort rosters.
+            Organize student cohorts, set schedules, and inspect class rosters.
           </p>
         </div>
-        <Button variant="gradient" size="sm" onClick={() => setShowModal(true)}>
+        <Button
+          variant="gradient"
+          size="sm"
+          onClick={() => {
+            setModalError(null);
+            setShowModal(true);
+          }}
+        >
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           Create New Class Cohort
         </Button>
@@ -338,6 +361,13 @@ export default function TeacherClassesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {modalError && (
+                <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                  <span>{modalError}</span>
+                </div>
+              )}
+
               <form onSubmit={handleCreateClass} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Cohort Name</label>
@@ -378,13 +408,13 @@ export default function TeacherClassesPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Meeting Room URL (Optional)</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Class Code (Optional)</label>
                     <input
-                      type="url"
-                      placeholder="https://meet.google.com/..."
-                      value={form.meetingLink}
-                      onChange={(e) => setForm({ ...form, meetingLink: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                      type="text"
+                      placeholder="e.g. ENG-ADV-01 (Auto if blank)"
+                      value={form.code}
+                      onChange={(e) => setForm({ ...form, code: e.target.value })}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs uppercase focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                     />
                   </div>
                   <div>
@@ -392,6 +422,7 @@ export default function TeacherClassesPage() {
                     <input
                       type="number"
                       required
+                      min={1}
                       value={form.capacity}
                       onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 20 })}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900"
@@ -400,7 +431,15 @@ export default function TeacherClassesPage() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowModal(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowModal(false);
+                      setModalError(null);
+                    }}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" variant="gradient" size="sm" disabled={saving}>
