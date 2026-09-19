@@ -1,0 +1,751 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------
+// ENUMS
+// ----------------------------------------------------
+
+enum Role {
+  SUPERADMIN
+  TEACHER
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_APPROVAL
+}
+
+enum CEFRLevel {
+  PRE_A1
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum SkillType {
+  READING
+  LISTENING
+  SPEAKING
+  WRITING
+  GRAMMAR
+  VOCABULARY
+  PRONUNCIATION
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  REFUNDED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  GRADED
+  RETURNED
+}
+
+// ----------------------------------------------------
+// CORE USER & PROFILES
+// ----------------------------------------------------
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  role            Role           @default(STUDENT)
+  status          UserStatus     @default(ACTIVE)
+  isVerified      Boolean        @default(false)
+  avatarUrl       String?
+  phone           String?
+  country         String?
+  city            String?
+  timezone        String?        @default("Africa/Kigali")
+  preferredLanguage String?      @default("en")
+  phoneVerified   Boolean        @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Profile relations
+  teacherProfile  TeacherProfile?
+  studentProfile  StudentProfile?
+
+  // System relations
+  refreshTokens           RefreshToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  notificationPreference  NotificationPreference?
+  emailLogs               EmailLog[]
+  auditLogs               AuditLog[]
+  notifications           Notification[]
+
+  @@map("users")
+}
+
+model EmailVerificationToken {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model NotificationPreference {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailEnabled          Boolean   @default(true)
+  enrollmentEmails      Boolean   @default(true)
+  paymentEmails         Boolean   @default(true)
+  assignmentEmails      Boolean   @default(true)
+  quizEmails            Boolean   @default(true)
+  feedbackEmails        Boolean   @default(true)
+  courseExpirationEmails Boolean  @default(true)
+  courseCompletionEmails Boolean  @default(true)
+  announcementEmails    Boolean   @default(true)
+  inAppEnabled          Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("notification_preferences")
+}
+
+model EmailLog {
+  id                String    @id @default(uuid())
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  recipient         String
+  subject           String
+  template          String
+  status            String    @default("QUEUED") // QUEUED, SENDING, SENT, FAILED, RETRYING, CANCELLED
+  provider          String    @default("DEVELOPMENT") // DEVELOPMENT, RESEND, SENDGRID, SMTP
+  providerMessageId String?
+  errorMessage      String?   @db.Text
+  attempts          Int       @default(0)
+  sentAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([recipient])
+  @@map("email_logs")
+}
+
+model RefreshToken {
+  id              String         @id @default(uuid())
+  tokenHash       String         @unique
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt       DateTime
+  revoked         Boolean        @default(false)
+  replacedByToken String?
+  createdAt       DateTime       @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id              String         @id @default(uuid())
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action          String
+  entity          String
+  entityId        String?
+  ipAddress       String?
+  userAgent       String?
+  metadata        Json?
+  createdAt       DateTime       @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  message         String
+  type            String         @default("INFO")
+  isRead          Boolean        @default(false)
+  link            String?
+  createdAt       DateTime       @default(now())
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model TeacherProfile {
+  id              String         @id @default(uuid())
+  userId          String         @unique
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline        String?
+  bio             String?
+  qualifications  String[]       @default([])
+  specialties     String[]       @default([])
+  experienceYears Int            @default(0)
+  hourlyRate      Decimal?       @db.Decimal(10, 2)
+  isApproved      Boolean        @default(false)
+  approvalDate    DateTime?
+  videoIntroUrl   String?
+  cvUrl           String?
+  languagesSpoken String[]       @default(["English"])
+  levelsTaught    CEFRLevel[]    @default([A1, A2, B1, B2])
+  profileVisibility String       @default("PUBLIC") // PUBLIC, STUDENTS_ONLY, PRIVATE
+  paymentInfo     Json?          // Payment methods, MoMo, Bank instructions, etc.
+  teachingPreferences Json?      // Default course settings, durations, passing scores, etc.
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relationships
+  courses         Course[]
+  classes         Class[]
+  payments        Payment[]
+  feedbacks       TeacherFeedback[]
+
+  @@map("teacher_profiles")
+}
+
+model StudentProfile {
+  id              String         @id @default(uuid())
+  userId          String         @unique
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nativeLanguage  String?
+  currentLevel    CEFRLevel      @default(PRE_A1)
+  targetLevel     CEFRLevel?
+  learningGoals   String[]       @default([])
+  bio             String?
+  languagesSpoken String[]       @default([])
+  targetSkills    String[]       @default([])
+  preferredSchedule String?
+  learningPreferences Json?      // dailyLearningTargetMinutes, studyDays, studyTimeSlot
+  profileVisibility String       @default("TEACHER_ONLY") // PRIVATE, TEACHER_ONLY
+  accountDeletionRequested Boolean @default(false)
+  deletionRequestedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relationships
+  enrollments     Enrollment[]
+  payments        Payment[]
+  submissions     AssignmentSubmission[]
+  quizAttempts    QuizAttempt[]
+  placementAttempts PlacementAttempt[]
+  attendances     Attendance[]
+  progress        Progress[]
+  skillProgress   SkillProgress[]
+  certificates    Certificate[]
+  feedbacks       TeacherFeedback[]
+
+  @@map("student_profiles")
+}
+
+
+
+// ----------------------------------------------------
+// COURSES, CURRICULUM & CLASSES
+// ----------------------------------------------------
+
+model Course {
+  id              String         @id @default(uuid())
+  title           String
+  slug            String         @unique
+  description     String
+  summary         String?
+  level           CEFRLevel      @default(PRE_A1)
+  category        String         @default("General English")
+  price           Decimal        @default(0.00) @db.Decimal(10, 2)
+  currency        String         @default("USD")
+  durationDays    Int            @default(90)
+  thumbnailUrl    String?
+  isPublished     Boolean        @default(false)
+  featured        Boolean        @default(false)
+  teacherId       String
+  teacher         TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Curriculum relations
+  units           Unit[]
+  classes         Class[]
+  enrollments     Enrollment[]
+  certificates    Certificate[]
+  placementTests  PlacementTest[]
+
+  @@index([teacherId])
+  @@index([level])
+  @@map("courses")
+}
+
+model Class {
+  id              String         @id @default(uuid())
+  name            String
+  code            String         @unique
+  description     String?
+  courseId        String
+  course          Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId       String
+  teacher         TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  startDate       DateTime?
+  endDate         DateTime?
+  maxStudents     Int            @default(30)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  enrollments     Enrollment[]
+  attendances     Attendance[]
+
+  @@index([courseId])
+  @@index([teacherId])
+  @@map("classes")
+}
+
+model Unit {
+  id              String         @id @default(uuid())
+  courseId        String
+  course          Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  orderIndex      Int            @default(1)
+  isPublished     Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  lessons         Lesson[]
+
+  @@index([courseId])
+  @@map("units")
+}
+
+model Lesson {
+  id              String         @id @default(uuid())
+  unitId          String
+  unit            Unit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  skill           SkillType      @default(GRAMMAR)
+  orderIndex      Int            @default(1)
+  estimatedMinutes Int           @default(30)
+  isPublished     Boolean        @default(true)
+  isFreePreview   Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  sections        LessonSection[]
+  activities      Activity[]
+  assignments     Assignment[]
+  quizzes         Quiz[]
+  progress        Progress[]
+
+  @@index([unitId])
+  @@map("lessons")
+}
+
+model LessonSection {
+  id              String         @id @default(uuid())
+  lessonId        String
+  lesson          Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title           String
+  contentType     String         @default("MARKDOWN") // MARKDOWN, VIDEO, AUDIO, VOCABULARY
+  content         String         @db.Text
+  mediaUrl        String?
+  orderIndex      Int            @default(1)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([lessonId])
+  @@map("lesson_sections")
+}
+
+model Activity {
+  id              String         @id @default(uuid())
+  lessonId        String
+  lesson          Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title           String
+  type            String         // MULTIPLE_CHOICE, FILL_BLANKS, MATCHING, FLASHCARD, SPEAKING_PRACTICE
+  instructions    String?
+  orderIndex      Int            @default(1)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  questions       ActivityQuestion[]
+
+  @@index([lessonId])
+  @@map("activities")
+}
+
+model ActivityQuestion {
+  id              String         @id @default(uuid())
+  activityId      String
+  activity        Activity       @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  prompt          String
+  options         String[]       @default([])
+  correctAnswer   String
+  explanation     String?
+  audioPromptUrl  String?
+  orderIndex      Int            @default(1)
+
+  @@index([activityId])
+  @@map("activity_questions")
+}
+
+// ----------------------------------------------------
+// ENROLLMENT & PAYMENTS
+// ----------------------------------------------------
+
+model Enrollment {
+  id              String           @id @default(uuid())
+  studentId       String
+  student         StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  classId         String?
+  class           Class?           @relation(fields: [classId], references: [id], onDelete: SetNull)
+  status          EnrollmentStatus @default(PENDING)
+  enrolledAt      DateTime         @default(now())
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  completedAt     DateTime?
+  gradePercentage Decimal?         @db.Decimal(5, 2)
+  updatedAt       DateTime         @updatedAt
+
+  payments        Payment[]
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+  @@index([status])
+  @@map("enrollments")
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  enrollmentId    String
+  enrollment      Enrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId       String
+  teacher         TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  amount          Decimal        @db.Decimal(10, 2)
+  currency        String         @default("USD")
+  status          PaymentStatus  @default(PENDING)
+  paymentMethod   String         // BANK_TRANSFER, MOBILE_MONEY, CARD, CASH
+  transactionRef  String?
+  receiptUrl      String?
+  notes           String?
+  verifiedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([enrollmentId])
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([status])
+  @@map("payments")
+}
+
+// ----------------------------------------------------
+// ASSIGNMENTS, QUIZZES, PROGRESS & CERTIFICATES
+// ----------------------------------------------------
+
+model Assignment {
+  id              String                 @id @default(uuid())
+  lessonId        String
+  lesson          Lesson                 @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title           String
+  description     String                 @db.Text
+  rubric          Json?
+  maxScore        Int                    @default(100)
+  dueDate         DateTime?
+  isPublished     Boolean                @default(true)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  submissions     AssignmentSubmission[]
+
+  @@index([lessonId])
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id              String           @id @default(uuid())
+  assignmentId    String
+  assignment      Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  content         String           @db.Text
+  attachmentUrl   String?
+  status          SubmissionStatus @default(SUBMITTED)
+  score           Decimal?         @db.Decimal(5, 2)
+  feedback        String?          @db.Text
+  submittedAt     DateTime         @default(now())
+  gradedAt        DateTime?
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@map("assignment_submissions")
+}
+
+model Quiz {
+  id              String         @id @default(uuid())
+  lessonId        String
+  lesson          Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  passingScore    Int            @default(70)
+  timeLimitMin    Int?           @default(15)
+  isPublished     Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  questions       QuizQuestion[]
+  attempts        QuizAttempt[]
+
+  @@index([lessonId])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id              String         @id @default(uuid())
+  quizId          String
+  quiz            Quiz           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionText    String
+  options         String[]       @default([])
+  correctAnswer   String
+  explanation     String?
+  points          Int            @default(1)
+  orderIndex      Int            @default(1)
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id              String         @id @default(uuid())
+  quizId          String
+  quiz            Quiz           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score           Decimal        @db.Decimal(5, 2)
+  passed          Boolean        @default(false)
+  answers         Json
+  startedAt       DateTime       @default(now())
+  completedAt     DateTime?
+
+  @@index([quizId])
+  @@index([studentId])
+  @@map("quiz_attempts")
+}
+
+model Attendance {
+  id              String           @id @default(uuid())
+  classId         String
+  class           Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date            DateTime         @db.Date
+  status          AttendanceStatus @default(PRESENT)
+  note            String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([classId, studentId, date])
+  @@index([studentId])
+  @@index([classId])
+  @@map("attendances")
+}
+
+model Progress {
+  id              String         @id @default(uuid())
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId        String
+  lesson          Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  isCompleted     Boolean        @default(false)
+  completedAt     DateTime?
+  score           Decimal?       @db.Decimal(5, 2)
+  timeSpentSec    Int            @default(0)
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([lessonId])
+  @@map("progress")
+}
+
+model SkillProgress {
+  id              String         @id @default(uuid())
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill           SkillType
+  level           CEFRLevel      @default(PRE_A1)
+  scorePercentage Decimal        @default(0.00) @db.Decimal(5, 2)
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([studentId, skill])
+  @@index([studentId])
+  @@map("skill_progress")
+}
+
+model TeacherFeedback {
+  id              String         @id @default(uuid())
+  teacherId       String
+  teacher         TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title           String
+  content         String         @db.Text
+  strengths       String[]       @default([])
+  improvements    String[]       @default([])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([teacherId])
+  @@index([studentId])
+  @@map("teacher_feedbacks")
+}
+
+model Certificate {
+  id              String         @id @default(uuid())
+  certificateCode String         @unique // e.g., ENG-2026-X7Y9
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  issueDate       DateTime       @default(now())
+  levelCompleted  CEFRLevel
+  finalGrade      Decimal        @db.Decimal(5, 2)
+  pdfUrl          String?
+  isRevoked       Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+
+  @@index([studentId])
+  @@index([courseId])
+  @@map("certificates")
+}
+
+model PlacementTest {
+  id              String             @id @default(uuid())
+  title           String
+  description     String?
+  courseId        String?
+  course          Course?            @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+
+  questions       PlacementQuestion[]
+  attempts        PlacementAttempt[]
+
+  @@map("placement_tests")
+}
+
+model PlacementQuestion {
+  id              String         @id @default(uuid())
+  placementTestId String
+  placementTest   PlacementTest  @relation(fields: [placementTestId], references: [id], onDelete: Cascade)
+  level           CEFRLevel
+  skill           SkillType      @default(GRAMMAR)
+  prompt          String
+  options         String[]       @default([])
+  correctAnswer   String
+  orderIndex      Int            @default(1)
+
+  @@index([placementTestId])
+  @@map("placement_questions")
+}
+
+model PlacementAttempt {
+  id              String         @id @default(uuid())
+  placementTestId String
+  placementTest   PlacementTest  @relation(fields: [placementTestId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score           Decimal        @db.Decimal(5, 2)
+  recommendedLevel CEFRLevel
+  answers         Json
+  createdAt       DateTime       @default(now())
+
+  @@index([studentId])
+  @@map("placement_attempts")
+}
+
+model PlatformSetting {
+  id                        String   @id @default("default")
+  platformName              String   @default("FluentEdge Academy")
+  logoUrl                   String?
+  platformDescription       String?
+  supportEmail              String   @default("support@fluentedge.com")
+  supportPhone              String?
+  defaultCurrency           String   @default("USD")
+  defaultTimezone           String   @default("Africa/Kigali")
+  defaultLanguage           String   @default("en")
+  requireTeacherReview      Boolean  @default(true)
+  allowStudentRegistration  Boolean  @default(true)
+  allowTeacherRegistration  Boolean  @default(true)
+  platformCommissionPercent Decimal  @default(15.00) @db.Decimal(5, 2)
+  cefrSettings              Json?
+  learningSettings          Json?
+  paymentSettings           Json?
+  emailSettings             Json?
+  securitySettings          Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("platform_settings")
+}
