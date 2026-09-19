@@ -150,19 +150,19 @@ export default function HomePage() {
               {/* Dual Action Buttons (Reference Design Style) */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link href="/login">
-                  <button className="rounded-full bg-[#0f3d6a] text-white px-8 py-3.5 font-black text-xs uppercase tracking-wider shadow-lg hover:bg-[#0b2b4f] transition-all hover:scale-105 active:scale-95">
+                  <button className="rounded-xl bg-[#0f3d6a] text-white px-8 py-3.5 font-black text-xs uppercase tracking-wider shadow-lg hover:bg-[#0b2b4f] transition-all hover:scale-105 active:scale-95">
                     SIGN IN
                   </button>
                 </Link>
 
                 <Link href="/courses">
-                  <button className="rounded-full border-2 border-[#0f3d6a] text-[#0f3d6a] px-8 py-3 font-black text-xs uppercase tracking-wider hover:bg-[#0f3d6a] hover:text-white transition-all hover:scale-105 active:scale-95">
+                  <button className="rounded-xl border-2 border-[#0f3d6a] text-[#0f3d6a] px-8 py-3 font-black text-xs uppercase tracking-wider hover:bg-[#0f3d6a] hover:text-white transition-all hover:scale-105 active:scale-95">
                     READ MORE
                   </button>
                 </Link>
 
                 <Link href="/quiz">
-                  <button className="rounded-full bg-sky-50 text-sky-700 border border-sky-200 px-5 py-3 font-bold text-xs hover:bg-sky-100 transition-all flex items-center gap-1.5 shadow-sm">
+                  <button className="rounded-xl bg-sky-50 text-sky-700 border border-sky-200 px-5 py-3 font-bold text-xs hover:bg-sky-100 transition-all flex items-center gap-1.5 shadow-sm">
                     <Sparkles className="h-3.5 w-3.5 text-sky-500" />
                     <span>Free Quick Diagnostic</span>
                   </button>
@@ -289,7 +289,7 @@ export default function HomePage() {
               <button
                 key={lvl.code}
                 onClick={() => setActiveLevelIndex(idx)}
-                className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
                   activeLevelIndex === idx
                     ? 'bg-[#0f3d6a] text-white shadow-md scale-105'
                     : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
@@ -322,7 +322,7 @@ export default function HomePage() {
                   {levels[activeLevelIndex].desc}
                 </p>
                 <Link href={`/register?role=student&level=${levels[activeLevelIndex].code}`}>
-                  <Button className="rounded-full bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold px-5">
+                  <Button className="rounded-xl bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold px-5">
                     Start Level {levels[activeLevelIndex].code} Syllabus
                   </Button>
                 </Link>
@@ -406,7 +406,7 @@ export default function HomePage() {
 
             <div className="pt-2">
               <Link href="/quiz">
-                <Button className="rounded-full bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold px-6">
+                <Button className="rounded-xl bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold px-6">
                   Test Your English Now (Free Quiz)
                   <ArrowRight className="ml-2 h-3.5 w-3.5" />
                 </Button>
@@ -430,7 +430,7 @@ export default function HomePage() {
                     e.stopPropagation();
                     playTts('Eloquent');
                   }}
-                  className="p-1.5 rounded-full bg-white text-[#0f3d6a] shadow hover:scale-110 transition"
+                  className="p-1.5 rounded-xl bg-white text-[#0f3d6a] shadow hover:scale-110 transition"
                   title="Pronounce Word"
                 >
                   <Volume2 className="h-4 w-4" />
@@ -532,7 +532,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0f3d6a] text-white font-bold text-xs">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0f3d6a] text-white font-bold text-xs">
                 EK
               </div>
               <div>
@@ -554,7 +554,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-700 text-white font-bold text-xs">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-white font-bold text-xs">
                 CM
               </div>
               <div>
@@ -576,7 +576,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-700 text-white font-bold text-xs">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-700 text-white font-bold text-xs">
                 PN
               </div>
               <div>
@@ -596,7 +596,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0f3d6a] via-[#0284c7] to-sky-500 p-8 sm:p-12 text-white shadow-2xl">
           <div className="relative z-10 max-w-2xl space-y-4">
-            <span className="inline-block rounded-full bg-white/20 px-3.5 py-1 text-xs font-black uppercase tracking-wider backdrop-blur-sm">
+            <span className="inline-block rounded-lg bg-white/20 px-3.5 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
               Limited Time 50% Discount Available
             </span>
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
@@ -607,17 +607,17 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link href="/register?role=student">
-                <Button className="rounded-full bg-white text-[#0f3d6a] hover:bg-slate-100 px-8 py-3 font-extrabold text-xs uppercase tracking-wider shadow-lg">
+                <Button className="rounded-xl bg-white text-[#0f3d6a] hover:bg-slate-100 px-8 py-3 font-extrabold text-xs uppercase tracking-wider shadow-lg">
                   Join as a Student
                 </Button>
               </Link>
               <Link href="/quiz">
-                <Button variant="outline" className="rounded-full border-2 border-white text-white hover:bg-white/20 px-6 py-3 font-extrabold text-xs uppercase tracking-wider">
+                <Button variant="outline" className="rounded-xl border-2 border-white text-white hover:bg-white/20 px-6 py-3 font-extrabold text-xs uppercase tracking-wider">
                   Take Free Quick Test
                 </Button>
               </Link>
               <Link href="/courses">
-                <Button variant="ghost" className="rounded-full text-white/90 hover:bg-white/10 text-xs font-bold">
+                <Button variant="ghost" className="rounded-xl text-white/90 hover:bg-white/10 text-xs font-bold">
                   Browse Catalog ➔
                 </Button>
               </Link>

@@ -371,7 +371,7 @@ export default function DiagnosticQuizPage() {
                     <div className="mt-4 flex justify-end">
                       <Button
                         onClick={handleNextQuestion}
-                        className="rounded-full bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] px-6 text-xs font-bold"
+                        className="rounded-xl bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] px-6 text-xs font-bold"
                       >
                         <span>
                           {currentQIndex + 1 < EXTENDED_DIAGNOSTIC_QUIZ.length
@@ -439,13 +439,13 @@ export default function DiagnosticQuizPage() {
                 </p>
                 <div className="mt-4 flex flex-col sm:flex-row gap-3">
                   <Link href={`/register?role=student&level=${resultTier.level}`} className="flex-1">
-                    <Button className="w-full rounded-full bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold shadow-md">
+                    <Button className="w-full rounded-xl bg-[#0f3d6a] text-white hover:bg-[#0b2b4f] text-xs font-bold shadow-md">
                       Enroll with {resultTier.level} Placement
                       <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Button>
                   </Link>
                   <Link href="/courses">
-                    <Button variant="outline" className="w-full rounded-full text-xs font-semibold">
+                    <Button variant="outline" className="w-full rounded-xl text-xs font-semibold">
                       Explore All Courses
                     </Button>
                   </Link>
