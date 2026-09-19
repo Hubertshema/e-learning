@@ -6,9 +6,9 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "tsx src/server.ts",
+    "start": "tsx watch src/server.ts",
     "start:prod": "node dist/server.js",
-    "dev": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "dev:watch": "tsx watch src/server.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
