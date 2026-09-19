@@ -57,7 +57,14 @@ router.get('/diagnostic-quiz/analytics', teacherController.getDiagnosticAnalytic
 router.get('/classes', teacherController.getClasses);
 router.post('/classes', teacherController.createClass);
 router.get('/classes/:classId', teacherController.getClassDetails);
+router.put('/classes/:classId', teacherController.updateClass);
+router.delete('/classes/:classId', teacherController.deleteClass);
+router.delete('/classes/:classId/students/:studentId', teacherController.removeStudentFromClass);
+router.put('/classes/:classId/courses', teacherController.updateCohortCourses);
 router.post('/classes/:classId/enroll', teacherController.enrollStudentInClass);
+
+// Available Students List (for cohort enrollment)
+router.get('/students/available', teacherController.getAvailableStudents);
 
 // Enrollments & Expiring Students Watchlist
 router.get('/enrollments', teacherController.getEnrollments);

@@ -362,47 +362,74 @@ export class StudentRepository {
   }
 
   /**
-   * Request Course Enrollment & Submit Payment Proof
+   * Request Course/Platform Subscription & Submit Payment Proof
    */
   async submitPaymentProof(userId: string, input: SubmitPaymentProofInput) {
     const profile = await this.getOrCreateStudentProfile(userId);
-    const course = await prisma.course.findUnique({
-      where: { id: input.courseId },
-      include: { teacher: { include: { user: true } } },
-    });
+    const planMonths = input.planMonths || 1;
+    const planName = input.planName || `${planMonths} Month Access Plan`;
 
-    if (!course) {
-      throw new AppError('Course not found', 404);
+    let course: any = null;
+    let enrollment: any = null;
+    let teacherId: string | null = null;
+
+    if (input.courseId) {
+      course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        include: { teacher: { include: { user: true } } },
+      });
+      if (course) {
+        teacherId = course.teacherId;
+        // Find or create pending enrollment
+        enrollment = await prisma.enrollment.findUnique({
+          where: {
+            studentId_courseId: {
+              studentId: profile.id,
+              courseId: input.courseId,
+            },
+          },
+        });
+
+        if (!enrollment) {
+          enrollment = await prisma.enrollment.create({
+            data: {
+              studentId: profile.id,
+              courseId: input.courseId,
+              status: 'PENDING',
+            },
+          });
+        }
+      }
     }
 
-    // Find or create enrollment
-    let enrollment = await prisma.enrollment.findUnique({
-      where: {
-        studentId_courseId: {
-          studentId: profile.id,
-          courseId: input.courseId,
-        },
+    if (!teacherId) {
+      // Find a default teacher/admin profile to receive the verification request
+      const firstTeacher = await prisma.teacherProfile.findFirst({
+        include: { user: true },
+      });
+      teacherId = firstTeacher?.id || null;
+    }
+
+    // Update student's subscription status to PENDING
+    await prisma.studentProfile.update({
+      where: { id: profile.id },
+      data: {
+        subscriptionStatus: 'PENDING',
+        subscriptionPlan: `${planMonths}_MONTHS`,
+        subscriptionMonths: planMonths,
       },
     });
 
-    if (!enrollment) {
-      enrollment = await prisma.enrollment.create({
-        data: {
-          studentId: profile.id,
-          courseId: input.courseId,
-          status: 'PENDING',
-        },
-      });
-    }
-
-    // Create Payment Record
+    // Create Payment Record for subscription
     const payment = await prisma.payment.create({
       data: {
-        enrollmentId: enrollment.id,
+        enrollmentId: enrollment?.id || null,
         studentId: profile.id,
-        teacherId: course.teacherId,
+        teacherId: teacherId || profile.id,
         amount: new Prisma.Decimal(input.amount),
-        currency: input.currency || course.currency,
+        currency: input.currency || 'USD',
+        planMonths,
+        planName,
         paymentMethod: input.paymentMethod,
         transactionRef: input.transactionRef,
         receiptUrl: input.receiptUrl || null,
@@ -411,14 +438,14 @@ export class StudentRepository {
       },
     });
 
-    // Send in-app notification to teacher
-    if (course.teacher?.userId) {
+    // Send in-app notification to teacher/admin
+    if (course?.teacher?.userId) {
       try {
         await prisma.notification.create({
           data: {
             userId: course.teacher.userId,
-            title: 'New Payment Verification Submitted',
-            message: `${profile.user.firstName} ${profile.user.lastName} submitted payment proof for ${course.title} (Ref: ${input.transactionRef}).`,
+            title: 'New Subscription Payment Proof Submitted',
+            message: `${profile.user.firstName} ${profile.user.lastName} submitted payment proof for ${planName} (Ref: ${input.transactionRef}).`,
             type: 'PAYMENT_PENDING',
             link: '/teacher/payments',
           },
@@ -437,7 +464,9 @@ export class StudentRepository {
           entity: 'Payment',
           entityId: payment.id,
           metadata: {
-            courseId: course.id,
+            courseId: course?.id || null,
+            planMonths,
+            planName,
             amount: input.amount,
             ref: input.transactionRef,
           },
@@ -471,6 +500,100 @@ export class StudentRepository {
   }
 
   /**
+   * Get Student Subscription Status & Plans
+   */
+  async getStudentSubscriptionDetails(userId: string) {
+    const profile = await this.getOrCreateStudentProfile(userId);
+    const now = new Date();
+
+    const isSubscriptionActive =
+      (profile as any).subscriptionStatus === 'ACTIVE' &&
+      (!(profile as any).subscriptionExpiresAt || new Date((profile as any).subscriptionExpiresAt) > now);
+
+    const daysRemaining = (profile as any).subscriptionExpiresAt
+      ? Math.max(0, Math.ceil((new Date((profile as any).subscriptionExpiresAt).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+      : 0;
+
+    const availablePlans = [
+      {
+        id: '1_MONTH',
+        months: 1,
+        title: '1 Month Access',
+        subtitle: 'Flexible Monthly English Learning',
+        priceUsd: 25,
+        priceRwf: 30000,
+        badge: 'Starter',
+        features: [
+          'Full access to all CEFR English courses (A1 - C2)',
+          'Interactive lesson quizzes & grammar exercises',
+          'Access to live cohort schedules',
+          'AI-assisted speaking & writing feedback',
+          'Standard Certificate of Completion',
+        ],
+      },
+      {
+        id: '2_MONTHS',
+        months: 2,
+        title: '2 Months Plan',
+        subtitle: 'Fast-Track Fluency & Workplace English',
+        priceUsd: 45,
+        priceRwf: 55000,
+        badge: 'Save 10%',
+        features: [
+          'Everything in 1 Month Plan',
+          'Priority teacher feedback on assignments',
+          'Live class cohort participation',
+          'Downloadable lesson resources & PDFs',
+          'Intermediate CEFR Progress Certificate',
+        ],
+      },
+      {
+        id: '3_MONTHS',
+        months: 3,
+        title: '3 Months Plan',
+        subtitle: 'Comprehensive Mastery & Confidence',
+        priceUsd: 60,
+        priceRwf: 75000,
+        badge: 'Most Popular (Save 20%)',
+        isPopular: true,
+        features: [
+          'Everything in 2 Months Plan',
+          '1-on-1 Teacher Coaching session credits',
+          'Full diagnostic placement tests & roadmap',
+          'Unlimited interactive speech activities',
+          'Verified Accredited Certificate of Fluency',
+        ],
+      },
+      {
+        id: '6_MONTHS',
+        months: 6,
+        title: '6 Months Mastery',
+        subtitle: 'Complete Native-Level Fluency Program',
+        priceUsd: 100,
+        priceRwf: 125000,
+        badge: 'Best Value (Save 33%)',
+        features: [
+          'Unlimited platform access for half a year',
+          'All current & upcoming curriculum courses',
+          'Direct mentorship & priority assignment grading',
+          'Official Graduation Diploma with QR Verification',
+        ],
+      },
+    ];
+
+    return {
+      status: (profile as any).subscriptionStatus || 'INACTIVE',
+      plan: (profile as any).subscriptionPlan || null,
+      months: (profile as any).subscriptionMonths || 1,
+      startedAt: (profile as any).subscriptionStartedAt || null,
+      expiresAt: (profile as any).subscriptionExpiresAt || null,
+      isActive: isSubscriptionActive,
+      daysRemaining,
+      availablePlans,
+    };
+  }
+
+  /**
    * Fetch Course with Lessons & Access Verification
    */
   async getCourseLearningView(userId: string, courseId: string) {
@@ -500,8 +623,13 @@ export class StudentRepository {
       throw new AppError('Course not found', 404);
     }
 
+    // Check Platform Subscription Status
+    const hasActiveSubscription =
+      (profile as any).subscriptionStatus === 'ACTIVE' &&
+      (!(profile as any).subscriptionExpiresAt || new Date((profile as any).subscriptionExpiresAt) > new Date());
+
     // Check Enrollment Status
-    const enrollment = await prisma.enrollment.findUnique({
+    let enrollment = await prisma.enrollment.findUnique({
       where: {
         studentId_courseId: {
           studentId: profile.id,
@@ -513,10 +641,28 @@ export class StudentRepository {
       },
     });
 
+    // If active subscriber opens a course without prior enrollment, auto-create active enrollment
+    if (hasActiveSubscription && !enrollment) {
+      enrollment = await prisma.enrollment.create({
+        data: {
+          studentId: profile.id,
+          courseId,
+          status: 'ACTIVE',
+          enrolledAt: new Date(),
+          activatedAt: new Date(),
+          expiresAt: (profile as any).subscriptionExpiresAt,
+        },
+        include: {
+          payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      });
+    }
+
     const isEnrolled = !!enrollment;
     const isAccessActive =
-      enrollment?.status === 'ACTIVE' && (!enrollment.expiresAt || new Date(enrollment.expiresAt) > new Date());
-    const isExpired = Boolean(enrollment?.expiresAt && new Date(enrollment.expiresAt) < new Date());
+      hasActiveSubscription ||
+      (enrollment?.status === 'ACTIVE' && (!enrollment.expiresAt || new Date(enrollment.expiresAt) > new Date()));
+    const isExpired = !hasActiveSubscription && Boolean(enrollment?.expiresAt && new Date(enrollment.expiresAt) < new Date());
 
     // Fetch student progress for this course
     const progressRecords = await prisma.progress.findMany({
@@ -530,8 +676,9 @@ export class StudentRepository {
         isEnrolled,
         isAccessActive,
         isExpired,
-        status: enrollment?.status || 'NOT_ENROLLED',
-        expiresAt: enrollment?.expiresAt || null,
+        hasActiveSubscription,
+        status: isAccessActive ? 'ACTIVE' : enrollment?.status || 'NOT_ENROLLED',
+        expiresAt: (profile as any).subscriptionExpiresAt || enrollment?.expiresAt || null,
         latestPayment: enrollment?.payments[0] || null,
       },
       progressRecords,
@@ -1405,10 +1552,12 @@ export class StudentRepository {
       courseId: input.courseId,
       amount: input.amount,
       currency: input.currency || 'USD',
+      planMonths: input.planMonths || 1,
+      planName: input.planName || 'Platform Subscription Renewal',
       paymentMethod: input.paymentMethod || 'MOBILE_MONEY',
-      transactionRef: input.transactionRef,
+      transactionRef: input.transactionRef || `REN-${Date.now()}`,
       receiptUrl: input.receiptUrl,
-      notes: input.notes || 'Course Renewal Request',
+      notes: input.notes || 'Subscription Renewal Request',
     });
   }
 

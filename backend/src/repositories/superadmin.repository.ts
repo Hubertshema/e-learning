@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { Role, UserStatus, PaymentStatus, EnrollmentStatus, CEFRLevel, Prisma } from '@prisma/client';
+import { Role, UserStatus, PaymentStatus, EnrollmentStatus, CEFRLevel, SubscriptionStatus, Prisma } from '@prisma/client';
 
 export class SuperadminRepository {
   async getOverviewStats() {
@@ -380,25 +380,54 @@ export class SuperadminRepository {
         },
       });
 
-      if (status === PaymentStatus.VERIFIED && payment.enrollmentId) {
-        await tx.enrollment.update({
-          where: { id: payment.enrollmentId },
+      if (status === PaymentStatus.VERIFIED) {
+        const planMonths = payment.planMonths || 1;
+        const durationDays = planMonths * 30;
+        const now = new Date();
+
+        const studentProfile = await tx.studentProfile.findUnique({
+          where: { id: payment.studentId },
+        });
+
+        let baseDate = now;
+        if (studentProfile?.subscriptionExpiresAt && studentProfile.subscriptionExpiresAt > now) {
+          baseDate = new Date(studentProfile.subscriptionExpiresAt);
+        }
+        const expiresAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+        await tx.studentProfile.update({
+          where: { id: payment.studentId },
           data: {
-            status: EnrollmentStatus.ACTIVE,
-            activatedAt: new Date(),
-            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days validity
+            subscriptionStatus: SubscriptionStatus.ACTIVE,
+            subscriptionPlan: payment.planName || `${planMonths} Month Access`,
+            subscriptionMonths: planMonths,
+            subscriptionStartedAt: studentProfile?.subscriptionStartedAt || now,
+            subscriptionExpiresAt: expiresAt,
           },
         });
 
-        await tx.notification.create({
-          data: {
-            userId: payment.student.userId,
-            title: 'Payment Verified & Access Granted! 🚀',
-            message: `Your payment of ${payment.currency} ${payment.amount} was verified by administration. Course access is now active.`,
-            type: 'PAYMENT_VERIFIED',
-            link: '/student/my-courses',
-          },
-        });
+        if (payment.enrollmentId) {
+          await tx.enrollment.update({
+            where: { id: payment.enrollmentId },
+            data: {
+              status: EnrollmentStatus.ACTIVE,
+              activatedAt: now,
+              expiresAt,
+            },
+          });
+        }
+
+        if (payment.student?.userId) {
+          await tx.notification.create({
+            data: {
+              userId: payment.student.userId,
+              title: 'Subscription Verified & Activated! 🚀',
+              message: `Your payment for ${payment.planName || `${planMonths} Month Access`} (${payment.currency} ${payment.amount}) was verified. Full platform access is unlocked until ${expiresAt.toLocaleDateString()}.`,
+              type: 'PAYMENT_VERIFIED',
+              link: '/student/courses',
+            },
+          });
+        }
       }
 
       return payment;

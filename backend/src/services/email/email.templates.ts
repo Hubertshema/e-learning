@@ -425,6 +425,43 @@ export class EmailTemplateRegistry {
         };
       }
 
+      // 17. Cohort Enrollment Notification (teacher-enrolled student)
+      case 'CohortEnrollmentEmail': {
+        const { studentName = 'Student', cohortName = 'Class Cohort', teacherName = 'Your Teacher',
+          schedule = '', startDate = '', endDate = '', courses = [] as string[] } = data;
+        const courseList = Array.isArray(courses) && courses.length > 0
+          ? `<ul style="margin: 8px 0; padding-left: 20px; color: #334155;">${courses.map((c: string) => `<li style="margin-bottom:4px;">${c}</li>`).join('')}</ul>`
+          : '<p style="color:#64748b; margin:4px 0;">Courses to be announced by your teacher.</p>';
+        return {
+          subject: `🎓 You've been enrolled in ${cohortName} — FluentEdge Academy`,
+          html: wrapEmailLayout(
+            `Enrolled: ${cohortName}`,
+            `
+            <span class="badge">Cohort Enrollment</span>
+            <h2 style="margin-top:0; color:#0f172a;">Welcome to <span style="color:#315b36;">${cohortName}</span>!</h2>
+            <p>Hi <strong>${studentName}</strong>,</p>
+            <p>Great news! <strong>${teacherName}</strong> has enrolled you in a class cohort. Your access is now <strong>active</strong> — no payment required.</p>
+
+            <div class="info-box">
+              <p style="margin:0 0 10px; font-weight:700; color:#0f172a;">📋 Cohort Details</p>
+              ${schedule ? `<p style="margin:4px 0;">🗓️ <strong>Schedule:</strong> ${schedule}</p>` : ''}
+              ${startDate ? `<p style="margin:4px 0;">🚀 <strong>Starts:</strong> ${startDate}</p>` : ''}
+              ${endDate ? `<p style="margin:4px 0;">🏁 <strong>Ends:</strong> ${endDate}</p>` : ''}
+            </div>
+
+            <p style="margin-top:18px; font-weight:700; color:#0f172a;">📚 Courses in this Cohort:</p>
+            ${courseList}
+
+            <p style="margin-top:18px; color:#64748b; font-size:13px;">
+              Log in to your student dashboard to see your schedule, access course materials, and track your progress.
+            </p>
+            `,
+            { text: 'Go to My Dashboard', url: `${BASE_FRONTEND_URL}/student/classes` }
+          ),
+          text: `Hi ${studentName},\n\nYou've been enrolled in ${cohortName} by ${teacherName}.\n\nSchedule: ${schedule}\nStarts: ${startDate}\nEnds: ${endDate}\n\nLog in to your dashboard: ${BASE_FRONTEND_URL}/student/classes`,
+        };
+      }
+
       // Default Generic Fallback
       default: {
         const title = data.title || 'Notification from FluentEdge Academy';
@@ -438,3 +475,4 @@ export class EmailTemplateRegistry {
     }
   }
 }
+

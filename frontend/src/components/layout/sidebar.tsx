@@ -108,17 +108,20 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
 
   const studentMainMenu: NavItem[] = [
     { name: 'Dashboard', href: '/student', icon: LayoutDashboard },
-    { name: 'My Courses', href: '/student/my-courses', icon: BookOpen },
-    { name: 'Assignment', href: '/student/assignments', icon: ClipboardList },
+    { name: 'Subscription & Plans', href: '/student/subscription', icon: Sparkles },
+    { name: 'Courses Catalog', href: '/student/courses', icon: BookOpen },
+    { name: 'My Learning', href: '/student/my-courses', icon: GraduationCap },
+    { name: 'Assignments', href: '/student/assignments', icon: ClipboardList },
     { name: 'Progress', href: '/student/progress', icon: TrendingUp },
     { name: 'Calendar', href: '/student/calendar', icon: Calendar },
   ];
 
   const studentOtherMenu: NavItem[] = [
+    { name: 'Billing & Payments', href: '/student/payments', icon: CreditCard },
     { name: 'Quizzes & Tests', href: '/student/quizzes', icon: CheckCircle2 },
     { name: 'Placement Test', href: '/student/placement-test', icon: GraduationCap },
     { name: 'Certificates', href: '/student/certificates', icon: FileCheck },
-    { name: 'Help Center', href: '/student/feedback', icon: MessageSquare },
+    { name: 'Help & Feedback', href: '/student/feedback', icon: MessageSquare },
     { name: 'Settings', href: '/student/settings', icon: Settings },
   ];
 

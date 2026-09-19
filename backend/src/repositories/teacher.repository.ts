@@ -8,6 +8,7 @@ import {
   AttendanceStatus,
   CEFRLevel,
   SkillType,
+  SubscriptionStatus,
   Prisma,
 } from '@prisma/client';
 import {
@@ -25,6 +26,7 @@ import {
   AttendanceFilterInput,
 } from '../validators/teacher.validator.js';
 import { AppError } from '../middleware/error.middleware.js';
+import { emailService } from '../services/email.service.js';
 
 export class TeacherRepository {
   async getOrCreateTeacherProfile(userId: string) {
@@ -354,6 +356,11 @@ export class TeacherRepository {
       orderBy: { createdAt: 'desc' },
       include: {
         course: { select: { id: true, title: true, level: true } },
+        courses: {
+          include: {
+            course: { select: { id: true, title: true, level: true, durationDays: true } },
+          },
+        },
         enrollments: {
           include: {
             student: {
@@ -371,6 +378,11 @@ export class TeacherRepository {
       where: { id: classId },
       include: {
         course: { select: { id: true, title: true, level: true } },
+        courses: {
+          include: {
+            course: { select: { id: true, title: true, level: true, durationDays: true } },
+          },
+        },
         enrollments: {
           include: {
             student: {
@@ -397,136 +409,444 @@ export class TeacherRepository {
     return `NS${yy}${fallbackNum}`;
   }
 
+  async getAvailableStudents(userId: string) {
+    const students = await prisma.user.findMany({
+      where: { role: Role.STUDENT },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        studentProfile: {
+          select: {
+            id: true,
+            currentLevel: true,
+            subscriptionStatus: true,
+            subscriptionExpiresAt: true,
+          },
+        },
+      },
+    });
+
+    return students.map((s) => ({
+      id: s.id,
+      studentProfileId: s.studentProfile?.id || s.id,
+      firstName: s.firstName,
+      lastName: s.lastName,
+      email: s.email,
+      currentLevel: s.studentProfile?.currentLevel || 'PRE_A1',
+      subscriptionStatus: s.studentProfile?.subscriptionStatus || 'INACTIVE',
+      subscriptionExpiresAt: s.studentProfile?.subscriptionExpiresAt?.toISOString() || null,
+    }));
+  }
+
   async createClass(userId: string, data: CreateClassInput) {
     const profile = await this.getOrCreateTeacherProfile(userId);
     const code = await this.generateUniqueClassCode();
 
-    return prisma.class.create({
+    const courseIds: string[] = (data as any).courseIds && Array.isArray((data as any).courseIds) && (data as any).courseIds.length > 0
+      ? (data as any).courseIds
+      : data.courseId ? [data.courseId] : [];
+
+    const primaryCourseId = courseIds[0] || data.courseId || undefined;
+
+    const newClass = await prisma.class.create({
       data: {
         teacherId: profile.id,
-        courseId: data.courseId,
+        courseId: primaryCourseId,
         name: data.name,
         code,
         description: (data as any).schedule || data.description,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
         maxStudents: (data as any).capacity || data.maxStudents || 30,
+        ...(courseIds.length > 0 && {
+          courses: {
+            create: courseIds.map((cid: string) => ({
+              courseId: cid,
+            })),
+          },
+        }),
       },
-      include: { course: true },
+      include: {
+        course: true,
+        courses: { include: { course: true } },
+      },
     });
+
+    // If studentIds were selected during creation, enroll them automatically
+    const studentIds: string[] = (data as any).studentIds && Array.isArray((data as any).studentIds)
+      ? (data as any).studentIds
+      : [];
+
+    if (studentIds.length > 0) {
+      for (const sId of studentIds) {
+        try {
+          await this.enrollStudentInClass(userId, newClass.id, { studentId: sId });
+        } catch (err) {
+          console.warn(`Failed to auto-enroll student ${sId} into new cohort:`, err);
+        }
+      }
+    }
+
+    return this.getClassDetails(newClass.id);
   }
 
-  async enrollStudentInClass(userId: string, classId: string, data: { studentEmail?: string; studentId?: string }) {
+  async updateCohortCourses(userId: string, classId: string, courseIds: string[]) {
+    const profile = await this.getOrCreateTeacherProfile(userId);
+    const classItem = await prisma.class.findFirst({
+      where: { id: classId, teacherId: profile.id },
+    });
+    if (!classItem) throw new AppError('Cohort not found or access denied', 404);
+
+    // Replace all linked courses in a transaction
+    await prisma.$transaction([
+      // Remove all existing ClassCourse links for this cohort
+      prisma.classCourse.deleteMany({ where: { classId } }),
+      // Re-create with new set
+      ...(courseIds.length > 0
+        ? courseIds.map((cid) =>
+            prisma.classCourse.create({ data: { classId, courseId: cid } })
+          )
+        : []),
+      // Also update the primary courseId on the class row
+      prisma.class.update({
+        where: { id: classId },
+        data: { courseId: courseIds[0] || null },
+      }),
+    ]);
+
+    return this.getClassDetails(classId);
+  }
+
+  async updateClass(userId: string, classId: string, data: any) {
+    const profile = await this.getOrCreateTeacherProfile(userId);
+    const classItem = await prisma.class.findFirst({
+      where: { id: classId, teacherId: profile.id },
+    });
+    if (!classItem) throw new AppError('Cohort not found or access denied', 404);
+
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.code !== undefined) updateData.code = data.code.trim();
+    if (data.schedule !== undefined || data.description !== undefined) {
+      updateData.description = data.schedule || data.description;
+    }
+    if (data.capacity !== undefined || data.maxStudents !== undefined) {
+      updateData.maxStudents = Number(data.capacity) || Number(data.maxStudents) || 30;
+    }
+    if (data.startDate !== undefined) {
+      updateData.startDate = data.startDate ? new Date(data.startDate) : null;
+    }
+    if (data.endDate !== undefined) {
+      updateData.endDate = data.endDate ? new Date(data.endDate) : null;
+    }
+    if (data.meetingLink !== undefined) {
+      updateData.meetingLink = data.meetingLink;
+    }
+    if (data.isActive !== undefined) {
+      updateData.isActive = Boolean(data.isActive);
+    }
+
+    const courseIds: string[] | undefined = Array.isArray(data.courseIds)
+      ? data.courseIds
+      : data.courseId
+      ? [data.courseId]
+      : undefined;
+
+    if (courseIds !== undefined) {
+      updateData.courseId = courseIds[0] || null;
+    }
+
+    await prisma.class.update({
+      where: { id: classId },
+      data: updateData,
+    });
+
+    if (courseIds !== undefined) {
+      await prisma.$transaction([
+        prisma.classCourse.deleteMany({ where: { classId } }),
+        ...(courseIds.length > 0
+          ? courseIds.map((cid: string) =>
+              prisma.classCourse.create({ data: { classId, courseId: cid } })
+            )
+          : []),
+      ]);
+    }
+
+    return this.getClassDetails(classId);
+  }
+
+  async deleteClass(userId: string, classId: string) {
+    const profile = await this.getOrCreateTeacherProfile(userId);
+    const classItem = await prisma.class.findFirst({
+      where: { id: classId, teacherId: profile.id },
+    });
+    if (!classItem) throw new AppError('Cohort not found or access denied', 404);
+
+    // Detach enrollments from this cohort
+    await prisma.enrollment.updateMany({
+      where: { classId },
+      data: { classId: null },
+    });
+
+    // Delete the cohort (ClassCourse & Attendance cascade delete)
+    await prisma.class.delete({
+      where: { id: classId },
+    });
+
+    return { success: true, message: `Cohort "${classItem.name}" deleted successfully` };
+  }
+
+  async removeStudentFromClass(userId: string, classId: string, studentId: string) {
+    const profile = await this.getOrCreateTeacherProfile(userId);
+    const classItem = await prisma.class.findFirst({
+      where: { id: classId, teacherId: profile.id },
+    });
+    if (!classItem) throw new AppError('Cohort not found or access denied', 404);
+
+    const studentProfile = await prisma.studentProfile.findFirst({
+      where: { OR: [{ id: studentId }, { userId: studentId }] },
+    });
+    if (!studentProfile) throw new AppError('Student not found', 404);
+
+    const updated = await prisma.enrollment.updateMany({
+      where: { classId, studentId: studentProfile.id },
+      data: { classId: null },
+    });
+
+    return {
+      success: true,
+      message: 'Student removed from cohort successfully',
+      count: updated.count,
+    };
+  }
+
+  async enrollStudentInClass(userId: string, classId: string, data: { studentEmail?: string; studentId?: string; studentIds?: string[]; courseIds?: string[] }) {
     const profile = await this.getOrCreateTeacherProfile(userId);
     const classItem = await prisma.class.findUnique({
       where: { id: classId },
-      include: { course: true },
+      include: {
+        course: true,
+        courses: { include: { course: true } },
+      },
     });
 
     if (!classItem) {
       throw new AppError('Class cohort not found', 404);
     }
 
-    let studentProfile: any;
-    if (data.studentId) {
-      studentProfile = await prisma.studentProfile.findUnique({
-        where: { id: data.studentId },
-        include: { user: true },
-      });
+    // Determine target students
+    const targetStudentIds: string[] = [];
+    if (data.studentIds && Array.isArray(data.studentIds) && data.studentIds.length > 0) {
+      targetStudentIds.push(...data.studentIds);
+    } else if (data.studentId) {
+      targetStudentIds.push(data.studentId);
     } else if (data.studentEmail) {
       const email = data.studentEmail.trim().toLowerCase();
       const user = await prisma.user.findUnique({
         where: { email },
         include: { studentProfile: true },
       });
-
       if (!user) {
         throw new AppError(`No registered student account found with email: ${data.studentEmail}`, 404);
       }
-
-      if (!user.studentProfile) {
+      let studentProfile = user.studentProfile;
+      if (!studentProfile) {
         studentProfile = await prisma.studentProfile.create({
           data: { userId: user.id },
-          include: { user: true },
         });
-      } else {
-        studentProfile = { ...user.studentProfile, user };
       }
+      targetStudentIds.push(studentProfile.id);
     }
 
-    if (!studentProfile) {
-      throw new AppError('Please provide a valid student email or student ID', 400);
+    if (targetStudentIds.length === 0) {
+      throw new AppError('Please select at least one student to enroll', 400);
     }
 
-    const durationDays = classItem.course?.durationDays || 90;
+    // Determine target courses for this cohort
+    const coursesToEnroll: Array<{ id: string; title: string; durationDays?: number }> = [];
+    if (classItem.courses && classItem.courses.length > 0) {
+      coursesToEnroll.push(...classItem.courses.map((cc) => cc.course));
+    } else if (classItem.course) {
+      coursesToEnroll.push(classItem.course);
+    }
+
+    const durationDays = 90;
     const activatedAt = new Date();
     const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
 
-    // Upsert active enrollment record
-    const enrollment = await prisma.enrollment.upsert({
-      where: {
-        studentId_courseId: {
-          studentId: studentProfile.id,
-          courseId: classItem.courseId,
-        },
-      },
-      create: {
-        studentId: studentProfile.id,
-        courseId: classItem.courseId,
-        classId: classItem.id,
-        status: 'ACTIVE',
-        enrolledAt: new Date(),
-        activatedAt,
-        expiresAt,
-      },
-      update: {
-        classId: classItem.id,
-        status: 'ACTIVE',
-        activatedAt,
-        expiresAt,
-      },
-      include: {
-        student: {
-          include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
-        },
-        course: { select: { id: true, title: true, level: true } },
-        class: true,
-      },
-    });
+    const enrollments = [];
 
-    // Create a verified payment record so student is counted as paid
-    await prisma.payment.create({
-      data: {
-        enrollmentId: enrollment.id,
-        studentId: studentProfile.id,
-        teacherId: profile.id,
-        amount: classItem.course?.price || 0,
-        currency: classItem.course?.currency || 'USD',
-        status: PaymentStatus.VERIFIED,
-        paymentMethod: 'DIRECT_ENROLLMENT',
-        notes: `Enrolled directly by instructor into cohort: ${classItem.name}`,
-        verifiedAt: new Date(),
-      },
-    });
+    for (const sid of targetStudentIds) {
+      let studentProfile = await prisma.studentProfile.findFirst({
+        where: {
+          OR: [{ id: sid }, { userId: sid }],
+        },
+        include: { user: true },
+      });
 
-    // Send notification to student
-    if (studentProfile.userId) {
-      try {
-        await prisma.notification.create({
-          data: {
-            userId: studentProfile.userId,
-            title: `Enrolled in ${classItem.course?.title || 'Class Cohort'}`,
-            message: `You have been enrolled into ${classItem.name}. Your active course access is now ready!`,
-            type: 'ENROLLMENT_CONFIRMED',
-            link: '/student/dashboard',
+      if (!studentProfile) {
+        const user = await prisma.user.findUnique({
+          where: { id: sid },
+          include: { studentProfile: true },
+        });
+        if (user) {
+          if (user.studentProfile) {
+            studentProfile = await prisma.studentProfile.findUnique({
+              where: { id: user.studentProfile.id },
+              include: { user: true },
+            });
+          } else {
+            studentProfile = await prisma.studentProfile.create({
+              data: { userId: user.id },
+              include: { user: true },
+            });
+          }
+        }
+      }
+
+      if (!studentProfile) continue;
+
+      // Update student subscription to ACTIVE
+      await prisma.studentProfile.update({
+        where: { id: studentProfile.id },
+        data: {
+          subscriptionStatus: SubscriptionStatus.ACTIVE,
+          subscriptionPlan: `Cohort Access: ${classItem.name}`,
+          subscriptionMonths: 3,
+          subscriptionStartedAt: studentProfile.subscriptionStartedAt || activatedAt,
+          subscriptionExpiresAt: expiresAt,
+        },
+      });
+
+      // Enroll in all cohort courses
+      if (coursesToEnroll.length > 0) {
+        for (const course of coursesToEnroll) {
+          const enr = await prisma.enrollment.upsert({
+            where: {
+              studentId_courseId: {
+                studentId: studentProfile.id,
+                courseId: course.id,
+              },
+            },
+            create: {
+              studentId: studentProfile.id,
+              courseId: course.id,
+              classId: classItem.id,
+              status: 'ACTIVE',
+              enrolledAt: new Date(),
+              activatedAt,
+              expiresAt,
+            },
+            update: {
+              classId: classItem.id,
+              status: 'ACTIVE',
+              activatedAt,
+              expiresAt,
+            },
+          });
+          enrollments.push(enr);
+        }
+      } else if (classItem.courseId) {
+        const enr = await prisma.enrollment.upsert({
+          where: {
+            studentId_courseId: {
+              studentId: studentProfile.id,
+              courseId: classItem.courseId,
+            },
+          },
+          create: {
+            studentId: studentProfile.id,
+            courseId: classItem.courseId,
+            classId: classItem.id,
+            status: 'ACTIVE',
+            enrolledAt: new Date(),
+            activatedAt,
+            expiresAt,
+          },
+          update: {
+            classId: classItem.id,
+            status: 'ACTIVE',
+            activatedAt,
+            expiresAt,
           },
         });
-      } catch (err) {
-        console.warn('Failed to send enrollment notification:', err);
+        enrollments.push(enr);
+      }
+
+      // Create verified direct payment record
+      await prisma.payment.create({
+        data: {
+          studentId: studentProfile.id,
+          teacherId: profile.id,
+          amount: 0,
+          currency: 'USD',
+          status: PaymentStatus.VERIFIED,
+          paymentMethod: 'DIRECT_ENROLLMENT',
+          planName: `Cohort: ${classItem.name}`,
+          planMonths: 3,
+          notes: `Enrolled directly by instructor into cohort: ${classItem.name}`,
+          verifiedAt: activatedAt,
+        },
+      });
+
+      // Notify student (in-app + email)
+      if (studentProfile.userId) {
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: studentProfile.userId,
+              title: `Enrolled in Cohort: ${classItem.name} 🎓`,
+              message: `You have been added to ${classItem.name}. All courses, lessons, and live sessions are unlocked!`,
+              type: 'ENROLLMENT_CONFIRMED',
+              link: '/student/courses',
+            },
+          });
+        } catch (err) {
+          console.warn('Failed to send enrollment notification:', err);
+        }
+
+        // Send enrollment email (fire-and-forget — never blocks enrollment)
+        try {
+          const studentUser = (studentProfile as any).user;
+          const teacherUser = profile.user;
+          const studentEmail = studentUser?.email;
+          const studentFullName = studentUser ? `${studentUser.firstName} ${studentUser.lastName}` : 'Student';
+          const teacherFullName = teacherUser ? `${teacherUser.firstName} ${teacherUser.lastName}` : 'Your Teacher';
+          const cohortCourses = coursesToEnroll.map((c) => c.title);
+          const startDateStr = classItem.startDate
+            ? classItem.startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+          const endDateStr = classItem.endDate
+            ? classItem.endDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+
+          if (studentEmail) {
+            emailService.sendCohortEnrollmentEmail({
+              to: studentEmail,
+              studentName: studentFullName,
+              cohortName: classItem.name,
+              teacherName: teacherFullName,
+              schedule: classItem.description || '',
+              startDate: startDateStr,
+              endDate: endDateStr,
+              courses: cohortCourses,
+              userId: studentProfile.userId,
+            }).catch(err => console.warn('[EMAIL] Cohort enrollment email failed (non-blocking):', err));
+          }
+        } catch (err) {
+          console.warn('[EMAIL] Failed to prepare enrollment email:', err);
+        }
       }
     }
 
-    return enrollment;
+    return {
+      success: true,
+      enrolledCount: targetStudentIds.length,
+      enrollments,
+    };
   }
 
   // ----------------------------------------------------
@@ -604,9 +924,14 @@ export class TeacherRepository {
     }
 
     const activatedAt = new Date();
-    const durationDays = payment.enrollment?.course?.durationDays || 90;
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + durationDays);
+    const planMonths = payment.planMonths || 1;
+    const durationDays = planMonths * 30;
+
+    let baseDate = activatedAt;
+    if (payment.student?.subscriptionExpiresAt && payment.student.subscriptionExpiresAt > activatedAt) {
+      baseDate = new Date(payment.student.subscriptionExpiresAt);
+    }
+    const expiresAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
     const updatedPayment = await prisma.payment.update({
       where: { id: paymentId },
@@ -616,6 +941,19 @@ export class TeacherRepository {
         notes: notes || payment.notes,
       },
     });
+
+    if (payment.studentId) {
+      await prisma.studentProfile.update({
+        where: { id: payment.studentId },
+        data: {
+          subscriptionStatus: SubscriptionStatus.ACTIVE,
+          subscriptionPlan: payment.planName || `${planMonths} Month Access`,
+          subscriptionMonths: planMonths,
+          subscriptionStartedAt: payment.student?.subscriptionStartedAt || activatedAt,
+          subscriptionExpiresAt: expiresAt,
+        },
+      });
+    }
 
     let updatedEnrollment = null;
     if (payment.enrollmentId) {
@@ -633,17 +971,17 @@ export class TeacherRepository {
       }
     }
 
-    const courseTitle = payment.enrollment?.course?.title || 'Language Course';
+    const planTitle = payment.planName || `${planMonths} Month Platform Access`;
 
     if (payment.student?.userId) {
       try {
         await prisma.notification.create({
           data: {
             userId: payment.student.userId,
-            title: 'Course Access Activated! 🎓',
-            message: `Your payment for "${courseTitle}" was verified. Full curriculum is unlocked until ${expiresAt.toLocaleDateString()}.`,
+            title: 'Learning Subscription Activated! 🎓',
+            message: `Your payment for "${planTitle}" was verified by your instructor. Platform access is unlocked until ${expiresAt.toLocaleDateString()}.`,
             type: 'PAYMENT_VERIFIED',
-            link: payment.enrollment?.courseId ? `/student/courses/${payment.enrollment.courseId}` : '/student/courses',
+            link: '/student/courses',
           },
         });
       } catch (notifErr) {
@@ -1523,7 +1861,7 @@ export class TeacherRepository {
           title: `Cohort Session: ${c.name}`,
           type: 'CLASS',
           date: c.startDate.toISOString(),
-          courseTitle: c.course.title,
+          courseTitle: c.course?.title || 'Cohort',
         });
       }
     });
