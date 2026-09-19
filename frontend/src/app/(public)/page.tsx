@@ -198,12 +198,6 @@ export default function HomePage() {
             
             {/* LEFT COLUMN: HERO HEADLINE & CALL TO ACTIONS */}
             <div className="lg:col-span-6 space-y-6 sm:space-y-7 text-left">
-              {/* Pill Subheading */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-bold text-sky-700 dark:border-sky-900 dark:bg-sky-950/60 dark:text-sky-300 shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 text-sky-500" />
-                <span>ACCORDANCE WITH CEFR PRE-A1 TO C2</span>
-              </div>
-
               {/* Main Headline styled exactly as reference */}
               <div className="space-y-1">
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-sky-500 leading-none">
