@@ -1,4 +1,23 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+export function getApiBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+  if (typeof window !== 'undefined') {
+    const currentHost = window.location.hostname;
+    if (currentHost && currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+      try {
+        const parsed = new URL(envUrl);
+        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+          parsed.hostname = currentHost;
+          return parsed.toString().replace(/\/$/, '');
+        }
+      } catch {
+        // fallback to envUrl
+      }
+    }
+  }
+  return envUrl;
+}
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export interface ApiOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -55,7 +74,8 @@ function addRefreshSubscriber(callback: (token: string) => void) {
 export async function apiClient<T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const { requiresAuth = true, headers = {}, ...restOptions } = options;
 
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const baseUrl = getApiBaseUrl();
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -87,7 +107,7 @@ export async function apiClient<T = unknown>(endpoint: string, options: ApiOptio
       isRefreshing = true;
 
       try {
-        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+        const refreshResponse = await fetch(`${getApiBaseUrl()}/auth/refresh-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken }),

@@ -116,8 +116,9 @@ export default function TeacherCoursesPage() {
 
   // Filtered List
   const filteredCourses = courses.filter((c) => {
-    if (statusFilter === 'PUBLISHED' && !c.published) return false;
-    if (statusFilter === 'DRAFT' && c.published) return false;
+    const isPub = c.published ?? (c as any).isPublished ?? false;
+    if (statusFilter === 'PUBLISHED' && !isPub) return false;
+    if (statusFilter === 'DRAFT' && isPub) return false;
     if (selectedLevel !== 'ALL' && c.level !== selectedLevel) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -131,9 +132,9 @@ export default function TeacherCoursesPage() {
 
   // KPI Calculations
   const totalCourses = courses.length;
-  const publishedCourses = courses.filter((c) => c.published).length;
-  const totalUnits = courses.reduce((acc, c) => acc + (c.units?.length || c._count?.units || 0), 0);
-  const totalEnrollments = courses.reduce((acc, c) => acc + (c._count?.enrollments || 0), 0);
+  const publishedCourses = courses.filter((c) => c.published ?? (c as any).isPublished).length;
+  const totalUnits = courses.reduce((acc, c) => acc + (c.units?.length || c._count?.units || (c as any).unitCount || 0), 0);
+  const totalEnrollments = courses.reduce((acc, c) => acc + (c._count?.enrollments || (c as any).enrollmentCount || 0), 0);
 
   // Handlers
   const handleOpenCreateModal = () => {
@@ -451,8 +452,9 @@ export default function TeacherCoursesPage() {
         /* GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((c) => {
-            const unitCount = c.units?.length ?? c._count?.units ?? 0;
-            const lessonCount = c.units?.reduce((acc, u) => acc + (u.lessons?.length || 0), 0) || 0;
+            const unitCount = c.units?.length ?? c._count?.units ?? (c as any).unitCount ?? 0;
+            const lessonCount = c.units?.reduce((acc, u) => acc + (u.lessons?.length || 0), 0) || (c as any).lessonCount || 0;
+            const isPub = c.published ?? (c as any).isPublished ?? false;
             const isPublishLoading = actionLoadingId === c.id;
 
             return (
@@ -469,8 +471,8 @@ export default function TeacherCoursesPage() {
                     </Badge>
 
                     <div className="flex items-center gap-1.5">
-                      <Badge variant={c.published ? 'success' : 'warning'} className="text-[11px] font-bold">
-                        {c.published ? 'Published' : 'Draft'}
+                      <Badge variant={isPub ? 'success' : 'warning'} className="text-[11px] font-bold">
+                        {isPub ? 'Published' : 'Draft'}
                       </Badge>
                     </div>
                   </div>
@@ -590,12 +592,12 @@ export default function TeacherCoursesPage() {
                     </td>
 
                     <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
-                      <strong>{c.units?.length || c._count?.units || 0}</strong> Units
+                      <strong>{c.units?.length || c._count?.units || (c as any).unitCount || 0}</strong> Units
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <Badge variant={c.published ? 'success' : 'warning'}>
-                        {c.published ? 'Published' : 'Draft'}
+                      <Badge variant={(c.published ?? (c as any).isPublished) ? 'success' : 'warning'}>
+                        {(c.published ?? (c as any).isPublished) ? 'Published' : 'Draft'}
                       </Badge>
                     </td>
 
