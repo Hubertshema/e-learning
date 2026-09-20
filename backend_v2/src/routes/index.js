@@ -6,6 +6,8 @@ import classRoutes from './class.routes.js';
 import notificationRoutes from './notification.routes.js';
 import teacherRoutes from './teacher.routes.js';
 import aiRoutes from './ai.routes.js';
+import publicRoutes from './public.routes.js';
+import studentRoutes from './student.routes.js';
 import { HealthController } from '../controllers/health.controller.js';
 import { sendSuccess } from '../utils/response.util.js';
 
@@ -34,5 +36,7 @@ router.use('/classes', classRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/teacher', teacherRoutes);
 router.use('/ai', aiRoutes);
+router.use('/public', publicRoutes);
+router.use('/student', studentRoutes);
 
 export default router;
