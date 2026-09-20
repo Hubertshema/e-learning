@@ -55,6 +55,20 @@ export default function SuperadminPaymentsPage() {
     fetchPayments();
   }, []);
 
+  const handleSeedDemo = async () => {
+    setActionLoading(true);
+    setMessage(null);
+    try {
+      await apiClient.post('/superadmin/seed');
+      setMessage({ type: 'success', text: 'Seeded comprehensive demo student payments, enrollments, and tuition records!' });
+      await fetchPayments();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to seed demo data' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleVerify = async (payment: any) => {
     setActionLoading(true);
     setMessage(null);
@@ -139,8 +153,14 @@ export default function SuperadminPaymentsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={handleSeedDemo} disabled={actionLoading}>
+            Seed Demo Data
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchPayments} disabled={loading}>
+            Refresh Ledger
+          </Button>
           <Card className="p-3 px-4 bg-[#132519] border border-[#3B6748]/30 text-white">
-            <span className="text-[10px] uppercase font-bold text-indigo-200">Verified Platform Volume</span>
+            <span className="text-[10px] uppercase font-bold text-emerald-200">Verified Platform Volume</span>
             <p className="text-xl font-black">{formatPrice(totalVolume)}</p>
           </Card>
         </div>

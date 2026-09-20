@@ -108,6 +108,22 @@ export default function SuperadminDashboardPage() {
     }
   };
 
+  const handleSeedData = async () => {
+    try {
+      setActionLoading('seed');
+      setActionMessage(null);
+      await apiClient.post('/superadmin/seed');
+      setActionMessage({ type: 'success', text: 'Comprehensive Super Admin test data seeded successfully!' });
+      clientCache.invalidate('superadmin_');
+      refreshOverview();
+      refreshTeachers();
+    } catch (err: any) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to seed test data.' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const filteredAuditLogs = (stats?.recentAuditLogs || []).filter((log) => {
     if (auditFilter === 'ALL') return true;
     return log.action?.toUpperCase().includes(auditFilter) || log.entity?.toUpperCase().includes(auditFilter);
@@ -126,7 +142,7 @@ export default function SuperadminDashboardPage() {
       href: '/superadmin/students',
     },
     {
-      label: 'Vetted Teachers',
+      label: 'Certified Teachers',
       value: stats?.teachers?.approved ?? 0,
       total: stats?.teachers?.total ?? 0,
       sub: `${stats?.teachers?.pending ?? 0} Pending Approvals`,
@@ -198,8 +214,20 @@ export default function SuperadminDashboardPage() {
               }}
               disabled={statsValidating}
               className="border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 backdrop-blur-md"
+              title="Refresh Live Metrics"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${statsValidating ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedData}
+              disabled={actionLoading === 'seed'}
+              className="border-emerald-700/60 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 backdrop-blur-md"
+              title="Seed Comprehensive Test Data"
+            >
+              <Database className={`mr-1.5 h-3.5 w-3.5 ${actionLoading === 'seed' ? 'animate-pulse' : ''}`} />
+              {actionLoading === 'seed' ? 'Seeding...' : 'Seed Demo Data'}
             </Button>
             <Link href="/superadmin/announcements">
               <Button variant="outline" size="sm" className="border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 backdrop-blur-md">

@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { connectDatabase, pool } from './config/database.js';
 import { initSocket } from './config/socket.js';
 import { setupSockets } from './sockets/index.js';
+import { runComprehensiveSeed } from './seeds/comprehensive_seeder.js';
 
 function getLocalIpAddress() {
   const interfaces = os.networkInterfaces();
@@ -21,6 +22,13 @@ function getLocalIpAddress() {
 async function startServer() {
   // 1. Connect to PostgreSQL
   await connectDatabase();
+
+  // 1.1 Run Comprehensive Super Admin Seeder
+  try {
+    await runComprehensiveSeed();
+  } catch (seedErr) {
+    console.warn('⚠️ Seeding warning (non-fatal):', seedErr.message);
+  }
 
   // 2. Create Express app
   const app = createApp();

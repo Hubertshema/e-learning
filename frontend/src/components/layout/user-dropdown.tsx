@@ -12,6 +12,9 @@ import {
   GraduationCap,
   Sparkles,
   Bell,
+  UserCheck,
+  ShieldAlert,
+  Mail,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -138,35 +141,77 @@ export function UserDropdown() {
 
           {/* Navigation Items */}
           <div className="space-y-0.5 py-1">
-            {/* Profile Link */}
-            <Link
-              href={profileHref}
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-            >
-              <User className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-              <span>Profile Details</span>
-            </Link>
+            {user.role === 'SUPERADMIN' ? (
+              <>
+                <Link
+                  href="/superadmin/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
+                >
+                  <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Executive Profile</span>
+                </Link>
 
-            {/* Notifications Link */}
-            <Link
-              href={notificationsHref}
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-            >
-              <Bell className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-              <span>Notifications & Alerts</span>
-            </Link>
+                <Link
+                  href="/superadmin/settings"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
+                >
+                  <Settings className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                  <span>Platform Settings</span>
+                </Link>
 
-            {/* Settings Link */}
-            <Link
-              href={settingsHref}
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-            >
-              <Settings className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-              <span>Account Settings</span>
-            </Link>
+                <Link
+                  href="/superadmin/audit-logs"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
+                >
+                  <ShieldAlert className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                  <span>Security Audit Logs</span>
+                </Link>
+
+                <Link
+                  href="/superadmin/email-logs"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
+                >
+                  <Mail className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+                  <span>Email Dispatch Logs</span>
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* Profile Link */}
+                <Link
+                  href={profileHref}
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
+                >
+                  <User className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                  <span>Profile Details</span>
+                </Link>
+
+                {/* Notifications Link */}
+                <Link
+                  href={notificationsHref}
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
+                >
+                  <Bell className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                  <span>Notifications & Alerts</span>
+                </Link>
+
+                {/* Settings Link */}
+                <Link
+                  href={settingsHref}
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
+                >
+                  <Settings className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                  <span>Account Settings</span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Separator */}
