@@ -147,7 +147,7 @@ export default function TeacherQuizAnalyticsPage() {
         </CardHeader>
 
         <CardContent>
-          {data.recentAttempts.length === 0 ? (
+          {(!data.recentAttempts || data.recentAttempts.length === 0) ? (
             <p className="text-xs text-slate-500 py-6 text-center">
               No students have taken this quiz yet.
             </p>
@@ -167,8 +167,8 @@ export default function TeacherQuizAnalyticsPage() {
                   {data.recentAttempts.map((attempt) => (
                     <tr key={attempt.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
                       <td className="p-3 font-medium text-slate-900 dark:text-white">
-                        {attempt.student.user.firstName} {attempt.student.user.lastName}
-                        <span className="block text-[10px] text-slate-400">{attempt.student.user.email}</span>
+                        {attempt.student?.user?.firstName || 'Student'} {attempt.student?.user?.lastName || ''}
+                        <span className="block text-[10px] text-slate-400">{attempt.student?.user?.email || ''}</span>
                       </td>
                       <td className="p-3 font-bold text-slate-800 dark:text-slate-200">
                         {attempt.scorePercentage}%
@@ -179,10 +179,10 @@ export default function TeacherQuizAnalyticsPage() {
                         </Badge>
                       </td>
                       <td className="p-3 text-slate-500">
-                        {Math.round(attempt.timeSpentSec / 60)} mins
+                        {Math.round((attempt.timeSpentSec || 0) / 60)} mins
                       </td>
                       <td className="p-3 text-slate-500">
-                        {new Date(attempt.startedAt).toLocaleDateString()}
+                        {attempt.startedAt ? new Date(attempt.startedAt).toLocaleDateString() : 'N/A'}
                       </td>
                     </tr>
                   ))}
