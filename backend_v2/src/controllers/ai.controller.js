@@ -275,4 +275,35 @@ export class AIController {
       monthlyQuota: 1000,
     });
   }
+
+  /**
+   * POST /api/v1/ai/assignments/generate
+   * Generates a complete assignment (title + instructions + rubric) for a given skill/lesson
+   */
+  static async generateAssignment(req, res, next) {
+    try {
+      const teacherId = req.user.id || req.user.userId;
+      const {
+        skillType = 'WRITING',
+        cefrLevel = 'B1',
+        topic = '',
+        lessonTitle = '',
+        courseTitle = '',
+        instruction = '',
+      } = req.body;
+
+      const result = await AIService.generateAssignment(teacherId, {
+        skillType,
+        cefrLevel,
+        topic,
+        lessonTitle,
+        courseTitle,
+        instruction,
+      });
+
+      return sendSuccess(res, result, 'Assignment generated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

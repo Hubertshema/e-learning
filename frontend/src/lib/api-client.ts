@@ -59,19 +59,141 @@ export const tokenStorage = {
   },
 };
 
-let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+// Single-flight token refresh. The in-flight promise is stored on globalThis
+// (NOT module scope) so that every Next.js client chunk / component shares the
+// SAME refresh request. Without this, concurrent 401s on page load could each
+// POST the single-use refresh token, the backend would revoke it twice, and the
+// second call would be rejected with TOKEN_REVOKED -> user gets logged out.
+const REFRESH_SINGLE_FLIGHT_KEY = '__lingua_refresh_single_flight__';
 
-function onRefreshed(token: string) {
-  refreshSubscribers.forEach((callback) => callback(token));
-  refreshSubscribers = [];
+function getInFlightRefresh(): Promise<string> | null {
+  return (globalThis as any)[REFRESH_SINGLE_FLIGHT_KEY] ?? null;
 }
 
-function addRefreshSubscriber(callback: (token: string) => void) {
-  refreshSubscribers.push(callback);
+function setInFlightRefresh(promise: Promise<string> | null) {
+  (globalThis as any)[REFRESH_SINGLE_FLIGHT_KEY] = promise;
+}
+
+const SESSION_EXPIRED_MESSAGE = 'Your session has ended. Please sign in again to continue.';
+
+/**
+ * Exchange the current refresh token for a fresh token pair.
+ * Returns the new access token on success.
+ */
+async function performTokenRefresh(): Promise<string> {
+  const originalToken = tokenStorage.getRefreshToken();
+
+  // Give a concurrent refresher (another tab / chunk / process) a beat to write
+  // its rotated token into localStorage before we read ours.
+  await new Promise((resolve) => setTimeout(resolve, 60));
+
+  let token = tokenStorage.getRefreshToken() || originalToken;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (!token) {
+      throw new ApiError(SESSION_EXPIRED_MESSAGE, 401, 'UNAUTHORIZED');
+    }
+
+    let refreshResponse: Response;
+    try {
+      refreshResponse = await fetch(`${getApiBaseUrl()}/auth/refresh-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: token }),
+      });
+    } catch (err: any) {
+      if (err instanceof TypeError) {
+        throw new ApiError(
+          'We could not reach the server. Please check your connection and try again.',
+          0,
+          'NETWORK_ERROR'
+        );
+      }
+      throw err;
+    }
+
+    const refreshData = await refreshResponse.json().catch(() => ({}));
+
+    if (refreshResponse.ok && refreshData.success) {
+      const { accessToken, refreshToken: newRefreshToken } = refreshData.data.tokens;
+      tokenStorage.setTokens(accessToken, newRefreshToken);
+      return accessToken;
+    }
+
+    const code: string = refreshData.error?.code || '';
+    const status: number = refreshResponse.status;
+
+    if (status === 401) {
+      // We sent a stale refresh token (rotated by a concurrent call). If the
+      // successor token is already in storage, retry once with the live one.
+      const latest = tokenStorage.getRefreshToken();
+      if (attempt === 0 && latest && latest !== token) {
+        token = latest;
+        continue;
+      }
+      tokenStorage.clearTokens();
+      throw new ApiError(SESSION_EXPIRED_MESSAGE, 401, 'SESSION_EXPIRED');
+    }
+
+    throw new ApiError(
+      refreshData.error?.message || 'Token refresh failed. Please try again.',
+      status,
+      code || 'REFRESH_ERROR'
+    );
+  }
+
+  throw new ApiError(SESSION_EXPIRED_MESSAGE, 401, 'SESSION_EXPIRED');
+}
+
+
+/**
+ * Translates raw backend error codes & messages into friendly, plain-language
+ * messages that any user can understand — no tech jargon.
+ */
+function getFriendlyErrorMessage(raw: string, code: string, status: number): string {
+  // Code-based lookup (most specific — backend error codes)
+  const codeMap: Record<string, string> = {
+    INVALID_CREDENTIALS:       'The email or password you entered is incorrect. Please try again.',
+    USER_ALREADY_EXISTS:       'An account with this email address already exists. Try signing in instead.',
+    ACCOUNT_SUSPENDED:         'Your account has been suspended. Please contact support for help.',
+    USER_INACTIVE:             'Your account is not active. Please contact support.',
+    TOKEN_EXPIRED:             'Your session has ended. Please sign in again to continue.',
+    TOKEN_REVOKED:             'Your session has ended. Please sign in again to continue.',
+    SESSION_EXPIRED:           'Your session has ended. Please sign in again to continue.',
+    UNAUTHORIZED:              'You need to sign in to access this page.',
+    INVALID_TOKEN:             'Your session has ended. Please sign in again to continue.',
+    INVALID_REFRESH_TOKEN:     'Your session has ended. Please sign in again to continue.',
+    FORBIDDEN:                 'You do not have permission to do that.',
+    NOT_FOUND:                 'The item you are looking for could not be found.',
+    VALIDATION_ERROR:          'Some information is missing or incorrect. Please check and try again.',
+    RATE_LIMIT_EXCEEDED:       'Too many attempts. Please wait a moment and try again.',
+    SERVER_ERROR:              'Something went wrong on our end. Please try again in a moment.',
+    CAPTCHA_FAILED:            'The security check failed. Please refresh the page and try again.',
+    CAPTCHA_EXPIRED:           'The security check expired. Please refresh the page and try again.',
+  };
+
+  if (code && codeMap[code]) return codeMap[code];
+
+  // HTTP status fallbacks
+  if (status === 400) return 'Some information is missing or incorrect. Please check and try again.';
+  if (status === 401) return 'Your session has ended. Please sign in again to continue.';
+  if (status === 403) return 'You do not have permission to do that.';
+  if (status === 404) return 'The item you are looking for could not be found.';
+  if (status === 409) return 'This already exists. Please check for duplicates.';
+  if (status === 422) return 'Some information is missing or incorrect. Please check and try again.';
+  if (status === 429) return 'Too many attempts. Please wait a moment and try again.';
+  if (status >= 500) return 'Something went wrong on our end. Please try again in a moment.';
+
+  // If the raw message looks like a clean sentence (not a code), use it
+  if (raw && raw.length > 0 && raw.length < 120 && !raw.includes('_') && /[a-z]/.test(raw)) {
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+
+  return 'Something went wrong. Please try again.';
 }
 
 export async function apiClient<T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> {
+
   const { requiresAuth = true, headers = {}, ...restOptions } = options;
 
   const baseUrl = getApiBaseUrl();
@@ -96,87 +218,78 @@ export async function apiClient<T = unknown>(endpoint: string, options: ApiOptio
 
   // Handle 401 Token Expiry & Automatic Refresh
   if (response.status === 401 && requiresAuth && !endpoint.includes('/auth/refresh-token')) {
-    const refreshToken = tokenStorage.getRefreshToken();
-
-    if (!refreshToken) {
+    if (!tokenStorage.getRefreshToken()) {
       tokenStorage.clearTokens();
-      throw new ApiError('Session expired. Please log in again.', 401, 'UNAUTHORIZED');
+      throw new ApiError(SESSION_EXPIRED_MESSAGE, 401, 'UNAUTHORIZED');
     }
 
-    if (!isRefreshing) {
-      isRefreshing = true;
-
-      try {
-        const refreshResponse = await fetch(`${getApiBaseUrl()}/auth/refresh-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
+    // Join the shared in-flight refresh (or become its initiator).
+    let refreshPromise = getInFlightRefresh();
+    if (!refreshPromise) {
+      refreshPromise = performTokenRefresh();
+      setInFlightRefresh(refreshPromise);
+      refreshPromise
+        .finally(() => {
+          if (getInFlightRefresh() === refreshPromise) {
+            setInFlightRefresh(null);
+          }
+        })
+        .catch(() => {
+          // Swallow: callers await refreshPromise directly and handle errors.
         });
-
-        const refreshData = await refreshResponse.json();
-
-        if (refreshResponse.ok && refreshData.success) {
-          const { accessToken, refreshToken: newRefreshToken } = refreshData.data.tokens;
-          tokenStorage.setTokens(accessToken, newRefreshToken);
-          onRefreshed(accessToken);
-        } else {
-          tokenStorage.clearTokens();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login?expired=1';
-          }
-          throw new ApiError('Session expired. Please log in again.', 401, 'SESSION_EXPIRED');
-        }
-      } catch (err) {
-        tokenStorage.clearTokens();
-        throw err;
-      } finally {
-        isRefreshing = false;
-      }
     }
 
-    // Wait for the active refresh to finish, then retry original request
-    return new Promise((resolve, reject) => {
-      addRefreshSubscriber(async (newToken: string) => {
-        try {
-          requestHeaders['Authorization'] = `Bearer ${newToken}`;
-          const retryResponse = await fetch(url, {
-            ...restOptions,
-            headers: requestHeaders,
-          });
-          const retryData = await retryResponse.json();
-          if (!retryResponse.ok) {
-            return reject(
-              new ApiError(
-                retryData.error?.message || 'Request failed',
-                retryResponse.status,
-                retryData.error?.code,
-                retryData.error?.details
-              )
-            );
-          }
-          resolve(retryData.data);
-        } catch (retryErr) {
-          reject(retryErr);
-        }
+    try {
+      const newToken = await refreshPromise;
+      requestHeaders['Authorization'] = `Bearer ${newToken}`;
+      const retryResponse = await fetch(url, {
+        ...restOptions,
+        headers: requestHeaders,
       });
-    });
+      const retryData = await retryResponse.json().catch(() => ({}));
+
+      if (!retryResponse.ok) {
+        const retryMessage: string = retryData.error?.message || retryResponse.statusText || '';
+        const retryCode: string = retryData.error?.code || '';
+        if (retryResponse.status === 401) {
+          tokenStorage.clearTokens();
+        }
+        throw new ApiError(
+          getFriendlyErrorMessage(retryMessage, retryCode, retryResponse.status),
+          retryResponse.status,
+          retryCode || 'ERROR',
+          retryData.error?.details
+        );
+      }
+
+      return (retryData && retryData.data !== undefined ? retryData.data : retryData) as T;
+    } catch (err: any) {
+      if (err instanceof TypeError) {
+        // Network failure — server temporarily unreachable, don't log out
+        console.warn('[Auth] Refresh flow hit a network error. Keeping existing session.', err.message);
+        throw new ApiError(
+          'We could not reach the server. Please check your connection and try again.',
+          0,
+          'NETWORK_ERROR'
+        );
+      }
+      throw err;
+    }
   }
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    let errorMessage = data.error?.message || response.statusText || 'An unexpected error occurred';
-    if (Array.isArray(data.error?.details) && data.error.details.length > 0) {
-      const fieldDetails = data.error.details
-        .map((d: any) => (d.field ? `${d.field}: ${d.message}` : d.message))
-        .join('; ');
-      errorMessage = `${data.error.message || 'Validation failed'} (${fieldDetails})`;
-    }
+    const rawMessage: string = data.error?.message || response.statusText || '';
+    const code: string = data.error?.code || '';
+
+    // Translate technical backend messages into plain user-friendly language
+    const friendlyMessage = getFriendlyErrorMessage(rawMessage, code, response.status);
 
     throw new ApiError(
-      errorMessage,
+      friendlyMessage,
       response.status,
-      data.error?.code || 'ERROR',
+      code || 'ERROR',
       data.error?.details
     );
   }

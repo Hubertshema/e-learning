@@ -1,4 +1,5 @@
 import { AuthService } from '../services/auth.service.js';
+import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 
 export class AuthController {
@@ -69,7 +70,15 @@ export class AuthController {
   /**
    * GET /api/v1/auth/me
    */
-  static async me(req, res) {
-    return sendSuccess(res, req.user, 'Current user profile');
+  static async me(req, res, next) {
+    try {
+      const user = await UserModel.findById(req.user.id);
+      if (!user) {
+        return sendError(res, 'User account not found', 401, 'USER_INACTIVE');
+      }
+      return sendSuccess(res, { user }, 'Current user profile');
+    } catch (err) {
+      next(err);
+    }
   }
 }

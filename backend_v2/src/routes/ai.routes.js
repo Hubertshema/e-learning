@@ -12,6 +12,7 @@ router.post('/quizzes/generate', AIController.generateQuizQuestions);
 router.post('/quizzes/generate-advanced', AIController.generateAdvancedQuiz);
 router.post('/quizzes/transform-question', AIController.transformQuestion);
 router.post('/diagnostic/generate', AIController.generateDiagnosticQuiz);
+router.post('/assignments/generate', AIController.generateAssignment);
 router.post('/chat', AIController.chat);
 router.get('/stats', AIController.getStats);
 

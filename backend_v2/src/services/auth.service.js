@@ -133,15 +133,15 @@ export class AuthService {
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
 
-    // Save refresh token hash in DB
+    // Save refresh token hash in DB for 30 days
     const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
     await UserModel.saveRefreshToken(user.id, tokenHash, expiresAt);
 
     return {
       accessToken,
       refreshToken,
-      expiresIn: 900, // 15 mins in seconds
+      expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
     };
   }
 }

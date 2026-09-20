@@ -638,6 +638,127 @@ export class AIService {
       };
     });
   }
+
+  /**
+   * Generate a complete assignment (title + rich instructions + rubric) for a given lesson/topic
+   */
+  static async generateAssignment(teacherId, { skillType = 'WRITING', cefrLevel = 'B1', topic = '', lessonTitle = '', courseTitle = '', instruction = '' }) {
+    const systemPrompt =
+      `You are an expert CEFR-certified English Language teacher and assessment designer at FluentEdge Academy. ` +
+      `Generate a complete, ready-to-publish student assignment for a ${cefrLevel} English class. ` +
+      `Skill domain: ${skillType}. Lesson: "${lessonTitle || topic}". Course: "${courseTitle}". ` +
+      `Your output must be a single valid JSON object (no markdown, no code blocks) with this exact structure:\n` +
+      `{\n` +
+      `  "title": "Concise, motivating assignment title (max 80 chars)",\n` +
+      `  "description": "<FULL HTML CONTENT — see rules below>",\n` +
+      `  "suggestedMaxScore": 100,\n` +
+      `  "skillType": "${skillType}"\n` +
+      `}\n\n` +
+      `DESCRIPTION HTML RULES — The "description" field must be a rich HTML string (NOT Markdown) ready for a TinyMCE editor:\n` +
+      `- Use <h2> for major section headings (e.g. Task Overview, Requirements, Rubric)\n` +
+      `- Use <h3> for sub-headings\n` +
+      `- Use <p> for paragraphs with <strong> for bold terms and <em> for emphasis\n` +
+      `- Use <ul><li> for bullet lists and <ol><li> for numbered lists\n` +
+      `- Use <blockquote> for teacher tips or important notes\n` +
+      `- Include a grading rubric as an HTML <table> with <thead><tr><th> headers and <tbody><tr><td> rows — columns: Criterion | Weight | Excellent | Satisfactory | Needs Work\n` +
+      `- DO NOT use markdown syntax (no ##, no **, no |---|, no backticks). Use only clean HTML tags.\n` +
+      `- DO NOT wrap in <html>, <head>, or <body> tags.\n` +
+      `- Content must be 300-500 words total covering: task description, specific requirements (length, format, vocabulary targets), time guidance, and rubric.\n\n` +
+      `STRICT OUTPUT RULE: Return ONLY the raw JSON object. No preamble, no explanation, no markdown fences.`;
+
+    const userPrompt = instruction.trim()
+      ? `Create a ${cefrLevel} ${skillType} assignment based on this instruction: "${instruction}". Lesson context: "${lessonTitle || topic}". Return the JSON object with HTML in the description field.`
+      : `Create a ${cefrLevel} ${skillType} assignment for the lesson: "${lessonTitle || topic || 'General English'}". Make it practical, engaging, and academically rigorous. Return the JSON object with HTML in the description field.`;
+
+    let raw = '';
+    const errors = [];
+
+    // 1. Groq
+    if (process.env.GROQ_API_KEY) {
+      const models = [process.env.GROQ_MODEL || 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
+      for (const m of Array.from(new Set(models))) {
+        try {
+          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+            body: JSON.stringify({
+              model: m,
+              messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+              temperature: 0.7,
+              max_tokens: 3000,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const content = data?.choices?.[0]?.message?.content || '';
+            if (content.trim().length > 50) { raw = content; break; }
+          } else {
+            const e = await res.json().catch(() => ({}));
+            errors.push(`Groq(${m}): ${e?.error?.message || res.statusText}`);
+          }
+        } catch (err) { errors.push(`Groq(${m}): ${err.message}`); }
+      }
+    }
+
+    // 2. Gemini fallback
+    if (!raw && process.env.GEMINI_API_KEY) {
+      const gModels = [process.env.GEMINI_MODEL || 'gemini-3.6-flash', 'gemini-flash-latest'];
+      for (const gm of Array.from(new Set(gModels))) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: userPrompt }] }],
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              generationConfig: { temperature: 0.7, maxOutputTokens: 3000 },
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (content.trim().length > 50) { raw = content; break; }
+          } else {
+            const e = await res.json().catch(() => ({}));
+            errors.push(`Gemini(${gm}): ${e?.error?.message || res.statusText}`);
+          }
+        } catch (err) { errors.push(`Gemini(${gm}): ${err.message}`); }
+      }
+    }
+
+    if (!raw) {
+      const err = new Error(`AI assignment generation failed: ${errors.join(' | ')}`);
+      err.statusCode = 500;
+      throw err;
+    }
+
+    // Strip possible markdown fences
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      // Try to extract JSON object from anywhere in the text
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { parsed = JSON.parse(match[0]); } catch { /* fall through */ }
+      }
+    }
+
+    if (!parsed || !parsed.title || !parsed.description) {
+      const err = new Error('AI returned an invalid assignment format. Please try again.');
+      err.statusCode = 500;
+      throw err;
+    }
+
+    return {
+      title: String(parsed.title || '').slice(0, 160),
+      description: String(parsed.description || ''),
+      suggestedMaxScore: Number(parsed.suggestedMaxScore) || 100,
+      skillType: String(parsed.skillType || skillType).toUpperCase(),
+    };
+  }
 }
 
 

@@ -393,4 +393,253 @@ export class TeacherModel {
     );
     return res.rows[0];
   }
+
+  /**
+   * List enrolled students for a teacher (across all their courses)
+   * GET /api/v1/teacher/students
+   */
+  static async getStudents(teacherId, { search = '' } = {}) {
+    const teacherIds = await this.resolveTeacherIds(teacherId);
+    const searchTerm = `%${search}%`;
+    const res = await query(
+      `SELECT e.id AS "enrollmentId",
+              e."studentId",
+              e."courseId",
+              e."classId",
+              e.status AS "enrollmentStatus",
+              e."enrolledAt",
+              e."expiresAt",
+              u.id AS "userId",
+              u."firstName",
+              u."lastName",
+              u.email,
+              sp."currentLevel",
+              sp."targetLevel",
+              c.id AS "courseIdRef",
+              c.title AS "courseTitle",
+              c.level AS "courseLevel",
+              cl.id AS "classIdRef",
+              cl.name AS "className"
+       FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       JOIN "public"."users" u ON u.id = e."studentId"
+       LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
+       LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
+       WHERE c."teacherId" = ANY($1)
+         AND ($2 = '' OR u."firstName" ILIKE $2 OR u."lastName" ILIKE $2 OR u.email ILIKE $2)
+       ORDER BY u."firstName" ASC, u."lastName" ASC`,
+      [teacherIds, searchTerm]
+    );
+
+    return res.rows.map((r) => ({
+      id: r.enrollmentId,
+      studentId: r.studentId,
+      userId: r.userId,
+      courseId: r.courseId,
+      classId: r.classId,
+      status: r.enrollmentStatus,
+      enrolledAt: r.enrolledAt,
+      expiresAt: r.expiresAt,
+      user: {
+        id: r.userId,
+        firstName: r.firstName,
+        lastName: r.lastName,
+        email: r.email,
+        studentProfile: r.currentLevel
+          ? { currentLevel: r.currentLevel, targetLevel: r.targetLevel }
+          : undefined,
+      },
+      course: {
+        id: r.courseId,
+        title: r.courseTitle,
+        level: r.courseLevel,
+      },
+      class: r.classId ? { id: r.classId, name: r.className } : undefined,
+    }));
+  }
+
+  /**
+   * Get a single student's full learning profile + progress for a teacher.
+   * GET /api/v1/teacher/students/:studentId/progress
+   * Only returns data if the student is enrolled in one of the teacher's courses.
+   */
+  static async getStudentProgress(teacherId, studentId) {
+    const teacherIds = await this.resolveTeacherIds(teacherId);
+
+    const ownerRes = await query(
+      `SELECT e."studentId"
+       FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       WHERE e."studentId" = $1 AND c."teacherId" = ANY($2)
+       LIMIT 1`,
+      [studentId, teacherIds]
+    );
+    if (ownerRes.rows.length === 0) return null;
+
+    const userRes = await query(
+      `SELECT u.id, u."firstName", u."lastName", u.email,
+              sp."currentLevel", sp."targetLevel", sp."nativeLanguage"
+       FROM "public"."users" u
+       LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
+       WHERE u.id = $1
+       LIMIT 1`,
+      [studentId]
+    );
+    if (userRes.rows.length === 0) return null;
+    const u = userRes.rows[0];
+
+    // Enrollments tied to teacher's courses (with nested units/lessons)
+    const enrollRes = await query(
+      `SELECT e.id, e."classId", e.status, e."enrolledAt", e."expiresAt",
+              c.id AS "courseIdRef", c.title AS "courseTitle", c.level AS "courseLevel",
+              cl.id AS "classIdRef", cl.name AS "className"
+       FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
+       WHERE e."studentId" = $1 AND c."teacherId" = ANY($2)
+       ORDER BY e."enrolledAt" DESC`,
+      [studentId, teacherIds]
+    );
+    const enrollments = [];
+    const courseIds = enrollRes.rows.map((r) => r.courseIdRef]);
+
+    if (courseIds.length > 0) {
+      const unitsRes = await query(
+        `SELECT u.id, u."courseId", u.title
+         FROM "public"."units" u
+         WHERE u."courseId" = ANY($1) ORDER BY u."orderIndex" ASC`,
+        [courseIds]
+      );
+      const unitIds = unitsRes.rows.map((x) => x.id);
+      let lessons = [];
+      if (unitIds.length > 0) {
+        const lessonsRes = await query(
+          `SELECT l.id, l."unitId", l.title, l."estimatedMinutes", l.skill
+           FROM "public"."lessons" l
+           WHERE l."unitId" = ANY($1) ORDER BY l."orderIndex" ASC`,
+          [unitIds]
+        );
+        lessons = lessonsRes.rows;
+      }
+      for (const r of enrollRes.rows) {
+        const units = unitsRes.rows
+          .filter((x) => x.courseId === r.courseIdRef)
+          .map((x) => ({
+            id: x.id,
+            title: x.title,
+            lessons: lessons
+              .filter((l) => l.unitId === x.id)
+              .map((l) => ({
+                id: l.id,
+                title: l.title,
+                durationMinutes: l.estimatedMinutes,
+                skillType: l.skill,
+              })),
+          }));
+        enrollments.push({
+          id: r.id,
+          classId: r.classId,
+          status: r.status,
+          enrolledAt: r.enrolledAt,
+          expiresAt: r.expiresAt,
+          class: r.classIdRef ? { id: r.classIdRef, name: r.className } : undefined,
+          course: {
+            id: r.courseIdRef,
+            title: r.courseTitle,
+            level: r.courseLevel,
+            units,
+          },
+        });
+      }
+    }
+
+    // Lesson progress (restricted to teacher's courses)
+    const progressRes = await query(
+      `SELECT p.id, p."isCompleted", p."completedAt", p."timeSpentSec", p.score,
+              l.title AS "lessonTitle", l.skill
+       FROM "public"."progress" p
+       JOIN "public"."lessons" l ON l.id = p."lessonId"
+       JOIN "public"."units" u ON u.id = l."unitId"
+       JOIN "public"."courses" c ON c.id = u."courseId"
+       WHERE p."studentId" = $1 AND c."teacherId" = ANY($2)
+       ORDER BY p."completedAt" DESC`,
+      [studentId, teacherIds]
+    );
+    const lessonProgress = progressRes.rows.map((p) => ({
+      id: p.id,
+      completed: p.isCompleted,
+      completedAt: p.completedAt,
+      timeSpentSeconds: p.timeSpentSec || 0,
+      score: p.score ? Number(p.score) : null,
+      lesson: {
+        title: p.lessonTitle,
+        skillType: p.skill,
+      },
+    }));
+
+    // Quiz attempts (restricted to teacher's courses)
+    const quizRes = await query(
+      `SELECT qa.id, qa.score, qa.passed, qa."completedAt",
+              q.title AS "quizTitle", q."passingScore"
+       FROM "public"."quiz_attempts" qa
+       JOIN "public"."quizzes" q ON q.id = qa."quizId"
+       JOIN "public"."lessons" l ON l.id = q."lessonId"
+       JOIN "public"."units" u ON u.id = l."unitId"
+       JOIN "public"."courses" c ON c.id = u."courseId"
+       WHERE qa."studentId" = $1 AND c."teacherId" = ANY($2)
+       ORDER BY qa."completedAt" DESC`,
+      [studentId, teacherIds]
+    );
+    const quizAttempts = quizRes.rows.map((qa) => ({
+      id: qa.id,
+      score: qa.score !== null ? Number(qa.score) : null,
+      passed: qa.passed,
+      completedAt: qa.completedAt,
+      quiz: {
+        title: qa.quizTitle,
+        passingScore: qa.passingScore,
+      },
+    }));
+
+    // Assignment submissions (restricted to teacher's courses)
+    const assignRes = await query(
+      `SELECT s.id, s.score, s.status, s."submittedAt",
+              a.title AS "assignmentTitle", a."maxScore", a."skillType"
+       FROM "public"."assignment_submissions" s
+       JOIN "public"."assignments" a ON a.id = s."assignmentId"
+       JOIN "public"."lessons" l ON l.id = a."lessonId"
+       JOIN "public"."units" u ON u.id = l."unitId"
+       JOIN "public"."courses" c ON c.id = u."courseId"
+       WHERE s."studentId" = $1 AND c."teacherId" = ANY($2)
+       ORDER BY s."submittedAt" DESC`,
+      [studentId, teacherIds]
+    );
+    const assignmentSubmissions = assignRes.rows.map((s) => ({
+      id: s.id,
+      score: s.score !== null ? Number(s.score) : null,
+      status: s.status,
+      submittedAt: s.submittedAt,
+      assignment: {
+        title: s.assignmentTitle,
+        maxScore: s.maxScore,
+        skillType: s.skillType,
+      },
+    }));
+
+    return {
+      id: u.id,
+      firstName: u.firstName,
+      lastName: u.lastName,
+      email: u.email,
+      studentProfile: {
+        currentLevel: u.currentLevel,
+        targetLevel: u.targetLevel,
+        nativeLanguage: u.nativeLanguage,
+      },
+      enrollments,
+      lessonProgress,
+      quizAttempts,
+      assignmentSubmissions,
+    };
+  }
 }
