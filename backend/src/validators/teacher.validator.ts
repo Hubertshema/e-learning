@@ -6,9 +6,9 @@ export const CreateCourseSchema = z.object({
   summary: z.string().optional(),
   level: z.enum(['PRE_A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']),
   category: z.string().default('General English'),
-  price: z.number().min(0, 'Price cannot be negative'),
+  price: z.number().optional(),
   currency: z.string().default('USD'),
-  durationDays: z.number().int().min(1).default(90),
+  durationDays: z.number().int().min(1).default(90).optional(),
   thumbnailUrl: z.string().url().optional().or(z.literal('')),
   isPublished: z.boolean().default(false),
   learningObjectives: z.array(z.string()).optional(),
@@ -28,15 +28,32 @@ export const UpdateUnitSchema = CreateUnitSchema.partial();
 export const CreateLessonSchema = z.object({
   title: z.string().min(2, 'Lesson title is required').trim(),
   description: z.string().optional(),
-  skill: z.enum([
-    'READING',
-    'LISTENING',
-    'SPEAKING',
-    'WRITING',
-    'GRAMMAR',
-    'VOCABULARY',
-    'PRONUNCIATION',
-  ]),
+  skill: z
+    .enum([
+      'READING',
+      'LISTENING',
+      'SPEAKING',
+      'WRITING',
+      'GRAMMAR',
+      'VOCABULARY',
+      'PRONUNCIATION',
+    ])
+    .optional()
+    .default('GRAMMAR'),
+  skills: z
+    .array(
+      z.enum([
+        'READING',
+        'LISTENING',
+        'SPEAKING',
+        'WRITING',
+        'GRAMMAR',
+        'VOCABULARY',
+        'PRONUNCIATION',
+      ])
+    )
+    .optional()
+    .default(['GRAMMAR']),
   orderIndex: z.number().int().min(1).default(1),
   estimatedMinutes: z.number().int().min(5).default(30),
   isFreePreview: z.boolean().default(false),

@@ -490,7 +490,7 @@ export class StudentRepository {
         enrollment: {
           include: {
             course: {
-              select: { id: true, title: true, level: true, price: true, currency: true },
+              select: { id: true, title: true, level: true, currency: true },
             },
           },
         },

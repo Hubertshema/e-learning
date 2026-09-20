@@ -229,6 +229,32 @@ export class AIController {
   }
 
   /**
+   * POST /api/v1/ai/lessons/draft
+   */
+  public static async draftLessonContent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const teacherId = await AIController.getTeacherIdFromReq(req);
+      const { prompt, title, cefrLevel, skills } = req.body;
+
+      if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+        res.status(400).json({ success: false, message: 'Prompt is required.' });
+        return;
+      }
+
+      const result = await AIService.draftLessonContent(teacherId, {
+        prompt: prompt.trim(),
+        title,
+        cefrLevel,
+        skills,
+      });
+
+      sendSuccess(res, result, 'Lesson content drafted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * GET /api/v1/ai/stats
    */
   public static async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {

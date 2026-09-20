@@ -322,7 +322,6 @@ model Course {
   summary         String?
   level           CEFRLevel      @default(PRE_A1)
   category        String         @default("General English")
-  price           Decimal        @default(0.00) @db.Decimal(10, 2)
   currency        String         @default("USD")
   durationDays    Int            @default(90)
   thumbnailUrl    String?
@@ -409,6 +408,7 @@ model Lesson {
   title           String
   description     String?
   skill           SkillType      @default(GRAMMAR)
+  skills          SkillType[]    @default([])
   orderIndex      Int            @default(1)
   estimatedMinutes Int           @default(30)
   isPublished     Boolean        @default(true)

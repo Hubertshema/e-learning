@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Search, Star, CheckCircle2, AlertCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -189,7 +189,6 @@ export default function SuperadminCoursesPage() {
                   <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400 pt-1">
                     <span>Units: <strong>{course._count?.units || 0}</strong></span>
                     <span>Active Enrollments: <strong>{course._count?.enrollments || 0}</strong></span>
-                    <span>Price: <strong className="text-primary-600">{formatPrice(course.price)}</strong></span>
                   </div>
                 </div>
 

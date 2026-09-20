@@ -8,9 +8,16 @@ import {
   AttendanceStatus,
   CEFRLevel,
   SkillType,
-  SubscriptionStatus,
   Prisma,
 } from '@prisma/client';
+
+const SubscriptionStatus = {
+  INACTIVE: 'INACTIVE',
+  PENDING: 'PENDING',
+  ACTIVE: 'ACTIVE',
+  EXPIRED: 'EXPIRED',
+} as const;
+type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
 import {
   CreateCourseInput,
   UpdateCourseInput,
@@ -251,7 +258,6 @@ export class TeacherRepository {
         summary: data.summary,
         level: data.level as CEFRLevel,
         category: data.category || 'General English',
-        price: new Prisma.Decimal(data.price),
         currency: data.currency || 'USD',
         durationDays: data.durationDays || 90,
         thumbnailUrl: data.thumbnailUrl,
@@ -269,7 +275,6 @@ export class TeacherRepository {
         ...(data.description && { description: data.description }),
         ...(data.summary && { summary: data.summary }),
         ...(data.level && { level: data.level as CEFRLevel }),
-        ...(data.price !== undefined && { price: new Prisma.Decimal(data.price) }),
         ...(data.currency && { currency: data.currency }),
         ...(data.durationDays !== undefined && { durationDays: data.durationDays }),
         ...(data.thumbnailUrl !== undefined && { thumbnailUrl: data.thumbnailUrl }),
@@ -299,15 +304,26 @@ export class TeacherRepository {
   }
 
   async createLesson(unitId: string, data: CreateLessonInput) {
+    const rawSkills = (data as any).skills;
+    const resolvedSkills: SkillType[] =
+      Array.isArray(rawSkills) && rawSkills.length > 0
+        ? (rawSkills as SkillType[])
+        : [((data as any).skillType || data.skill || 'GRAMMAR') as SkillType];
+
+    const lessonData: any = {
+      unitId,
+      title: data.title,
+      description: data.description,
+      skill: resolvedSkills[0],
+      skills: resolvedSkills,
+      orderIndex: (data as any).order ?? data.orderIndex ?? 1,
+      estimatedMinutes: (data as any).durationMinutes ?? data.estimatedMinutes ?? 30,
+      isPublished: data.isPublished ?? true,
+    };
+
     return prisma.lesson.create({
       data: {
-        unitId,
-        title: data.title,
-        description: data.description,
-        skill: ((data as any).skillType || data.skill || 'GRAMMAR') as SkillType,
-        orderIndex: (data as any).order ?? data.orderIndex ?? 1,
-        estimatedMinutes: (data as any).durationMinutes ?? data.estimatedMinutes ?? 30,
-        isPublished: data.isPublished ?? true,
+        ...lessonData,
         sections: {
           create: data.sections && data.sections.length > 0
             ? data.sections.map((s, idx) => ({
@@ -369,7 +385,7 @@ export class TeacherRepository {
           },
         },
         _count: { select: { enrollments: true, attendances: true } },
-      },
+      } as any,
     });
   }
 
@@ -391,7 +407,7 @@ export class TeacherRepository {
           },
         },
         _count: { select: { enrollments: true, attendances: true } },
-      },
+      } as any,
     });
   }
 
@@ -426,10 +442,10 @@ export class TeacherRepository {
             subscriptionExpiresAt: true,
           },
         },
-      },
+      } as any,
     });
 
-    return students.map((s) => ({
+    return (students as any[]).map((s) => ({
       id: s.id,
       studentProfileId: s.studentProfile?.id || s.id,
       firstName: s.firstName,
@@ -437,7 +453,7 @@ export class TeacherRepository {
       email: s.email,
       currentLevel: s.studentProfile?.currentLevel || 'PRE_A1',
       subscriptionStatus: s.studentProfile?.subscriptionStatus || 'INACTIVE',
-      subscriptionExpiresAt: s.studentProfile?.subscriptionExpiresAt?.toISOString() || null,
+      subscriptionExpiresAt: s.studentProfile?.subscriptionExpiresAt ? new Date(s.studentProfile.subscriptionExpiresAt).toISOString() : null,
     }));
   }
 
@@ -468,11 +484,11 @@ export class TeacherRepository {
             })),
           },
         }),
-      },
+      } as any,
       include: {
         course: true,
         courses: { include: { course: true } },
-      },
+      } as any,
     });
 
     // If studentIds were selected during creation, enroll them automatically
@@ -503,17 +519,17 @@ export class TeacherRepository {
     // Replace all linked courses in a transaction
     await prisma.$transaction([
       // Remove all existing ClassCourse links for this cohort
-      prisma.classCourse.deleteMany({ where: { classId } }),
+      (prisma as any).classCourse.deleteMany({ where: { classId } }),
       // Re-create with new set
       ...(courseIds.length > 0
         ? courseIds.map((cid) =>
-            prisma.classCourse.create({ data: { classId, courseId: cid } })
+            (prisma as any).classCourse.create({ data: { classId, courseId: cid } })
           )
         : []),
       // Also update the primary courseId on the class row
       prisma.class.update({
         where: { id: classId },
-        data: { courseId: courseIds[0] || null },
+        data: { courseId: courseIds[0] || null } as any,
       }),
     ]);
 
@@ -561,15 +577,15 @@ export class TeacherRepository {
 
     await prisma.class.update({
       where: { id: classId },
-      data: updateData,
+      data: updateData as any,
     });
 
     if (courseIds !== undefined) {
       await prisma.$transaction([
-        prisma.classCourse.deleteMany({ where: { classId } }),
+        (prisma as any).classCourse.deleteMany({ where: { classId } }),
         ...(courseIds.length > 0
           ? courseIds.map((cid: string) =>
-              prisma.classCourse.create({ data: { classId, courseId: cid } })
+              (prisma as any).classCourse.create({ data: { classId, courseId: cid } })
             )
           : []),
       ]);
@@ -630,7 +646,7 @@ export class TeacherRepository {
       include: {
         course: true,
         courses: { include: { course: true } },
-      },
+      } as any,
     });
 
     if (!classItem) {
@@ -647,12 +663,12 @@ export class TeacherRepository {
       const email = data.studentEmail.trim().toLowerCase();
       const user = await prisma.user.findUnique({
         where: { email },
-        include: { studentProfile: true },
+        include: { studentProfile: true } as any,
       });
       if (!user) {
         throw new AppError(`No registered student account found with email: ${data.studentEmail}`, 404);
       }
-      let studentProfile = user.studentProfile;
+      let studentProfile = (user as any).studentProfile;
       if (!studentProfile) {
         studentProfile = await prisma.studentProfile.create({
           data: { userId: user.id },
@@ -667,10 +683,11 @@ export class TeacherRepository {
 
     // Determine target courses for this cohort
     const coursesToEnroll: Array<{ id: string; title: string; durationDays?: number }> = [];
-    if (classItem.courses && classItem.courses.length > 0) {
-      coursesToEnroll.push(...classItem.courses.map((cc) => cc.course));
-    } else if (classItem.course) {
-      coursesToEnroll.push(classItem.course);
+    const classItemAny = classItem as any;
+    if (classItemAny.courses && classItemAny.courses.length > 0) {
+      coursesToEnroll.push(...classItemAny.courses.map((cc: any) => cc.course));
+    } else if (classItemAny.course) {
+      coursesToEnroll.push(classItemAny.course);
     }
 
     const durationDays = 90;
@@ -690,12 +707,13 @@ export class TeacherRepository {
       if (!studentProfile) {
         const user = await prisma.user.findUnique({
           where: { id: sid },
-          include: { studentProfile: true },
+          include: { studentProfile: true } as any,
         });
         if (user) {
-          if (user.studentProfile) {
+          const userAny = user as any;
+          if (userAny.studentProfile) {
             studentProfile = await prisma.studentProfile.findUnique({
-              where: { id: user.studentProfile.id },
+              where: { id: userAny.studentProfile.id },
               include: { user: true },
             });
           } else {
@@ -716,9 +734,9 @@ export class TeacherRepository {
           subscriptionStatus: SubscriptionStatus.ACTIVE,
           subscriptionPlan: `Cohort Access: ${classItem.name}`,
           subscriptionMonths: 3,
-          subscriptionStartedAt: studentProfile.subscriptionStartedAt || activatedAt,
+          subscriptionStartedAt: (studentProfile as any).subscriptionStartedAt || activatedAt,
           subscriptionExpiresAt: expiresAt,
-        },
+        } as any,
       });
 
       // Enroll in all cohort courses
@@ -789,7 +807,7 @@ export class TeacherRepository {
           planMonths: 3,
           notes: `Enrolled directly by instructor into cohort: ${classItem.name}`,
           verifiedAt: activatedAt,
-        },
+        } as any,
       });
 
       // Notify student (in-app + email)
@@ -924,12 +942,14 @@ export class TeacherRepository {
     }
 
     const activatedAt = new Date();
-    const planMonths = payment.planMonths || 1;
+    const paymentAny = payment as any;
+    const studentAny = payment.student as any;
+    const planMonths = paymentAny.planMonths || 1;
     const durationDays = planMonths * 30;
 
     let baseDate = activatedAt;
-    if (payment.student?.subscriptionExpiresAt && payment.student.subscriptionExpiresAt > activatedAt) {
-      baseDate = new Date(payment.student.subscriptionExpiresAt);
+    if (studentAny?.subscriptionExpiresAt && studentAny.subscriptionExpiresAt > activatedAt) {
+      baseDate = new Date(studentAny.subscriptionExpiresAt);
     }
     const expiresAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
@@ -947,11 +967,11 @@ export class TeacherRepository {
         where: { id: payment.studentId },
         data: {
           subscriptionStatus: SubscriptionStatus.ACTIVE,
-          subscriptionPlan: payment.planName || `${planMonths} Month Access`,
+          subscriptionPlan: paymentAny.planName || `${planMonths} Month Access`,
           subscriptionMonths: planMonths,
-          subscriptionStartedAt: payment.student?.subscriptionStartedAt || activatedAt,
+          subscriptionStartedAt: studentAny?.subscriptionStartedAt || activatedAt,
           subscriptionExpiresAt: expiresAt,
-        },
+        } as any,
       });
     }
 
@@ -971,7 +991,7 @@ export class TeacherRepository {
       }
     }
 
-    const planTitle = payment.planName || `${planMonths} Month Platform Access`;
+    const planTitle = paymentAny.planName || `${planMonths} Month Platform Access`;
 
     if (payment.student?.userId) {
       try {
@@ -1512,7 +1532,7 @@ export class TeacherRepository {
         title: c.title,
         level: c.level,
         enrollmentCount: c._count.enrollments,
-        revenue: c._count.enrollments * Number(c.price),
+        revenue: 0,
       })),
     };
   }
@@ -1551,15 +1571,20 @@ export class TeacherRepository {
   async updateLesson(lessonId: string, data: any) {
     const { sections, ...lessonData } = data;
 
-    const updatePayload: Prisma.LessonUpdateInput = {};
+    const updatePayload: any = {};
 
     if (lessonData.title !== undefined) updatePayload.title = lessonData.title;
     if (lessonData.description !== undefined) updatePayload.description = lessonData.description;
     
-    if (lessonData.skill !== undefined) {
+    if (lessonData.skills !== undefined && Array.isArray(lessonData.skills) && lessonData.skills.length > 0) {
+      updatePayload.skills = lessonData.skills as SkillType[];
+      updatePayload.skill = lessonData.skills[0] as SkillType;
+    } else if (lessonData.skill !== undefined) {
       updatePayload.skill = lessonData.skill as SkillType;
+      updatePayload.skills = [lessonData.skill as SkillType];
     } else if (lessonData.skillType !== undefined) {
       updatePayload.skill = lessonData.skillType as SkillType;
+      updatePayload.skills = [lessonData.skillType as SkillType];
     }
 
     if (lessonData.estimatedMinutes !== undefined) {

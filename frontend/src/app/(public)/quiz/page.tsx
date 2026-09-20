@@ -497,7 +497,7 @@ export default function DiagnosticQuizPage() {
                   </div>
                   {result.recommendedCourse && (
                     <span className="rounded-lg bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#315b36] border border-[#e2ebe2]">
-                      {result.recommendedCourse.currency || '$'} {result.recommendedCourse.price}
+                      {result.recommendedCourse.level || result.recommendedLevel}
                     </span>
                   )}
                 </div>

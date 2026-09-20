@@ -58,8 +58,6 @@ interface Course {
   slug?: string;
   description: string;
   level: string;
-  price: number;
-  durationDays?: number;
   published: boolean;
   units?: Unit[];
   _count?: {
@@ -97,8 +95,6 @@ export default function TeacherCoursesPage() {
     title: '',
     description: '',
     level: 'A1',
-    price: 49.99,
-    durationDays: 90,
     published: true,
   });
 
@@ -146,8 +142,6 @@ export default function TeacherCoursesPage() {
       title: '',
       description: '',
       level: 'A1',
-      price: 49.99,
-      durationDays: 90,
       published: true,
     });
     setShowCourseModal(true);
@@ -159,8 +153,6 @@ export default function TeacherCoursesPage() {
       title: c.title,
       description: c.description || '',
       level: c.level || 'A1',
-      price: Number(c.price) || 0,
-      durationDays: c.durationDays || 90,
       published: Boolean(c.published),
     });
     setShowCourseModal(true);
@@ -494,7 +486,7 @@ export default function TeacherCoursesPage() {
                   </div>
 
                   {/* Metric Chips */}
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-center">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-center">
                     <div className="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl">
                       <p className="text-[10px] text-slate-400 font-medium">Units</p>
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{unitCount}</p>
@@ -503,11 +495,6 @@ export default function TeacherCoursesPage() {
                     <div className="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl">
                       <p className="text-[10px] text-slate-400 font-medium">Lessons</p>
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{lessonCount}</p>
-                    </div>
-
-                    <div className="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl">
-                      <p className="text-[10px] text-slate-400 font-medium">Price</p>
-                      <p className="text-xs font-bold text-primary-600 dark:text-primary-400">${c.price}</p>
                     </div>
                   </div>
                 </div>
@@ -579,7 +566,6 @@ export default function TeacherCoursesPage() {
                   <th className="py-3 px-4">Course Program</th>
                   <th className="py-3 px-4">CEFR Level</th>
                   <th className="py-3 px-4">Curriculum Units</th>
-                  <th className="py-3 px-4">Price / Duration</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -605,10 +591,6 @@ export default function TeacherCoursesPage() {
 
                     <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
                       <strong>{c.units?.length || c._count?.units || 0}</strong> Units
-                    </td>
-
-                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
-                      <strong className="text-primary-600 dark:text-primary-400">${c.price}</strong> • {c.durationDays || 90}d access
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -688,58 +670,26 @@ export default function TeacherCoursesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    CEFR Proficiency Level
-                  </label>
-                  <select
-                    value={courseForm.level}
-                    onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })}
-                    className="w-full mt-1 rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-900 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-                  >
-                    <option value="A1">A1 - Absolute Beginner</option>
-                    <option value="A2">A2 - Elementary English</option>
-                    <option value="B1">B1 - Intermediate Fluency</option>
-                    <option value="B2">B2 - Upper Intermediate</option>
-                    <option value="C1">C1 - Advanced Mastery</option>
-                    <option value="C2">C2 - Native-level Mastery</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Enrollment Price ($ USD)
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="49.99"
-                    value={courseForm.price}
-                    onChange={(e) => setCourseForm({ ...courseForm, price: parseFloat(e.target.value) || 0 })}
-                    className="mt-1"
-                    required
-                  />
-                </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  CEFR Proficiency Level
+                </label>
+                <select
+                  value={courseForm.level}
+                  onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })}
+                  className="w-full mt-1 rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-900 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                >
+                  <option value="PRE_A1">Pre-A1 - Complete Novice</option>
+                  <option value="A1">A1 - Absolute Beginner</option>
+                  <option value="A2">A2 - Elementary English</option>
+                  <option value="B1">B1 - Intermediate Fluency</option>
+                  <option value="B2">B2 - Upper Intermediate</option>
+                  <option value="C1">C1 - Advanced Mastery</option>
+                  <option value="C2">C2 - Native-level Mastery</option>
+                </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Access Duration (Days)
-                  </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    placeholder="90"
-                    value={courseForm.durationDays}
-                    onChange={(e) => setCourseForm({ ...courseForm, durationDays: parseInt(e.target.value, 10) || 90 })}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 pt-6">
+                <div className="flex items-center gap-2 pt-2">
                   <input
                     type="checkbox"
                     id="publishedCheck"
@@ -751,7 +701,6 @@ export default function TeacherCoursesPage() {
                     Publish immediately
                   </label>
                 </div>
-              </div>
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">

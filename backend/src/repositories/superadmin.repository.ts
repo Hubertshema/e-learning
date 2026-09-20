@@ -1,5 +1,13 @@
 import { prisma } from '../config/database.js';
-import { Role, UserStatus, PaymentStatus, EnrollmentStatus, CEFRLevel, SubscriptionStatus, Prisma } from '@prisma/client';
+import { Role, UserStatus, PaymentStatus, EnrollmentStatus, CEFRLevel, Prisma } from '@prisma/client';
+
+const SubscriptionStatus = {
+  INACTIVE: 'INACTIVE',
+  PENDING: 'PENDING',
+  ACTIVE: 'ACTIVE',
+  EXPIRED: 'EXPIRED',
+} as const;
+type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
 
 export class SuperadminRepository {
   async getOverviewStats() {
@@ -246,7 +254,7 @@ export class SuperadminRepository {
             include: { user: { select: { firstName: true, lastName: true, email: true } } },
           },
           enrollment: {
-            include: { course: { select: { id: true, title: true, level: true, price: true } } },
+            include: { course: { select: { id: true, title: true, level: true } } },
           },
         },
       }),
@@ -381,13 +389,14 @@ export class SuperadminRepository {
       });
 
       if (status === PaymentStatus.VERIFIED) {
-        const planMonths = payment.planMonths || 1;
+        const paymentAny = payment as any;
+        const planMonths = paymentAny.planMonths || 1;
         const durationDays = planMonths * 30;
         const now = new Date();
 
-        const studentProfile = await tx.studentProfile.findUnique({
+        const studentProfile = (await tx.studentProfile.findUnique({
           where: { id: payment.studentId },
-        });
+        })) as any;
 
         let baseDate = now;
         if (studentProfile?.subscriptionExpiresAt && studentProfile.subscriptionExpiresAt > now) {
@@ -399,11 +408,11 @@ export class SuperadminRepository {
           where: { id: payment.studentId },
           data: {
             subscriptionStatus: SubscriptionStatus.ACTIVE,
-            subscriptionPlan: payment.planName || `${planMonths} Month Access`,
+            subscriptionPlan: paymentAny.planName || `${planMonths} Month Access`,
             subscriptionMonths: planMonths,
             subscriptionStartedAt: studentProfile?.subscriptionStartedAt || now,
             subscriptionExpiresAt: expiresAt,
-          },
+          } as any,
         });
 
         if (payment.enrollmentId) {
@@ -422,7 +431,7 @@ export class SuperadminRepository {
             data: {
               userId: payment.student.userId,
               title: 'Subscription Verified & Activated! 🚀',
-              message: `Your payment for ${payment.planName || `${planMonths} Month Access`} (${payment.currency} ${payment.amount}) was verified. Full platform access is unlocked until ${expiresAt.toLocaleDateString()}.`,
+              message: `Your payment for ${paymentAny.planName || `${planMonths} Month Access`} (${payment.currency} ${payment.amount}) was verified. Full platform access is unlocked until ${expiresAt.toLocaleDateString()}.`,
               type: 'PAYMENT_VERIFIED',
               link: '/student/courses',
             },
@@ -745,7 +754,7 @@ export class SuperadminRepository {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        course: { select: { id: true, title: true, level: true, price: true, currency: true } },
+        course: { select: { id: true, title: true, level: true, currency: true } },
         teacher: {
           include: {
             user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },

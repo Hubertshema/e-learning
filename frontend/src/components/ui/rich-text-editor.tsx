@@ -56,6 +56,49 @@ export function RichTextRenderer({
     return <p className="text-xs text-slate-400 italic">No content provided.</p>;
   }
 
+  // Detect HTML from TinyMCE and render directly with rich educational styles
+  if (typeof content === 'string' && /<[a-z][\s\S]*>/i.test(content)) {
+    return (
+      <div
+        className={cn(
+          'prose dark:prose-invert max-w-none text-sm sm:text-base leading-relaxed text-slate-800 dark:text-slate-200',
+          // Headings
+          '[&_h1]:text-2xl [&_h1]:sm:text-3xl [&_h1]:font-black [&_h1]:text-slate-900 dark:[&_h1]:text-white [&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:tracking-tight [&_h1]:border-b [&_h1]:border-slate-200 dark:[&_h1]:border-slate-800 [&_h1]:pb-2',
+          '[&_h2]:text-xl [&_h2]:sm:text-2xl [&_h2]:font-extrabold [&_h2]:text-slate-900 dark:[&_h2]:text-white [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:tracking-tight',
+          '[&_h3]:text-lg [&_h3]:sm:text-xl [&_h3]:font-bold [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_h3]:mt-5 [&_h3]:mb-2',
+          '[&_h4]:text-base [&_h4]:sm:text-lg [&_h4]:font-semibold [&_h4]:text-slate-900 dark:[&_h4]:text-white [&_h4]:mt-4 [&_h4]:mb-2',
+          // Paragraphs & inlines
+          '[&_p]:my-3 [&_p]:leading-relaxed [&_p]:text-slate-700 dark:[&_p]:text-slate-300',
+          '[&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white',
+          '[&_em]:italic',
+          '[&_u]:underline [&_u]:underline-offset-2',
+          '[&_s]:line-through [&_s]:text-slate-400 dark:[&_s]:text-slate-500',
+          // Blockquotes (Teacher tips, callouts, warnings)
+          '[&_blockquote]:my-4 [&_blockquote]:pl-4 [&_blockquote]:py-3 [&_blockquote]:pr-4 [&_blockquote]:border-l-4 [&_blockquote]:border-primary-500 [&_blockquote]:bg-primary-50/50 dark:[&_blockquote]:bg-primary-950/30 [&_blockquote]:rounded-r-xl [&_blockquote]:italic [&_blockquote]:text-slate-700 dark:[&_blockquote]:text-slate-300 [&_blockquote_strong]:text-primary-900 dark:[&_blockquote_strong]:text-primary-200 [&_blockquote_strong]:not-italic',
+          // Tables
+          '[&_table]:w-full [&_table]:my-5 [&_table]:border-collapse [&_table]:rounded-xl [&_table]:overflow-hidden [&_table]:border [&_table]:border-slate-200 dark:[&_table]:border-slate-800 [&_table]:shadow-xs',
+          '[&_thead]:bg-slate-100/90 dark:[&_thead]:bg-slate-800/90',
+          '[&_th]:border [&_th]:border-slate-200 dark:[&_th]:border-slate-800 [&_th]:py-3 [&_th]:px-4 [&_th]:text-left [&_th]:text-xs [&_th]:font-bold [&_th]:uppercase [&_th]:tracking-wider [&_th]:text-slate-700 dark:[&_th]:text-slate-200',
+          '[&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-slate-800 [&_td]:py-3 [&_td]:px-4 [&_td]:text-xs [&_td]:sm:text-sm [&_td]:text-slate-700 dark:[&_td]:text-slate-300',
+          '[&_tbody_tr:nth-child(even)]:bg-slate-50/60 dark:[&_tbody_tr:nth-child(even)]:bg-slate-800/40',
+          '[&_tbody_tr:hover]:bg-primary-50/30 dark:[&_tbody_tr:hover]:bg-slate-800/60 [&_tbody_tr]:transition-colors',
+          // Lists
+          '[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-3 [&_ul]:space-y-1.5 [&_ul]:marker:text-primary-500',
+          '[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-3 [&_ol]:space-y-1.5 [&_ol]:marker:text-primary-600 [&_ol]:marker:font-semibold',
+          '[&_li]:leading-relaxed [&_li]:text-slate-700 dark:[&_li]:text-slate-300',
+          // Code
+          '[&_code]:font-mono [&_code]:text-xs [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:text-pink-600 dark:[&_code]:text-pink-400 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:border [&_code]:border-slate-200 dark:[&_code]:border-slate-700',
+          '[&_pre]:my-4 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:text-slate-100 [&_pre]:font-mono [&_pre]:text-xs [&_pre]:overflow-x-auto',
+          // Horizontal Rule & Images
+          '[&_hr]:my-6 [&_hr]:border-slate-200 dark:[&_hr]:border-slate-800',
+          '[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:shadow-md [&_img]:my-4',
+          className
+        )}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+
   // Parse lines into structured blocks
   const lines = content.split('\n');
   const blocks: React.ReactNode[] = [];

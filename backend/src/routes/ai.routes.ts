@@ -14,6 +14,7 @@ router.post('/chat', AIController.chat);
 
 // Generators
 router.post('/lessons/generate', AIController.generateLessonPlan);
+router.post('/lessons/draft', AIController.draftLessonContent);
 router.post('/activities/generate', AIController.generateActivitySet);
 router.post('/assessments/blueprint', AIController.generateAssessmentBlueprint);
 router.post('/assessments/generate', AIController.generateAssessment);
