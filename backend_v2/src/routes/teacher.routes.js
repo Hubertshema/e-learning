@@ -68,4 +68,13 @@ router.delete('/assignments/:id', AssignmentController.deleteAssignment);
 router.get('/assignments/:id/submissions', AssignmentController.getSubmissions);
 router.post('/submissions/:submissionId/grade', AssignmentController.gradeSubmission);
 
+// Students Directory & Progress Analytics
+router.get('/students', TeacherController.getStudents);
+router.get('/students/:studentId/progress', TeacherController.getStudentProgress);
+router.post('/students/:studentId/feedback', TeacherController.addStudentFeedback);
+router.patch('/students/:enrollmentId', TeacherController.updateStudentEnrollment);
+router.delete('/students/:enrollmentId', TeacherController.deleteStudentEnrollment);
+
 export default router;
+
+

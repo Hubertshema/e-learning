@@ -246,10 +246,7 @@ function CreateAssignmentForm() {
 
     try {
       setSubmitting(true);
-      const { data } = await apiClient.post<
-        { assignment: Assignment },
-        { assignment: Assignment }
-      >('/teacher/assignments', {
+      const data = await apiClient.post<any>('/teacher/assignments', {
         lessonId: selectedLessonId,
         title: title.trim(),
         description: currentContent,
@@ -260,7 +257,7 @@ function CreateAssignmentForm() {
 
       // Explicitly update cache so the assignments page picks up the new assignment
       // Wrap in array to match the cache shape { assignments: Assignment[] }
-      clientCache.set('teacher_assignments_page', { assignments: [data.assignment] }, 300_000);
+      clientCache.set('teacher_assignments_page', { assignments: [data] }, 300_000);
       router.push('/teacher/assignments');
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');

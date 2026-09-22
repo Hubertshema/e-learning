@@ -96,7 +96,6 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     { name: 'Enrollments & Access', href: '/teacher/enrollments', icon: UserCheck },
     { name: 'Expiring Watchlist', href: '/teacher/expiring-students', icon: Clock },
     { name: 'Attendance Register', href: '/teacher/attendance', icon: CalendarCheck },
-    { name: 'Student Progress', href: '/teacher/progress', icon: TrendingUp },
     { name: 'Coaching Feedback', href: '/teacher/feedback', icon: MessageSquare },
     { name: 'Resource Library', href: '/teacher/library', icon: Library },
     { name: 'Calendar & Agenda', href: '/teacher/calendar', icon: Calendar },

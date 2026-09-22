@@ -409,7 +409,7 @@ export class TeacherModel {
               e.status AS "enrollmentStatus",
               e."enrolledAt",
               e."expiresAt",
-              u.id AS "userId",
+              COALESCE(u.id, sp."userId") AS "userId",
               u."firstName",
               u."lastName",
               u.email,
@@ -422,8 +422,8 @@ export class TeacherModel {
               cl.name AS "className"
        FROM "public"."enrollments" e
        JOIN "public"."courses" c ON c.id = e."courseId"
-       JOIN "public"."users" u ON u.id = e."studentId"
-       LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
+       LEFT JOIN "public"."student_profiles" sp ON (sp.id = e."studentId" OR sp."userId" = e."studentId")
+       JOIN "public"."users" u ON (u.id = sp."userId" OR u.id = e."studentId")
        LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
        WHERE c."teacherId" = ANY($1)
          AND ($2 = '' OR u."firstName" ILIKE $2 OR u."lastName" ILIKE $2 OR u.email ILIKE $2)
@@ -461,32 +461,34 @@ export class TeacherModel {
   /**
    * Get a single student's full learning profile + progress for a teacher.
    * GET /api/v1/teacher/students/:studentId/progress
-   * Only returns data if the student is enrolled in one of the teacher's courses.
    */
   static async getStudentProgress(teacherId, studentId) {
     const teacherIds = await this.resolveTeacherIds(teacherId);
 
-    const ownerRes = await query(
-      `SELECT e."studentId"
-       FROM "public"."enrollments" e
-       JOIN "public"."courses" c ON c.id = e."courseId"
-       WHERE e."studentId" = $1 AND c."teacherId" = ANY($2)
-       LIMIT 1`,
-      [studentId, teacherIds]
-    );
-    if (ownerRes.rows.length === 0) return null;
-
+    // Resolve user & profile info
     const userRes = await query(
-      `SELECT u.id, u."firstName", u."lastName", u.email,
-              sp."currentLevel", sp."targetLevel", sp."nativeLanguage"
+      `SELECT u.id AS "userId", u."firstName", u."lastName", u.email, u."avatarUrl", u."createdAt",
+              sp.id AS "profileId", sp."currentLevel", sp."targetLevel", sp."nativeLanguage"
        FROM "public"."users" u
        LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
-       WHERE u.id = $1
+       WHERE u.id = $1 OR sp.id = $1
        LIMIT 1`,
       [studentId]
     );
     if (userRes.rows.length === 0) return null;
     const u = userRes.rows[0];
+    const studentUserIds = Array.from(new Set([studentId, u.userId, u.profileId].filter(Boolean)));
+
+    // Verify teacher owns at least one course this student is enrolled in
+    const ownerRes = await query(
+      `SELECT e."studentId", e."courseId"
+       FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       WHERE e."studentId" = ANY($1) AND c."teacherId" = ANY($2)
+       LIMIT 1`,
+      [studentUserIds, teacherIds]
+    );
+    if (ownerRes.rows.length === 0) return null;
 
     // Enrollments tied to teacher's courses (with nested units/lessons)
     const enrollRes = await query(
@@ -496,12 +498,13 @@ export class TeacherModel {
        FROM "public"."enrollments" e
        JOIN "public"."courses" c ON c.id = e."courseId"
        LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
-       WHERE e."studentId" = $1 AND c."teacherId" = ANY($2)
+       WHERE e."studentId" = ANY($1) AND c."teacherId" = ANY($2)
        ORDER BY e."enrolledAt" DESC`,
-      [studentId, teacherIds]
+      [studentUserIds, teacherIds]
     );
+
     const enrollments = [];
-    const courseIds = enrollRes.rows.map((r) => r.courseIdRef]);
+    const courseIds = enrollRes.rows.map((r) => r.courseIdRef);
 
     if (courseIds.length > 0) {
       const unitsRes = await query(
@@ -561,9 +564,9 @@ export class TeacherModel {
        JOIN "public"."lessons" l ON l.id = p."lessonId"
        JOIN "public"."units" u ON u.id = l."unitId"
        JOIN "public"."courses" c ON c.id = u."courseId"
-       WHERE p."studentId" = $1 AND c."teacherId" = ANY($2)
+       WHERE p."studentId" = ANY($1) AND c."teacherId" = ANY($2)
        ORDER BY p."completedAt" DESC`,
-      [studentId, teacherIds]
+      [studentUserIds, teacherIds]
     );
     const lessonProgress = progressRes.rows.map((p) => ({
       id: p.id,
@@ -586,9 +589,9 @@ export class TeacherModel {
        JOIN "public"."lessons" l ON l.id = q."lessonId"
        JOIN "public"."units" u ON u.id = l."unitId"
        JOIN "public"."courses" c ON c.id = u."courseId"
-       WHERE qa."studentId" = $1 AND c."teacherId" = ANY($2)
+       WHERE qa."studentId" = ANY($1) AND c."teacherId" = ANY($2)
        ORDER BY qa."completedAt" DESC`,
-      [studentId, teacherIds]
+      [studentUserIds, teacherIds]
     );
     const quizAttempts = quizRes.rows.map((qa) => ({
       id: qa.id,
@@ -610,9 +613,9 @@ export class TeacherModel {
        JOIN "public"."lessons" l ON l.id = a."lessonId"
        JOIN "public"."units" u ON u.id = l."unitId"
        JOIN "public"."courses" c ON c.id = u."courseId"
-       WHERE s."studentId" = $1 AND c."teacherId" = ANY($2)
+       WHERE s."studentId" = ANY($1) AND c."teacherId" = ANY($2)
        ORDER BY s."submittedAt" DESC`,
-      [studentId, teacherIds]
+      [studentUserIds, teacherIds]
     );
     const assignmentSubmissions = assignRes.rows.map((s) => ({
       id: s.id,
@@ -626,20 +629,231 @@ export class TeacherModel {
       },
     }));
 
+    // Calculate lesson counts & overall progress
+    let totalAssignedLessons = 0;
+    for (const enr of enrollments) {
+      if (enr.course && enr.course.units) {
+        for (const un of enr.course.units) {
+          totalAssignedLessons += (un.lessons || []).length;
+        }
+      }
+    }
+    const completedLessonsCount = lessonProgress.filter((lp) => lp.completed).length;
+    const overallProgressPercentage = totalAssignedLessons > 0
+      ? Math.min(100, Math.round((completedLessonsCount / totalAssignedLessons) * 100))
+      : (completedLessonsCount > 0 ? 100 : 0);
+
+    // Compute 7-skill breakdown
+    const skillBreakdown = {};
+    const allSkills = ['GRAMMAR', 'VOCABULARY', 'READING', 'LISTENING', 'SPEAKING', 'WRITING', 'PRONUNCIATION'];
+    for (const sk of allSkills) {
+      skillBreakdown[sk] = { averageScore: 0, attemptsCount: 0 };
+    }
+    for (const lp of lessonProgress) {
+      const sk = (lp.lesson?.skillType || '').toUpperCase();
+      if (skillBreakdown[sk]) {
+        skillBreakdown[sk].attemptsCount += 1;
+        if (lp.score !== null && lp.score !== undefined) {
+          const currentTotal = skillBreakdown[sk].averageScore * (skillBreakdown[sk].attemptsCount - 1);
+          skillBreakdown[sk].averageScore = Math.round((currentTotal + lp.score) / skillBreakdown[sk].attemptsCount);
+        }
+      }
+    }
+
+    // Attendance history
+    let attendanceHistory = [];
+    try {
+      const attendRes = await query(
+        `SELECT a.id, a.date, a.status, cl.name AS "className"
+         FROM "public"."attendances" a
+         LEFT JOIN "public"."classes" cl ON cl.id = a."classId"
+         WHERE a."studentId" = ANY($1)
+         ORDER BY a.date DESC
+         LIMIT 10`,
+        [studentUserIds]
+      );
+      attendanceHistory = attendRes.rows.map((a) => ({
+        id: a.id,
+        date: a.date,
+        status: a.status,
+        class: { name: a.className || 'General Class' },
+      }));
+    } catch {}
+
+    // Feedbacks
+    let feedbacks = [];
+    try {
+      const fbRes = await query(
+        `SELECT tf.id, tf.title, tf.content, tf.strengths, tf.improvements, tf."createdAt"
+         FROM "public"."teacher_feedbacks" tf
+         WHERE tf."studentId" = ANY($1)
+         ORDER BY tf."createdAt" DESC`,
+        [studentUserIds]
+      );
+      feedbacks = fbRes.rows.map((fb) => ({
+        id: fb.id,
+        title: fb.title,
+        content: fb.content,
+        strengths: parsePgArray(fb.strengths),
+        improvements: parsePgArray(fb.improvements),
+        createdAt: fb.createdAt,
+      }));
+    } catch {}
+
     return {
-      id: u.id,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      email: u.email,
-      studentProfile: {
-        currentLevel: u.currentLevel,
-        targetLevel: u.targetLevel,
-        nativeLanguage: u.nativeLanguage,
+      student: {
+        id: u.userId,
+        userId: u.userId,
+        nativeLanguage: u.nativeLanguage || 'English',
+        currentLevel: u.currentLevel || 'A1',
+        targetLevel: u.targetLevel || 'B2',
+        user: {
+          firstName: u.firstName,
+          lastName: u.lastName,
+          email: u.email,
+          avatarUrl: u.avatarUrl,
+          createdAt: u.createdAt,
+        },
       },
       enrollments,
-      lessonProgress,
-      quizAttempts,
-      assignmentSubmissions,
+      overallProgressPercentage,
+      completedLessonsCount,
+      totalAssignedLessons,
+      skillBreakdown,
+      recentSubmissions: assignmentSubmissions.map((s) => ({
+        id: s.id,
+        assignment: { title: s.assignment.title, maxScore: s.assignment.maxScore || 100 },
+        score: s.score,
+        status: s.status,
+        submittedAt: s.submittedAt,
+      })),
+      recentQuizzes: quizAttempts.map((q) => ({
+        id: q.id,
+        quiz: { title: q.quiz.title, passingScore: q.quiz.passingScore || 70 },
+        scorePercentage: q.score !== null ? q.score : 0,
+        isPassed: q.passed,
+        startedAt: q.completedAt,
+      })),
+      attendanceHistory,
+      feedbacks,
     };
   }
+
+  /**
+   * Save teacher feedback for a student
+   */
+  static async addStudentFeedback(teacherId, studentId, { title, content, strengths = [], improvements = [] }) {
+    const userRes = await query(
+      `SELECT u.id AS "userId", sp.id AS "profileId"
+       FROM "public"."users" u
+       LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
+       WHERE u.id = $1 OR sp.id = $1
+       LIMIT 1`,
+      [studentId]
+    );
+    const targetStudentId = userRes.rows[0]?.profileId || userRes.rows[0]?.userId || studentId;
+    const res = await query(
+      `INSERT INTO "public"."teacher_feedbacks" ("teacherId", "studentId", title, content, strengths, improvements, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+       RETURNING *`,
+      [teacherId, targetStudentId, title, content, strengths, improvements]
+    );
+    return res.rows[0];
+  }
+
+  /**
+   * Update student enrollment by teacher
+   */
+  static async updateStudentEnrollment(teacherId, enrollmentId, { status, classId, expiresAt, currentLevel, targetLevel }) {
+    const teacherIds = await this.resolveTeacherIds(teacherId);
+
+    // Verify teacher owns the course for this enrollment
+    const verifyRes = await query(
+      `SELECT e.id, e."studentId", e."courseId", sp.id AS "profileId", sp."userId"
+       FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       LEFT JOIN "public"."student_profiles" sp ON (sp.id = e."studentId" OR sp."userId" = e."studentId")
+       WHERE e.id = $1 AND c."teacherId" = ANY($2)
+       LIMIT 1`,
+      [enrollmentId, teacherIds]
+    );
+    if (verifyRes.rows.length === 0) return null;
+
+    const enr = verifyRes.rows[0];
+
+    // Build update query for enrollment
+    const updates = [];
+    const params = [enrollmentId];
+    let pIdx = 2;
+
+    if (status !== undefined) {
+      updates.push(`status = $${pIdx++}`);
+      params.push(status);
+    }
+    if (classId !== undefined) {
+      updates.push(`"classId" = $${pIdx++}`);
+      params.push(classId || null);
+    }
+    if (expiresAt !== undefined) {
+      updates.push(`"expiresAt" = $${pIdx++}`);
+      params.push(expiresAt ? new Date(expiresAt).toISOString() : null);
+    }
+
+    updates.push(`"updatedAt" = NOW()`);
+
+    const updateSql = `
+      UPDATE "public"."enrollments"
+      SET ${updates.join(', ')}
+      WHERE id = $1
+      RETURNING *
+    `;
+    const res = await query(updateSql, params);
+
+    // Update level if provided
+    if ((currentLevel || targetLevel) && (enr.profileId || enr.userId)) {
+      const profUpdates = [];
+      const profParams = [enr.profileId || enr.studentId];
+      let profIdx = 2;
+      if (currentLevel) {
+        profUpdates.push(`"currentLevel" = $${profIdx++}`);
+        profParams.push(currentLevel);
+      }
+      if (targetLevel) {
+        profUpdates.push(`"targetLevel" = $${profIdx++}`);
+        profParams.push(targetLevel);
+      }
+      if (profUpdates.length > 0) {
+        await query(
+          `UPDATE "public"."student_profiles"
+           SET ${profUpdates.join(', ')}
+           WHERE id = $1 OR "userId" = $1`,
+          profParams
+        );
+      }
+    }
+
+    return res.rows[0];
+  }
+
+  /**
+   * Delete student enrollment by teacher (unenroll student)
+   */
+  static async deleteStudentEnrollment(teacherId, enrollmentId) {
+    const teacherIds = await this.resolveTeacherIds(teacherId);
+
+    const verifyRes = await query(
+      `SELECT e.id
+       FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       WHERE e.id = $1 AND c."teacherId" = ANY($2)
+       LIMIT 1`,
+      [enrollmentId, teacherIds]
+    );
+    if (verifyRes.rows.length === 0) return false;
+
+    await query(`DELETE FROM "public"."enrollments" WHERE id = $1`, [enrollmentId]);
+    return true;
+  }
 }
+
+
