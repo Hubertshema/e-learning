@@ -78,11 +78,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     { name: 'Platform Enrollments', href: '/superadmin/enrollments', icon: UserCheck },
     { name: 'Financials & Payments', href: '/superadmin/payments', icon: CreditCard },
     { name: 'Announcements', href: '/superadmin/announcements', icon: Megaphone },
-    { name: 'Email Dispatch Logs', href: '/superadmin/email-logs', icon: Mail },
     { name: 'Analytics & Reports', href: '/superadmin/reports', icon: TrendingUp },
-    { name: 'Audit Logs', href: '/superadmin/audit-logs', icon: ShieldAlert },
-    { name: 'Executive Profile', href: '/superadmin/profile', icon: UserCheck },
-    { name: 'Platform Settings', href: '/superadmin/settings', icon: Settings },
   ];
 
   const teacherNav: NavItem[] = [
@@ -143,25 +139,38 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
         {/* Brand Header with Collapse Toggle */}
         <div className="flex items-center justify-between px-1">
           <Link
-            href={isStudent ? '/student' : '/'}
+            href={
+              role === 'SUPERADMIN'
+                ? '/superadmin'
+                : role === 'TEACHER'
+                ? '/teacher'
+                : '/student'
+            }
             className={cn('flex items-center gap-3', collapsed ? 'justify-center w-full' : '')}
             onClick={onClose}
             title="LinguaChris Academy"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#315b36] text-white shadow-sm overflow-hidden p-1.5">
-              <img
-                src="/logo.png"
-                alt="Logo"
-                className="h-full w-full object-contain filter brightness-0 invert"
-              />
-            </div>
-            {!collapsed && (
-              <div className="overflow-hidden">
-                <span className="font-bold text-base tracking-tight text-[#2e3339] block leading-tight truncate">
-                  LinguaChris
-                </span>
-                <span className="text-xs font-semibold text-[#7ba27a] block truncate">
-                  Student Dashboard
+            {collapsed ? (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-[#e2ebe2] shadow-xs overflow-hidden p-1">
+                <img
+                  src="/logo.png"
+                  alt="LinguaChris Logo"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <img
+                  src="/logo.png"
+                  alt="LinguaChris Academy"
+                  className="h-9 w-auto max-w-[155px] object-contain object-left"
+                />
+                <span className="text-[11px] font-semibold text-[#315b36] tracking-tight mt-0.5">
+                  {role === 'SUPERADMIN'
+                    ? 'Superadmin Dashboard'
+                    : role === 'TEACHER'
+                    ? 'Teacher Dashboard'
+                    : 'Student Dashboard'}
                 </span>
               </div>
             )}
@@ -290,20 +299,22 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
         )}
       </div>
 
-      {/* Footer Profile & Logout */}
-      <div className="border-t border-[#e2ebe2] pt-3 space-y-2">
-        <button
-          onClick={() => logout()}
-          title="Logout"
-          className={cn(
-            'w-full flex items-center gap-2.5 py-2.5 rounded-md text-sm font-bold text-[#e63946] hover:bg-[#fee2e2] transition-colors',
-            collapsed ? 'justify-center px-2' : 'px-3'
-          )}
-        >
-          <LogOut className="h-4.5 w-4.5 shrink-0" />
-          {!collapsed && <span>Logout</span>}
-        </button>
-      </div>
+      {/* Footer Profile & Logout (Hidden for Superadmin as requested) */}
+      {role !== 'SUPERADMIN' && (
+        <div className="border-t border-[#e2ebe2] pt-3 space-y-2">
+          <button
+            onClick={() => logout()}
+            title="Logout"
+            className={cn(
+              'w-full flex items-center gap-2.5 py-2.5 rounded-md text-sm font-bold text-[#e63946] hover:bg-[#fee2e2] transition-colors',
+              collapsed ? 'justify-center px-2' : 'px-3'
+            )}
+          >
+            <LogOut className="h-4.5 w-4.5 shrink-0" />
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
+      )}
     </div>
   );
 

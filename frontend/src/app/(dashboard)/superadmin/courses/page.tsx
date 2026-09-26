@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SuperadminCoursesPage() {
   const [search, setSearch] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const {
@@ -32,7 +32,7 @@ export default function SuperadminCoursesPage() {
   );
 
   const handleTogglePublish = async (course: any) => {
-    setActionLoading(true);
+    setActionLoading(course.id);
     setMessage(null);
     const newPublishState = !course.isPublished;
     try {
@@ -51,12 +51,12 @@ export default function SuperadminCoursesPage() {
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Failed to update course status' });
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   };
 
   const handleToggleFeature = async (course: any) => {
-    setActionLoading(true);
+    setActionLoading(course.id);
     setMessage(null);
     const newFeatureState = !course.featured;
     try {
@@ -75,7 +75,7 @@ export default function SuperadminCoursesPage() {
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Failed to update feature status' });
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   };
 
@@ -198,7 +198,7 @@ export default function SuperadminCoursesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleToggleFeature(course)}
-                    isLoading={actionLoading}
+                    isLoading={actionLoading === course.id}
                     className="text-xs h-8"
                   >
                     <Star className={`mr-1 h-3.5 w-3.5 ${course.featured ? 'fill-amber-500 text-amber-500' : ''}`} />
@@ -209,7 +209,7 @@ export default function SuperadminCoursesPage() {
                     variant={course.isPublished ? 'outline' : 'gradient'}
                     size="sm"
                     onClick={() => handleTogglePublish(course)}
-                    isLoading={actionLoading}
+                    isLoading={actionLoading === course.id}
                     className="text-xs h-8"
                   >
                     {course.isPublished ? (

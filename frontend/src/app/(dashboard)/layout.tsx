@@ -8,7 +8,6 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { DashboardSkeleton } from '@/components/layout/dashboard-skeleton';
 import { NotificationCenter } from '@/components/notifications/notification-center';
 import { UserDropdown } from '@/components/layout/user-dropdown';
-import Link from 'next/link';
 import { Sparkles, ShieldCheck, Menu } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

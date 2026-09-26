@@ -5,7 +5,8 @@
   "description": "Next-Gen E-Learning Backend API - Pure Node.js, Express, Socket.IO & Direct SQL",
   "main": "src/server.js",
   "scripts": {
-    "dev": "node --watch src/server.js",
+    "dev": "node src/server.js",
+    "watch": "node --watch src/server.js",
     "start": "node src/server.js"
   },
   "dependencies": {

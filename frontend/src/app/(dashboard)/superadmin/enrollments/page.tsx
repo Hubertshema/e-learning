@@ -108,6 +108,20 @@ export default function SuperadminEnrollmentsPage() {
     }
   };
 
+  const handleSeedEnrollments = async () => {
+    setActionLoading(true);
+    setMessage(null);
+    try {
+      await apiClient.post('/superadmin/seed');
+      setMessage({ type: 'success', text: 'Seeded comprehensive demo students, active enrollments, and classes!' });
+      await fetchEnrollments();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to seed enrollment data' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const filteredEnrollments = enrollments.filter((item) => {
     const sName = `${item.student?.user?.firstName || ''} ${item.student?.user?.lastName || ''} ${item.student?.user?.email || ''}`;
     const cTitle = item.course?.title || '';
@@ -138,6 +152,9 @@ export default function SuperadminEnrollmentsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleSeedEnrollments} disabled={actionLoading}>
+            Seed Demo Data
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchEnrollments} disabled={loading}>
             Refresh Registry
           </Button>

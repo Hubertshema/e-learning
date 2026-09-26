@@ -8,6 +8,7 @@ import teacherRoutes from './teacher.routes.js';
 import aiRoutes from './ai.routes.js';
 import publicRoutes from './public.routes.js';
 import studentRoutes from './student.routes.js';
+import superadminRoutes from './superadmin.routes.js';
 import { HealthController } from '../controllers/health.controller.js';
 import { sendSuccess } from '../utils/response.util.js';
 
@@ -38,5 +39,6 @@ router.use('/teacher', teacherRoutes);
 router.use('/ai', aiRoutes);
 router.use('/public', publicRoutes);
 router.use('/student', studentRoutes);
+router.use('/superadmin', superadminRoutes);
 
 export default router;
