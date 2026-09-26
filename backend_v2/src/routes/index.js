@@ -7,6 +7,7 @@ import notificationRoutes from './notification.routes.js';
 import teacherRoutes from './teacher.routes.js';
 import aiRoutes from './ai.routes.js';
 import publicRoutes from './public.routes.js';
+import levelRoutes from './level.routes.js';
 import studentRoutes from './student.routes.js';
 import superadminRoutes from './superadmin.routes.js';
 import { HealthController } from '../controllers/health.controller.js';
@@ -40,5 +41,6 @@ router.use('/ai', aiRoutes);
 router.use('/public', publicRoutes);
 router.use('/student', studentRoutes);
 router.use('/superadmin', superadminRoutes);
+router.use('/levels', levelRoutes);
 
 export default router;

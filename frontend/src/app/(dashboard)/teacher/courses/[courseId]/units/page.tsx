@@ -194,7 +194,7 @@ export default function TeacherCourseUnitsBuilderPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <Badge variant="indigo">CEFR {course.level}</Badge>
+              <Badge variant="indigo">{course.level}</Badge>
               <span className="text-xs font-semibold text-slate-500">
                 {course.units.length} Units • {totalLessons} Lessons
               </span>

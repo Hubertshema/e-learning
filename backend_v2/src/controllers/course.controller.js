@@ -49,4 +49,43 @@ export class CourseController {
       next(err);
     }
   }
+
+  /**
+   * POST /api/v1/courses/:id/enroll
+   */
+  static async enroll(req, res, next) {
+    try {
+      const enrollment = await CourseService.enrollStudent(req.user.id, req.params.id);
+      return sendSuccess(res, enrollment, 'Successfully enrolled in course', 201);
+    } catch (err) {
+      if (err.statusCode === 400) {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      next(err);
+    }
+  }
+
+  /**
+   * DELETE /api/v1/courses/:id/enroll
+   */
+  static async unenroll(req, res, next) {
+    try {
+      await CourseService.unenrollStudent(req.user.id, req.params.id);
+      return sendSuccess(res, null, 'Successfully unenrolled from course');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * GET /api/v1/courses/:id/students
+   */
+  static async getStudents(req, res, next) {
+    try {
+      const students = await CourseService.getCourseStudents(req.params.id);
+      return sendSuccess(res, students, 'Course students retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

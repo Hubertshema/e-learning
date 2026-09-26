@@ -135,7 +135,6 @@ export default function StudentDashboardPage() {
   }, []);
 
   const studentName = data?.profile?.user?.firstName || user?.firstName || 'Student';
-  const activeCourse = data?.inProgressCourse || (data?.activeEnrollments && data.activeEnrollments[0]) || null;
   const stats = data?.stats;
   const studyStats = data?.studyStatistics || [];
   const mentors = data?.topMentors || [];
@@ -196,83 +195,64 @@ export default function StudentDashboardPage() {
           SECTION 1: TWO-COLUMN TOP LAYOUT (Spacious & Balanced)
       ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        {/* LEFT COLUMN: ACTIVE COURSE CARD */}
+        {/* LEFT COLUMN: PRIMARY LEVEL CARD */}
         <div className="rounded-lg bg-white p-6 shadow-sm border border-[#e2ebe2] flex flex-col justify-between space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-[#315b36] bg-[#eff4ec] px-3 py-1 rounded-md">
-                Active Enrolled Course
+                Primary Learning Level
               </span>
-              {activeCourse?.course?.level && (
+              {data?.profile?.currentLevel && (
                 <span className="text-xs font-bold text-[#7ba27a] bg-[#eff4ec] px-2.5 py-1 rounded-md">
-                  CEFR {activeCourse.course.level}
+                  {data.profile.currentLevel}
                 </span>
               )}
             </div>
 
             <h2 className="text-xl sm:text-2xl font-bold text-[#2e3339] leading-snug">
-              {activeCourse ? activeCourse.course.title : 'No Active Course Enrolled'}
+              {data?.profile?.currentLevel ? `${data.profile.currentLevel} Curriculum` : 'Your Learning Path'}
             </h2>
 
-            {activeCourse ? (
-              <>
-                {/* Meta Chips */}
-                <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#5a5e63] pt-1">
-                  <div className="flex items-center gap-1.5 text-[#315b36] bg-[#eff4ec] px-3 py-1.5 rounded-md">
-                    <Clock className="h-4 w-4 shrink-0" />
-                    <span>
-                      {Math.floor((activeCourse.totalDurationMinutes || 0) / 60)} hr{' '}
-                      {(activeCourse.totalDurationMinutes || 0) % 60} mins
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#315b36] bg-[#eff4ec] px-3 py-1.5 rounded-md">
-                    <BookOpen className="h-4 w-4 shrink-0" />
-                    <span>
-                      {activeCourse.totalUnitsCount || 0} chapter{activeCourse.totalUnitsCount !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#315b36] bg-[#eff4ec] px-3 py-1.5 rounded-md">
-                    <Video className="h-4 w-4 shrink-0" />
-                    <span>{activeCourse.totalLessonsCount || 0} lessons</span>
-                  </div>
-                </div>
+            <p className="text-xs text-[#5a5e63] leading-relaxed">
+              Master this level by completing all required courses. You can also take additional courses from other levels assigned to you.
+            </p>
 
-                {/* Progress Bar */}
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-[#2e3339]">
-                    <span className="text-xs font-medium text-[#5a5e63]">Syllabus Completion</span>
-                    <span className="text-xs font-bold text-[#315b36]">
-                      {activeCourse.progressPercentage || 0}% Complete
-                    </span>
-                  </div>
-                  <div className="h-2.5 w-full rounded-sm bg-[#e2ebe2] overflow-hidden">
-                    <div
-                      className="h-full rounded-sm bg-[#315b36] transition-all duration-500"
-                      style={{
-                        width: `${activeCourse.progressPercentage || 0}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="text-xs text-[#5a5e63] leading-relaxed">
-                You do not have any active courses yet. Browse our certified CEFR curriculum to get started.
-              </p>
-            )}
+            {/* Meta Chips */}
+            <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#5a5e63] pt-1">
+              <div className="flex items-center gap-1.5 text-[#315b36] bg-[#eff4ec] px-3 py-1.5 rounded-md">
+                <BookOpen className="h-4 w-4 shrink-0" />
+                <span>{stats?.activeCoursesCount || 0} Active Courses</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[#315b36] bg-[#eff4ec] px-3 py-1.5 rounded-md">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>{stats?.completedCoursesCount || 0} Completed</span>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between text-xs font-bold text-[#2e3339]">
+                <span className="text-xs font-medium text-[#5a5e63]">Level Completion</span>
+                <span className="text-xs font-bold text-[#315b36]">
+                  {stats?.overallProgressPercentage || 0}% Complete
+                </span>
+              </div>
+              <div className="h-2.5 w-full rounded-sm bg-[#e2ebe2] overflow-hidden">
+                <div
+                  className="h-full rounded-sm bg-[#315b36] transition-all duration-500"
+                  style={{
+                    width: `${stats?.overallProgressPercentage || 0}%`,
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="pt-4 border-t border-[#e2ebe2]">
-            <Link
-              href={
-                activeCourse
-                  ? `/student/courses/${activeCourse.course.id}`
-                  : '/student/courses'
-              }
-            >
+            <Link href="/student/my-courses">
               <button className="w-full flex items-center justify-between rounded-md bg-[#315b36] text-white hover:bg-[#254629] px-5 py-3 text-xs font-bold transition-colors group shadow-sm">
-                <span>{activeCourse ? 'Continue Learning' : 'Explore Course Catalog'}</span>
-                <Play className="h-4 w-4 fill-current ml-1" />
+                <span>View Level Courses & Start Learning</span>
+                <ArrowRight className="h-4 w-4 fill-current ml-1" />
               </button>
             </Link>
           </div>

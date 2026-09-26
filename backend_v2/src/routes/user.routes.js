@@ -8,5 +8,6 @@ router.use(authenticate);
 
 router.get('/profile', UserController.getProfile);
 router.patch('/profile', UserController.updateProfile);
+router.get('/students', UserController.listStudents);
 
 export default router;

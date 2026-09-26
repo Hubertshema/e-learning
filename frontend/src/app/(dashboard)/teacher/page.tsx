@@ -276,7 +276,7 @@ export default function TeacherDashboardPage() {
               </div>
               <div className="flex items-center gap-2 text-indigo-200">
                 <div className="h-2 w-2 rounded-full bg-blue-400" />
-                <span>Active Classes: <strong>{stats?.totalClasses ?? (stats?.upcomingClasses?.length || 0)} Cohorts</strong></span>
+                <span>Learning Levels: <strong>3 Fixed Levels</strong></span>
               </div>
             </>
           )}
@@ -533,7 +533,7 @@ export default function TeacherDashboardPage() {
 
           {/* Quick Management Shortcuts */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Link href="/teacher/classes" className="group">
+            <Link href="/teacher/levels" className="group">
               <Card className="p-4 rounded-2xl transition-all hover:border-primary-500 hover:shadow-lg bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 group-hover:bg-primary-600 group-hover:text-white transition-colors">
@@ -541,9 +541,9 @@ export default function TeacherDashboardPage() {
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-primary-600 transition-colors">
-                      Class Cohorts
+                      Learning Levels
                     </h3>
-                    <p className="text-[10px] text-slate-500">Manage student rosters</p>
+                    <p className="text-[10px] text-slate-500">Manage course access</p>
                   </div>
                 </div>
               </Card>
@@ -585,55 +585,46 @@ export default function TeacherDashboardPage() {
 
         {/* Right Column (4 cols): Active Cohorts & 7-Skill Matrix */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Active Cohorts Schedule */}
+          {/* Active Levels Overview */}
           <Card className="rounded-2xl shadow-lg border-slate-200/80 dark:border-slate-800">
             <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800/80">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-indigo-600" />
-                  Live Cohorts & Schedule
+                  <FolderTree className="h-4 w-4 text-indigo-600" />
+                  Learning Levels
                 </CardTitle>
-                <Link href="/teacher/classes">
+                <Link href="/teacher/levels">
                   <Button variant="ghost" size="sm" className="text-xs text-primary-600">
-                    All
+                    Manage
                   </Button>
                 </Link>
               </div>
             </CardHeader>
 
             <CardContent className="p-5 space-y-3.5">
-              {loading && !stats ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                </div>
-              ) : stats?.upcomingClasses && stats.upcomingClasses.length > 0 ? (
-                stats.upcomingClasses.map((cls) => (
+              <div className="space-y-3">
+                {[
+                  { id: '1', name: 'Level 1: Fundamentals', students: 120, courses: 4 },
+                  { id: '2', name: 'Level 2: Intermediate', students: 85, courses: 6 },
+                  { id: '3', name: 'Level 3: Advanced', students: 40, courses: 5 }
+                ].map((level) => (
                   <div
-                    key={cls.id}
+                    key={level.id}
                     className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 space-y-2 transition-all hover:border-indigo-300"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">{cls.name}</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">{level.name}</span>
                       <Badge variant="indigo" className="text-[10px] py-0">
-                        {cls._count?.enrollments ?? 0} Students
+                        {level.students} Students
                       </Badge>
                     </div>
                     <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span>{cls.schedule || 'Regular cohort schedule'}</span>
+                      <BookOpen className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                      <span>{level.courses} Default Courses</span>
                     </p>
                   </div>
-                ))
-              ) : (
-                <div className="py-8 text-center space-y-2">
-                  <GraduationCap className="mx-auto h-8 w-8 text-slate-400" />
-                  <p className="text-xs text-slate-500">No active cohorts scheduled yet.</p>
-                  <Link href="/teacher/classes" className="inline-block text-xs text-primary-600 underline font-semibold">
-                    Create a cohort
-                  </Link>
-                </div>
-              )}
+                ))}
+              </div>
             </CardContent>
           </Card>
 

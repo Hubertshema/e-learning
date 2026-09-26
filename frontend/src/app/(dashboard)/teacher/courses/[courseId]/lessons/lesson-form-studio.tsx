@@ -174,7 +174,7 @@ export function LessonFormStudio({
       const res = await apiClient.post<any>('/ai/lessons/draft', {
         prompt: aiPrompt.trim(),
         title: title.trim() || undefined,
-        cefrLevel: courseLevel,
+        level: courseLevel,
         skills: selectedSkills,
       });
 
@@ -296,7 +296,7 @@ export function LessonFormStudio({
           <div>
             <div className="flex items-center gap-2">
               <Badge variant="indigo" className="font-bold text-xs">
-                CEFR {courseLevel}
+                Level {courseLevel}
               </Badge>
               <span className="text-xs text-slate-500 font-medium truncate max-w-[280px]">
                 {courseTitle}
@@ -651,7 +651,7 @@ export function LessonFormStudio({
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="text-slate-500 font-medium">Context:</span>
               <Badge variant="indigo" className="text-[10px]">
-                CEFR {courseLevel}
+                Level {courseLevel}
               </Badge>
               {selectedSkills.map((sk) => (
                 <Badge key={sk} variant="outline" className="text-[10px]">

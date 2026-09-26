@@ -127,8 +127,7 @@ export default function StudentCoursesPage() {
 
     try {
       setSubmittingPayment(true);
-      await apiClient.post('/student/payments/submit', {
-        courseId: checkoutCourse.id,
+      await apiClient.post(`/courses/${checkoutCourse.id}/enroll`, {
         amount: (checkoutCourse as any).price ? Number((checkoutCourse as any).price) : 0,
         currency: checkoutCourse.currency || 'USD',
         paymentMethod: paymentForm.paymentMethod,

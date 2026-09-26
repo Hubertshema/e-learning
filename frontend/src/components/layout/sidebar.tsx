@@ -83,7 +83,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
 
   const teacherNav: NavItem[] = [
     { name: 'Dashboard', href: '/teacher', icon: LayoutDashboard },
-    { name: 'My Classes', href: '/teacher/classes', icon: FolderTree },
+    { name: 'Learning Levels', href: '/teacher/levels', icon: FolderTree },
     { name: 'Courses & Syllabus', href: '/teacher/courses', icon: BookOpen },
     { name: 'Quizzes & Tests', href: '/teacher/quizzes', icon: CheckCircle2 },
     { name: 'Diagnostic Placement', href: '/teacher/diagnostic-quiz', icon: FileCheck },

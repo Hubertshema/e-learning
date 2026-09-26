@@ -26,7 +26,7 @@ import {
 import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { RichTextEditor, RichTextRenderer } from '@/components/ui/rich-text-editor';
-
+import { CurriculumPersonalization } from './CurriculumPersonalization';
 interface DetailedProgressData {
   student: {
     id: string;
@@ -97,6 +97,8 @@ export default function TeacherStudentDetailPage() {
   const [improvementsText, setImprovementsText] = useState('Focus on past perfect vs simple past distinctions');
   const [sendingFeedback, setSendingFeedback] = useState(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'personalization'>('overview');
 
   // Extend Modal
   const [extensionDays, setExtensionDays] = useState(30);
@@ -212,6 +214,39 @@ export default function TeacherStudentDetailPage() {
           <span>{extendSuccess}</span>
         </div>
       )}
+
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800">
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'overview'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Portfolio & Progress
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'personalization'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+          onClick={() => setActiveTab('personalization')}
+        >
+          Manage Personalization
+        </button>
+      </div>
+
+      {activeTab === 'personalization' ? (
+        <CurriculumPersonalization 
+          studentId={studentId} 
+          studentName={`${data.student.user.firstName} ${data.student.user.lastName}`}
+          levelName={data.student.currentLevel}
+        />
+      ) : (
+
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column: Profile Card & Quick Actions */}
@@ -468,6 +503,7 @@ export default function TeacherStudentDetailPage() {
           </Card>
         </div>
       </div>
+      )}
     </div>
   );
 }

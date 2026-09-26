@@ -66,15 +66,8 @@ interface Course {
   };
 }
 
-const CEFR_LEVELS = [
-  { value: 'ALL', label: 'All Levels' },
-  { value: 'A1', label: 'A1 - Beginner' },
-  { value: 'A2', label: 'A2 - Elementary' },
-  { value: 'B1', label: 'B1 - Intermediate' },
-  { value: 'B2', label: 'B2 - Upper Int.' },
-  { value: 'C1', label: 'C1 - Advanced' },
-  { value: 'C2', label: 'C2 - Mastery' },
-];
+// Levels will be fetched from API instead of hardcoded
+// const CEFR_LEVELS = [ ... ];
 
 export default function TeacherCoursesPage() {
   const [search, setSearch] = useState('');
@@ -94,9 +87,23 @@ export default function TeacherCoursesPage() {
   const [courseForm, setCourseForm] = useState({
     title: '',
     description: '',
-    level: 'A1',
+    level: '', // Will be initialized when levels are loaded
     published: true,
   });
+
+  const { data: rawLevels } = useCachedData<any[]>(
+    'teacher_levels_list',
+    async () => {
+      const res = await apiClient.get<any>('/levels');
+      return (res as any)?.data || res || [];
+    },
+    { ttl: 60_000 }
+  );
+  const levelsData = Array.isArray(rawLevels) ? rawLevels : [];
+  const levelOptions = [
+    { value: 'ALL', label: 'All Levels' },
+    ...levelsData.map(l => ({ value: String(l.id), label: l.name }))
+  ];
 
   const {
     data: rawCourses,
@@ -119,7 +126,7 @@ export default function TeacherCoursesPage() {
     const isPub = c.published ?? (c as any).isPublished ?? false;
     if (statusFilter === 'PUBLISHED' && !isPub) return false;
     if (statusFilter === 'DRAFT' && isPub) return false;
-    if (selectedLevel !== 'ALL' && c.level !== selectedLevel) return false;
+    if (selectedLevel !== 'ALL' && String(c.level) !== String(selectedLevel)) return false;
     if (search) {
       const q = search.toLowerCase();
       const matchTitle = c.title.toLowerCase().includes(q);
@@ -142,7 +149,7 @@ export default function TeacherCoursesPage() {
     setCourseForm({
       title: '',
       description: '',
-      level: 'A1',
+      level: levelsData.length > 0 ? String(levelsData[0].id) : '',
       published: true,
     });
     setShowCourseModal(true);
@@ -153,7 +160,7 @@ export default function TeacherCoursesPage() {
     setCourseForm({
       title: c.title,
       description: c.description || '',
-      level: c.level || 'A1',
+      level: c.level ? String(c.level) : (levelsData.length > 0 ? String(levelsData[0].id) : ''),
       published: Boolean(c.published),
     });
     setShowCourseModal(true);
@@ -232,13 +239,13 @@ export default function TeacherCoursesPage() {
         <div>
           <div className="flex items-center gap-2">
             <Badge variant="indigo">Curriculum Studio</Badge>
-            <span className="text-xs font-semibold text-slate-500">CEFR English Program</span>
+            <span className="text-xs font-semibold text-slate-500">Learning Levels</span>
           </div>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
             Courses & Multi-Skill Lessons
           </h1>
           <p className="text-xs text-slate-500">
-            Design interactive CEFR-aligned English courses, structured units, and skill-focused exercises.
+            Design interactive courses, structured units, and skill-focused exercises tailored for each learning level.
           </p>
         </div>
 
@@ -392,9 +399,9 @@ export default function TeacherCoursesPage() {
         {/* Level Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-0.5">
           <span className="text-[11px] font-semibold text-slate-400 shrink-0 mr-1 flex items-center gap-1">
-            <SlidersHorizontal className="h-3 w-3" /> CEFR Level:
+            <SlidersHorizontal className="h-3 w-3" /> Level:
           </span>
-          {CEFR_LEVELS.map((lvl) => (
+          {levelOptions.map((lvl) => (
             <button
               key={lvl.value}
               onClick={() => setSelectedLevel(lvl.value)}
@@ -441,7 +448,7 @@ export default function TeacherCoursesPage() {
           <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
             {search || selectedLevel !== 'ALL' || statusFilter !== 'ALL'
               ? 'Try adjusting or clearing your search term and level filter.'
-              : 'Start by building your first CEFR English course with units and multi-skill lessons.'}
+              : 'Start by building your first course with units and multi-skill lessons.'}
           </p>
           <Button variant="gradient" size="sm" onClick={handleOpenCreateModal}>
             <Plus className="mr-1.5 h-4 w-4" />
@@ -467,7 +474,7 @@ export default function TeacherCoursesPage() {
                   {/* Badge & Status Header */}
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant="indigo" className="font-bold text-xs px-2.5 py-0.5">
-                      CEFR {c.level}
+                      {levelsData.find(l => String(l.id) === String(c.level))?.name || `Level ${c.level}`}
                     </Badge>
 
                     <div className="flex items-center gap-1.5">
@@ -566,7 +573,7 @@ export default function TeacherCoursesPage() {
               <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Course Program</th>
-                  <th className="py-3 px-4">CEFR Level</th>
+                  <th className="py-3 px-4">Level</th>
                   <th className="py-3 px-4">Curriculum Units</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
@@ -588,7 +595,7 @@ export default function TeacherCoursesPage() {
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <Badge variant="indigo" className="text-[11px]">{c.level}</Badge>
+                      <Badge variant="indigo" className="text-[11px]">{levelsData.find(l => String(l.id) === String(c.level))?.name || `Level ${c.level}`}</Badge>
                     </td>
 
                     <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
@@ -674,20 +681,16 @@ export default function TeacherCoursesPage() {
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  CEFR Proficiency Level
+                  Learning Level
                 </label>
                 <select
                   value={courseForm.level}
                   onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })}
                   className="w-full mt-1 rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-900 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                 >
-                  <option value="PRE_A1">Pre-A1 - Complete Novice</option>
-                  <option value="A1">A1 - Absolute Beginner</option>
-                  <option value="A2">A2 - Elementary English</option>
-                  <option value="B1">B1 - Intermediate Fluency</option>
-                  <option value="B2">B2 - Upper Intermediate</option>
-                  <option value="C1">C1 - Advanced Mastery</option>
-                  <option value="C2">C2 - Native-level Mastery</option>
+                  {levelsData.map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
                 </select>
               </div>
 

@@ -130,9 +130,26 @@ export class UserModel {
    */
   static async getStudentProfile(userId) {
     const res = await query(
-      `SELECT * FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
+      `SELECT sp.*, 
+              l.id AS "levelId", l.name AS "levelName", l.code AS "levelCode"
+       FROM "public"."student_profiles" sp
+       LEFT JOIN "public"."levels" l ON l.id = sp."levelId"
+       WHERE sp."userId" = $1 LIMIT 1`,
       [userId]
     );
-    return res.rows[0] || null;
+    
+    if (!res.rows[0]) return null;
+    
+    const profile = res.rows[0];
+    if (profile.levelId) {
+      profile.level = {
+        id: profile.levelId,
+        name: profile.levelName,
+        code: profile.levelCode
+      };
+      delete profile.levelName;
+      delete profile.levelCode;
+    }
+    return profile;
   }
 }

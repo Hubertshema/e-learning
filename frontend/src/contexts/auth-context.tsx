@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           tokenStorage.clearTokens();
           setUser(null);
         } else {
-          // Public page – just clear silently without redirecting
+          // Public page — just clear silently without redirecting
           tokenStorage.clearTokens();
           setUser(null);
         }
