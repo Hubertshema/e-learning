@@ -124,6 +124,11 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
     return null;
   }
 
+  const isLessonBuilder = pathname.includes('/lessons/');
+  if (isLessonBuilder) {
+    return <>{children}</>;
+  }
+
   const currentSection = (() => {
     const parts = pathname.split('/').filter(Boolean);
     // e.g. /studio/[courseId]/settings -> parts = ['studio', '[id]', 'settings']

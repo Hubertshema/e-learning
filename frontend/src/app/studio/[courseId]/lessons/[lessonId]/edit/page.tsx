@@ -1,17 +1,18 @@
 'use client';
+
+import React from 'react';
 import { useParams } from 'next/navigation';
-import { LessonFormStudio } from '@/app/(dashboard)/teacher/courses/[courseId]/lessons/lesson-form-studio';
+import { LessonBuilder } from '@/components/lesson-builder/lesson-builder';
 
 export default function StudioEditLessonPage() {
   const { courseId, lessonId } = useParams() as { courseId: string; lessonId: string };
+
   return (
-    <div className="max-w-5xl">
-      <LessonFormStudio
-        mode="edit"
-        courseId={courseId}
-        lessonId={lessonId}
-        backHref={`/studio/${courseId}`}
-      />
-    </div>
+    <LessonBuilder
+      courseId={courseId}
+      lessonId={lessonId}
+      mode="edit"
+      backHref={`/studio/${courseId}`}
+    />
   );
 }

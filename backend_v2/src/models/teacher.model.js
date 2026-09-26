@@ -1,4 +1,5 @@
 import { query, parsePgArray } from '../config/database.js';
+import { cache } from '../config/cache.js';
 import crypto from 'crypto';
 
 export class TeacherModel {
@@ -504,9 +505,15 @@ export class TeacherModel {
   }
 
   /**
-   * Get lesson by ID (with sections)
+   * Get lesson by ID (with sections, cached for high performance)
    */
   static async getLessonById(lessonId) {
+    const cacheKey = `lesson:${lessonId}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const res = await query(
       `SELECT l.*, u."courseId"
        FROM "public"."lessons" l
@@ -524,6 +531,9 @@ export class TeacherModel {
       [lessonId]
     );
     lesson.sections = secRes.rows;
+
+    // Cache lesson for 10 minutes (600s)
+    cache.set(cacheKey, lesson, 600);
     return lesson;
   }
 
@@ -621,6 +631,8 @@ export class TeacherModel {
       }
     }
 
+    // Invalidate cached lesson
+    cache.del(`lesson:${lessonId}`);
     return await this.getLessonById(lessonId);
   }
 
@@ -628,6 +640,7 @@ export class TeacherModel {
    * Delete lesson by ID
    */
   static async deleteLesson(lessonId) {
+    cache.del(`lesson:${lessonId}`);
     const res = await query(
       `DELETE FROM "public"."lessons" WHERE id = $1 RETURNING id`,
       [lessonId]

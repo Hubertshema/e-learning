@@ -325,4 +325,28 @@ apiClient.patch = <T = unknown>(endpoint: string, body?: unknown, options?: ApiO
 apiClient.delete = <T = unknown>(endpoint: string, options?: ApiOptions) =>
   apiClient<T>(endpoint, { ...options, method: 'DELETE' });
 
+apiClient.upload = async <T = unknown>(endpoint: string, formData: FormData, options?: ApiOptions): Promise<T> => {
+  const baseUrl = getApiBaseUrl();
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
+  const token = tokenStorage.getAccessToken();
+  const headers: Record<string, string> = {
+    ...(options?.headers as Record<string, string> || {}),
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+    ...options,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new ApiError(data.error?.message || data.message || 'Upload failed', response.status);
+  }
+  return (data && data.data !== undefined ? data.data : data) as T;
+};
+
 export const api = apiClient;
+

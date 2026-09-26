@@ -23,12 +23,10 @@ async function startServer() {
   // 1. Connect to PostgreSQL
   await connectDatabase();
 
-  // 1.1 Run Comprehensive Super Admin Seeder
-  try {
-    await runComprehensiveSeed();
-  } catch (seedErr) {
+  // 1.1 Run Comprehensive Super Admin Seeder in background (non-blocking)
+  runComprehensiveSeed().catch((seedErr) => {
     console.warn('⚠️ Seeding warning (non-fatal):', seedErr.message);
-  }
+  });
 
   // 2. Create Express app
   const app = createApp();

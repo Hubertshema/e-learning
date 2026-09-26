@@ -10,6 +10,7 @@ import publicRoutes from './public.routes.js';
 import levelRoutes from './level.routes.js';
 import studentRoutes from './student.routes.js';
 import superadminRoutes from './superadmin.routes.js';
+import uploadRoutes from './upload.routes.js';
 import { HealthController } from '../controllers/health.controller.js';
 import { sendSuccess } from '../utils/response.util.js';
 
@@ -42,5 +43,6 @@ router.use('/public', publicRoutes);
 router.use('/student', studentRoutes);
 router.use('/superadmin', superadminRoutes);
 router.use('/levels', levelRoutes);
+router.use('/upload', uploadRoutes);
 
 export default router;

@@ -351,7 +351,7 @@ export default function StudioCurriculumPage() {
                             <Edit2 className="h-3 w-3 mr-1" /> Edit
                           </Button>
                         </Link>
-                        <Link href={`/teacher/courses/${courseId}/preview`}>
+                        <Link href={`/teacher/courses/${courseId}/preview?lessonId=${lesson.id}`}>
                           <Button
                             variant="ghost"
                             size="sm"
