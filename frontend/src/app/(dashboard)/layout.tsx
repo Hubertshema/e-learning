@@ -48,6 +48,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ? 'Certified Instructor'
       : 'Enrolled Student';
 
+  // Preview simulator routes should be standalone without the dashboard sidebar and top navbar
+  if (pathname.includes('/preview')) {
+    return <div className="h-screen w-full bg-[#f8faf8] overflow-hidden">{children}</div>;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
       <Sidebar

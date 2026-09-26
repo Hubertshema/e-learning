@@ -62,7 +62,7 @@ const NAV_ITEMS: StudioNavItem[] = [
   },
   {
     name: 'Preview',
-    href: (id) => `/teacher/courses/${id}/preview`,
+    href: (id) => `/studio/${id}/preview`,
     icon: Eye,
   },
   {

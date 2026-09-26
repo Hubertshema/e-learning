@@ -520,7 +520,7 @@ export default function TeacherCoursesPage() {
                     </Link>
 
                     {/* Preview Simulator */}
-                    <Link href={`/teacher/courses/${c.id}/preview`}>
+                    <Link href={`/studio/${c.id}/preview`}>
                       <Button size="sm" variant="outline" className="text-xs h-8 px-2.5" title="Preview as Student">
                         <Eye className="h-3.5 w-3.5" />
                       </Button>

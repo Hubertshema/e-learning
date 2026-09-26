@@ -25,6 +25,7 @@ import {
   Check,
   X,
   Minus,
+  FileText,
 } from 'lucide-react';
 import { LessonBlock, LessonTab } from './types';
 import { BLOCK_DEFINITIONS } from './block-registry';
@@ -70,6 +71,7 @@ export function LessonCanvas({
   onSelectTab,
 }: LessonCanvasProps) {
   const [hoveredDividerIndex, setHoveredDividerIndex] = useState<number | null>(null);
+  const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
   const [newObjectiveText, setNewObjectiveText] = useState('');
   const [showAddObj, setShowAddObj] = useState(false);
 
@@ -101,7 +103,7 @@ export function LessonCanvas({
     }
   };
 
-  // Tab Management Handlers
+  // Tab Management Handlers (Strictly icon-only UI)
   const handleAddTab = (title?: string) => {
     const newTab: LessonTab = {
       id: `tab_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -110,16 +112,6 @@ export function LessonCanvas({
     const updated = [...tabs, newTab];
     onUpdateTabs?.(updated);
     onSelectTab?.(newTab.id);
-  };
-
-  const handleQuickSetupTabs = () => {
-    const initialTabs: LessonTab[] = [
-      { id: `tab_${Date.now()}_1`, title: '1. Introduction' },
-      { id: `tab_${Date.now()}_2`, title: '2. Core Lesson' },
-      { id: `tab_${Date.now()}_3`, title: '3. Practice & Review' },
-    ];
-    onUpdateTabs?.(initialTabs);
-    onSelectTab?.(initialTabs[0].id);
   };
 
   const handleSaveRenameTab = (tabId: string) => {
@@ -154,275 +146,237 @@ export function LessonCanvas({
   }, [blocks, tabs, activeTabId]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-100/60 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 min-w-0">
-      {/* Centered Document Paper Container */}
-      <div className="mx-auto w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-sm min-h-[calc(100vh-140px)] p-6 sm:p-10 space-y-6 box-border min-w-0 pb-20 relative">
-        {/* Document Header (Editable Title & Objectives) */}
-        <div className="space-y-4 pb-6 border-b border-slate-100 dark:border-slate-800">
-          {/* Title */}
-          <div>
-            <input
-              type="text"
-              value={lessonTitle}
-              onChange={(e) => onChangeTitle(e.target.value)}
-              placeholder="Untitled Lesson"
-              className="w-full text-2xl sm:text-3xl font-black text-slate-900 dark:text-white placeholder-slate-300 outline-none bg-transparent hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-xl px-2 py-1 transition-colors"
-            />
-          </div>
+    <div className="flex-1 overflow-y-auto bg-[#edf0f5] dark:bg-slate-950 p-4 sm:p-8 flex flex-col items-center min-w-0">
+      {/* ── Realistic Microsoft Word Document Page Sheet ── */}
+      <div className="w-full max-w-[850px] bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-[0_4px_24px_rgba(0,0,0,0.07),0_1px_3px_rgba(0,0,0,0.04)] rounded-sm min-h-[1100px] px-8 sm:px-14 md:px-16 py-10 sm:py-14 space-y-6 relative transition-all min-w-0 flex flex-col">
+        
+        {/* ── Document Section Tabs Strip (Sleek Page Index Bar) ── */}
+        <div className="flex items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {/* All Content Tab */}
+            <button
+              type="button"
+              onClick={() => onSelectTab?.('__all__')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                activeTabId === '__all__' || !activeTabId
+                  ? 'bg-[#315b36] text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              All Content ({blocks.length})
+            </button>
 
-          {/* Learning Objectives Callout */}
-          <div className="rounded-2xl bg-[#f4f8f4] dark:bg-emerald-950/20 border border-[#d6ebd6] dark:border-emerald-900/40 p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#315b36] dark:text-emerald-400 uppercase tracking-wider">
-                <span>🎯</span>
-                <span>Learning Objectives</span>
-              </div>
-              <button
-                onClick={() => setShowAddObj(!showAddObj)}
-                className="text-[11px] font-bold text-[#315b36] hover:underline cursor-pointer"
-              >
-                + Add Objective
-              </button>
-            </div>
+            {tabs.map((tab, idx) => {
+              const isActive = activeTabId === tab.id;
+              const isEditing = editingTabId === tab.id;
+              const count = blocks.filter(b => b.tabId === tab.id || (!b.tabId && idx === 0)).length;
 
-            {objectives.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">
-                No objectives defined yet. Click &quot;+ Add Objective&quot; to guide students on what they will master.
-              </p>
-            ) : (
-              <ul className="space-y-1.5">
-                {objectives.map((obj, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start justify-between gap-2 text-xs text-slate-700 dark:text-slate-300 group"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="text-[#315b36] font-bold mt-0.5">•</span>
-                      <span>{obj}</span>
-                    </div>
-                    <button
-                      onClick={() => onRemoveObjective(i)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 text-[10px] cursor-pointer"
-                    >
-                      ✕
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {showAddObj && (
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="text"
-                  placeholder="e.g. Can analyze algorithm time complexity..."
-                  value={newObjectiveText}
-                  onChange={(e) => setNewObjectiveText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newObjectiveText.trim()) {
-                      onAddObjective(newObjectiveText.trim());
-                      setNewObjectiveText('');
-                      setShowAddObj(false);
-                    }
-                  }}
-                  className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none"
-                  autoFocus
-                />
-                <button
-                  onClick={() => {
-                    if (newObjectiveText.trim()) {
-                      onAddObjective(newObjectiveText.trim());
-                      setNewObjectiveText('');
-                      setShowAddObj(false);
-                    }
-                  }}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#315b36] text-white hover:bg-[#254629] cursor-pointer"
-                >
-                  Save
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Lesson Structure / Tabs Navigation Bar ── */}
-        <div className="bg-[#fcfdfc] border border-[#e2ebe2] rounded-2xl p-3.5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-[#315b36]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Lesson Sections & Tabs
-              </span>
-              {tabs && tabs.length > 0 && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#eff4ec] text-[#315b36] border border-[#d6ebd6]">
-                  {tabs.length} {tabs.length === 1 ? 'Tab' : 'Tabs'}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleAddTab()}
-                title="Add Tab"
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#315b36] hover:bg-[#254629] text-white transition-all shadow-xs cursor-pointer active:scale-95"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Tab pills */}
-          {tabs && tabs.length > 0 ? (
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
-              {/* All Blocks pill */}
-              <button
-                type="button"
-                onClick={() => onSelectTab?.('__all__')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                  activeTabId === '__all__' || !activeTabId
-                    ? 'bg-[#315b36] text-white shadow-xs'
-                    : 'bg-white border border-[#e2ebe2] text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                All Blocks ({blocks.length})
-              </button>
-
-              {tabs.map((tab, idx) => {
-                const isActive = activeTabId === tab.id;
-                const isEditing = editingTabId === tab.id;
-                const count = blocks.filter(b => b.tabId === tab.id || (!b.tabId && idx === 0)).length;
-
-                if (isEditing) {
-                  return (
-                    <div key={tab.id} className="flex items-center gap-1 bg-white border-2 border-[#315b36] rounded-xl px-2 py-1 shrink-0">
-                      <input
-                        type="text"
-                        value={editingTabTitle}
-                        onChange={(e) => setEditingTabTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveRenameTab(tab.id);
-                          if (e.key === 'Escape') setEditingTabId(null);
-                        }}
-                        className="text-xs font-bold text-slate-900 outline-none w-28"
-                        autoFocus
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleSaveRenameTab(tab.id)}
-                        className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded cursor-pointer"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  );
-                }
-
+              if (isEditing) {
                 return (
-                  <div
-                    key={tab.id}
-                    className={`group/tab flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                      isActive
-                        ? 'bg-[#315b36] text-white shadow-xs'
-                        : 'bg-white border border-[#e2ebe2] text-slate-700 hover:text-slate-900 hover:border-slate-300'
-                    }`}
-                  >
-                    <span
-                      onClick={() => onSelectTab?.(tab.id)}
-                      className="flex items-center gap-1.5"
-                    >
-                      <span>{tab.title}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                        isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {count}
-                      </span>
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingTabId(tab.id);
-                        setEditingTabTitle(tab.title);
+                  <div key={tab.id} className="flex items-center gap-1 bg-white dark:bg-slate-800 border-2 border-[#315b36] rounded-lg px-2 py-0.5 shrink-0">
+                    <input
+                      type="text"
+                      value={editingTabTitle}
+                      onChange={(e) => setEditingTabTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveRenameTab(tab.id);
+                        if (e.key === 'Escape') setEditingTabId(null);
                       }}
-                      title="Edit"
-                      className={`opacity-0 group-hover/tab:opacity-100 p-1 rounded transition-opacity cursor-pointer ${
-                        isActive ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-slate-700'
-                      }`}
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
-
+                      className="text-xs font-bold text-slate-900 dark:text-white outline-none w-24 bg-transparent"
+                      autoFocus
+                    />
                     <button
                       type="button"
-                      onClick={() => handleDeleteTab(tab.id)}
-                      title="Remove"
-                      className={`opacity-0 group-hover/tab:opacity-100 p-1 rounded transition-opacity cursor-pointer ${
-                        isActive ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-rose-600'
-                      }`}
+                      onClick={() => handleSaveRenameTab(tab.id)}
+                      className="p-1 text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded cursor-pointer"
+                      title="Save"
                     >
-                      <Minus className="h-3.5 w-3.5" />
+                      <Check className="h-3 w-3" />
                     </button>
                   </div>
                 );
-              })}
+              }
+
+              return (
+                <div
+                  key={tab.id}
+                  className={`group/tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-[#315b36] text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                  }`}
+                >
+                  <span onClick={() => onSelectTab?.(tab.id)} className="flex items-center gap-1.5">
+                    <span>{tab.title}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                    }`}>
+                      {count}
+                    </span>
+                  </span>
+
+                  {/* Strictly Icon-Only Tab Actions */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingTabId(tab.id);
+                      setEditingTabTitle(tab.title);
+                    }}
+                    title="Rename Tab"
+                    className={`opacity-0 group-hover/tab:opacity-100 p-0.5 rounded cursor-pointer ${
+                      isActive ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-slate-700'
+                    }`}
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTab(tab.id)}
+                    title="Delete Tab"
+                    className={`opacity-0 group-hover/tab:opacity-100 p-0.5 rounded cursor-pointer ${
+                      isActive ? 'text-white/80 hover:text-white' : 'text-slate-400 hover:text-rose-500'
+                    }`}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* Quick Add Tab (+) Button - STRICTLY ICON ONLY */}
+            <button
+              type="button"
+              onClick={() => handleAddTab()}
+              title="Add New Section Tab"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-dashed border-slate-300 hover:border-[#315b36] text-slate-500 hover:text-[#315b36] hover:bg-[#eff4ec] transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Document Title (Typed Directly on Paper, Word Style) ── */}
+        <div className="pt-2">
+          <input
+            type="text"
+            value={lessonTitle}
+            onChange={(e) => onChangeTitle(e.target.value)}
+            placeholder="Type lesson title here..."
+            className="w-full text-3xl sm:text-4xl font-black text-slate-900 dark:text-white placeholder:text-slate-300 outline-none bg-transparent hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-lg px-1 py-1 transition-colors tracking-tight"
+          />
+        </div>
+
+        {/* ── Learning Objectives (Styled as Clean Document Callout Box) ── */}
+        <div className="rounded-xl bg-[#f8faf8] dark:bg-emerald-950/20 border-l-4 border-[#315b36] p-4 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#315b36] dark:text-emerald-400">
+              <span>🎯</span>
+              <span>Learning Objectives & Can-Do Descriptors</span>
             </div>
+            <button
+              onClick={() => setShowAddObj(!showAddObj)}
+              className="text-[11px] font-bold text-[#315b36] hover:underline cursor-pointer"
+            >
+              + Add Objective
+            </button>
+          </div>
+
+          {objectives.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">
+              No objectives defined yet. Click &quot;+ Add Objective&quot; to guide students on what they will master.
+            </p>
           ) : (
-            <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-dashed border-[#d6ebd6]">
-              <div className="text-xs text-slate-500 font-medium">
-                Lesson Sections & Tabs
-              </div>
+            <ul className="space-y-1.5">
+              {objectives.map((obj, i) => (
+                <li
+                  key={i}
+                  className="flex items-start justify-between gap-2 text-xs text-slate-700 dark:text-slate-300 group"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-[#315b36] font-bold mt-0.5">•</span>
+                    <span>{obj}</span>
+                  </div>
+                  <button
+                    onClick={() => onRemoveObjective(i)}
+                    className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 text-[10px] cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {showAddObj && (
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="text"
+                placeholder="e.g. Can analyze airport vocabulary and idioms..."
+                value={newObjectiveText}
+                onChange={(e) => setNewObjectiveText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newObjectiveText.trim()) {
+                    onAddObjective(newObjectiveText.trim());
+                    setNewObjectiveText('');
+                    setShowAddObj(false);
+                  }
+                }}
+                className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 outline-none"
+                autoFocus
+              />
               <button
-                type="button"
-                onClick={() => handleAddTab()}
-                title="Add Tab"
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#315b36] hover:bg-[#254629] text-white shadow-xs transition-all cursor-pointer active:scale-95"
+                onClick={() => {
+                  if (newObjectiveText.trim()) {
+                    onAddObjective(newObjectiveText.trim());
+                    setNewObjectiveText('');
+                    setShowAddObj(false);
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#315b36] text-white hover:bg-[#254629] cursor-pointer"
               >
-                <Plus className="h-4 w-4" />
+                Save
               </button>
             </div>
           )}
         </div>
 
-        {/* ── Empty State ── */}
+        {/* ── Empty Page State ── */}
         {blocks.length === 0 && (
-          <div className="py-20 text-center space-y-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#eef5ee] text-[#315b36] dark:bg-emerald-950/40 dark:text-emerald-400">
-              <Plus className="h-8 w-8" />
+          <div className="py-24 text-center space-y-4 flex-1 flex flex-col items-center justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eff4ec] text-[#315b36]">
+              <FileText className="h-7 w-7" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Build your lesson
+              <h3 className="text-base font-bold text-slate-800 dark:text-white">
+                Start typing or add document content
               </h3>
               <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
-                Start creating your lesson by adding interactive content, exercises, or media.
+                Insert text paragraphs, images, videos, audio clips, quizzes, or interactive flashcards.
               </p>
             </div>
-            <div className="pt-2">
-              <button
-                onClick={() => onOpenCommandPalette(0)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-[#315b36] hover:bg-[#254629] rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                Add your first block
-              </button>
-            </div>
+            <button
+              onClick={() => onOpenCommandPalette(0)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#315b36] hover:bg-[#254629] rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Insert First Element</span>
+            </button>
           </div>
         )}
 
-        {/* ── Blocks Stack ── */}
-        <div className="space-y-4">
+        {/* ── Document Content Flow (No Rigid Blocks Look, Natural Page Elements) ── */}
+        <div className="space-y-4 flex-1">
           {displayedBlocks.map((block) => {
             const actualGlobalIndex = blocks.findIndex((b) => b.id === block.id);
             const isSelected = selectedBlockId === block.id;
 
             return (
               <React.Fragment key={block.id}>
-                {/* Hover insertion divider before block */}
+                {/* Thin Hover Insertion Line Between Document Elements */}
                 <div
                   onMouseEnter={() => setHoveredDividerIndex(actualGlobalIndex)}
                   onMouseLeave={() => setHoveredDividerIndex(null)}
-                  className="relative h-4 flex items-center justify-center group cursor-pointer"
+                  className="relative h-2 flex items-center justify-center group cursor-pointer"
                   onClick={() => onOpenCommandPalette(actualGlobalIndex)}
                 >
                   <div
@@ -435,97 +389,117 @@ export function LessonCanvas({
                   {hoveredDividerIndex === actualGlobalIndex && (
                     <div className="absolute z-10 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#315b36] text-white text-[10px] font-bold shadow-sm animate-in zoom-in-75 duration-100">
                       <Plus className="h-3 w-3" />
-                      <span>Add block here</span>
+                      <span>Insert here</span>
                     </div>
                   )}
                 </div>
 
-                {/* The Block Container */}
+                {/* Natural Document Element Wrapper (No labels, no rigid cards at rest) */}
                 <div
+                  onMouseEnter={() => setHoveredBlockId(block.id)}
+                  onMouseLeave={() => setHoveredBlockId(null)}
                   onClick={(e) => {
                     e.stopPropagation();
                     onSelectBlock(block.id);
                   }}
-                  className={`group relative rounded-2xl border transition-all duration-200 ${
+                  className={`group relative rounded-xl transition-all duration-150 p-1.5 sm:p-2.5 ${
                     isSelected
-                      ? 'border-[#315b36] ring-2 ring-[#315b36]/20 bg-slate-50/40 dark:bg-slate-800/30'
-                      : 'border-transparent hover:border-slate-200 dark:hover:border-slate-800 hover:bg-slate-50/20'
+                      ? 'ring-1.5 ring-[#315b36]/40 bg-[#fbfdfb]/60 dark:bg-slate-800/40 shadow-2xs'
+                      : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/20'
                   }`}
                 >
-                  {/* Floating Action Bar (Top-Right on Hover/Select) */}
-                  <div className="absolute -top-3.5 right-4 z-20 hidden group-hover:flex items-center gap-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 shadow-md text-slate-500">
+                  {/* Left Gutter: Drag Handle & Quick Insert (+) Button (Notion/Word Style) */}
+                  <div className="absolute -left-9 sm:-left-10 top-2.5 opacity-0 group-hover:opacity-100 flex items-center gap-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-opacity">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onMoveBlock(block.id, 'up');
+                        onOpenCommandPalette(actualGlobalIndex);
                       }}
-                      disabled={actualGlobalIndex === 0}
-                      title="Move up"
-                      className="p-1 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                      title="Insert element here"
+                      className="p-1 rounded hover:bg-slate-200/70 dark:hover:bg-slate-800 cursor-pointer text-[#315b36]"
                     >
-                      <ChevronUp className="h-3.5 w-3.5" />
+                      <Plus className="h-3.5 w-3.5" />
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMoveBlock(block.id, 'down');
-                      }}
-                      disabled={actualGlobalIndex === blocks.length - 1}
-                      title="Move down"
-                      className="p-1 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
-                    >
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </button>
-                    <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDuplicateBlock(block.id);
-                      }}
-                      title="Duplicate block"
-                      className="p-1 hover:text-slate-900 dark:hover:text-white rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteBlock(block.id);
-                      }}
-                      title="Delete block"
-                      className="p-1 hover:text-rose-600 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <div title="Drag to reorder" className="p-1 cursor-grab">
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </div>
                   </div>
 
-                  {/* Block Header: Type & Tab Reassignment */}
-                  <div className="flex items-center justify-between px-3 pt-2 text-[11px] text-slate-400">
-                    <span className="font-semibold text-slate-500 uppercase tracking-wide text-[10px]">
-                      {BLOCK_DEFINITIONS.find((d) => d.id === block.type)?.name || block.type}
-                    </span>
-                    {tabs && tabs.length > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-slate-400">Tab:</span>
-                        <select
-                          value={block.tabId || ''}
-                          onChange={(e) => onUpdateBlock(block.id, { tabId: e.target.value || undefined })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[11px] bg-slate-50 border border-[#e2ebe2] rounded-lg px-2 py-0.5 outline-none text-[#315b36] font-bold cursor-pointer hover:border-slate-300"
-                        >
-                          <option value="">Default (Tab 1)</option>
-                          {tabs.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
+                  {/* Floating Action Bar (Shown ONLY on Hover or Selection, Top-Right) */}
+                  {(isSelected || hoveredBlockId === block.id) && (
+                    <div className="absolute -top-3.5 right-2 z-20 flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5 shadow-md text-slate-500 animate-in fade-in duration-100">
+                      <span className="text-[10px] font-bold text-[#315b36] uppercase tracking-wider">
+                        {BLOCK_DEFINITIONS.find((d) => d.id === block.type)?.name || block.type}
+                      </span>
+                      <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveBlock(block.id, 'up');
+                        }}
+                        disabled={actualGlobalIndex === 0}
+                        title="Move Up"
+                        className="p-1 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                      >
+                        <ChevronUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveBlock(block.id, 'down');
+                        }}
+                        disabled={actualGlobalIndex === blocks.length - 1}
+                        title="Move Down"
+                        className="p-1 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                      >
+                        <ChevronDown className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDuplicateBlock(block.id);
+                        }}
+                        title="Duplicate"
+                        className="p-1 hover:text-slate-900 dark:hover:text-white rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteBlock(block.id);
+                        }}
+                        title="Delete"
+                        className="p-1 hover:text-rose-600 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
 
-                  {/* Block Inner Content Renderers */}
-                  <div className="p-3 sm:p-4">
+                      {/* Tab Reassignment Select (If tabs exist) */}
+                      {tabs && tabs.length > 0 && (
+                        <>
+                          <div className="h-3 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                          <select
+                            value={block.tabId || ''}
+                            onChange={(e) => onUpdateBlock(block.id, { tabId: e.target.value || undefined })}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 outline-none text-[#315b36] font-bold cursor-pointer hover:border-slate-300"
+                            title="Assign to Section Tab"
+                          >
+                            <option value="">Tab 1</option>
+                            {tabs.map((t, idx) => (
+                              <option key={t.id} value={t.id}>
+                                Tab {idx + 1}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Document Element Body */}
+                  <div className="w-full">
                     <BlockRenderer
                       block={block}
                       onUpdate={(contentUpdates) =>
@@ -547,25 +521,31 @@ export function LessonCanvas({
             );
           })}
 
-          {/* Bottom Add Block Trigger */}
+          {/* Bottom Insertion Prompt */}
           {blocks.length > 0 && (
-            <div className="pt-4 pb-8 text-center">
+            <div className="pt-6 pb-4 text-center">
               <button
                 onClick={() => onOpenCommandPalette(blocks.length)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 hover:border-[#315b36] hover:text-[#315b36] hover:bg-[#eef5ee]/30 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 hover:border-[#315b36] hover:text-[#315b36] hover:bg-[#eff4ec]/50 transition-all cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
-                <span>Add block</span>
+                <span>Insert Next Element</span>
               </button>
             </div>
           )}
+        </div>
+
+        {/* ── Document Page Footer (Word Style) ── */}
+        <div className="pt-10 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400 mt-auto">
+          <span>LinguaChris LMS • Course Studio</span>
+          <span>Document Page</span>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Inline Block Renderers ─────────────────────────────────────────
+// ── Document Element Renderers (Styled Naturally Like Word/Docs) ─────────
 
 function BlockRenderer({
   block,
@@ -602,8 +582,8 @@ function BlockRenderer({
           rows={3}
           value={block.content.text || ''}
           onChange={(e) => onUpdate({ text: e.target.value })}
-          placeholder="Start writing text or explanation..."
-          className="w-full text-sm leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent outline-none resize-none placeholder-slate-300"
+          placeholder="Start typing paragraph text..."
+          className="w-full text-sm leading-relaxed text-slate-800 dark:text-slate-200 bg-transparent outline-none resize-none placeholder-slate-300"
         />
       );
 
@@ -617,7 +597,7 @@ function BlockRenderer({
       }[variant as 'info' | 'tip' | 'warning' | 'success'] || 'bg-slate-50 border-slate-200 text-slate-900';
 
       return (
-        <div className={`p-4 rounded-2xl border ${colors} space-y-1.5`}>
+        <div className={`p-4 rounded-xl border ${colors} space-y-1.5`}>
           <input
             type="text"
             value={block.content.title || ''}
@@ -714,7 +694,7 @@ function BlockRenderer({
       };
 
       return (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-4 shadow-xs">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#315b36] flex items-center gap-1.5">
               <Layers className="h-4 w-4" /> Tabbed Content Box
@@ -806,7 +786,7 @@ function BlockRenderer({
       const correctIndex = block.content.correctAnswer ?? 0;
 
       return (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-xs">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#315b36] dark:text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4" /> Interactive Quiz Question
@@ -912,7 +892,7 @@ function BlockRenderer({
       };
 
       return (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900 p-5 space-y-4">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <Layers className="h-4 w-4 text-[#315b36]" /> Flashcard Deck ({cards.length} cards)
@@ -984,7 +964,7 @@ function BlockRenderer({
 
     case 'code':
       return (
-        <div className="rounded-2xl overflow-hidden border border-slate-800 bg-[#1e1e1e] text-slate-100 shadow-md">
+        <div className="rounded-xl overflow-hidden border border-slate-800 bg-[#1e1e1e] text-slate-100 shadow-md">
           <div className="flex items-center justify-between px-4 py-2.5 bg-[#252526] border-b border-slate-800">
             <div className="flex items-center gap-2">
               <CodeIcon className="h-3.5 w-3.5 text-emerald-400" />
@@ -1019,7 +999,7 @@ function BlockRenderer({
 
     case 'aiTutor':
       return (
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20 p-5 space-y-3">
+        <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20 p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-xs font-bold">
               <Bot className="h-4 w-4 text-amber-600" />
@@ -1040,7 +1020,7 @@ function BlockRenderer({
 
     case 'aiPractice':
       return (
-        <div className="rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 p-5 space-y-2">
+        <div className="rounded-xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 p-5 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-purple-800 dark:text-purple-300 text-xs font-bold">
               <Sparkles className="h-4 w-4 text-purple-600" />
@@ -1060,7 +1040,7 @@ function BlockRenderer({
       );
 
     case 'divider':
-      return <hr className="my-2 border-t-2 border-slate-200 dark:border-slate-800" />;
+      return <hr className="my-2 border-t border-slate-200 dark:border-slate-800" />;
 
     case 'button':
       return (

@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
+import { StudentPreview } from '@/components/lesson-builder/student-preview';
+import { LessonBlock, LessonTab } from '@/components/lesson-builder/types';
 
 interface Lesson {
   id: string;
@@ -71,6 +73,64 @@ export default function StudioCurriculumPage() {
   const [unitDesc, setUnitDesc] = useState('');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  // Lesson Student Preview Modal state
+  const [previewLesson, setPreviewLesson] = useState<{
+    title: string;
+    objectives: string[];
+    blocks: LessonBlock[];
+    tabs?: LessonTab[];
+  } | null>(null);
+
+  const handleOpenPreview = async (lesson: Lesson) => {
+    let blocks: LessonBlock[] = [];
+    let tabs: LessonTab[] = [];
+    let objectives: string[] = [];
+
+    try {
+      const fullRes: any = await apiClient.get(`/teacher/lessons/${lesson.id}`);
+      const lData = fullRes?.data || fullRes;
+      const sections = lData?.sections || lesson.sections || [];
+
+      if (sections.length > 0 && sections[0].content) {
+        const raw = sections[0].content;
+        if (typeof raw === 'string' && raw.trim().startsWith('{')) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.blocks)) blocks = parsed.blocks;
+          if (Array.isArray(parsed.tabs)) tabs = parsed.tabs;
+          if (Array.isArray(parsed.objectives)) objectives = parsed.objectives;
+        } else {
+          blocks = [
+            {
+              id: `b_${Date.now()}_1`,
+              type: 'heading',
+              order: 0,
+              content: { text: lesson.title, level: 1 },
+              settings: {},
+              visibility: { enabled: true },
+            },
+            {
+              id: `b_${Date.now()}_2`,
+              type: 'text',
+              order: 1,
+              content: { text: raw.replace(/<[^>]+>/g, ' ') },
+              settings: {},
+              visibility: { enabled: true },
+            },
+          ];
+        }
+      }
+    } catch (err) {
+      console.warn('Preview fallback:', err);
+    }
+
+    setPreviewLesson({
+      title: lesson.title,
+      objectives,
+      blocks,
+      tabs,
+    });
+  };
 
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -351,16 +411,15 @@ export default function StudioCurriculumPage() {
                             <Edit2 className="h-3 w-3 mr-1" /> Edit
                           </Button>
                         </Link>
-                        <Link href={`/teacher/courses/${courseId}/preview?lessonId=${lesson.id}`}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-slate-400 hover:text-[#315b36]"
-                            title="Preview"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-slate-400 hover:text-[#315b36] cursor-pointer"
+                          onClick={() => handleOpenPreview(lesson)}
+                          title="Preview lesson"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -467,6 +526,16 @@ export default function StudioCurriculumPage() {
             </div>
           </Card>
         </div>
+      )}
+      {/* Lesson Student Preview Simulator Modal */}
+      {previewLesson && (
+        <StudentPreview
+          lessonTitle={previewLesson.title}
+          objectives={previewLesson.objectives}
+          blocks={previewLesson.blocks}
+          tabs={previewLesson.tabs}
+          onExitPreview={() => setPreviewLesson(null)}
+        />
       )}
     </div>
   );
