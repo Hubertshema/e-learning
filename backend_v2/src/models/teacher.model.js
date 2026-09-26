@@ -380,18 +380,259 @@ export class TeacherModel {
   }
 
   /**
+   * Update unit by ID
+   */
+  static async updateUnit(unitId, { title, description, orderIndex, isPublished }) {
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (title !== undefined) {
+      fields.push(`title = $${idx++}`);
+      values.push(title);
+    }
+    if (description !== undefined) {
+      fields.push(`description = $${idx++}`);
+      values.push(description);
+    }
+    if (orderIndex !== undefined) {
+      fields.push(`"orderIndex" = $${idx++}`);
+      values.push(Number(orderIndex));
+    }
+    if (isPublished !== undefined) {
+      fields.push(`"isPublished" = $${idx++}`);
+      values.push(Boolean(isPublished));
+    }
+
+    if (fields.length === 0) {
+      const existing = await query(`SELECT * FROM "public"."units" WHERE id = $1`, [unitId]);
+      return existing.rows[0] || null;
+    }
+
+    fields.push(`"updatedAt" = NOW()`);
+    values.push(unitId);
+
+    const updateQuery = `
+      UPDATE "public"."units"
+      SET ${fields.join(', ')}
+      WHERE id = $${idx}
+      RETURNING *
+    `;
+
+    const res = await query(updateQuery, values);
+    return res.rows[0] || null;
+  }
+
+  /**
+   * Delete unit by ID
+   */
+  static async deleteUnit(unitId) {
+    const res = await query(
+      `DELETE FROM "public"."units" WHERE id = $1 RETURNING id`,
+      [unitId]
+    );
+    return res.rows.length > 0;
+  }
+
+  /**
    * Add lesson to unit
    */
-  static async addLesson(unitId, { title, description = '', skill = 'GRAMMAR', skills = [], orderIndex = 0, estimatedMinutes = 30 }) {
+  static async addLesson(unitId, {
+    title,
+    description = '',
+    skill = 'GRAMMAR',
+    skills = [],
+    orderIndex = 0,
+    estimatedMinutes = 30,
+    isFreePreview = false,
+    isPublished = true,
+    sections = [],
+  }) {
     const id = crypto.randomUUID();
+    const ALLOWED_SKILLS = ['READING', 'LISTENING', 'SPEAKING', 'WRITING', 'GRAMMAR', 'VOCABULARY', 'PRONUNCIATION'];
+    const validSkills = (Array.isArray(skills) && skills.length > 0 ? skills : [skill])
+      .map((s) => String(s).toUpperCase())
+      .filter((s) => ALLOWED_SKILLS.includes(s));
+    const finalSkills = validSkills.length > 0 ? validSkills : ['GRAMMAR'];
+    const primarySkill = finalSkills[0];
+
     const res = await query(
       `INSERT INTO "public"."lessons" 
         (id, "unitId", title, description, skill, skills, "orderIndex", "estimatedMinutes", "isPublished", "isFreePreview", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, false, NOW(), NOW())
+       VALUES ($1, $2, $3, $4, $5, $6::"SkillType"[], $7, $8, $9, $10, NOW(), NOW())
        RETURNING *`,
-      [id, unitId, title, description, skill, skills, orderIndex, estimatedMinutes]
+      [
+        id,
+        unitId,
+        title,
+        description,
+        primarySkill,
+        finalSkills,
+        Number(orderIndex) || 0,
+        Number(estimatedMinutes) || 30,
+        isPublished !== undefined ? Boolean(isPublished) : true,
+        Boolean(isFreePreview),
+      ]
     );
-    return res.rows[0];
+    const lesson = res.rows[0];
+    lesson.skills = parsePgArray(lesson.skills);
+
+    lesson.sections = [];
+    if (Array.isArray(sections) && sections.length > 0) {
+      for (let i = 0; i < sections.length; i++) {
+        const sec = sections[i];
+        const secId = crypto.randomUUID();
+        const secRes = await query(
+          `INSERT INTO "public"."lesson_sections"
+            (id, "lessonId", title, "contentType", content, "mediaUrl", "orderIndex", "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+           RETURNING *`,
+          [
+            secId,
+            id,
+            sec.title || title,
+            sec.contentType || 'MARKDOWN',
+            sec.content || '',
+            sec.mediaUrl || null,
+            sec.orderIndex !== undefined ? Number(sec.orderIndex) : i + 1,
+          ]
+        );
+        lesson.sections.push(secRes.rows[0]);
+      }
+    }
+    return lesson;
+  }
+
+  /**
+   * Get lesson by ID (with sections)
+   */
+  static async getLessonById(lessonId) {
+    const res = await query(
+      `SELECT l.*, u."courseId"
+       FROM "public"."lessons" l
+       JOIN "public"."units" u ON u.id = l."unitId"
+       WHERE l.id = $1
+       LIMIT 1`,
+      [lessonId]
+    );
+    if (res.rows.length === 0) return null;
+    const lesson = res.rows[0];
+    lesson.skills = parsePgArray(lesson.skills);
+
+    const secRes = await query(
+      `SELECT * FROM "public"."lesson_sections" WHERE "lessonId" = $1 ORDER BY "orderIndex" ASC`,
+      [lessonId]
+    );
+    lesson.sections = secRes.rows;
+    return lesson;
+  }
+
+  /**
+   * Update lesson by ID
+   */
+  static async updateLesson(lessonId, {
+    title,
+    description,
+    skill,
+    skills,
+    estimatedMinutes,
+    isFreePreview,
+    isPublished,
+    orderIndex,
+    unitId,
+    sections,
+  }) {
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (title !== undefined) {
+      fields.push(`title = $${idx++}`);
+      values.push(title);
+    }
+    if (description !== undefined) {
+      fields.push(`description = $${idx++}`);
+      values.push(description);
+    }
+    if (skill !== undefined || skills !== undefined) {
+      const ALLOWED_SKILLS = ['READING', 'LISTENING', 'SPEAKING', 'WRITING', 'GRAMMAR', 'VOCABULARY', 'PRONUNCIATION'];
+      const rawSkills = Array.isArray(skills) && skills.length > 0 ? skills : (skill ? [skill] : []);
+      const validSkills = rawSkills
+        .map((s) => String(s).toUpperCase())
+        .filter((s) => ALLOWED_SKILLS.includes(s));
+      const finalSkills = validSkills.length > 0 ? validSkills : ['GRAMMAR'];
+      fields.push(`skill = $${idx++}`);
+      values.push(finalSkills[0]);
+      fields.push(`skills = $${idx++}::"SkillType"[]`);
+      values.push(finalSkills);
+    }
+    if (estimatedMinutes !== undefined) {
+      fields.push(`"estimatedMinutes" = $${idx++}`);
+      values.push(Number(estimatedMinutes));
+    }
+    if (isFreePreview !== undefined) {
+      fields.push(`"isFreePreview" = $${idx++}`);
+      values.push(Boolean(isFreePreview));
+    }
+    if (isPublished !== undefined) {
+      fields.push(`"isPublished" = $${idx++}`);
+      values.push(Boolean(isPublished));
+    }
+    if (orderIndex !== undefined) {
+      fields.push(`"orderIndex" = $${idx++}`);
+      values.push(Number(orderIndex));
+    }
+    if (unitId !== undefined) {
+      fields.push(`"unitId" = $${idx++}`);
+      values.push(unitId);
+    }
+
+    if (fields.length > 0) {
+      fields.push(`"updatedAt" = NOW()`);
+      values.push(lessonId);
+
+      const updateQuery = `
+        UPDATE "public"."lessons"
+        SET ${fields.join(', ')}
+        WHERE id = $${idx}
+      `;
+      await query(updateQuery, values);
+    }
+
+    if (Array.isArray(sections)) {
+      await query(`DELETE FROM "public"."lesson_sections" WHERE "lessonId" = $1`, [lessonId]);
+      for (let i = 0; i < sections.length; i++) {
+        const sec = sections[i];
+        const secId = crypto.randomUUID();
+        await query(
+          `INSERT INTO "public"."lesson_sections"
+            (id, "lessonId", title, "contentType", content, "mediaUrl", "orderIndex", "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+          [
+            secId,
+            lessonId,
+            sec.title || title || 'Lesson Content',
+            sec.contentType || 'MARKDOWN',
+            sec.content || '',
+            sec.mediaUrl || null,
+            sec.orderIndex !== undefined ? Number(sec.orderIndex) : i + 1,
+          ]
+        );
+      }
+    }
+
+    return await this.getLessonById(lessonId);
+  }
+
+  /**
+   * Delete lesson by ID
+   */
+  static async deleteLesson(lessonId) {
+    const res = await query(
+      `DELETE FROM "public"."lessons" WHERE id = $1 RETURNING id`,
+      [lessonId]
+    );
+    return res.rows.length > 0;
   }
 
   /**

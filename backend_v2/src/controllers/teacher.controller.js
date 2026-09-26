@@ -99,6 +99,86 @@ export class TeacherController {
   }
 
   /**
+   * GET /api/v1/teacher/lessons/:lessonId
+   */
+  static async getLessonDetails(req, res, next) {
+    try {
+      const { lessonId } = req.params;
+      const lesson = await TeacherModel.getLessonById(lessonId);
+      if (!lesson) {
+        return sendError(res, 'Lesson not found', 404, 'NOT_FOUND');
+      }
+      return sendSuccess(res, lesson, 'Lesson details retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * PATCH or PUT /api/v1/teacher/lessons/:lessonId
+   */
+  static async updateLesson(req, res, next) {
+    try {
+      const { lessonId } = req.params;
+      const updated = await TeacherModel.updateLesson(lessonId, req.body);
+      if (!updated) {
+        return sendError(res, 'Lesson not found', 404, 'NOT_FOUND');
+      }
+      return sendSuccess(res, updated, 'Lesson updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * DELETE /api/v1/teacher/lessons/:lessonId
+   */
+  static async deleteLesson(req, res, next) {
+    try {
+      const { lessonId } = req.params;
+      const deleted = await TeacherModel.deleteLesson(lessonId);
+      if (!deleted) {
+        return sendError(res, 'Lesson not found', 404, 'NOT_FOUND');
+      }
+      return sendSuccess(res, { id: lessonId }, 'Lesson deleted successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * PATCH or PUT /api/v1/teacher/units/:unitId
+   */
+  static async updateUnit(req, res, next) {
+    try {
+      const { unitId } = req.params;
+      const updated = await TeacherModel.updateUnit(unitId, req.body);
+      if (!updated) {
+        return sendError(res, 'Unit not found', 404, 'NOT_FOUND');
+      }
+      return sendSuccess(res, updated, 'Unit updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * DELETE /api/v1/teacher/units/:unitId
+   */
+  static async deleteUnit(req, res, next) {
+    try {
+      const { unitId } = req.params;
+      const deleted = await TeacherModel.deleteUnit(unitId);
+      if (!deleted) {
+        return sendError(res, 'Unit not found', 404, 'NOT_FOUND');
+      }
+      return sendSuccess(res, { id: unitId }, 'Unit deleted successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
    * GET /api/v1/teacher/classes
    */
   static async getClasses(req, res, next) {

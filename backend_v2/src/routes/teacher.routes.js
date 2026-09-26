@@ -23,7 +23,15 @@ router.put('/courses/:courseId', TeacherController.updateCourse);
 
 // Curriculum: Units & Lessons
 router.post('/courses/:courseId/units', TeacherController.addUnit);
+router.patch('/units/:unitId', TeacherController.updateUnit);
+router.put('/units/:unitId', TeacherController.updateUnit);
+router.delete('/units/:unitId', TeacherController.deleteUnit);
+
 router.post('/courses/:courseId/units/:unitId/lessons', TeacherController.addLesson);
+router.get('/lessons/:lessonId', TeacherController.getLessonDetails);
+router.patch('/lessons/:lessonId', TeacherController.updateLesson);
+router.put('/lessons/:lessonId', TeacherController.updateLesson);
+router.delete('/lessons/:lessonId', TeacherController.deleteLesson);
 
 // Classes
 router.get('/classes', TeacherController.getClasses);
