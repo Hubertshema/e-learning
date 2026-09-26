@@ -150,7 +150,7 @@ export default function TeacherCoursePreviewSimulatorPage() {
           </span>
         </div>
 
-        <Link href={`/teacher/courses/${courseId}/units`}>
+        <Link href={`/studio/${courseId}`}>
           <Button variant="outline" size="sm" className="shrink-0 text-xs">
             <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Exit Simulator
           </Button>

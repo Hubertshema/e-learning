@@ -48,11 +48,13 @@ export function LessonFormStudio({
   lessonId,
   initialUnitId,
   mode = 'create',
+  backHref,
 }: {
   courseId: string;
   lessonId?: string;
   initialUnitId?: string;
   mode: 'create' | 'edit';
+  backHref?: string;
 }) {
   const router = useRouter();
   const editorRef = useRef<any>(null);
@@ -256,9 +258,9 @@ export function LessonFormStudio({
         setSuccessBanner('Lesson created and saved in database successfully!');
       }
 
-      // Navigate back to course curriculum after brief delay
+      // Navigate back after brief delay
       setTimeout(() => {
-        router.push(`/teacher/courses/${courseId}/units`);
+        router.push(backHref || `/studio/${courseId}`);
       }, 1200);
     } catch (err: any) {
       setError(err.message || 'Failed to save lesson. Please check all fields.');
@@ -283,7 +285,7 @@ export function LessonFormStudio({
       {/* 1. TOP HEADER & NAVIGATION */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div className="flex items-center gap-3">
-          <Link href={`/teacher/courses/${courseId}/units`}>
+          <Link href={backHref || `/studio/${courseId}`}>
             <Button
               variant="ghost"
               size="sm"
@@ -323,7 +325,7 @@ export function LessonFormStudio({
             Draft with AI
           </Button>
 
-          <Link href={`/teacher/courses/${courseId}/units`}>
+          <Link href={backHref || `/studio/${courseId}`}>
             <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold">
               Cancel
             </Button>
@@ -586,7 +588,7 @@ export function LessonFormStudio({
 
       {/* 5. FOOTER SAVE ACTIONS */}
       <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <Link href={`/teacher/courses/${courseId}/units`}>
+        <Link href={backHref || `/studio/${courseId}`}>
           <Button variant="outline" size="sm" className="h-9 px-4 text-xs font-semibold">
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
             Back to Curriculum

@@ -85,9 +85,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     { name: 'Dashboard', href: '/teacher', icon: LayoutDashboard },
     { name: 'Learning Levels', href: '/teacher/levels', icon: FolderTree },
     { name: 'Courses & Syllabus', href: '/teacher/courses', icon: BookOpen },
-    { name: 'Quizzes & Tests', href: '/teacher/quizzes', icon: CheckCircle2 },
     { name: 'Diagnostic Placement', href: '/teacher/diagnostic-quiz', icon: FileCheck },
-    { name: 'Assignments & Grading', href: '/teacher/assignments', icon: ClipboardList },
     { name: 'Students Directory', href: '/teacher/students', icon: Users },
     { name: 'Enrollments & Access', href: '/teacher/enrollments', icon: UserCheck },
     { name: 'Expiring Watchlist', href: '/teacher/expiring-students', icon: Clock },
@@ -97,8 +95,6 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     { name: 'Calendar & Agenda', href: '/teacher/calendar', icon: Calendar },
     { name: 'Payment Verifications', href: '/teacher/payments', icon: CreditCard },
     { name: 'Performance Reports', href: '/teacher/reports', icon: Award },
-    { name: 'Teacher Profile', href: '/teacher/profile', icon: UserCheck },
-    { name: 'Settings', href: '/teacher/settings', icon: Settings },
   ];
 
   const studentMainMenu: NavItem[] = [
@@ -117,7 +113,6 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     { name: 'Placement Test', href: '/student/placement-test', icon: GraduationCap },
     { name: 'Certificates', href: '/student/certificates', icon: FileCheck },
     { name: 'Help & Feedback', href: '/student/feedback', icon: MessageSquare },
-    { name: 'Settings', href: '/student/settings', icon: Settings },
   ];
 
   const isStudent = role === 'STUDENT';
@@ -298,23 +293,6 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           </nav>
         )}
       </div>
-
-      {/* Footer Profile & Logout (Hidden for Superadmin as requested) */}
-      {role !== 'SUPERADMIN' && (
-        <div className="border-t border-[#e2ebe2] pt-3 space-y-2">
-          <button
-            onClick={() => logout()}
-            title="Logout"
-            className={cn(
-              'w-full flex items-center gap-2.5 py-2.5 rounded-md text-sm font-bold text-[#e63946] hover:bg-[#fee2e2] transition-colors',
-              collapsed ? 'justify-center px-2' : 'px-3'
-            )}
-          >
-            <LogOut className="h-4.5 w-4.5 shrink-0" />
-            {!collapsed && <span>Logout</span>}
-          </button>
-        </div>
-      )}
     </div>
   );
 

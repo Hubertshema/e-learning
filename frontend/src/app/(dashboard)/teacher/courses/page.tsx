@@ -512,7 +512,7 @@ export default function TeacherCoursesPage() {
                 <div className="bg-slate-50 dark:bg-slate-900/80 px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     {/* Curriculum Studio Link */}
-                    <Link href={`/teacher/courses/${c.id}/units`}>
+                    <Link href={`/studio/${c.id}`}>
                       <Button size="sm" variant="gradient" className="text-xs h-8 font-bold px-3">
                         <Layers className="h-3.5 w-3.5 mr-1" />
                         Curriculum Studio
@@ -610,10 +610,10 @@ export default function TeacherCoursesPage() {
 
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Link href={`/teacher/courses/${c.id}/units`}>
+                        <Link href={`/studio/${c.id}`}>
                           <Button size="sm" variant="outline" className="text-xs h-7 px-2.5 font-bold">
                             <Layers className="h-3 w-3 mr-1" />
-                            Curriculum
+                            Studio
                           </Button>
                         </Link>
                         <Button

@@ -468,7 +468,7 @@ export default function UniversalTeacherLessonCreatePage() {
       }
 
       // Redirect back to the Curriculum Studio
-      router.push(`/teacher/courses/${selectedCourseId}/units`);
+      router.push(selectedCourseId ? `/studio/${selectedCourseId}` : '/teacher/courses');
     } catch (err: any) {
       setError(err.message || 'Failed to create lesson.');
     } finally {
@@ -481,7 +481,7 @@ export default function UniversalTeacherLessonCreatePage() {
       {/* Top Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href={selectedCourseId ? `/teacher/courses/${selectedCourseId}/units` : '/teacher/courses'}>
+          <Link href={selectedCourseId ? `/studio/${selectedCourseId}` : '/teacher/courses'}>
             <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -1026,7 +1026,7 @@ export default function UniversalTeacherLessonCreatePage() {
 
         {/* Action Bottom Bar */}
         <div className="sticky bottom-4 z-20 flex items-center justify-between rounded-2xl bg-white/95 dark:bg-slate-900/95 p-4 border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-md">
-          <Link href={selectedCourseId ? `/teacher/courses/${selectedCourseId}/units` : '/teacher/courses'}>
+          <Link href={selectedCourseId ? `/studio/${selectedCourseId}` : '/teacher/courses'}>
             <Button type="button" variant="outline" size="sm">
               Cancel
             </Button>
