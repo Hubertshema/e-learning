@@ -224,12 +224,6 @@ export default function TeacherDashboardPage() {
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isValidating ? 'animate-spin' : ''}`} />
             </Button>
-            <Link href="/teacher/lessons/create">
-              <Button variant="outline" size="sm" className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md">
-                <Plus className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />
-                Create Lesson
-              </Button>
-            </Link>
             <Link href="/teacher/attendance">
               <Button variant="outline" size="sm" className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md">
                 <CalendarCheck className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />

@@ -14,7 +14,6 @@ import {
   ClipboardList,
   CheckCircle2,
   Settings,
-  Eye,
   ArrowLeft,
   Activity,
   ShieldCheck,
@@ -59,11 +58,6 @@ const NAV_ITEMS: StudioNavItem[] = [
     name: 'Quizzes',
     href: (id) => `/studio/${id}/quizzes`,
     icon: CheckCircle2,
-  },
-  {
-    name: 'Preview',
-    href: (id) => `/studio/${id}/preview`,
-    icon: Eye,
   },
   {
     name: 'Settings',
@@ -122,11 +116,6 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
 
   if (!user) {
     return null;
-  }
-
-  const isLessonBuilder = pathname.includes('/lessons/');
-  if (isLessonBuilder) {
-    return <>{children}</>;
   }
 
   const currentSection = (() => {

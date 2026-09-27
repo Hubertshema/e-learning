@@ -65,7 +65,7 @@ english-learning-platform/
 | Role | Core Capabilities | Protected Dashboard Route |
 | :--- | :--- | :--- |
 | **`SUPERADMIN`** | Platform oversight, teacher approvals/rejections, student directory, global course publishing, payment auditing, system security logs, configuration settings. | `/superadmin` |
-| **`TEACHER`** | Cohort/class management, 7-skill curriculum & lesson builder, manual payment verification queue, assignment grading studio, attendance register, student progress analytics. | `/teacher` |
+| **`TEACHER`** | Cohort/class management, 7-skill curriculum, manual payment verification queue, assignment grading studio, attendance register, student progress analytics. | `/teacher` |
 | **`STUDENT`** | CEFR diagnostic placement test, enrolled course syllabus, payment submission (MOMO/Bank Transfer), 16 interactive exercise types, quizzes, homework submissions, verified certificates. | `/student` |
 
 ---
