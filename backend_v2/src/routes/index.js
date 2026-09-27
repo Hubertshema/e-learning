@@ -11,6 +11,7 @@ import levelRoutes from './level.routes.js';
 import studentRoutes from './student.routes.js';
 import superadminRoutes from './superadmin.routes.js';
 import uploadRoutes from './upload.routes.js';
+import { teacherInteractiveVideoRoutes, studentInteractiveVideoRoutes } from './interactive-video.routes.js';
 import { HealthController } from '../controllers/health.controller.js';
 import { sendSuccess } from '../utils/response.util.js';
 
@@ -44,5 +45,7 @@ router.use('/student', studentRoutes);
 router.use('/superadmin', superadminRoutes);
 router.use('/levels', levelRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/teacher/interactive-videos', teacherInteractiveVideoRoutes);
+router.use('/student/interactive-videos', studentInteractiveVideoRoutes);
 
 export default router;

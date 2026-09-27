@@ -22,6 +22,7 @@ import {
   Wand2,
   HelpCircle,
   Loader2,
+  Video,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
@@ -313,6 +314,14 @@ export function LessonFormStudio({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5">
+          {mode === 'edit' && lessonId && (
+            <Link href={`/teacher/courses/${courseId}/lessons/${lessonId}/interactive-video`}>
+              <Button type="button" variant="secondary" size="sm" className="h-9 px-3 text-xs font-semibold">
+                <Video className="mr-1.5 h-4 w-4" />
+                Interactive video
+              </Button>
+            </Link>
+          )}
           {/* AI Draft Button */}
           <Button
             type="button"

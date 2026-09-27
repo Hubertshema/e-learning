@@ -6,6 +6,7 @@ import { connectDatabase, pool } from './config/database.js';
 import { initSocket } from './config/socket.js';
 import { setupSockets } from './sockets/index.js';
 import { runComprehensiveSeed } from './seeds/comprehensive_seeder.js';
+import { ensureInteractiveVideoSchema } from './config/interactive-video-schema.js';
 
 function getLocalIpAddress() {
   const interfaces = os.networkInterfaces();
@@ -22,6 +23,7 @@ function getLocalIpAddress() {
 async function startServer() {
   // 1. Connect to PostgreSQL
   await connectDatabase();
+  await ensureInteractiveVideoSchema();
 
   // 1.1 Run Comprehensive Super Admin Seeder in background (non-blocking)
   runComprehensiveSeed().catch((seedErr) => {
