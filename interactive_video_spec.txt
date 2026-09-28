@@ -1,0 +1,1015 @@
+# IMPLEMENTATION PROMPT: INTERACTIVE VIDEO-BASED ENGLISH LEARNING
+
+Implement a complete **Interactive Video Learning System** for the English-learning platform.
+
+The feature must allow teachers to create English lessons centered around videos. Students should watch the video through a modern **YouTube-style video player** while completing interactive English questions and activities that appear at specific points in the video.
+
+The system must be fully integrated with the existing platform, including the existing user roles, courses, lessons, student progress, teacher dashboard, scoring, and AI assistant.
+
+---
+
+## 1. MAIN OBJECTIVE
+
+Build an interactive English-learning experience:
+
+**Watch Video → Interact → Answer Questions → Practice English → Receive Feedback → Continue Video → Complete Lesson → Track Progress**
+
+This is NOT just a normal video player.
+
+Teachers must be able to place English-learning activities at specific timestamps in the video.
+
+Example:
+
+```text
+00:00 ───────── 02:15 ───────── 04:30 ───────── 07:20 ───────── 10:00
+  │                │                │                │
+  │                │                │                │
+Video starts   Listening Q      Vocabulary       Grammar Q
+                  ↓                ↓                ↓
+              Student          Student          Student
+              answers          practices        answers
+```
+
+When the video reaches a configured activity timestamp, the system can pause the video and display the activity.
+
+---
+
+# 2. TEACHER VIDEO LESSON CREATION
+
+Add a feature to the Teacher Dashboard:
+
+**Courses → Course → Lesson → Interactive Video**
+
+Teacher should be able to:
+
+### Video information
+
+* Lesson title
+* Description
+* CEFR level
+* English skill
+* Video
+* Video thumbnail
+* Duration
+* Transcript
+* Captions/subtitles
+
+The teacher must be able to:
+
+* Upload a video
+* Add a supported video URL where appropriate
+* Replace the video
+* Remove the video
+* Preview the video
+* Add/edit transcript
+* Add/edit subtitles
+* Set lesson visibility
+* Save as draft
+* Publish/unpublish
+
+Use secure validation for uploaded video files.
+
+---
+
+# 3. YOUTUBE-STYLE VIDEO PLAYER
+
+Create a modern responsive video player inspired by the usability of YouTube, but DO NOT copy YouTube's branding or interface exactly.
+
+Player controls should include:
+
+* Play/Pause
+* Progress bar
+* Current time
+* Total duration
+* Volume
+* Mute
+* Playback speed
+* Fullscreen
+* Captions/subtitles
+* Video quality where supported
+* Restart
+* Seek backward
+* Seek forward
+
+Add a visible indicator when an interactive activity exists at a particular timestamp.
+
+Example:
+
+```text
+────────────────────────────────────────
+▶       ●          ●              ●
+0:00   2:15       4:30           7:20
+       Question   Vocabulary     Grammar
+────────────────────────────────────────
+```
+
+The interface must work well on:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile phone
+
+---
+
+# 4. INTERACTIVE TIMELINE
+
+Teachers need a visual timeline editor.
+
+Example:
+
+```text
+VIDEO TIMELINE
+
+00:00        02:15        04:30        07:20
+ │             │             │             │
+ │             ●             ●             ●
+ │             Q1            Q2            Q3
+
+          [+ Add Activity]
+```
+
+Teacher can:
+
+* Select a timestamp
+* Add an activity
+* Edit an activity
+* Delete an activity
+* Move an activity to another timestamp
+* Preview an activity
+* Duplicate an activity
+
+Each activity must store:
+
+* Timestamp
+* Activity type
+* Question/content
+* Instructions
+* Answer options where applicable
+* Correct answer where applicable
+* Points
+* Required/optional status
+* Feedback
+* Explanation
+* Ordering
+* Attempt rules
+
+---
+
+# 5. ENGLISH ACTIVITY TYPES
+
+Do NOT include:
+
+* Code/Programming Activity
+* File Upload Activity
+* Discussion/Reflection Activity
+
+The system should support these English-learning activities:
+
+## A. Multiple Choice
+
+Example:
+
+"What does Sarah do every morning?"
+
+A. She runs.
+B. She reads.
+C. She cooks.
+D. She sleeps.
+
+Teacher selects the correct answer.
+
+---
+
+## B. Multiple Select
+
+Allow students to select more than one correct answer.
+
+Example:
+
+"Which activities does John do every morning?"
+
+☐ Exercise
+☐ Read
+☐ Cook
+☐ Walk
+
+---
+
+## C. True / False
+
+Example:
+
+"Sarah goes to school at 7:00."
+
+True / False
+
+---
+
+## D. Fill in the Blank
+
+Example:
+
+"I usually ______ breakfast at 7:00."
+
+Expected answer:
+
+"eat"
+
+Support acceptable alternative answers where appropriate.
+
+---
+
+## E. Short Answer
+
+Example:
+
+"What time does John wake up?"
+
+Student enters an answer.
+
+Allow teacher-defined expected answers and flexible matching where appropriate.
+
+---
+
+## F. Matching
+
+Example:
+
+Match the words with their meanings:
+
+```text
+Breakfast       → Morning meal
+Teacher         → Person who teaches
+Library         → Place for books
+```
+
+---
+
+## G. Ordering / Sequencing
+
+Example:
+
+"Put Sarah's morning activities in the correct order."
+
+1. Eat breakfast
+2. Wake up
+3. Go to school
+4. Brush her teeth
+
+Student rearranges the items.
+
+---
+
+## H. Drag and Drop
+
+Use drag-and-drop interactions for:
+
+* Vocabulary
+* Sentence construction
+* Matching
+* Categorization
+* Grammar exercises
+
+Example:
+
+Build the sentence:
+
+```text
+[goes] [school] [She] [to] [every day]
+
+→ She goes to school every day.
+```
+
+---
+
+## I. Image-Based Question
+
+Teacher can provide an image and ask:
+
+"What is the person doing?"
+
+Students choose or write the answer.
+
+Use this for:
+
+* Vocabulary
+* Speaking preparation
+* Description
+* Grammar practice
+
+---
+
+## J. Speaking Activity
+
+Students should be able to practice speaking.
+
+Examples:
+
+### Repeat
+
+"Repeat this sentence:
+
+I usually wake up at seven o'clock."
+
+### Read Aloud
+
+Display a sentence and allow the student to record themselves reading it.
+
+### Speaking Prompt
+
+"What do you usually do in the morning?"
+
+Student records an answer.
+
+Where supported, integrate speech recognition/pronunciation analysis.
+
+Show useful feedback such as:
+
+* Pronunciation
+* Accuracy
+* Words detected
+* Suggested corrections
+
+Do not present automated pronunciation scoring as perfectly accurate. Allow teacher review where necessary.
+
+---
+
+## K. Listening Activity
+
+The video itself should be usable as a listening resource.
+
+Examples:
+
+* Listen and choose the answer
+* Listen and fill in missing words
+* Listen and identify information
+* Dictation
+* Identify a word or phrase
+* Identify who said something
+* Identify the main idea
+
+---
+
+## L. Vocabulary Activity
+
+Allow activities such as:
+
+* Word → definition
+* Word → image
+* Word → translation
+* Fill in the blank
+* Choose the correct word
+* Matching
+* Categorization
+* Synonyms
+* Antonyms
+
+Store vocabulary associated with the lesson.
+
+---
+
+## M. Grammar Activity
+
+Support:
+
+* Multiple choice
+* Fill in the blank
+* Sentence correction
+* Sentence transformation
+* Sentence ordering
+* Drag-and-drop sentence building
+* Choose the correct grammatical form
+
+Example:
+
+"She ______ to school every day."
+
+A. go
+B. goes
+C. going
+
+Correct answer: B
+
+---
+
+## N. Reading Activity
+
+The transcript can also become a reading resource.
+
+Support:
+
+* Reading comprehension
+* True/False
+* Multiple choice
+* Short answer
+* Vocabulary identification
+* Find information
+* Matching
+
+---
+
+## O. Writing Activity
+
+Students can complete writing tasks such as:
+
+* Complete a sentence
+* Write a short answer
+* Write several sentences
+* Write a paragraph
+* Write an email/message
+* Describe an image
+
+For writing activities, allow:
+
+* Teacher feedback
+* AI-assisted feedback where enabled
+* Grammar suggestions
+* Vocabulary suggestions
+* Writing score/rubric where configured
+
+---
+
+# 6. ACTIVITY BEHAVIOR DURING VIDEO
+
+When a student reaches an interactive activity timestamp:
+
+### Required activity
+
+Automatically pause the video.
+
+Display:
+
+```text
+┌──────────────────────────────────┐
+│        Listening Question        │
+│                                  │
+│ What does John do every morning? │
+│                                  │
+│ ○ He runs                        │
+│ ○ He reads                       │
+│ ○ He cooks                       │
+│ ○ He sleeps                      │
+│                                  │
+│             [Submit]             │
+└──────────────────────────────────┘
+```
+
+After submission:
+
+Show:
+
+* Correct/incorrect
+* Score
+* Explanation
+* Teacher feedback where configured
+
+Then show:
+
+**Continue Video →**
+
+---
+
+# 7. OPTIONAL VS REQUIRED ACTIVITIES
+
+Teacher must be able to choose:
+
+### Required
+
+Student must complete the activity before continuing.
+
+### Optional
+
+Student may skip the activity.
+
+Teacher should be able to configure whether students can:
+
+* Retry
+* Skip
+* Continue after incorrect answer
+* See correct answer immediately
+* See explanation immediately
+
+---
+
+# 8. VIDEO NAVIGATION AND ANTI-SKIP OPTIONS
+
+Teacher should be able to configure:
+
+### Free Navigation
+
+Students can freely seek through the video.
+
+### Guided Learning
+
+Students cannot skip required interactive sections without completing them.
+
+### Required Completion
+
+Students must:
+
+* Watch required portions
+* Complete required activities
+* Reach the lesson completion requirements
+
+Do not make the system unnecessarily restrictive.
+
+---
+
+# 9. TRANSCRIPT AND SUBTITLES
+
+Provide a transcript panel next to/below the video.
+
+Example:
+
+```text
+TRANSCRIPT
+
+00:00
+Hello everyone. Today we are going
+to talk about daily routines.
+
+02:15
+I usually wake up at six o'clock.
+
+04:30
+After breakfast, I go to school.
+```
+
+Allow students to:
+
+* Read transcript
+* Click a transcript line to jump to that timestamp
+* Search transcript
+* Toggle transcript visibility
+* Toggle captions
+
+Teachers can edit transcript timestamps and text.
+
+---
+
+# 10. RESOURCES / DOWNLOADS
+
+Add a **Resources / Downloads** section to every video lesson.
+
+The **teacher controls access** to these resources.
+
+Teachers can:
+
+* Add learning resources
+* Add links
+* Add documents/materials supported by the platform
+* Set whether students can view or download each resource
+* Remove resources
+* Reorder resources
+* Set resource descriptions
+
+Students should only see resources that the teacher has made available to them.
+
+Example:
+
+```text
+📚 Lesson Resources
+
+Vocabulary List
+[View]
+
+Grammar Notes
+[View / Download]
+
+Practice Worksheet
+[Download]
+
+Additional Video
+[Open]
+```
+
+The system must enforce teacher-controlled access at the backend, not only hide resources in the frontend.
+
+---
+
+# 11. STUDENT PROGRESS TRACKING
+
+Track:
+
+* Video started
+* Video completion percentage
+* Total watching time
+* Last watched position
+* Activities attempted
+* Activities completed
+* Correct answers
+* Incorrect answers
+* Number of attempts
+* Activity scores
+* Speaking activities completed
+* Writing activities completed
+* Lesson completion
+* Overall lesson score
+
+Student should be able to leave the lesson and return later.
+
+When returning:
+
+```text
+Continue where you left off?
+
+▶ Continue from 04:32
+```
+
+---
+
+# 12. TEACHER ANALYTICS
+
+Teacher dashboard should show:
+
+```text
+Interactive Video Analytics
+
+Students: 35
+Completed: 27
+In Progress: 6
+Not Started: 2
+
+Average Score: 82%
+
+Most Difficult Activity:
+Grammar Question #4
+
+Most Common Error:
+Present Simple - third person singular
+
+Average Watch Completion:
+78%
+```
+
+Teacher should be able to identify:
+
+* Difficult questions
+* Common incorrect answers
+* Students who need support
+* Students who have not completed the lesson
+* Video sections where students frequently stop
+
+---
+
+# 13. AI ASSISTANT INTEGRATION
+
+Integrate the existing AI assistant with the video lesson system.
+
+Teacher can select:
+
+**Generate Activities with AI**
+
+The AI should analyze the transcript/video information and suggest:
+
+* Listening questions
+* Vocabulary questions
+* Grammar questions
+* Reading comprehension questions
+* Speaking prompts
+* Writing activities
+* Fill-in-the-blank questions
+* True/False questions
+* Multiple-choice questions
+* Matching activities
+* Ordering activities
+
+Teacher must be able to:
+
+**Accept / Edit / Regenerate / Delete**
+
+AI-generated content must NOT automatically become published content without teacher review.
+
+Allow the teacher to specify:
+
+* CEFR level
+* Skill
+* Difficulty
+* Number of questions
+* Question types
+* Target vocabulary
+* Target grammar
+
+---
+
+# 14. CEFR INTEGRATION
+
+Every interactive video lesson should have a CEFR level:
+
+* Pre-A1
+* A1
+* A2
+* B1
+* B2
+* C1
+* C2
+
+Activities should support appropriate difficulty for the selected level.
+
+Track student performance by:
+
+* Listening
+* Speaking
+* Reading
+* Writing
+* Grammar
+* Vocabulary
+* Pronunciation
+
+---
+
+# 15. DATABASE REQUIREMENTS
+
+Design a normalized database structure for:
+
+* Videos
+* Video lessons
+* Video transcripts
+* Video subtitles
+* Video activities
+* Activity options
+* Activity answers
+* Activity timestamps
+* Activity attempts
+* Student video progress
+* Student activity progress
+* Resources
+* Resource permissions
+* Teacher feedback
+* Speaking submissions
+* Writing submissions
+* Scores
+
+Use proper relationships between:
+
+```text
+Course
+  ↓
+Lesson
+  ↓
+Interactive Video
+  ↓
+Video Activity
+  ↓
+Student Attempt
+```
+
+Do not duplicate data unnecessarily.
+
+---
+
+# 16. SECURITY
+
+Implement:
+
+* Authentication
+* Role-based authorization
+* Teacher ownership checks
+* Student access checks
+* Secure video/resource access
+* File type validation
+* File size validation
+* Server-side validation
+* Protected APIs
+* Prevent unauthorized resource downloads
+* Prevent students from editing teacher content
+* Prevent students from accessing another student's submissions
+
+Never rely only on frontend restrictions.
+
+---
+
+# 17. RESPONSIVE UI/UX
+
+The entire feature must be responsive.
+
+### Desktop
+
+Use a layout such as:
+
+```text
+┌───────────────────────────────────────────────┐
+│ Video Player                                  │
+├───────────────────────┬───────────────────────┤
+│ Transcript            │ Activity              │
+│                       │                       │
+│                       │ Question              │
+│                       │ Answers               │
+├───────────────────────┴───────────────────────┤
+│ Resources / Downloads                         │
+└───────────────────────────────────────────────┘
+```
+
+### Mobile
+
+Use a single-column layout:
+
+```text
+Video
+ ↓
+Activity
+ ↓
+Transcript
+ ↓
+Resources
+ ↓
+Progress
+```
+
+Make all controls touch-friendly.
+
+---
+
+# 18. ACCESSIBILITY
+
+Implement:
+
+* Keyboard navigation
+* Captions
+* Transcript
+* Clear focus states
+* Accessible buttons
+* Screen-reader-friendly labels
+* Sufficient text contrast
+* Large enough touch targets
+* Accessible form validation
+* Avoid relying only on color
+
+---
+
+# 19. TEACHER WORKFLOW
+
+The complete teacher workflow should be:
+
+```text
+Teacher Dashboard
+       ↓
+Select Course
+       ↓
+Select Lesson
+       ↓
+Create Interactive Video
+       ↓
+Upload/Add Video
+       ↓
+Add Transcript
+       ↓
+Add Activities
+       ↓
+Place Activities on Timeline
+       ↓
+Configure Required/Optional
+       ↓
+Add Resources
+       ↓
+Preview Lesson
+       ↓
+Test Activities
+       ↓
+Save Draft
+       ↓
+Publish
+```
+
+---
+
+# 20. STUDENT WORKFLOW
+
+```text
+Student Dashboard
+       ↓
+Course
+       ↓
+Lesson
+       ↓
+Interactive Video
+       ↓
+Watch
+       ↓
+Activity Appears
+       ↓
+Answer/Complete
+       ↓
+Feedback
+       ↓
+Continue Video
+       ↓
+Complete Activities
+       ↓
+Finish Video
+       ↓
+Lesson Score
+       ↓
+Progress Updated
+```
+
+---
+
+# 21. IMPORTANT IMPLEMENTATION REQUIREMENT
+
+Do not build this as an isolated feature.
+
+Integrate it properly with the existing English-learning platform:
+
+* Existing authentication
+* Existing roles
+* Existing courses
+* Existing lessons
+* Existing CEFR levels
+* Existing teacher dashboard
+* Existing student dashboard
+* Existing progress system
+* Existing assessment system
+* Existing AI assistant
+* Existing profile/settings system
+
+Reuse existing components and database structures where appropriate instead of unnecessarily creating duplicate systems.
+
+---
+
+# 22. TESTING
+
+Before considering this feature complete, test:
+
+### Teacher
+
+* Upload video
+* Edit video
+* Delete video
+* Add transcript
+* Add subtitles
+* Add every activity type
+* Add activities at timestamps
+* Edit activities
+* Delete activities
+* Reorder activities
+* Configure required/optional
+* Add resources
+* Control resource access
+* Preview lesson
+* Publish/unpublish
+* View analytics
+
+### Student
+
+* Open video
+* Play/pause
+* Seek
+* Change speed
+* Enable captions
+* Open transcript
+* Complete activities
+* Submit answers
+* Receive feedback
+* Retry activities
+* Resume video
+* Access permitted resources
+* Complete lesson
+* View score
+* View progress
+
+### Security
+
+Test that:
+
+* Students cannot edit videos
+* Students cannot edit activities
+* Students cannot access unauthorized resources
+* Students cannot access another student's results
+* Teachers cannot modify another teacher's private content
+* Unauthorized API requests are rejected
+
+### Responsive Testing
+
+Test on:
+
+* Desktop
+* Laptop
+* Tablet
+* Android phone
+* iPhone/mobile browser
+
+---
+
+# 23. FINAL QUALITY REQUIREMENT
+
+The finished feature should feel like a modern **English-learning platform**, not a generic video-upload page.
+
+The core experience should be:
+
+**WATCH → LISTEN → UNDERSTAND → INTERACT → SPEAK → READ → WRITE → RECEIVE FEEDBACK → PROGRESS**
+
+Prioritize:
+
+* Simple navigation
+* Modern UI
+* Fast loading
+* Clear feedback
+* Strong accessibility
+* Mobile responsiveness
+* Reliable progress tracking
+* Teacher control
+* Student engagement
+
+After implementation, test the complete teacher-to-student workflow end-to-end and fix all discovered issues before marking the feature complete.

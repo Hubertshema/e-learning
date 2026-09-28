@@ -28,6 +28,8 @@ import {
 import { apiClient } from '@/lib/api-client';
 import { RichTextRenderer } from '@/components/ui/rich-text-editor';
 import { ActivityContainer, ActivityData } from '@/components/activities/activity-container';
+import { InteractiveVideoPlayer } from '@/components/interactive-video/interactive-video-player';
+import { UniversalVideo } from '@/components/interactive-video/universal-video';
 
 interface LessonSection {
   id: string;
@@ -43,6 +45,7 @@ interface Lesson {
   title: string;
   description?: string;
   skill?: string;
+  type?: string;
   estimatedMinutes: number;
   orderIndex: number;
   objectives?: string[];
@@ -98,6 +101,8 @@ export default function StudentLearnPage() {
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [completing, setCompleting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [interactiveVideoData, setInteractiveVideoData] = useState<any>(null);
+  const [loadingInteractive, setLoadingInteractive] = useState(false);
 
   const fetchCourse = async () => {
     try {
@@ -171,6 +176,19 @@ export default function StudentLearnPage() {
     }
   };
 
+  const fetchInteractiveVideo = async (lessonId: string) => {
+    try {
+      setLoadingInteractive(true);
+      setInteractiveVideoData(null);
+      const res = await apiClient.get(`/student/interactive-videos/lessons/${lessonId}`);
+      setInteractiveVideoData(res);
+    } catch (err) {
+      console.error('Failed to fetch interactive video', err);
+    } finally {
+      setLoadingInteractive(false);
+    }
+  };
+
   useEffect(() => {
     if (courseId) {
       fetchCourse();
@@ -179,7 +197,11 @@ export default function StudentLearnPage() {
 
   useEffect(() => {
     if (selectedLesson) {
-      fetchLessonActivities(selectedLesson.id, selectedLesson.skill);
+      if (selectedLesson.type === 'INTERACTIVE_VIDEO') {
+        fetchInteractiveVideo(selectedLesson.id);
+      } else {
+        fetchLessonActivities(selectedLesson.id, selectedLesson.skill);
+      }
     }
   }, [selectedLesson]);
 
@@ -433,129 +455,153 @@ export default function StudentLearnPage() {
                 </div>
               </Card>
 
-              {/* Learning Tab Switcher */}
-              <div className="flex border-b border-slate-200 dark:border-slate-800">
-                <button
-                  onClick={() => setActiveTab('CONTENT')}
-                  className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-all ${
-                    activeTab === 'CONTENT'
-                      ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span>Theory & Content</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('PRACTICE')}
-                  className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-all ${
-                    activeTab === 'PRACTICE'
-                      ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                      : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Interactive Practice Drills ({activities.length})</span>
-                </button>
-              </div>
+              {selectedLesson.type === 'INTERACTIVE_VIDEO' ? (
+                loadingInteractive ? (
+                  <Card className="p-12 text-center text-slate-500">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent mx-auto mb-4" />
+                    Loading interactive video...
+                  </Card>
+                ) : interactiveVideoData ? (
+                  <InteractiveVideoPlayer
+                    lessonId={selectedLesson.id}
+                    videoUrl={interactiveVideoData.videoUrl}
+                    durationSeconds={interactiveVideoData.durationSeconds}
+                    activities={interactiveVideoData.activities}
+                    transcript={interactiveVideoData.transcript}
+                    captions={interactiveVideoData.captions}
+                    initialPosition={interactiveVideoData.progress?.lastPositionSeconds || 0}
+                    navigationMode={interactiveVideoData.navigationMode}
+                    onProgress={(position, watched, percent) => {
+                      if (position % 10 < 1) {
+                        apiClient.post(`/student/interactive-videos/lessons/${selectedLesson.id}/progress`, {
+                          lastPositionSeconds: position,
+                          watchedSeconds: watched,
+                          completionPercent: percent
+                        }).catch(console.error);
+                      }
+                    }}
+                  />
+                ) : (
+                  <Card className="p-12 text-center text-rose-500">
+                    Failed to load interactive video content.
+                  </Card>
+                )
+              ) : (
+                <>
+                  {/* Learning Tab Switcher */}
+                  <div className="flex border-b border-slate-200 dark:border-slate-800">
+                    <button
+                      onClick={() => setActiveTab('CONTENT')}
+                      className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-all ${
+                        activeTab === 'CONTENT'
+                          ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                          : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      <span>Theory & Content</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('PRACTICE')}
+                      className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-all ${
+                        activeTab === 'PRACTICE'
+                          ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                          : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      <span>Interactive Practice Drills ({activities.length})</span>
+                    </button>
+                  </div>
 
-              {/* Tab 1: Theory & Content */}
-              {activeTab === 'CONTENT' && (
-                <div className="space-y-6">
-                  {selectedLesson.sections && selectedLesson.sections.length > 0 ? (
-                    selectedLesson.sections.map((sec: any) => (
-                      <Card key={sec.id} className="p-6 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            {sec.contentType === 'VIDEO' ? (
-                              <Video className="h-4 w-4 text-blue-500" />
-                            ) : sec.contentType === 'AUDIO' ? (
-                              <Headphones className="h-4 w-4 text-emerald-500" />
-                            ) : (
-                              <FileText className="h-4 w-4 text-primary-600" />
-                            )}
-                            {sec.title}
-                          </h3>
-                          <Badge variant="outline" className="text-[10px]">
-                            {sec.contentType}
-                          </Badge>
-                        </div>
+                  {/* Tab 1: Theory & Content */}
+                  {activeTab === 'CONTENT' && (
+                    <div className="space-y-6">
+                      {selectedLesson.sections && selectedLesson.sections.length > 0 ? (
+                        selectedLesson.sections.map((sec: any) => (
+                          <Card key={sec.id} className="p-6 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                {sec.contentType === 'VIDEO' ? (
+                                  <Video className="h-4 w-4 text-blue-500" />
+                                ) : sec.contentType === 'AUDIO' ? (
+                                  <Headphones className="h-4 w-4 text-emerald-500" />
+                                ) : (
+                                  <FileText className="h-4 w-4 text-primary-600" />
+                                )}
+                                {sec.title}
+                              </h3>
+                              <Badge variant="outline" className="text-[10px]">
+                                {sec.contentType}
+                              </Badge>
+                            </div>
 
-                        {sec.mediaUrl && (
-                          <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
-                            {sec.contentType === 'VIDEO' ? (
-                              sec.mediaUrl.includes('youtube.com') || sec.mediaUrl.includes('vimeo.com') || sec.mediaUrl.includes('youtu.be') ? (
-                                <div className="aspect-video w-full">
-                                  <iframe
-                                    src={sec.mediaUrl.replace('watch?v=', 'embed/')}
-                                    title={sec.title}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                    className="w-full h-full border-0"
+                            {sec.mediaUrl && (
+                              <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                                {sec.contentType === 'VIDEO' ? (
+                                  <UniversalVideo
+                                    url={sec.mediaUrl}
+                                    controls
+                                    className="aspect-video w-full"
                                   />
-                                </div>
-                              ) : (
-                                <video controls className="w-full max-h-80 bg-black">
-                                  <source src={sec.mediaUrl} type="video/mp4" />
-                                  Your browser does not support video playback.
-                                </video>
-                              )
-                            ) : sec.contentType === 'AUDIO' ? (
-                              <div className="p-4 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
-                                <audio controls className="w-full">
-                                  <source src={sec.mediaUrl} />
-                                  Your browser does not support audio playback.
-                                </audio>
+                                ) : sec.contentType === 'AUDIO' ? (
+                                  <div className="p-4 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                                    <audio controls className="w-full">
+                                      <source src={sec.mediaUrl} />
+                                      Your browser does not support audio playback.
+                                    </audio>
+                                  </div>
+                                ) : null}
                               </div>
-                            ) : null}
-                          </div>
-                        )}
+                            )}
 
-                        <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed pt-1">
-                          <RichTextRenderer content={sec.content || (sec as any).contentData || ''} />
-                        </div>
-                      </Card>
-                    ))
-                  ) : (
-                    <Card className="p-8 text-center text-xs text-slate-500 space-y-2">
-                      <p>No standalone lecture notes provided for this lesson.</p>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setActiveTab('PRACTICE')}
-                        className="mt-2 font-bold"
-                      >
-                        Start Interactive Practice Drill <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                      </Button>
-                    </Card>
+                            <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed pt-1">
+                              <RichTextRenderer content={sec.content || (sec as any).contentData || ''} />
+                            </div>
+                          </Card>
+                        ))
+                      ) : (
+                        <Card className="p-8 text-center text-xs text-slate-500 space-y-2">
+                          <p>No standalone lecture notes provided for this lesson.</p>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setActiveTab('PRACTICE')}
+                            className="mt-2 font-bold"
+                          >
+                            Start Interactive Practice Drill <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                          </Button>
+                        </Card>
+                      )}
+
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          variant="secondary"
+                          onClick={() => setActiveTab('PRACTICE')}
+                          className="font-bold text-xs"
+                        >
+                          Proceed to Interactive Practice
+                          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
                   )}
 
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setActiveTab('PRACTICE')}
-                      className="font-bold text-xs"
-                    >
-                      Proceed to Interactive Practice
-                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab 2: Interactive Activities Drill */}
-              {activeTab === 'PRACTICE' && (
-                <div className="space-y-6">
-                  {activities.map((act) => (
-                    <ActivityContainer
-                      key={act.id}
-                      activity={act}
-                      onFinished={() => {
-                        handleMarkComplete();
-                      }}
-                    />
-                  ))}
-                </div>
+                  {/* Tab 2: Interactive Activities Drill */}
+                  {activeTab === 'PRACTICE' && (
+                    <div className="space-y-6">
+                      {activities.map((act) => (
+                        <ActivityContainer
+                          key={act.id}
+                          activity={act}
+                          onFinished={() => {
+                            handleMarkComplete();
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Bottom Nav Bar */}

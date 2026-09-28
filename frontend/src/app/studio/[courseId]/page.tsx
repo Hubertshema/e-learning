@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,18 @@ import {
   Clock,
   AlertCircle,
   X,
+  Eye,
+  Video,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  BookOpen,
+  Sparkles,
+  Play,
+  Filter,
+  GraduationCap,
+  SlidersHorizontal,
+  ExternalLink,
 } from 'lucide-react';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
@@ -43,18 +55,67 @@ interface CourseData {
   id: string;
   title: string;
   level: string;
+  isPublished?: boolean;
   units: Unit[];
 }
 
-const SKILL_ICONS: Record<string, string> = {
-  GRAMMAR: '🔤',
-  VOCABULARY: '📚',
-  SPEAKING: '🗣️',
-  LISTENING: '🎧',
-  READING: '📖',
-  WRITING: '✍️',
-  PRONUNCIATION: '🔊',
-  COMMUNICATION: '🌐',
+const SKILL_THEMES: Record<string, { label: string; icon: string; bg: string; text: string; border: string }> = {
+  GRAMMAR: {
+    label: 'Grammar',
+    icon: '🔤',
+    bg: 'bg-indigo-50 dark:bg-indigo-950/50',
+    text: 'text-indigo-700 dark:text-indigo-300',
+    border: 'border-indigo-200/80 dark:border-indigo-800/60',
+  },
+  VOCABULARY: {
+    label: 'Vocabulary',
+    icon: '📚',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/50',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-200/80 dark:border-emerald-800/60',
+  },
+  SPEAKING: {
+    label: 'Speaking',
+    icon: '🗣️',
+    bg: 'bg-amber-50 dark:bg-amber-950/50',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-200/80 dark:border-amber-800/60',
+  },
+  LISTENING: {
+    label: 'Listening',
+    icon: '🎧',
+    bg: 'bg-sky-50 dark:bg-sky-950/50',
+    text: 'text-sky-700 dark:text-sky-300',
+    border: 'border-sky-200/80 dark:border-sky-800/60',
+  },
+  READING: {
+    label: 'Reading',
+    icon: '📖',
+    bg: 'bg-blue-50 dark:bg-blue-950/50',
+    text: 'text-blue-700 dark:text-blue-300',
+    border: 'border-blue-200/80 dark:border-blue-800/60',
+  },
+  WRITING: {
+    label: 'Writing',
+    icon: '✍️',
+    bg: 'bg-rose-50 dark:bg-rose-950/50',
+    text: 'text-rose-700 dark:text-rose-300',
+    border: 'border-rose-200/80 dark:border-rose-800/60',
+  },
+  PRONUNCIATION: {
+    label: 'Pronunciation',
+    icon: '🔊',
+    bg: 'bg-purple-50 dark:bg-purple-950/50',
+    text: 'text-purple-700 dark:text-purple-300',
+    border: 'border-purple-200/80 dark:border-purple-800/60',
+  },
+  COMMUNICATION: {
+    label: 'Communication',
+    icon: '🌐',
+    bg: 'bg-teal-50 dark:bg-teal-950/50',
+    text: 'text-teal-700 dark:text-teal-300',
+    border: 'border-teal-200/80 dark:border-teal-800/60',
+  },
 };
 
 export default function StudioCurriculumPage() {
@@ -69,6 +130,11 @@ export default function StudioCurriculumPage() {
   const [unitDesc, setUnitDesc] = useState('');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  // Search & Filtering State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSkill, setSelectedSkill] = useState<string>('ALL');
+  const [collapsedUnits, setCollapsedUnits] = useState<Record<string, boolean>>({});
 
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -88,8 +154,39 @@ export default function StudioCurriculumPage() {
     { ttl: 60_000 }
   );
 
-  const openAddUnit = () => { setEditingUnit(null); setUnitTitle(''); setUnitDesc(''); setShowUnitModal(true); };
-  const openEditUnit = (u: Unit) => { setEditingUnit(u); setUnitTitle(u.title); setUnitDesc(u.description || ''); setShowUnitModal(true); };
+  const toggleUnitCollapse = (unitId: string) => {
+    setCollapsedUnits((prev) => ({
+      ...prev,
+      [unitId]: !prev[unitId],
+    }));
+  };
+
+  const collapseAll = () => {
+    if (!course) return;
+    const all: Record<string, boolean> = {};
+    course.units.forEach((u) => {
+      all[u.id] = true;
+    });
+    setCollapsedUnits(all);
+  };
+
+  const expandAll = () => {
+    setCollapsedUnits({});
+  };
+
+  const openAddUnit = () => {
+    setEditingUnit(null);
+    setUnitTitle('');
+    setUnitDesc('');
+    setShowUnitModal(true);
+  };
+
+  const openEditUnit = (u: Unit) => {
+    setEditingUnit(u);
+    setUnitTitle(u.title);
+    setUnitDesc(u.description || '');
+    setShowUnitModal(true);
+  };
 
   const handleSaveUnit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +243,7 @@ export default function StudioCurriculumPage() {
     }
   };
 
-  const lessonSkills = (lesson: Lesson): string[] => {
+  const parseLessonSkills = (lesson: Lesson): string[] => {
     if (Array.isArray(lesson.skills) && lesson.skills.length > 0) return lesson.skills;
     if (typeof lesson.skills === 'string' && lesson.skills.startsWith('{')) {
       return lesson.skills.slice(1, -1).split(',').filter(Boolean);
@@ -154,31 +251,81 @@ export default function StudioCurriculumPage() {
     return lesson.skill ? [lesson.skill] : ['GRAMMAR'];
   };
 
-  // ── Loading skeleton ──────────────────────────────────────────────
+  // Metrics Calculations
+  const stats = useMemo(() => {
+    if (!course) return { totalUnits: 0, totalLessons: 0, totalMinutes: 0 };
+    let lessonsCount = 0;
+    let minutesCount = 0;
+    course.units.forEach((u) => {
+      const uLessons = u.lessons || [];
+      lessonsCount += uLessons.length;
+      uLessons.forEach((l) => {
+        minutesCount += l.estimatedMinutes || 30;
+      });
+    });
+    return {
+      totalUnits: course.units.length,
+      totalLessons: lessonsCount,
+      totalMinutes: minutesCount,
+    };
+  }, [course]);
+
+  // Filtered Units and Lessons
+  const filteredUnits = useMemo(() => {
+    if (!course) return [];
+    if (!searchQuery.trim() && selectedSkill === 'ALL') {
+      return course.units;
+    }
+
+    const q = searchQuery.toLowerCase().trim();
+
+    return course.units
+      .map((unit) => {
+        const matchesUnitTitle = unit.title.toLowerCase().includes(q);
+        const matchingLessons = (unit.lessons || []).filter((lesson) => {
+          const skills = parseLessonSkills(lesson);
+          const skillMatch =
+            selectedSkill === 'ALL' ||
+            skills.some((s) => s.toUpperCase() === selectedSkill.toUpperCase());
+          const textMatch = !q || lesson.title.toLowerCase().includes(q) || matchesUnitTitle;
+          return skillMatch && textMatch;
+        });
+
+        return {
+          ...unit,
+          lessons: matchingLessons,
+        };
+      })
+      .filter((unit) => unit.lessons.length > 0 || !searchQuery);
+  }, [course, searchQuery, selectedSkill]);
+
+  // Loading skeleton
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse max-w-4xl">
-        <div className="flex items-center justify-between">
-          <div className="h-7 w-56 rounded-xl bg-slate-200" />
-          <div className="h-8 w-28 rounded-lg bg-slate-200" />
+      <div className="space-y-6 max-w-5xl mx-auto animate-pulse">
+        <div className="h-44 rounded-3xl bg-slate-200 dark:bg-slate-800" />
+        <div className="h-12 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-36 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+          ))}
         </div>
-        {[1, 2].map((i) => (
-          <div key={i} className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-            <div className="h-16 bg-slate-100" />
-            <div className="p-4 space-y-2">
-              {[1, 2].map((j) => <div key={j} className="h-12 rounded-xl bg-slate-100" />)}
-            </div>
-          </div>
-        ))}
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <AlertCircle className="h-8 w-8 text-rose-400" />
-        <p className="text-sm font-semibold text-slate-700">Course not found</p>
+      <div className="flex flex-col items-center justify-center h-80 gap-4 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-950/50">
+          <AlertCircle className="h-7 w-7" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Course Not Found</h2>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm">
+            We couldn't retrieve the curriculum for this course. Please verify the link or return to courses.
+          </p>
+        </div>
         <Link href="/teacher/courses">
           <Button variant="outline" size="sm">Back to Courses</Button>
         </Link>
@@ -186,208 +333,490 @@ export default function StudioCurriculumPage() {
     );
   }
 
-  const totalLessons = course.units.reduce((a, u) => a + (u.lessons?.length || 0), 0);
-
   return (
-    <div className="max-w-4xl pb-20 space-y-6">
+    <div className="max-w-5xl mx-auto pb-24 space-y-6">
 
-      {/* Toast */}
+      {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold shadow-lg animate-in slide-in-from-bottom-4 duration-300 ${
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 text-xs font-semibold shadow-xl animate-in slide-in-from-bottom-4 duration-300 ${
             toast.type === 'success'
-              ? 'bg-white border-emerald-200 text-emerald-800'
-              : 'bg-white border-rose-200 text-rose-700'
+              ? 'bg-white border-emerald-200 text-emerald-800 dark:bg-slate-900 dark:border-emerald-800 dark:text-emerald-300'
+              : 'bg-white border-rose-200 text-rose-700 dark:bg-slate-900 dark:border-rose-800 dark:text-rose-300'
           }`}
         >
-          {toast.type === 'success'
-            ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-            : <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />}
-          {toast.msg}
+          {toast.type === 'success' ? (
+            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+          ) : (
+            <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+          )}
+          <span>{toast.msg}</span>
           <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-slate-600">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="indigo" className="text-xs">{course.level}</Badge>
-            <span className="text-xs text-slate-400 font-medium">
-              {course.units.length} units · {totalLessons} lessons
-            </span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900">Curriculum Builder</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Organize your course into units and lessons</p>
-        </div>
+      {/* ── HERO STATS BANNER ────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-[#142617] to-slate-900 text-white p-6 md:p-8 shadow-xl border border-emerald-900/30">
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-12 h-48 w-48 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
 
-        <Button
-          variant="gradient"
-          size="sm"
-          onClick={openAddUnit}
-          className="text-xs font-bold shadow-md shrink-0"
-        >
-          <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Add Unit
-        </Button>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3 max-w-xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                {course.level || 'Standard Level'}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-300 backdrop-blur-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Curriculum Studio
+              </span>
+            </div>
+
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
+                {course.title}
+              </h1>
+              <p className="text-xs md:text-sm text-slate-300 mt-1 font-medium leading-relaxed">
+                Design and organize dynamic units, interactive video lessons, quizzes, and vocabulary practices.
+              </p>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-sm">
+                <Layers className="h-4 w-4 text-emerald-400" />
+                <span>
+                  <strong className="text-white font-bold">{stats.totalUnits}</strong> Units
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-sm">
+                <Video className="h-4 w-4 text-emerald-400" />
+                <span>
+                  <strong className="text-white font-bold">{stats.totalLessons}</strong> Lessons
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-sm">
+                <Clock className="h-4 w-4 text-emerald-400" />
+                <span>
+                  <strong className="text-white font-bold">
+                    {Math.floor(stats.totalMinutes / 60)}h {stats.totalMinutes % 60}m
+                  </strong>{' '}
+                  Total Content
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Hub in Hero */}
+          <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0 self-start md:self-center w-full sm:w-auto">
+            <Button
+              onClick={openAddUnit}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-950/40 text-xs px-5 py-2.5 rounded-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create New Unit</span>
+            </Button>
+
+            <Link href={`/student/courses/${courseId}`} target="_blank">
+              <Button
+                variant="outline"
+                className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/40 text-xs rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <Eye className="h-3.5 w-3.5 text-emerald-300" />
+                <span>Student Preview</span>
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
 
-      {/* Empty State */}
-      {course.units.length === 0 ? (
-        <Card className="p-16 text-center border-dashed border-slate-200">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f2e8] text-[#315b36]">
-            <Layers className="h-7 w-7" />
-          </div>
-          <h3 className="text-base font-bold text-slate-900">No units yet</h3>
-          <p className="text-xs text-slate-400 max-w-xs mx-auto mt-1 mb-5">
-            Start organizing your course by creating the first unit (e.g. "Unit 1: Getting Started")
-          </p>
-          <Button variant="gradient" size="sm" onClick={openAddUnit}>
-            <Plus className="h-4 w-4 mr-1.5" /> Create First Unit
+      {/* ── TOOLBAR: SEARCH & FILTERS ─────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-2.5 rounded-2xl shadow-xs">
+        {/* Search Input */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search lessons by title..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 outline-none focus:border-emerald-500 text-slate-800 dark:text-white placeholder:text-slate-400 transition-colors"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Skill Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <button
+            onClick={() => setSelectedSkill('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+              selectedSkill === 'ALL'
+                ? 'bg-[#1f4325] text-white shadow-xs'
+                : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            All Skills
+          </button>
+          {['GRAMMAR', 'VOCABULARY', 'SPEAKING', 'LISTENING', 'PRONUNCIATION'].map((sk) => {
+            const isSelected = selectedSkill === sk;
+            const theme = SKILL_THEMES[sk];
+            return (
+              <button
+                key={sk}
+                onClick={() => setSelectedSkill(isSelected ? 'ALL' : sk)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                  isSelected
+                    ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span>{theme?.icon || '📝'}</span>
+                <span>{theme?.label || sk}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Expand / Collapse All Toggles */}
+        <div className="flex items-center gap-1 border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-800 pt-2 sm:pt-0 sm:pl-3 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={expandAll}
+            className="h-8 px-2 text-[11px] font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400"
+          >
+            Expand All
           </Button>
+          <span className="text-slate-300 dark:text-slate-700">·</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={collapseAll}
+            className="h-8 px-2 text-[11px] font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400"
+          >
+            Collapse All
+          </Button>
+        </div>
+      </div>
+
+      {/* ── UNITS LIST ────────────────────────────────────────────────── */}
+      {filteredUnits.length === 0 ? (
+        <Card className="p-16 text-center border-dashed border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 rounded-3xl">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+            <Layers className="h-8 w-8" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            {searchQuery || selectedSkill !== 'ALL'
+              ? 'No matching lessons found'
+              : 'No units in this course yet'}
+          </h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-6">
+            {searchQuery || selectedSkill !== 'ALL'
+              ? 'Try adjusting your search keywords or resetting skill filters.'
+              : 'Start your course journey by creating your first unit (e.g. "Unit 1: Essentials & Greetings").'}
+          </p>
+          {searchQuery || selectedSkill !== 'ALL' ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedSkill('ALL');
+              }}
+              className="rounded-xl text-xs"
+            >
+              Reset Filters
+            </Button>
+          ) : (
+            <Button
+              onClick={openAddUnit}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs px-5 shadow-sm"
+            >
+              <Plus className="h-4 w-4 mr-1.5" /> Create First Unit
+            </Button>
+          )}
         </Card>
       ) : (
-        <div className="space-y-4">
-          {course.units.map((unit, uIdx) => (
-            <Card key={unit.id} className="overflow-hidden border-[#e2ebe2] shadow-sm">
+        <div className="space-y-5">
+          {filteredUnits.map((unit, uIdx) => {
+            const isCollapsed = !!collapsedUnits[unit.id];
+            const unitLessons = unit.lessons || [];
+            const unitMinutes = unitLessons.reduce((acc, l) => acc + (l.estimatedMinutes || 30), 0);
 
-              {/* Unit Header */}
-              <div className="flex items-center justify-between gap-4 bg-[#f8fbf8] border-b border-[#e2ebe2] px-5 py-3.5">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#315b36] text-white text-[10px] font-black">
+            return (
+              <div
+                key={unit.id}
+                className="overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-emerald-200 dark:hover:border-emerald-800"
+              >
+                {/* Unit Header Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 border-b border-slate-200/70 dark:border-slate-800 px-5 py-4">
+                  <div
+                    className="flex items-start sm:items-center gap-3 min-w-0 cursor-pointer flex-1"
+                    onClick={() => toggleUnitCollapse(unit.id)}
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#1f4325] text-white text-xs font-black shadow-xs">
                       {uIdx + 1}
                     </span>
-                    <h2 className="text-sm font-bold text-slate-900 truncate">{unit.title}</h2>
-                  </div>
-                  {unit.description && (
-                    <p className="text-[11px] text-slate-400 mt-0.5 ml-8 leading-snug">{unit.description}</p>
-                  )}
-                </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-slate-400 hover:text-[#315b36]"
-                    onClick={() => openEditUnit(unit)}
-                    title="Edit unit"
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-rose-400 hover:bg-rose-50 hover:text-rose-600"
-                    onClick={() => setDeletingUnit(unit)}
-                    title="Delete unit"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Lessons */}
-              <div className="p-4 space-y-2">
-                {unit.lessons.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-[#ddeedd] rounded-xl">
-                    <p className="text-[11px] text-slate-400">No lessons in this unit yet</p>
-                  </div>
-                ) : (
-                  unit.lessons.map((lesson, lIdx) => (
-                    <div
-                      key={lesson.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3 hover:border-[#c8dfc8] hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#f0f8f0] text-[#315b36] text-[11px] font-black">
-                          {lIdx + 1}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-900 truncate">{lesson.title}</p>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                            {lessonSkills(lesson).map((sk) => (
-                              <span
-                                key={sk}
-                                className="inline-flex items-center gap-0.5 rounded-full bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700"
-                              >
-                                {SKILL_ICONS[sk] || '📝'} {sk}
-                              </span>
-                            ))}
-                            <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                              <Clock className="h-2.5 w-2.5" />
-                              {lesson.estimatedMinutes || 30} min
-                            </span>
-                            {lesson.sections && lesson.sections.length > 0 && (
-                              <span className="text-[10px] text-slate-400">
-                                · {lesson.sections.length} sections
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                          {unit.title}
+                        </h2>
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                          {unitLessons.length} {unitLessons.length === 1 ? 'lesson' : 'lessons'} · {unitMinutes} min
+                        </span>
                       </div>
-
-                      <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-rose-400 hover:bg-rose-50 hover:text-rose-600"
-                          onClick={() => setDeletingLesson({ id: lesson.id, title: lesson.title })}
-                          title="Delete lesson"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      {unit.description && (
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+                          {unit.description}
+                        </p>
+                      )}
                     </div>
-                  ))
+                  </div>
+
+                  {/* Unit Action Buttons */}
+                  <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                    <Link href={`/studio/${courseId}/lessons/video/create?unitId=${unit.id}`}>
+                      <Button
+                        size="sm"
+                        className="h-8 px-3 text-xs font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-600 dark:hover:text-white rounded-xl transition-all"
+                        title="Add Video Lesson into this unit"
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1 text-emerald-600 group-hover:text-white" />
+                        <span>Add Lesson</span>
+                      </Button>
+                    </Link>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                      onClick={() => openEditUnit(unit)}
+                      title="Edit unit details"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                      onClick={() => setDeletingUnit(unit)}
+                      title="Delete unit"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+
+                    <button
+                      onClick={() => toggleUnitCollapse(unit.id)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-1"
+                      title={isCollapsed ? 'Expand Unit' : 'Collapse Unit'}
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronUp className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lessons inside Unit */}
+                {!isCollapsed && (
+                  <div className="p-4 space-y-2.5 bg-slate-50/40 dark:bg-slate-950/30">
+                    {unitLessons.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center gap-2 py-8 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/60 dark:bg-slate-900/60">
+                        <Video className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+                        <p className="text-xs text-slate-400 font-medium">No lessons added to this unit yet</p>
+                        <Link href={`/studio/${courseId}/lessons/video/create?unitId=${unit.id}`}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg mt-1">
+                            <Plus className="h-3 w-3 mr-1" /> Create Lesson
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      unitLessons.map((lesson, lIdx) => {
+                        const skills = parseLessonSkills(lesson);
+
+                        return (
+                          <div
+                            key={lesson.id}
+                            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-3.5 hover:border-emerald-300 dark:hover:border-emerald-700/60 hover:shadow-md transition-all duration-200"
+                          >
+                            {/* Left: Icon & Meta */}
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 text-[#1f4325] dark:from-slate-800 dark:to-slate-800/60 dark:text-emerald-400 font-black text-xs border border-emerald-200/50 dark:border-slate-700">
+                                <span>{lIdx + 1}</span>
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs md:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    {lesson.title}
+                                  </p>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                  {/* Skill Badges */}
+                                  {skills.map((sk) => {
+                                    const theme = SKILL_THEMES[sk.toUpperCase()];
+                                    return (
+                                      <span
+                                        key={sk}
+                                        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold border ${
+                                          theme
+                                            ? `${theme.bg} ${theme.text} ${theme.border}`
+                                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                                        }`}
+                                      >
+                                        <span>{theme?.icon || '📝'}</span>
+                                        <span>{theme?.label || sk}</span>
+                                      </span>
+                                    );
+                                  })}
+
+                                  {/* Estimated Duration */}
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                                    <Clock className="h-3 w-3 text-slate-400" />
+                                    {lesson.estimatedMinutes || 30} mins
+                                  </span>
+
+                                  {/* Sections / Interactive points */}
+                                  {lesson.sections && lesson.sections.length > 0 && (
+                                    <span className="text-[11px] text-slate-400 font-medium">
+                                      · {lesson.sections.length} activities
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right: Actions */}
+                            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                              {/* Preview as Student */}
+                              <Link href={`/student/interactive-video/${lesson.id}`} target="_blank">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2.5 text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-slate-800 dark:hover:text-emerald-400 rounded-xl"
+                                  title="Preview as enrolled student"
+                                >
+                                  <Eye className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                                  <span>Preview</span>
+                                </Button>
+                              </Link>
+
+                              {/* Edit Interactive Lesson in Video Studio */}
+                              <Link href={`/studio/${courseId}/lessons/video/${lesson.id}/editor`}>
+                                <Button
+                                  size="sm"
+                                  className="h-8 px-3 text-xs font-bold bg-[#1f4325] hover:bg-[#285730] text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                                  title="Open Interactive Video Editor"
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                  <span>Edit Video</span>
+                                </Button>
+                              </Link>
+
+                              {/* Delete Lesson */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 rounded-xl"
+                                onClick={() => setDeletingLesson({ id: lesson.id, title: lesson.title })}
+                                title="Delete lesson"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 )}
               </div>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* ── ADD / EDIT UNIT MODAL ───────────────────────────────────── */}
       {showUnitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <Card className="max-w-md w-full p-6 space-y-4 shadow-2xl border-[#e2ebe2]">
-            <div className="flex items-center justify-between border-b border-[#e2ebe2] pb-3">
-              <h3 className="text-sm font-bold text-slate-900">
-                {editingUnit ? 'Edit Unit' : 'Create New Unit'}
-              </h3>
-              <button onClick={() => setShowUnitModal(false)} className="text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="max-w-md w-full p-6 space-y-5 shadow-2xl border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+                  <Layers className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  {editingUnit ? 'Edit Unit Information' : 'Create Curriculum Unit'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowUnitModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg p-1"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
+
             <form onSubmit={handleSaveUnit} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Unit Title</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Unit Title <span className="text-rose-500">*</span>
+                </label>
                 <Input
-                  placeholder="e.g. Unit 1: Foundations & Greetings"
+                  placeholder="e.g. Unit 1: Foundations & Introductions"
                   value={unitTitle}
                   onChange={(e) => setUnitTitle(e.target.value)}
+                  className="rounded-xl text-xs"
                   required
                 />
               </div>
+
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Description <span className="font-normal text-slate-400">(optional)</span>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Unit Learning Goals <span className="font-normal text-slate-400">(optional)</span>
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="What students will learn in this unit…"
+                  placeholder="Summarize the core topics or competencies students will acquire in this unit…"
                   value={unitDesc}
                   onChange={(e) => setUnitDesc(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 outline-none focus:border-[#315b36] resize-none"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 resize-none transition-colors"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-1 border-t border-[#e2ebe2]">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowUnitModal(false)}>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowUnitModal(false)}
+                  className="rounded-xl text-xs"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" variant="gradient" size="sm" disabled={saving} className="font-bold">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={saving}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs px-4"
+                >
                   {saving ? 'Saving…' : editingUnit ? 'Update Unit' : 'Create Unit'}
                 </Button>
               </div>
@@ -398,23 +827,38 @@ export default function StudioCurriculumPage() {
 
       {/* ── DELETE UNIT CONFIRM ────────────────────────────────────── */}
       {deletingUnit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <Card className="max-w-sm w-full p-6 space-y-4 shadow-2xl border-rose-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="max-w-sm w-full p-6 space-y-4 shadow-2xl border-rose-200 dark:border-rose-900/60 rounded-3xl bg-white dark:bg-slate-900">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-500 shrink-0">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-950/60 shrink-0">
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Delete Unit</h3>
-                <p className="text-[11px] text-slate-400">All lessons inside will also be deleted.</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Delete Unit</h3>
+                <p className="text-[11px] text-slate-400">All enclosed lessons will be permanently deleted.</p>
               </div>
             </div>
-            <p className="text-xs text-slate-600">
-              Delete <strong>"{deletingUnit.title}"</strong>?
+
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              Are you sure you want to delete <strong>"{deletingUnit.title}"</strong>?
             </p>
-            <div className="flex justify-end gap-2 pt-1 border-t border-slate-100">
-              <Button variant="outline" size="sm" onClick={() => setDeletingUnit(null)}>Cancel</Button>
-              <Button variant="destructive" size="sm" disabled={saving} onClick={handleDeleteUnit}>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeletingUnit(null)}
+                className="rounded-xl text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={saving}
+                onClick={handleDeleteUnit}
+                className="rounded-xl text-xs font-bold"
+              >
                 {saving ? 'Deleting…' : 'Confirm Delete'}
               </Button>
             </div>
@@ -424,15 +868,39 @@ export default function StudioCurriculumPage() {
 
       {/* ── DELETE LESSON CONFIRM ──────────────────────────────────── */}
       {deletingLesson && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <Card className="max-w-sm w-full p-6 space-y-4 shadow-2xl border-rose-200">
-            <h3 className="text-sm font-bold text-slate-900">Delete Lesson</h3>
-            <p className="text-xs text-slate-600">
-              Delete <strong>"{deletingLesson.title}"</strong>? This cannot be undone.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="max-w-sm w-full p-6 space-y-4 shadow-2xl border-rose-200 dark:border-rose-900/60 rounded-3xl bg-white dark:bg-slate-900">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-950/60 shrink-0">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Delete Lesson</h3>
+                <p className="text-[11px] text-slate-400">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              Are you sure you want to delete <strong>"{deletingLesson.title}"</strong>?
             </p>
-            <div className="flex justify-end gap-2 pt-1 border-t border-slate-100">
-              <Button variant="outline" size="sm" onClick={() => setDeletingLesson(null)}>Cancel</Button>
-              <Button variant="destructive" size="sm" onClick={handleDeleteLesson}>Confirm Delete</Button>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeletingLesson(null)}
+                className="rounded-xl text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteLesson}
+                className="rounded-xl text-xs font-bold"
+              >
+                Confirm Delete
+              </Button>
             </div>
           </Card>
         </div>
@@ -440,3 +908,4 @@ export default function StudioCurriculumPage() {
     </div>
   );
 }
+

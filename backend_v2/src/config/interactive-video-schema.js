@@ -8,7 +8,7 @@ import { query } from './database.js';
 export async function ensureInteractiveVideoSchema() {
   await query(`
     CREATE TABLE IF NOT EXISTS "interactive_video_lessons" (
-      "lessonId" UUID PRIMARY KEY REFERENCES "lessons"(id) ON DELETE CASCADE,
+      "lessonId" TEXT PRIMARY KEY REFERENCES "lessons"(id) ON DELETE CASCADE,
       "videoUrl" TEXT NOT NULL,
       "thumbnailUrl" TEXT,
       "durationSeconds" INTEGER NOT NULL DEFAULT 0 CHECK ("durationSeconds" >= 0),
@@ -18,13 +18,13 @@ export async function ensureInteractiveVideoSchema() {
       "captions" JSONB NOT NULL DEFAULT '[]'::jsonb,
       "navigationMode" VARCHAR(20) NOT NULL DEFAULT 'FREE' CHECK ("navigationMode" IN ('FREE','GUIDED','REQUIRED_COMPLETION')),
       "status" VARCHAR(20) NOT NULL DEFAULT 'DRAFT' CHECK ("status" IN ('DRAFT','PUBLISHED')),
-      "createdBy" UUID NOT NULL REFERENCES "users"(id),
+      "createdBy" TEXT NOT NULL REFERENCES "users"(id),
       "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS "interactive_video_activities" (
       id UUID PRIMARY KEY,
-      "lessonId" UUID NOT NULL REFERENCES "interactive_video_lessons"("lessonId") ON DELETE CASCADE,
+      "lessonId" TEXT NOT NULL REFERENCES "interactive_video_lessons"("lessonId") ON DELETE CASCADE,
       "timestampSeconds" INTEGER NOT NULL CHECK ("timestampSeconds" >= 0),
       type VARCHAR(32) NOT NULL,
       title VARCHAR(200) NOT NULL,
@@ -44,7 +44,7 @@ export async function ensureInteractiveVideoSchema() {
       ON "interactive_video_activities" ("lessonId", "timestampSeconds", "orderIndex");
     CREATE TABLE IF NOT EXISTS "interactive_video_resources" (
       id UUID PRIMARY KEY,
-      "lessonId" UUID NOT NULL REFERENCES "interactive_video_lessons"("lessonId") ON DELETE CASCADE,
+      "lessonId" TEXT NOT NULL REFERENCES "interactive_video_lessons"("lessonId") ON DELETE CASCADE,
       title VARCHAR(200) NOT NULL,
       description TEXT,
       url TEXT NOT NULL,
@@ -56,8 +56,8 @@ export async function ensureInteractiveVideoSchema() {
     );
     CREATE TABLE IF NOT EXISTS "interactive_video_progress" (
       id UUID PRIMARY KEY,
-      "lessonId" UUID NOT NULL REFERENCES "interactive_video_lessons"("lessonId") ON DELETE CASCADE,
-      "studentId" UUID NOT NULL REFERENCES "users"(id) ON DELETE CASCADE,
+      "lessonId" TEXT NOT NULL REFERENCES "interactive_video_lessons"("lessonId") ON DELETE CASCADE,
+      "studentId" TEXT NOT NULL REFERENCES "users"(id) ON DELETE CASCADE,
       "lastPositionSeconds" INTEGER NOT NULL DEFAULT 0,
       "watchedSeconds" INTEGER NOT NULL DEFAULT 0,
       "completionPercent" NUMERIC(5,2) NOT NULL DEFAULT 0,
@@ -68,7 +68,7 @@ export async function ensureInteractiveVideoSchema() {
     CREATE TABLE IF NOT EXISTS "interactive_video_attempts" (
       id UUID PRIMARY KEY,
       "activityId" UUID NOT NULL REFERENCES "interactive_video_activities"(id) ON DELETE CASCADE,
-      "studentId" UUID NOT NULL REFERENCES "users"(id) ON DELETE CASCADE,
+      "studentId" TEXT NOT NULL REFERENCES "users"(id) ON DELETE CASCADE,
       answer JSONB NOT NULL DEFAULT '{}'::jsonb,
       "isCorrect" BOOLEAN NOT NULL DEFAULT false,
       score NUMERIC(8,2) NOT NULL DEFAULT 0,
