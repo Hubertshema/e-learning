@@ -27,7 +27,7 @@ export function AssignCoursesModal({ isOpen, onClose, level, onSuccess }: Assign
     setLoading(true);
     try {
       const res = await apiClient.get<any>('/courses');
-      setAllCourses(res || []);
+      setAllCourses(Array.isArray(res) ? res : (res?.data || res?.courses || []));
     } catch (error) {
       console.error('Failed to fetch courses:', error);
     } finally {

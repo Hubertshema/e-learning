@@ -217,7 +217,7 @@ export default function StudentInteractiveVideoPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {data.resources.map((res: LessonResource) => {
-                    const canDownload = isTeacherOrAdmin || Boolean(res.canDownload);
+                    const canDownload = Boolean(res.canDownload);
 
                     return (
                       <div

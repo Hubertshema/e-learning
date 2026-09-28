@@ -38,8 +38,8 @@ export function EnrollStudentsModal({ isOpen, onClose, level, onSuccess }: Enrol
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get<{ data: Student[] }>('/users/students');
-      setStudents(res.data || []);
+      const res = await apiClient.get<any>('/users/students');
+      setStudents(Array.isArray(res) ? res : (res?.data || []));
     } catch (error) {
       console.error('Failed to fetch students', error);
     } finally {

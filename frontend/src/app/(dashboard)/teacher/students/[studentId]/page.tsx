@@ -21,7 +21,8 @@ import {
   Layers,
   AlertCircle,
   ShieldCheck,
-  TrendingUp
+  TrendingUp,
+  CalendarPlus,
 } from 'lucide-react';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
@@ -216,26 +217,28 @@ export default function TeacherStudentDetailPage() {
       )}
 
       {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2">
         <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
             activeTab === 'overview'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              ? 'border-[#315b36] text-[#315b36] dark:border-emerald-400 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
           onClick={() => setActiveTab('overview')}
         >
-          Portfolio & Progress
+          <BookOpen className="h-3.5 w-3.5" />
+          <span>Portfolio &amp; Progress</span>
         </button>
         <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
             activeTab === 'personalization'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              ? 'border-[#315b36] text-[#315b36] dark:border-emerald-400 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
           onClick={() => setActiveTab('personalization')}
         >
-          Manage Personalization
+          <Layers className="h-3.5 w-3.5" />
+          <span>Manage Personalization</span>
         </button>
       </div>
 
@@ -324,11 +327,12 @@ export default function TeacherStudentDetailPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full text-xs"
+                    className="w-full text-xs font-bold text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 gap-1.5"
                     onClick={() => handleExtendEnrollment(enr.id)}
                     isLoading={extending}
                   >
-                    +30 Days Extension
+                    <CalendarPlus className="h-3.5 w-3.5" />
+                    <span>+30 Days Extension</span>
                   </Button>
                 </div>
               </div>

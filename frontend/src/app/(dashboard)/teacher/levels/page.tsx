@@ -45,16 +45,42 @@ function ExpandableCourseCard({ course }: { course: any }) {
           
           {course.lessons === 0 || !course.lessons ? (
             <div className="text-sm text-slate-500 text-center py-4 bg-white border border-slate-200 border-dashed rounded-md">
-              No lessons available.
+              No lessons available for this course yet.
             </div>
           ) : (
-            <div className="space-y-1">
-              {Array.from({ length: course.lessons || 0 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 bg-white border border-slate-100 rounded-md text-sm text-slate-700">
-                  <span className="font-medium text-slate-500 text-xs w-4">{i + 1}.</span>
-                  Lesson {i + 1}
-                </div>
-              ))}
+            <div className="space-y-1.5">
+              {course.lessonsList && course.lessonsList.length > 0 ? (
+                course.lessonsList.map((lesson: any, i: number) => (
+                  <div
+                    key={lesson.id || i}
+                    className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-xl text-xs hover:bg-slate-50/80 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 shrink-0">
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{lesson.title}</p>
+                        {lesson.unitTitle && (
+                          <p className="text-[10px] text-slate-400 truncate">{lesson.unitTitle}</p>
+                        )}
+                      </div>
+                    </div>
+                    {lesson.skill && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#315b36] border border-emerald-200 shrink-0">
+                        {lesson.skill}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                Array.from({ length: course.lessons || 0 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 bg-white border border-slate-100 rounded-md text-sm text-slate-700">
+                    <span className="font-medium text-slate-500 text-xs w-4">{i + 1}.</span>
+                    Lesson {i + 1}
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>

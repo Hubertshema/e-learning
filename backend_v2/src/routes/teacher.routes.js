@@ -94,6 +94,12 @@ router.post('/students/:studentId/feedback', TeacherController.addStudentFeedbac
 router.patch('/students/:enrollmentId', TeacherController.updateStudentEnrollment);
 router.delete('/students/:enrollmentId', TeacherController.deleteStudentEnrollment);
 
+// Enrollments & Expiring Students
+router.get('/enrollments', TeacherController.getEnrollments);
+router.post('/enrollments/:enrollmentId/extend', TeacherController.extendEnrollment);
+router.post('/enrollments/:enrollmentId/suspend', TeacherController.suspendEnrollment);
+router.get('/expiring-students', TeacherController.getExpiringStudents);
+
 export default router;
 
 

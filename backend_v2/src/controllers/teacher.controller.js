@@ -306,6 +306,72 @@ export class TeacherController {
       next(err);
     }
   }
+
+  /**
+   * GET /api/v1/teacher/enrollments
+   */
+  static async getEnrollments(req, res, next) {
+    try {
+      const teacherId = req.user.id || req.user.userId;
+      const { status, search } = req.query;
+      const enrollments = await TeacherModel.getEnrollments(teacherId, { status, search });
+      return sendSuccess(res, enrollments, 'Enrollments retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * GET /api/v1/teacher/expiring-students
+   */
+  static async getExpiringStudents(req, res, next) {
+    try {
+      const teacherId = req.user.id || req.user.userId;
+      const { days } = req.query;
+      const expiring = await TeacherModel.getExpiringStudents(teacherId, { days });
+      return sendSuccess(res, expiring, 'Expiring students retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/v1/teacher/enrollments/:enrollmentId/extend
+   */
+  static async extendEnrollment(req, res, next) {
+    try {
+      const teacherId = req.user.id || req.user.userId;
+      const { enrollmentId } = req.params;
+      const { extensionDays, days, extraDays } = req.body;
+      const updated = await TeacherModel.extendEnrollment(teacherId, enrollmentId, {
+        extensionDays: extensionDays || days || extraDays || 30,
+      });
+      if (!updated) {
+        return sendError(res, 'Enrollment not found or unauthorized', 404, 'NOT_FOUND');
+      }
+      return sendSuccess(res, updated, 'Enrollment extended successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/v1/teacher/enrollments/:enrollmentId/suspend
+   */
+  static async suspendEnrollment(req, res, next) {
+    try {
+      const teacherId = req.user.id || req.user.userId;
+      const { enrollmentId } = req.params;
+      const { reason } = req.body;
+      const updated = await TeacherModel.suspendEnrollment(teacherId, enrollmentId, { reason });
+      if (!updated) {
+        return sendError(res, 'Enrollment not found or unauthorized', 404, 'NOT_FOUND');
+      }
+      return sendSuccess(res, updated, 'Enrollment suspended successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 import { query } from '../config/database.js';
@@ -342,7 +408,7 @@ export async function getLibraryItems(teacherId) {
 
   const videoRes = await query(
     `SELECT
-        ivl.id,
+        ivl."lessonId"     AS id,
         ivl."videoUrl"     AS url,
         ivl."thumbnailUrl",
         ivl."durationSeconds",
@@ -401,5 +467,91 @@ export async function getLibraryItems(teacherId) {
     createdAt: v.createdAt,
   }));
 
-  return [...pdfs, ...videos];
+  const seenUrls = new Set([...pdfs.map((p) => p.url), ...videos.map((v) => v.url)]);
+
+  let sectionItems = [];
+  try {
+    const secRes = await query(
+      `SELECT
+          s.id,
+          s.title,
+          s.content,
+          s."mediaUrl" AS url,
+          s."contentType",
+          s."createdAt",
+          l.title AS "lessonTitle",
+          l.id    AS "lessonId",
+          c.title AS "courseTitle",
+          c.id    AS "courseId"
+        FROM "lesson_sections" s
+        JOIN "lessons" l ON l.id = s."lessonId"
+        JOIN "units" u ON u.id = l."unitId"
+        JOIN "courses" c ON c.id = u."courseId"
+        WHERE s."mediaUrl" IS NOT NULL AND s."mediaUrl" != ''
+          AND (c."teacherId" = $1 OR c."teacherId" IN (
+            SELECT id FROM "teacher_profiles" WHERE "userId" = $1
+          ))
+        ORDER BY s."createdAt" DESC`,
+      [teacherId]
+    );
+
+    for (const s of secRes.rows || []) {
+      if (!s.url || seenUrls.has(s.url)) continue;
+      seenUrls.add(s.url);
+
+      const urlLower = s.url.toLowerCase();
+      const isPdf = s.contentType === 'PDF' || urlLower.endsWith('.pdf') || urlLower.includes('/pdf') || urlLower.includes('.pdf?');
+      const isVideo =
+        s.contentType === 'VIDEO' ||
+        urlLower.includes('youtube.com') ||
+        urlLower.includes('youtu.be') ||
+        urlLower.endsWith('.mp4') ||
+        urlLower.endsWith('.webm') ||
+        urlLower.endsWith('.mov') ||
+        urlLower.includes('/video');
+
+      if (isPdf) {
+        sectionItems.push({
+          id: `sec_pdf_${s.id}`,
+          resourceId: s.id,
+          title: s.title || `${s.lessonTitle} - Document`,
+          description: s.content || null,
+          url: s.url,
+          fileType: 'PDF',
+          resourceType: 'PDF',
+          canDownload: false,
+          canView: true,
+          lessonTitle: s.lessonTitle,
+          lessonId: s.lessonId,
+          courseTitle: s.courseTitle,
+          courseId: s.courseId,
+          createdAt: s.createdAt,
+        });
+      } else if (isVideo) {
+        sectionItems.push({
+          id: `sec_vid_${s.id}`,
+          resourceId: s.id,
+          title: s.title || `${s.lessonTitle} - Video`,
+          description: s.content || null,
+          url: s.url,
+          fileType: 'VIDEO',
+          resourceType: 'VIDEO',
+          thumbnail: null,
+          durationSeconds: 0,
+          cefrLevel: null,
+          canDownload: false,
+          canView: true,
+          lessonTitle: s.lessonTitle,
+          lessonId: s.lessonId,
+          courseTitle: s.courseTitle,
+          courseId: s.courseId,
+          createdAt: s.createdAt,
+        });
+      }
+    }
+  } catch (err) {
+    // If lesson_sections table doesn't exist or query fails, ignore silently
+  }
+
+  return [...pdfs, ...videos, ...sectionItems];
 }

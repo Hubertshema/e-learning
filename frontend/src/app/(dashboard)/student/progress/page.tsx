@@ -144,13 +144,13 @@ export default function StudentProgressPage() {
 
             <Card className="p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500">Quizzes Passed</span>
+                <span className="text-xs font-medium text-slate-500">Modules Completed</span>
                 <Award className="h-4 w-4 text-amber-500" />
               </div>
               <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
                 {data.quizzesPassedCount}
               </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Knowledge checks verified</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Interactive modules verified</p>
             </Card>
           </div>
 

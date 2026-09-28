@@ -1108,6 +1108,180 @@ export class TeacherModel {
     await query(`DELETE FROM "public"."enrollments" WHERE id = $1`, [enrollmentId]);
     return true;
   }
+
+  /**
+   * Get all enrollments for teacher courses
+   */
+  static async getEnrollments(teacherId, { status, search = '' } = {}) {
+    const teacherIds = await this.resolveTeacherIds(teacherId);
+    let whereSql = `WHERE c."teacherId" = ANY($1)`;
+    const params = [teacherIds];
+    let pIdx = 2;
+
+    if (status && status !== 'ALL') {
+      whereSql += ` AND e.status = $${pIdx++}`;
+      params.push(status);
+    }
+    if (search) {
+      whereSql += ` AND (u."firstName" ILIKE $${pIdx} OR u."lastName" ILIKE $${pIdx} OR u.email ILIKE $${pIdx} OR c.title ILIKE $${pIdx})`;
+      params.push(`%${search}%`);
+      pIdx++;
+    }
+
+    const res = await query(
+      `SELECT e.id,
+              e.status,
+              e."enrolledAt",
+              e."expiresAt",
+              COALESCE(u.id, sp."userId", e."studentId") AS "studentUserId",
+              u."firstName",
+              u."lastName",
+              u.email,
+              c.id AS "courseId",
+              c.title AS "courseTitle",
+              c.level AS "courseLevel",
+              cl.id AS "classId",
+              cl.name AS "className"
+       FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       LEFT JOIN "public"."student_profiles" sp ON (sp.id = e."studentId" OR sp."userId" = e."studentId")
+       JOIN "public"."users" u ON (u.id = sp."userId" OR u.id = e."studentId")
+       LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
+       ${whereSql}
+       ORDER BY e."enrolledAt" DESC`,
+      params
+    );
+
+    return res.rows.map((r) => ({
+      id: r.id,
+      status: r.status,
+      enrolledAt: r.enrolledAt,
+      expiresAt: r.expiresAt,
+      student: {
+        id: r.studentUserId,
+        user: {
+          firstName: r.firstName,
+          lastName: r.lastName,
+          email: r.email,
+        },
+      },
+      course: {
+        id: r.courseId,
+        title: r.courseTitle,
+        level: r.courseLevel,
+      },
+      class: r.classId ? { name: r.className } : undefined,
+    }));
+  }
+
+  /**
+   * Get students with access expiring within the given days
+   */
+  static async getExpiringStudents(teacherId, { days = 7 } = {}) {
+    const teacherIds = await this.resolveTeacherIds(teacherId);
+    const safeDays = Math.max(1, parseInt(days, 10) || 7);
+
+    const res = await query(
+      `SELECT e.id,
+              e.status,
+              e."enrolledAt",
+              e."expiresAt",
+              COALESCE(u.id, sp."userId", e."studentId") AS "studentUserId",
+              u."firstName",
+              u."lastName",
+              u.email,
+              c.id AS "courseId",
+              c.title AS "courseTitle",
+              c.level AS "courseLevel",
+              cl.id AS "classId",
+              cl.name AS "className"
+       FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       LEFT JOIN "public"."student_profiles" sp ON (sp.id = e."studentId" OR sp."userId" = e."studentId")
+       JOIN "public"."users" u ON (u.id = sp."userId" OR u.id = e."studentId")
+       LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
+       WHERE c."teacherId" = ANY($1)
+         AND e."expiresAt" IS NOT NULL
+         AND e."expiresAt" <= NOW() + ($2 || ' days')::INTERVAL
+         AND e."expiresAt" >= NOW() - INTERVAL '7 days'
+       ORDER BY e."expiresAt" ASC`,
+      [teacherIds, safeDays]
+    );
+
+    return res.rows.map((r) => ({
+      id: r.id,
+      expiresAt: r.expiresAt,
+      status: r.status,
+      student: {
+        id: r.studentUserId,
+        user: {
+          firstName: r.firstName,
+          lastName: r.lastName,
+          email: r.email,
+        },
+      },
+      course: {
+        id: r.courseId,
+        title: r.courseTitle,
+        level: r.courseLevel,
+      },
+      class: r.classId ? { name: r.className } : undefined,
+    }));
+  }
+
+  /**
+   * Extend enrollment access
+   */
+  static async extendEnrollment(teacherId, enrollmentId, { extensionDays = 30 } = {}) {
+    const teacherIds = await this.resolveTeacherIds(teacherId);
+    const safeDays = Math.max(1, parseInt(extensionDays, 10) || 30);
+
+    const verifyRes = await query(
+      `SELECT e.id FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       WHERE e.id = $1 AND c."teacherId" = ANY($2)
+       LIMIT 1`,
+      [enrollmentId, teacherIds]
+    );
+    if (verifyRes.rows.length === 0) return null;
+
+    const res = await query(
+      `UPDATE "public"."enrollments"
+       SET "expiresAt" = GREATEST(COALESCE("expiresAt", NOW()), NOW()) + ($2 || ' days')::INTERVAL,
+           status = 'ACTIVE',
+           "updatedAt" = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [enrollmentId, safeDays]
+    );
+    return res.rows[0];
+  }
+
+  /**
+   * Suspend enrollment access
+   */
+  static async suspendEnrollment(teacherId, enrollmentId, { reason = '' } = {}) {
+    const teacherIds = await this.resolveTeacherIds(teacherId);
+
+    const verifyRes = await query(
+      `SELECT e.id FROM "public"."enrollments" e
+       JOIN "public"."courses" c ON c.id = e."courseId"
+       WHERE e.id = $1 AND c."teacherId" = ANY($2)
+       LIMIT 1`,
+      [enrollmentId, teacherIds]
+    );
+    if (verifyRes.rows.length === 0) return null;
+
+    const res = await query(
+      `UPDATE "public"."enrollments"
+       SET status = 'SUSPENDED',
+           "updatedAt" = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [enrollmentId]
+    );
+    return res.rows[0];
+  }
 }
 
 

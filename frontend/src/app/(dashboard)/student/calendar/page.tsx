@@ -65,7 +65,7 @@ export default function StudentCalendarPage() {
           {[
             { label: 'All Agenda', value: 'ALL' },
             { label: 'Assignments', value: 'ASSIGNMENT_DEADLINE' },
-            { label: 'Quizzes', value: 'QUIZ_DATE' },
+            { label: 'Live Sessions', value: 'CLASS_SESSION' },
             { label: 'Access Expiry', value: 'EXPIRATION_ALERT' },
           ].map((f) => (
             <button
@@ -165,9 +165,9 @@ export default function StudentCalendarPage() {
                   )}
 
                   {isQuiz && (
-                    <Link href="/student/quizzes">
+                    <Link href="/student/my-courses">
                       <Button size="sm" variant="gradient" className="text-xs">
-                        Take Quiz
+                        Study Course
                         <ArrowRight className="ml-1 h-3 w-3" />
                       </Button>
                     </Link>

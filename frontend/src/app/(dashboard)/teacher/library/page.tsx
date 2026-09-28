@@ -355,7 +355,7 @@ export default function TeacherLibraryPage() {
           <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No files found</p>
           <p className="text-xs text-slate-400 mt-1">
             {items.length === 0
-              ? 'Upload PDFs or add videos to your lessons — they'll appear here automatically.'
+              ? "Upload PDFs or add videos to your lessons — they'll appear here automatically."
               : 'Try adjusting your search or filter.'}
           </p>
           {items.length === 0 && (

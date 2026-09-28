@@ -13,16 +13,44 @@ export class LevelController {
         for (const level of levels) {
           const courses = await LevelCourseModel.findByLevelId(level.id);
           // Also fetch student count for the level
-          const studentRes = await query('SELECT COUNT(*) FROM "public"."student_profiles" WHERE "levelId" = $1', [level.id]);
+          const studentRes = await query(
+            `SELECT COUNT(DISTINCT u.id)
+             FROM "public"."users" u
+             JOIN "public"."student_profiles" sp ON u.id = sp."userId"
+             LEFT JOIN "public"."enrollments" e ON e."studentId" = sp.id
+             LEFT JOIN "public"."courses" c ON c.id = e."courseId"
+             LEFT JOIN "public"."level_courses" lc ON lc."courseId" = c.id
+             WHERE sp."levelId" = $1
+                OR lc."levelId" = $1
+                OR (c.level IS NOT NULL AND (c.level = $1::text OR c.level = $2))`,
+            [level.id, level.code]
+          );
           
+          const enrichedCourses = await Promise.all(
+            courses.map(async (c) => {
+              const lessonsRes = await query(
+                `SELECT l.id, l.title, l.skill, l."estimatedMinutes", l."orderIndex", un.title as "unitTitle"
+                 FROM "public"."lessons" l
+                 JOIN "public"."units" un ON un.id = l."unitId"
+                 WHERE un."courseId" = $1
+                 ORDER BY un."orderIndex" ASC, l."orderIndex" ASC`,
+                [c.courseId]
+              );
+              return {
+                id: c.courseId,
+                title: c.title,
+                level: c.level,
+                summary: c.summary,
+                lessons: lessonsRes.rows.length,
+                lessonsList: lessonsRes.rows,
+              };
+            })
+          );
+
           enrichedLevels.push({
             ...level,
             students: parseInt(studentRes.rows[0].count, 10),
-            courses: courses.map(c => ({
-              id: c.courseId,
-              title: c.title,
-              lessons: 0 // Mock for now or fetch actual lesson count if units/lessons table exists
-            }))
+            courses: enrichedCourses,
           });
         }
         return sendSuccess(res, enrichedLevels);
@@ -110,16 +138,22 @@ export class LevelController {
 
   /**
    * GET /api/v1/levels/:id/students
-   * Get students enrolled in a level
+   * Get students enrolled in a level (directly or through courses assigned to this level)
    */
   static async getStudents(req, res) {
     try {
       const levelId = req.params.id;
       const { rows } = await query(
-        `SELECT u.id, u.email, u."firstName", u."lastName", u."avatarUrl"
+        `SELECT DISTINCT u.id, u.email, u."firstName", u."lastName", u."avatarUrl"
          FROM "public"."users" u
          JOIN "public"."student_profiles" sp ON u.id = sp."userId"
+         LEFT JOIN "public"."enrollments" e ON e."studentId" = sp.id
+         LEFT JOIN "public"."courses" c ON c.id = e."courseId"
+         LEFT JOIN "public"."level_courses" lc ON lc."courseId" = c.id
+         LEFT JOIN "public"."levels" lvl ON lvl.id = $1
          WHERE sp."levelId" = $1
+            OR lc."levelId" = $1
+            OR (c.level IS NOT NULL AND (c.level = $1::text OR c.level = lvl.code))
          ORDER BY u."lastName" ASC, u."firstName" ASC`,
         [levelId]
       );

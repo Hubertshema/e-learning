@@ -26,7 +26,7 @@ export function LevelStudentsSection({ levelId, refreshTrigger, onEnrollClick }:
     setLoading(true);
     try {
       const res = await apiClient.get<any>(`/levels/${levelId}/students`);
-      setStudents(res.data || []);
+      setStudents(Array.isArray(res) ? res : (res?.data || []));
     } catch (error) {
       console.error('Failed to fetch students', error);
     } finally {

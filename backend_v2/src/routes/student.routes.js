@@ -12,6 +12,9 @@ router.get('/placement-test', PlacementController.getStudentPlacementTest);
 router.get('/placements', PlacementController.getAvailablePlacements);
 router.post('/placement-test', PlacementController.submitStudentPlacementTest);
 
+// Student Dashboard
+router.get('/dashboard', StudentController.getDashboard);
+
 // Student Courses
 router.get('/courses', (req, res, next) => {
   req.params.id = 'me';

@@ -7,9 +7,10 @@ export class LevelCourseModel {
   static async findByLevelId(levelId) {
     const res = await query(
       `SELECT lc.id AS "levelCourseId", lc."levelId", lc."maxStudents", lc."isActive", 
-              c.id AS "courseId", c.title, c.slug, c.summary, c.category, c."durationDays",
+              c.id AS "courseId", c.title, c.slug, c.summary, c.category, c."durationDays", c.level,
               u."firstName" AS "teacherFirstName", u."lastName" AS "teacherLastName",
-              (SELECT COUNT(*) FROM "public"."enrollments" e WHERE e."levelCourseId" = lc.id) AS "enrolledCount"
+              (SELECT COUNT(*) FROM "public"."enrollments" e WHERE e."levelCourseId" = lc.id) AS "enrolledCount",
+              (SELECT COUNT(*) FROM "public"."lessons" l JOIN "public"."units" un ON un.id = l."unitId" WHERE un."courseId" = c.id) AS "lessonsCount"
        FROM "public"."level_courses" lc
        JOIN "public"."courses" c ON c.id = lc."courseId"
        LEFT JOIN "public"."users" u ON u.id = lc."teacherId"
