@@ -9,6 +9,9 @@ teacherInteractiveVideoRoutes.put('/lessons/:lessonId', C.saveLesson);
 teacherInteractiveVideoRoutes.post('/lessons/:lessonId/activities', C.saveActivity);
 teacherInteractiveVideoRoutes.post('/lessons/:lessonId/generate-activities', C.generateActivities);
 teacherInteractiveVideoRoutes.post('/lessons/:lessonId/resources', C.addResource);
+teacherInteractiveVideoRoutes.patch('/resources/:resourceId', C.updateResource);
+teacherInteractiveVideoRoutes.put('/resources/:resourceId', C.updateResource);
+teacherInteractiveVideoRoutes.delete('/resources/:resourceId', C.deleteResource);
 teacherInteractiveVideoRoutes.get('/lessons/:lessonId/analytics', C.analytics);
 teacherInteractiveVideoRoutes.delete('/activities/:activityId', C.deleteActivity);
 
@@ -17,3 +20,4 @@ studentInteractiveVideoRoutes.use(authenticate, authorize('STUDENT', 'TEACHER', 
 studentInteractiveVideoRoutes.get('/lessons/:lessonId', C.getStudentLesson);
 studentInteractiveVideoRoutes.post('/lessons/:lessonId/progress', C.saveProgress);
 studentInteractiveVideoRoutes.post('/activities/:activityId/attempts', C.submitAttempt);
+studentInteractiveVideoRoutes.get('/resources/:resourceId/download', C.downloadResource);

@@ -13,6 +13,8 @@ import {
   Trash2,
   FileText,
   Download,
+  Lock,
+  Shield,
   Link2,
   ExternalLink,
   Edit2,
@@ -29,6 +31,7 @@ import {
   Clock,
   X,
   AlertCircle,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +40,11 @@ import {
   UniversalVideoHandle,
   getYouTubeId,
 } from '@/components/interactive-video/universal-video';
+import {
+  ResourcePreviewModal,
+  ResourceTypeBadge,
+  LessonResource,
+} from '@/components/resources/resource-preview-modal';
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -89,25 +97,172 @@ export default function InteractiveVideoEditorPage() {
     videoUrl: '',
     title: '',
     thumbnailUrl: '',
-    cefrLevel: 'B1',
+    cefrLevel: 'Level 1',
     skill: 'LISTENING',
     navigationMode: 'FREE',
   });
+  const DEFAULT_LEVELS = [
+    { id: 1, name: 'Level 1', code: 'L1', description: 'Beginner Level' },
+    { id: 2, name: 'Level 2', code: 'L2', description: 'Intermediate Level' },
+    { id: 3, name: 'Level 3', code: 'L3', description: 'Advanced Level' },
+  ];
+  const [dbLevels, setDbLevels] = useState<Array<{ id: number | string; name: string; code: string; description?: string }>>(DEFAULT_LEVELS);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Analytics state
   const [analytics, setAnalytics] = useState<any>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
-  // New Resource Form
+  // New Resource Form & Preview
   const [isAddingResource, setIsAddingResource] = useState(false);
-  const [newResource, setNewResource] = useState({ title: '', url: '', canDownload: false });
+  const [newResource, setNewResource] = useState({
+    title: '',
+    url: '',
+    resourceType: 'PDF',
+    canDownload: false,
+  });
+  const [previewResource, setPreviewResource] = useState<LessonResource | null>(null);
+  const [isUploadingResource, setIsUploadingResource] = useState(false);
+  const [uploadedResourceName, setUploadedResourceName] = useState('');
+  const resourceFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Local Video Upload in Settings
+  const [isUploadingVideoFile, setIsUploadingVideoFile] = useState(false);
+  const videoSettingsFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleVideoSettingsUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingVideoFile(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res: any = await apiClient.upload('/upload/media', formData);
+      const url = res?.url;
+      if (url) {
+        setSettingsForm((prev) => ({
+          ...prev,
+          videoUrl: url,
+        }));
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload video file');
+    } finally {
+      setIsUploadingVideoFile(false);
+      if (videoSettingsFileInputRef.current) videoSettingsFileInputRef.current.value = '';
+    }
+  };
+
+  const handleResourceFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingResource(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res: any = await apiClient.upload('/upload/media', formData);
+      const uploadedUrl = res?.url;
+      if (uploadedUrl) {
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        let detectedType = 'DOC';
+        if (ext === 'pdf') detectedType = 'PDF';
+        else if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext)) detectedType = 'IMAGE';
+        else if (['mp4', 'webm', 'mov', 'mkv'].includes(ext)) detectedType = 'VIDEO';
+        else if (['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext)) detectedType = 'AUDIO';
+
+        setUploadedResourceName(file.name);
+        setNewResource((prev) => ({
+          ...prev,
+          url: uploadedUrl,
+          title: prev.title || file.name.replace(/\.[^/.]+$/, ''),
+          resourceType: detectedType,
+        }));
+      }
+    } catch (err: any) {
+      alert(err.message || 'File upload failed');
+    } finally {
+      setIsUploadingResource(false);
+      if (resourceFileInputRef.current) resourceFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: string) => {
+    if (!confirm('Are you sure you want to delete this resource?')) return;
+    try {
+      await apiClient.delete(`/teacher/interactive-videos/resources/${resourceId}`);
+      setResources((prev) => prev.filter((r) => r.id !== resourceId));
+      fetchLesson();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete resource');
+    }
+  };
+
+  const [updatingResourceId, setUpdatingResourceId] = useState<string | null>(null);
+  const [editingResource, setEditingResource] = useState<{
+    id: string;
+    title: string;
+    description: string;
+    canDownload: boolean;
+  } | null>(null);
+  const [isSavingEditResource, setIsSavingEditResource] = useState(false);
+
+  const handleToggleResourceDownload = async (resourceId: string, currentCanDownload: boolean) => {
+    const newCanDownload = !currentCanDownload;
+    setUpdatingResourceId(resourceId);
+    try {
+      await apiClient.patch(`/teacher/interactive-videos/resources/${resourceId}`, {
+        canDownload: newCanDownload,
+      });
+      setResources((prev) =>
+        prev.map((r) => (r.id === resourceId ? { ...r, canDownload: newCanDownload } : r))
+      );
+    } catch (err: any) {
+      alert(err.message || 'Failed to update resource download permission');
+    } finally {
+      setUpdatingResourceId(null);
+    }
+  };
+
+  const handleSaveResourceEdit = async () => {
+    if (!editingResource) return;
+    setIsSavingEditResource(true);
+    try {
+      const res: any = await apiClient.patch(
+        `/teacher/interactive-videos/resources/${editingResource.id}`,
+        {
+          title: editingResource.title,
+          description: editingResource.description,
+          canDownload: editingResource.canDownload,
+        }
+      );
+      const updated = res?.data || res;
+      setResources((prev) =>
+        prev.map((r) =>
+          r.id === editingResource.id
+            ? { ...r, title: editingResource.title, description: editingResource.description, canDownload: editingResource.canDownload, ...updated }
+            : r
+        )
+      );
+      setEditingResource(null);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update resource details');
+    } finally {
+      setIsSavingEditResource(false);
+    }
+  };
 
   // Publishing
   const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     fetchLesson();
+    apiClient
+      .get<any[]>('/levels')
+      .then((res: any) => {
+        const data = Array.isArray(res) ? res : res?.data || [];
+        if (data.length > 0) setDbLevels(data);
+      })
+      .catch(() => {});
   }, [lessonId]);
 
   const fetchLesson = async () => {
@@ -1778,80 +1933,238 @@ export default function InteractiveVideoEditorPage() {
             {activeTab === 'RESOURCES' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-900">Lesson Resources</h3>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Lesson PDF Resources</h3>
+                    <p className="text-[11px] text-slate-500">
+                      Upload PDF handouts, worksheets, and study notes. Click the PDF badge to preview.
+                    </p>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={() => setIsAddingResource(!isAddingResource)}
+                    className="h-7 px-2.5 text-xs font-semibold gap-1.5"
+                    onClick={() => {
+                      setNewResource({ title: '', url: '', resourceType: 'PDF', canDownload: false });
+                      setUploadedResourceName('');
+                      setIsAddingResource(!isAddingResource);
+                    }}
                   >
-                    <Plus className="h-3 w-3 mr-1" /> Add Resource
+                    <Plus className="h-3.5 w-3.5" /> Add PDF
                   </Button>
                 </div>
 
                 {isAddingResource && (
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                    <Input
-                      className="h-8 text-xs"
-                      placeholder="Title (e.g. Vocabulary Handout)"
-                      value={newResource.title}
-                      onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
-                    />
-                    <Input
-                      className="h-8 text-xs font-mono"
-                      placeholder="URL (e.g. https://...)"
-                      value={newResource.url}
-                      onChange={(e) => setNewResource({ ...newResource, url: e.target.value })}
-                    />
-                    <div className="flex items-center gap-2 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={newResource.canDownload}
-                        onChange={(e) => setNewResource({ ...newResource, canDownload: e.target.checked })}
-                      />
-                      <span>Allow Students to Download</span>
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700">Add PDF Resource</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingResource(false);
+                          setUploadedResourceName('');
+                        }}
+                        className="text-slate-400 hover:text-slate-600 text-xs"
+                      >
+                        Cancel
+                      </button>
                     </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600">Document Title</label>
+                      <Input
+                        className="h-8 text-xs bg-white"
+                        placeholder="e.g. Vocabulary Study Sheet, Exercise Notes"
+                        value={newResource.title}
+                        onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-600">PDF File or Link</label>
+                        <input
+                          ref={resourceFileInputRef}
+                          type="file"
+                          accept=".pdf,application/pdf"
+                          className="hidden"
+                          onChange={handleResourceFileUpload}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isUploadingResource}
+                          className="h-7 px-2.5 text-xs gap-1.5 font-semibold border-rose-200 text-rose-700 hover:bg-rose-50"
+                          onClick={() => resourceFileInputRef.current?.click()}
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          {isUploadingResource ? 'Uploading PDF...' : 'Upload Local PDF'}
+                        </Button>
+                      </div>
+
+                      {uploadedResourceName && (
+                        <div className="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px]">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <span className="font-semibold truncate">Uploaded: {uploadedResourceName}</span>
+                        </div>
+                      )}
+
+                      <Input
+                        className="h-8 text-xs font-mono bg-white"
+                        placeholder="e.g. https://...file.pdf or click Upload Local PDF above"
+                        value={newResource.url}
+                        onChange={(e) => setNewResource({ ...newResource, url: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="pt-1 border-t border-slate-200/60">
+                      <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none py-1">
+                        <input
+                          type="checkbox"
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                          checked={newResource.canDownload}
+                          onChange={(e) => setNewResource({ ...newResource, canDownload: e.target.checked })}
+                        />
+                        <span>Allow Students to Download PDF</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400 pl-6 block">
+                        If unchecked, students can only view/read the PDF in-app (downloads disabled).
+                      </span>
+                    </div>
+
                     <Button
                       size="sm"
                       className="w-full h-8 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
                       onClick={async () => {
                         if (!newResource.title || !newResource.url) {
-                          alert('Title and URL are required.');
+                          alert('Title and PDF file URL are required.');
                           return;
                         }
                         try {
-                          await apiClient.post(`/teacher/interactive-videos/lessons/${lessonId}/resources`, newResource);
-                          setNewResource({ title: '', url: '', canDownload: false });
+                          await apiClient.post(`/teacher/interactive-videos/lessons/${lessonId}/resources`, {
+                            ...newResource,
+                            resourceType: 'PDF',
+                          });
+                          setNewResource({ title: '', url: '', resourceType: 'PDF', canDownload: false });
+                          setUploadedResourceName('');
                           setIsAddingResource(false);
                           fetchLesson();
                         } catch (err: any) {
-                          alert(err.message || 'Failed to add resource');
+                          alert(err.message || 'Failed to add PDF resource');
                         }
                       }}
                     >
-                      Save Resource
+                      Save PDF Resource
                     </Button>
                   </div>
                 )}
 
                 {resources.length === 0 ? (
                   <div className="text-center py-12 text-slate-400 text-xs border-2 border-dashed border-slate-100 rounded-xl">
-                    No resources added yet.
+                    No PDF resources added yet. Click &quot;Add PDF&quot; to upload handouts or worksheets.
                   </div>
                 ) : (
-                  resources.map((res: any) => (
-                    <div key={res.id} className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-bold text-slate-900">{res.title}</p>
-                        <a href={res.url} target="_blank" rel="noreferrer" className="text-[11px] text-indigo-600 hover:underline">
-                          {res.url}
-                        </a>
+                  <div className="space-y-2.5">
+                    {resources.map((res: any) => (
+                      <div
+                        key={res.id}
+                        className="p-3.5 rounded-2xl border border-slate-200/90 bg-white hover:border-slate-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                      >
+                        <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                          {/* PDF Badge is CLICKABLE to preview */}
+                          <ResourceTypeBadge
+                            resource={res}
+                            onClick={() => setPreviewResource(res)}
+                            className="hover:scale-105 active:scale-95 transition-transform shrink-0 mt-0.5 sm:mt-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="text-xs font-bold text-slate-900 truncate hover:text-indigo-600 cursor-pointer"
+                              onClick={() => setPreviewResource(res)}
+                              title={res.title}
+                            >
+                              {res.title}
+                            </p>
+                            {res.description && (
+                              <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                {res.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              {/* Direct Permission Toggle Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleResourceDownload(res.id, res.canDownload)}
+                                disabled={updatingResourceId === res.id}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                                  res.canDownload
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
+                                }`}
+                                title={
+                                  res.canDownload
+                                    ? 'Students can download this PDF. Click to restrict to high-security View-Only.'
+                                    : 'Protected view-only mode. Click to allow student downloads.'
+                                }
+                              >
+                                {updatingResourceId === res.id ? (
+                                  <span className="text-[10px]">Updating...</span>
+                                ) : res.canDownload ? (
+                                  <>
+                                    <Download className="h-3 w-3 text-emerald-600" />
+                                    <span>Download Allowed</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="h-3 w-3 text-amber-600" />
+                                    <span>View Only (Restricted)</span>
+                                  </>
+                                )}
+                                <span className="opacity-60 font-normal underline ml-0.5">(Click to change)</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
+                            onClick={() => setPreviewResource(res)}
+                            title="Preview PDF"
+                          >
+                            <Eye className="h-3.5 w-3.5 mr-1" />
+                            Preview
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
+                            onClick={() => setEditingResource({
+                              id: res.id,
+                              title: res.title,
+                              description: res.description || '',
+                              canDownload: Boolean(res.canDownload),
+                            })}
+                            title="Edit Resource & Permissions"
+                          >
+                            <Edit2 className="h-3.5 w-3.5 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+                            onClick={() => handleDeleteResource(res.id)}
+                            title="Delete PDF"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-400">
-                        {res.canDownload ? 'Downloadable' : 'View only'}
-                      </span>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
             )}
@@ -1922,41 +2235,69 @@ export default function InteractiveVideoEditorPage() {
               {/* Video URL */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-slate-700">Video Link / URL *</label>
-                  {getYouTubeId(settingsForm.videoUrl) ? (
-                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
-                      YouTube Detected (ID: {getYouTubeId(settingsForm.videoUrl)})
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-semibold text-slate-400">YouTube or MP4</span>
-                  )}
+                  <label className="text-xs font-bold text-slate-700">Video Source / Local File *</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={videoSettingsFileInputRef}
+                      type="file"
+                      accept="video/mp4,video/webm,video/ogg,video/quicktime,video/*"
+                      className="hidden"
+                      onChange={handleVideoSettingsUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isUploadingVideoFile}
+                      className="h-6 px-2 text-[10px] gap-1 font-semibold border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                      onClick={() => videoSettingsFileInputRef.current?.click()}
+                    >
+                      <Upload className="h-3 w-3" />
+                      {isUploadingVideoFile ? 'Uploading...' : 'Upload Local Video'}
+                    </Button>
+                    {getYouTubeId(settingsForm.videoUrl) ? (
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                        YouTube
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-slate-400">MP4 / Local</span>
+                    )}
+                  </div>
                 </div>
                 <Input
                   required
-                  placeholder="https://youtu.be/... or https://...video.mp4"
+                  placeholder="https://youtu.be/... or https://...video.mp4 or upload local file above"
                   value={settingsForm.videoUrl}
                   onChange={(e) => setSettingsForm({ ...settingsForm, videoUrl: e.target.value })}
                   className="font-mono text-xs"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
-                  Supports YouTube standard URLs, youtu.be, Shorts, or direct video files (MP4/WebM).
+                  Supports local video files (MP4/WebM), YouTube URLs, Shorts, or remote hosted video streams.
                 </p>
               </div>
 
               {/* CEFR Level & Skill */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">CEFR Level</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Level</label>
                   <select
                     className="w-full h-9 text-xs font-semibold border-slate-200 rounded-xl px-3 bg-white"
                     value={settingsForm.cefrLevel}
                     onChange={(e) => setSettingsForm({ ...settingsForm, cefrLevel: e.target.value })}
                   >
-                    {['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => (
-                      <option key={lvl} value={lvl}>
-                        {lvl}
-                      </option>
-                    ))}
+                    {dbLevels.length > 0 ? (
+                      dbLevels.map((lvl) => (
+                        <option key={lvl.id} value={lvl.name}>
+                          {lvl.name} ({lvl.code}){lvl.description ? ` - ${lvl.description}` : ''}
+                        </option>
+                      ))
+                    ) : (
+                      ['Level 1', 'Level 2', 'Level 3', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => (
+                        <option key={lvl} value={lvl}>
+                          {lvl}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
                 <div>
@@ -2028,6 +2369,115 @@ export default function InteractiveVideoEditorPage() {
           </div>
         </div>
       )}
+
+      {/* Edit Resource Modal */}
+      {editingResource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600">
+                  <Edit2 className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Edit Resource & Permissions</h3>
+              </div>
+              <button
+                onClick={() => setEditingResource(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Resource Title
+                </label>
+                <Input
+                  value={editingResource.title}
+                  onChange={(e) => setEditingResource({ ...editingResource, title: e.target.value })}
+                  className="text-xs"
+                  placeholder="e.g. Vocabulary Summary Sheet"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={editingResource.description}
+                  onChange={(e) => setEditingResource({ ...editingResource, description: e.target.value })}
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent resize-none h-20 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200"
+                  placeholder="Brief description for students..."
+                />
+              </div>
+
+              {/* Download Permission Toggle Box */}
+              <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    {editingResource.canDownload ? (
+                      <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
+                        <Download className="h-4 w-4" />
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
+                        <Lock className="h-4 w-4" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">
+                        {editingResource.canDownload ? 'Downloads: Permitted' : 'Downloads: Strictly Blocked (View Only)'}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        {editingResource.canDownload
+                          ? 'Students can download and save this PDF file.'
+                          : 'High-security mode: direct downloads & printing are blocked.'}
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="edit-canDownload-toggle"
+                    checked={editingResource.canDownload}
+                    onChange={(e) => setEditingResource({ ...editingResource, canDownload: e.target.checked })}
+                    className="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingResource(null)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveResourceEdit}
+                disabled={isSavingEditResource || !editingResource.title.trim()}
+                className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+              >
+                {isSavingEditResource ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resource In-App Preview Modal */}
+      <ResourcePreviewModal
+        resource={previewResource}
+        isOpen={Boolean(previewResource)}
+        onClose={() => setPreviewResource(null)}
+        isTeacher={true}
+      />
     </div>
   );
 }

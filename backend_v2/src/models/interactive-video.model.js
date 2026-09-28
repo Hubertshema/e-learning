@@ -185,6 +185,81 @@ export class InteractiveVideoModel {
     return result.rows[0];
   }
 
+  static async deleteResource(resourceId, teacherId) {
+    const owner = await query(`SELECT r.id FROM "interactive_video_resources" r
+      JOIN "interactive_video_lessons" ivl ON ivl."lessonId"=r."lessonId"
+      JOIN "lessons" l ON l.id=ivl."lessonId"
+      JOIN "units" u ON u.id=l."unitId"
+      JOIN "courses" c ON c.id=u."courseId" WHERE r.id=$1 AND
+      (c."teacherId"=$2 OR c."teacherId" IN (SELECT id FROM "teacher_profiles" WHERE "userId"=$2))`, [resourceId, teacherId]);
+    if (!owner.rowCount) return false;
+    await query(`DELETE FROM "interactive_video_resources" WHERE id=$1`, [resourceId]);
+    return true;
+  }
+
+  static async updateResource(resourceId, teacherId, updates = {}) {
+    const owner = await query(`SELECT r.id, r."lessonId" FROM "interactive_video_resources" r
+      JOIN "interactive_video_lessons" ivl ON ivl."lessonId"=r."lessonId"
+      JOIN "lessons" l ON l.id=ivl."lessonId"
+      JOIN "units" u ON u.id=l."unitId"
+      JOIN "courses" c ON c.id=u."courseId" WHERE r.id=$1 AND
+      (c."teacherId"=$2 OR c."teacherId" IN (SELECT id FROM "teacher_profiles" WHERE "userId"=$2))`, [resourceId, teacherId]);
+    if (!owner.rowCount) return null;
+
+    const currentRes = await query(`SELECT * FROM "interactive_video_resources" WHERE id=$1`, [resourceId]);
+    if (!currentRes.rowCount) return null;
+    const current = currentRes.rows[0];
+
+    const canDownload = updates.canDownload !== undefined ? Boolean(updates.canDownload) : current.canDownload;
+    const canView = updates.canView !== undefined ? Boolean(updates.canView) : current.canView;
+    const title = updates.title !== undefined && updates.title !== null ? String(updates.title).trim() : current.title;
+    const description = updates.description !== undefined ? updates.description : current.description;
+    const orderIndex = updates.orderIndex !== undefined ? Number(updates.orderIndex) : current.orderIndex;
+
+    const result = await query(`UPDATE "interactive_video_resources"
+      SET "canDownload"=$1, "canView"=$2, title=$3, description=$4, "orderIndex"=$5
+      WHERE id=$6 RETURNING *`,
+      [canDownload, canView, title, description, orderIndex, resourceId]);
+    return result.rows[0];
+  }
+
+  static async getResourceForDownload(resourceId, userId, role = 'STUDENT') {
+    const resResult = await query(
+      `SELECT r.*, ivl."lessonId", c.id AS "courseId", c."teacherId"
+       FROM "interactive_video_resources" r
+       JOIN "interactive_video_lessons" ivl ON ivl."lessonId" = r."lessonId"
+       JOIN "lessons" l ON l.id = ivl."lessonId"
+       JOIN "units" u ON u.id = l."unitId"
+       JOIN "courses" c ON c.id = u."courseId"
+       WHERE r.id = $1`,
+      [resourceId]
+    );
+
+    if (!resResult.rowCount) return null;
+    const resource = resResult.rows[0];
+
+    if (role === 'SUPERADMIN') {
+      return resource;
+    }
+
+    if (role === 'TEACHER') {
+      const isOwner = await this.isTeacherOwner(resource.lessonId, userId);
+      if (isOwner) return resource;
+    }
+
+    // Student authorization check: must be actively enrolled
+    const enrollment = await query(
+      `SELECT id FROM "enrollments"
+       WHERE "courseId" = $1 AND "studentId" = $2
+         AND COALESCE(status, 'ACTIVE') NOT IN ('CANCELLED', 'EXPIRED')`,
+      [resource.courseId, userId]
+    );
+
+    if (!enrollment.rowCount) return null;
+
+    return resource;
+  }
+
   static async analytics(lessonId, teacherId) {
     if (!(await this.isTeacherOwner(lessonId, teacherId))) return null;
     const result = await query(`SELECT

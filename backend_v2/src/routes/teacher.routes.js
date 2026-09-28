@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { TeacherController } from '../controllers/teacher.controller.js';
+import { TeacherController, getLibraryItems } from '../controllers/teacher.controller.js';
 import { QuizController } from '../controllers/quiz.controller.js';
 import { DiagnosticController } from '../controllers/diagnostic.controller.js';
 import { PlacementController } from '../controllers/placement.controller.js';
@@ -14,6 +14,17 @@ router.use(authorize('TEACHER', 'SUPERADMIN'));
 
 // Dashboard & Stats
 router.get('/dashboard', TeacherController.getDashboard);
+
+// Resource Library (all PDFs + videos owned by this teacher)
+router.get('/library', async (req, res, next) => {
+  try {
+    const teacherId = req.user.id || req.user.userId;
+    const items = await getLibraryItems(teacherId);
+    return res.json({ success: true, data: { items, total: items.length } });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Courses
 router.get('/courses', TeacherController.getCourses);

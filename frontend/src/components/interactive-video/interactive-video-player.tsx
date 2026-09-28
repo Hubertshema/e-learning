@@ -12,8 +12,6 @@ import {
   RotateCcw,
   Volume2,
   VolumeX,
-  Mic,
-  MicOff,
   Sparkles,
   Lock,
   Unlock,
@@ -1008,17 +1006,7 @@ export function InteractiveVideoPlayer({
                     </button>
                   </div>
 
-                  {/* Large Circular Microphone Button (centered, matches screenshot) */}
-                  <button
-                    type="button"
-                    onClick={toggleVoiceInput}
-                    className={`h-16 w-16 rounded-full bg-slate-950 text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all ${
-                      isListening ? 'ring-4 ring-rose-500 bg-rose-600 animate-pulse' : 'hover:bg-black'
-                    }`}
-                    title={isListening ? 'Listening... Speak your option (e.g. "Option A")' : 'Tap to speak your answer'}
-                  >
-                    <Mic className="h-7 w-7 text-white" />
-                  </button>
+
                 </div>
 
                 {/* Action Buttons: Try Again, Resume Video, or Submit Answer */}

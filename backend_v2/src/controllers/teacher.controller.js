@@ -308,4 +308,98 @@ export class TeacherController {
   }
 }
 
+import { query } from '../config/database.js';
 
+/**
+ * Aggregates all PDF resources + video lessons owned by this teacher into one library list.
+ * Added as a standalone export-friendly function because it needs the `query` import.
+ */
+export async function getLibraryItems(teacherId) {
+  const pdfRes = await query(
+    `SELECT
+        r.id,
+        r.title,
+        r.description,
+        r.url,
+        r."resourceType",
+        r."canDownload",
+        r."canView",
+        r."createdAt",
+        l.title AS "lessonTitle",
+        l.id    AS "lessonId",
+        c.title AS "courseTitle",
+        c.id    AS "courseId"
+      FROM "interactive_video_resources" r
+      JOIN "lessons" l ON l.id = r."lessonId"
+      JOIN "units" u ON u.id = l."unitId"
+      JOIN "courses" c ON c.id = u."courseId"
+      WHERE (c."teacherId" = $1 OR c."teacherId" IN (
+        SELECT id FROM "teacher_profiles" WHERE "userId" = $1
+      ))
+      ORDER BY r."createdAt" DESC`,
+    [teacherId]
+  );
+
+  const videoRes = await query(
+    `SELECT
+        ivl.id,
+        ivl."videoUrl"     AS url,
+        ivl."thumbnailUrl",
+        ivl."durationSeconds",
+        ivl."cefrLevel",
+        ivl."createdAt",
+        l.title            AS "lessonTitle",
+        l.id               AS "lessonId",
+        c.title            AS "courseTitle",
+        c.id               AS "courseId"
+      FROM "interactive_video_lessons" ivl
+      JOIN "lessons" l ON l.id = ivl."lessonId"
+      JOIN "units" u ON u.id = l."unitId"
+      JOIN "courses" c ON c.id = u."courseId"
+      WHERE ivl."videoUrl" IS NOT NULL AND ivl."videoUrl" != ''
+        AND (c."teacherId" = $1 OR c."teacherId" IN (
+          SELECT id FROM "teacher_profiles" WHERE "userId" = $1
+        ))
+      ORDER BY ivl."createdAt" DESC`,
+    [teacherId]
+  );
+
+  const pdfs = pdfRes.rows.map((r) => ({
+    id: `pdf_${r.id}`,
+    resourceId: r.id,
+    title: r.title,
+    description: r.description,
+    url: r.url,
+    fileType: 'PDF',
+    resourceType: r.resourceType || 'PDF',
+    canDownload: r.canDownload,
+    canView: r.canView,
+    lessonTitle: r.lessonTitle,
+    lessonId: r.lessonId,
+    courseTitle: r.courseTitle,
+    courseId: r.courseId,
+    createdAt: r.createdAt,
+  }));
+
+  const videos = videoRes.rows.map((v) => ({
+    id: `vid_${v.id}`,
+    resourceId: v.id,
+    title: v.lessonTitle,
+    description: null,
+    url: v.url,
+    fileType: 'VIDEO',
+    resourceType: 'VIDEO',
+    thumbnail: v.thumbnailUrl,
+    durationSeconds: v.durationSeconds,
+    cefrLevel: v.cefrLevel,
+    canDownload: false,
+    canView: true,
+    lessonTitle: v.lessonTitle,
+    lessonId: v.lessonId,
+    courseTitle: v.courseTitle,
+    courseId: v.courseId,
+    createdAt: v.createdAt,
+  }));
+
+  return [...pdfs, ...videos];
+}

@@ -19,8 +19,12 @@ export function getApiBaseUrl(): string {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+import { clientCache } from './cache';
+
 export interface ApiOptions extends RequestInit {
   requiresAuth?: boolean;
+  skipCache?: boolean;
+  ttl?: number;
 }
 
 export class ApiError extends Error {
@@ -297,33 +301,102 @@ export async function apiClient<T = unknown>(endpoint: string, options: ApiOptio
   return (data && data.data !== undefined ? data.data : data) as T;
 }
 
-// Convenience REST methods
-apiClient.get = <T = unknown>(endpoint: string, options?: ApiOptions) =>
-  apiClient<T>(endpoint, { ...options, method: 'GET' });
+// Helper to auto-invalidate matching cache entries on data mutation
+function invalidateRelatedCache(endpoint: string) {
+  try {
+    const cleanEndpoint = endpoint.replace(/^\/api\/v1/, '').replace(/^\//, '');
+    clientCache.invalidate(`api_/${cleanEndpoint}`);
+    clientCache.invalidate(`api_${endpoint}`);
 
-apiClient.post = <T = unknown>(endpoint: string, body?: unknown, options?: ApiOptions) =>
-  apiClient<T>(endpoint, {
+    if (endpoint.includes('course')) {
+      clientCache.invalidate('teacher_courses');
+      clientCache.invalidate('studio_course_');
+      clientCache.invalidate('student_courses');
+      clientCache.invalidate('api_/teacher/courses');
+      clientCache.invalidate('api_/student/courses');
+    }
+    if (endpoint.includes('lesson') || endpoint.includes('unit')) {
+      clientCache.invalidate('studio_course_');
+      clientCache.invalidate('teacher_');
+    }
+    if (endpoint.includes('student')) {
+      clientCache.invalidate('teacher_students');
+      clientCache.invalidate('student_');
+    }
+    if (endpoint.includes('level')) {
+      clientCache.invalidate('teacher_levels');
+      clientCache.invalidate('api_/levels');
+    }
+    if (endpoint.includes('quiz')) {
+      clientCache.invalidate('teacher_quizzes');
+      clientCache.invalidate('student_quizzes');
+    }
+  } catch {}
+}
+
+// Convenience REST methods with Stale-While-Revalidate caching
+apiClient.get = async <T = unknown>(endpoint: string, options?: ApiOptions): Promise<T> => {
+  // If skipCache is false/undefined, we check clientCache
+  if (options?.skipCache !== true) {
+    const cacheKey = `api_${endpoint}`;
+    const cached = clientCache.get<T>(cacheKey, true); // true = allowStale for instant 0ms viewing
+
+    const fetchFresh = async (): Promise<T> => {
+      const res = await apiClient<T>(endpoint, { ...options, method: 'GET' });
+      clientCache.set(cacheKey, res, options?.ttl ?? 180000); // 3 mins default
+      return res;
+    };
+
+    if (cached !== null) {
+      // Stale-While-Revalidate: return cached data immediately, update from background
+      fetchFresh().catch((err) => {
+        console.warn('Background revalidation for', endpoint, err?.message);
+      });
+      return cached;
+    }
+
+    // First time requesting: fetch and cache
+    return await fetchFresh();
+  }
+
+  return apiClient<T>(endpoint, { ...options, method: 'GET' });
+};
+
+apiClient.post = async <T = unknown>(endpoint: string, body?: unknown, options?: ApiOptions) => {
+  const res = await apiClient<T>(endpoint, {
     ...options,
     method: 'POST',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  invalidateRelatedCache(endpoint);
+  return res;
+};
 
-apiClient.put = <T = unknown>(endpoint: string, body?: unknown, options?: ApiOptions) =>
-  apiClient<T>(endpoint, {
+apiClient.put = async <T = unknown>(endpoint: string, body?: unknown, options?: ApiOptions) => {
+  const res = await apiClient<T>(endpoint, {
     ...options,
     method: 'PUT',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  invalidateRelatedCache(endpoint);
+  return res;
+};
 
-apiClient.patch = <T = unknown>(endpoint: string, body?: unknown, options?: ApiOptions) =>
-  apiClient<T>(endpoint, {
+apiClient.patch = async <T = unknown>(endpoint: string, body?: unknown, options?: ApiOptions) => {
+  const res = await apiClient<T>(endpoint, {
     ...options,
     method: 'PATCH',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  invalidateRelatedCache(endpoint);
+  return res;
+};
 
-apiClient.delete = <T = unknown>(endpoint: string, options?: ApiOptions) =>
-  apiClient<T>(endpoint, { ...options, method: 'DELETE' });
+apiClient.delete = async <T = unknown>(endpoint: string, options?: ApiOptions) => {
+  const res = await apiClient<T>(endpoint, { ...options, method: 'DELETE' });
+  invalidateRelatedCache(endpoint);
+  return res;
+};
 
 apiClient.upload = async <T = unknown>(endpoint: string, formData: FormData, options?: ApiOptions): Promise<T> => {
   const baseUrl = getApiBaseUrl();
@@ -345,8 +418,44 @@ apiClient.upload = async <T = unknown>(endpoint: string, formData: FormData, opt
   if (!response.ok) {
     throw new ApiError(data.error?.message || data.message || 'Upload failed', response.status);
   }
-  return (data && data.data !== undefined ? data.data : data) as T;
+  const res = (data && data.data !== undefined ? data.data : data) as T;
+  invalidateRelatedCache(endpoint);
+  return res;
 };
 
 export const api = apiClient;
 
+export async function downloadSecureResource(resourceId: string, filename?: string): Promise<void> {
+  const token = tokenStorage.getAccessToken();
+  const baseUrl = getApiBaseUrl();
+  const downloadUrl = `${baseUrl}/student/interactive-videos/resources/${resourceId}/download`;
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(downloadUrl, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Direct download failed';
+    try {
+      const errorJson = await response.json();
+      errorMessage = errorJson.message || errorJson.error?.message || errorMessage;
+    } catch {}
+    throw new Error(errorMessage);
+  }
+
+  const blob = await response.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename || 'resource.pdf';
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(blobUrl);
+  document.body.removeChild(a);
+}

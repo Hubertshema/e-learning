@@ -7,8 +7,13 @@ import { apiClient } from '@/lib/api-client';
 import { InteractiveVideoPlayer } from '@/components/interactive-video/interactive-video-player';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Video, ArrowLeft, Edit2, AlertCircle, Sparkles } from 'lucide-react';
+import { Video, ArrowLeft, Edit2, AlertCircle, Sparkles, FileText, Download, Lock, Eye, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
+import {
+  ResourcePreviewModal,
+  ResourceTypeBadge,
+  LessonResource,
+} from '@/components/resources/resource-preview-modal';
 
 export default function StudentInteractiveVideoPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -17,6 +22,7 @@ export default function StudentInteractiveVideoPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [previewResource, setPreviewResource] = useState<LessonResource | null>(null);
 
   const lastSavedPosRef = useRef<number>(-1);
   const saveTimeoutRef = useRef<any>(null);
@@ -175,8 +181,143 @@ export default function StudentInteractiveVideoPage() {
               Your checkpoint scores and playback position are saved automatically.
             </p>
           </section>
+
+          {/* Lesson Resources Section */}
+          {((data.resources && data.resources.length > 0) || isTeacherOrAdmin) && (
+            <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-200 dark:border-emerald-800">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      Lesson PDF Resources
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        {data.resources?.length || 0}
+                      </span>
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Study handouts, worksheets, and reference PDF materials uploaded for this lesson.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <Eye className="h-3 w-3" /> Click PDF badge to preview
+                  </span>
+                </div>
+              </div>
+
+              {!data.resources || data.resources.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-xs border border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
+                  No PDF resources uploaded for this lesson yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {data.resources.map((res: LessonResource) => {
+                    const canDownload = isTeacherOrAdmin || Boolean(res.canDownload);
+
+                    return (
+                      <div
+                        key={res.id}
+                        className="group p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-900 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all flex flex-col justify-between gap-3"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            {/* Clickable PDF Badge */}
+                            <ResourceTypeBadge
+                              resource={res}
+                              onClick={() => setPreviewResource(res)}
+                              className="hover:scale-105 active:scale-95 transition-transform"
+                            />
+
+                            {/* Download Permission Status */}
+                            {canDownload ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                title="Downloads allowed"
+                              >
+                                <CheckCircle2 className="h-3 w-3" /> Downloadable
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400"
+                                title="Downloads restricted by teacher (View Only)"
+                              >
+                                <Lock className="h-3 w-3" /> View Only
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            <h4
+                              className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                              onClick={() => setPreviewResource(res)}
+                              title={res.title}
+                            >
+                              {res.title}
+                            </h4>
+                            {res.description && (
+                              <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
+                                {res.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 h-7 text-xs font-semibold gap-1 hover:border-emerald-300 hover:text-emerald-700 dark:hover:text-emerald-400"
+                            onClick={() => setPreviewResource(res)}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Preview PDF
+                          </Button>
+
+                          {canDownload && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2.5 text-xs font-semibold gap-1 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
+                              onClick={() => {
+                                const a = document.createElement('a');
+                                a.href = res.url;
+                                a.download = res.title ? `${res.title}.pdf` : 'download.pdf';
+                                a.target = '_blank';
+                                a.rel = 'noopener noreferrer';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }}
+                              title="Download PDF document"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">Save PDF</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
+
+      {/* In-App Resource Preview Modal */}
+      <ResourcePreviewModal
+        resource={previewResource}
+        isOpen={Boolean(previewResource)}
+        onClose={() => setPreviewResource(null)}
+        isTeacher={isTeacherOrAdmin}
+      />
     </main>
   );
 }

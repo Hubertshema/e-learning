@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { uploadBufferToCloudinary } from '../config/cloudinary.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 import { env } from '../config/env.js';
@@ -14,8 +16,8 @@ export class UploadController {
 
       const { folder = 'elearning/lessons', resourceType = 'auto' } = req.body;
       const fileBuffer = req.file.buffer;
-      const originalName = req.file.originalname;
-      const mimeType = req.file.mimetype;
+      const originalName = req.file.originalname || 'file';
+      const mimeType = req.file.mimetype || 'application/octet-stream';
 
       // Check if Cloudinary credentials are provided
       if (env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET) {
@@ -38,20 +40,35 @@ export class UploadController {
           'Media uploaded to Cloudinary successfully'
         );
       } else {
-        // Fallback for development if Cloudinary credentials are not yet entered in .env
-        const base64Data = `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+        // High-performance local file storage for videos, PDFs, and media assets
+        const uploadsDir = path.join(process.cwd(), 'uploads');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        const ext = path.extname(originalName) || `.${mimeType.split('/')[1] || 'bin'}`;
+        const cleanBase = path.basename(originalName, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `${cleanBase}_${Date.now()}${ext}`;
+        const targetPath = path.join(uploadsDir, filename);
+
+        await fs.promises.writeFile(targetPath, fileBuffer);
+
+        const host = req.get('host') || `localhost:${env.PORT || 5000}`;
+        const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+        const fileUrl = `${protocol}://${host}/uploads/${filename}`;
+
         return sendSuccess(
           res,
           {
-            url: base64Data,
-            publicId: `dev_${Date.now()}`,
-            format: mimeType.split('/')[1] || 'bin',
+            url: fileUrl,
+            publicId: filename,
+            format: ext.replace('.', ''),
             resourceType: mimeType.split('/')[0] || 'auto',
             bytes: fileBuffer.length,
-            isLocalFallback: true,
+            isLocal: true,
             originalName,
           },
-          'Uploaded locally (Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in backend_v2/.env for production Cloudinary hosting)'
+          'File uploaded locally successfully'
         );
       }
     } catch (error) {

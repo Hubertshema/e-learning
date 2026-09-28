@@ -419,17 +419,6 @@ export default function StudioCurriculumPage() {
               <Plus className="h-4 w-4" />
               <span>Create New Unit</span>
             </Button>
-
-            <Link href={`/student/courses/${courseId}`} target="_blank">
-              <Button
-                variant="outline"
-                className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/40 text-xs rounded-xl transition-all flex items-center justify-center gap-2"
-              >
-                <Eye className="h-3.5 w-3.5 text-emerald-300" />
-                <span>Student Preview</span>
-                <ExternalLink className="h-3 w-3 opacity-60" />
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
