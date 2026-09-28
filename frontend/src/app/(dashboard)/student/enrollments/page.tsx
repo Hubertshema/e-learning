@@ -16,6 +16,7 @@ import {
   Layers,
   Sparkles,
   CreditCard,
+  BookOpen,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useCachedData } from '@/lib/cache';
@@ -147,17 +148,17 @@ export default function StudentEnrollmentsPage() {
                         </Button>
                       </Link>
                     ) : enr.isExpired ? (
-                      <Link href={`/student/payments?courseId=${enr.course.id}`}>
+                      <Link href="/student/courses">
                         <Button variant="outline" size="sm" className="text-rose-600 border-rose-300">
                           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                          Renew Course
+                          Explore Courses
                         </Button>
                       </Link>
                     ) : (
-                      <Link href="/student/payments">
+                      <Link href="/student/courses">
                         <Button variant="outline" size="sm" className="text-xs">
-                          <CreditCard className="mr-1.5 h-3.5 w-3.5" />
-                          Payment Verification
+                          <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+                          Course Catalog
                         </Button>
                       </Link>
                     )}

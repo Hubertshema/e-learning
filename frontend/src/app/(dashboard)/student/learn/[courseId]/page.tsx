@@ -262,9 +262,9 @@ export default function StudentLearnPage() {
             : 'In accordance with academy access policies, curriculum materials are unlocked once your payment proof is verified by the instructor.'}
         </p>
         <div className="mt-6 flex justify-center gap-3">
-          <Link href={`/student/payments?courseId=${data.course.id}`}>
+          <Link href="/student/courses">
             <Button variant="gradient" size="sm">
-              {data.access?.isExpired ? 'Renew Course Access' : 'Submit Payment Proof'}
+              Explore Courses
             </Button>
           </Link>
           <Link href="/student/my-courses">
@@ -638,10 +638,10 @@ export default function StudentLearnPage() {
                     <ChevronRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
                 ) : (
-                  <Link href="/student/progress">
+                  <Link href="/student">
                     <Button size="sm" variant="gradient" className="text-xs">
                       <Award className="mr-1.5 h-3.5 w-3.5" />
-                      View 7-Skill Mastery Matrix
+                      Back to Dashboard
                     </Button>
                   </Link>
                 )}

@@ -4,6 +4,7 @@ import { QuizController } from '../controllers/quiz.controller.js';
 import { DiagnosticController } from '../controllers/diagnostic.controller.js';
 import { PlacementController } from '../controllers/placement.controller.js';
 import { AssignmentController } from '../controllers/assignment.controller.js';
+import { AdmissionController } from '../controllers/admission.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
 
@@ -99,6 +100,16 @@ router.get('/enrollments', TeacherController.getEnrollments);
 router.post('/enrollments/:enrollmentId/extend', TeacherController.extendEnrollment);
 router.post('/enrollments/:enrollmentId/suspend', TeacherController.suspendEnrollment);
 router.get('/expiring-students', TeacherController.getExpiringStudents);
+
+// Student Applications & Direct Admissions
+router.get('/applications', AdmissionController.listApplications);
+router.get('/applications/:studentId', AdmissionController.getApplicationDetails);
+router.post('/applications/:studentId/review', AdmissionController.reviewApplication);
+router.post('/students/direct', AdmissionController.createDirectStudent);
+router.patch('/students/:studentId/payment-requirement', AdmissionController.changePaymentRequirement);
+router.post('/students/:studentId/verify-payment', AdmissionController.verifyPaymentProof);
+router.post('/students/:studentId/reject-payment', AdmissionController.rejectPaymentProof);
+router.post('/students/:studentId/enroll-level', AdmissionController.enrollStudentInLevel);
 
 export default router;
 

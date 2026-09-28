@@ -3,9 +3,18 @@ import { PlacementController } from '../controllers/placement.controller.js';
 import { StudentController } from '../controllers/student.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 
+import { AdmissionController } from '../controllers/admission.controller.js';
+
 const router = Router();
 
+// Public Student Application route
+router.post('/apply', AdmissionController.submitApplication);
+
 router.use(authenticate);
+
+// Student Admission, Payment & Learning Access Status
+router.get('/admission-status', AdmissionController.getStudentStatus);
+router.post('/payment-proof', AdmissionController.submitPaymentProof);
 
 // Student Placement Test
 router.get('/placement-test', PlacementController.getStudentPlacementTest);

@@ -29,7 +29,7 @@ export class StudentController {
       const enrollmentsRes = await query(
         `SELECT 
            e.id as "enrollmentId", e.status, e."enrolledAt",
-           c.id as "courseId", c.title, c.description, c.price, c.currency,
+           c.id as "courseId", c.title, c.description, 0 as price, c.currency,
            l.name as level,
            u."firstName", u."lastName"
          FROM "public"."enrollments" e
@@ -74,7 +74,7 @@ export class StudentController {
         if (!enrolledCourseIds.has(lc.courseId)) {
           // get full course details
           const cRes = await query(
-            `SELECT c.id, c.title, c.description, c.price, c.currency, u."firstName", u."lastName"
+            `SELECT c.id, c.title, c.description, 0 as price, c.currency, u."firstName", u."lastName"
              FROM "public"."courses" c
              LEFT JOIN "public"."users" u ON c."teacherId" = u.id
              WHERE c.id = $1`,
@@ -107,7 +107,7 @@ export class StudentController {
       for (const o of overrides) {
         if (o.status === 'ALLOW' && !enrolledCourseIds.has(o.courseId)) {
           const cRes = await query(
-            `SELECT c.id, c.title, c.description, c.price, c.currency, u."firstName", u."lastName"
+            `SELECT c.id, c.title, c.description, 0 as price, c.currency, u."firstName", u."lastName"
              FROM "public"."courses" c
              LEFT JOIN "public"."users" u ON c."teacherId" = u.id
              WHERE c.id = $1`,
@@ -189,7 +189,7 @@ export class StudentController {
       // 2. Query enrollments with course details
       const enrollmentsRes = await query(
         `SELECT e.id as "enrollmentId", e.status, e."enrolledAt", e."expiresAt",
-                c.id as "courseId", c.title, c.description, c.price, c.currency,
+                c.id as "courseId", c.title, c.description, 0 as price, c.currency,
                 l.name as level,
                 t.id as "teacherId", t."firstName" as "teacherFirstName", t."lastName" as "teacherLastName", t."avatarUrl" as "teacherAvatar"
          FROM "public"."enrollments" e
@@ -363,10 +363,10 @@ export class StudentController {
       let recommendedLevel = null;
       try {
         const placeRes = await query(
-          `SELECT pa.score, pa."recommendedLevel", pa."completedAt"
+          `SELECT pa.score, pa."recommendedLevel", pa."createdAt"
            FROM "public"."placement_attempts" pa
            WHERE pa."studentId" = $1
-           ORDER BY pa."completedAt" DESC
+           ORDER BY pa."createdAt" DESC
            LIMIT 1`,
           [studentId]
         );

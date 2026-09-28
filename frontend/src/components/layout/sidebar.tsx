@@ -130,25 +130,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       items: [
         { name: 'Dashboard', href: '/student', icon: LayoutDashboard },
         { name: 'My Learning', href: '/student/my-courses', icon: GraduationCap },
-        { name: 'Assignments', href: '/student/assignments', icon: ClipboardList },
-        { name: 'Courses Catalog', href: '/student/courses', icon: BookOpen },
-      ],
-    },
-    {
-      title: 'Progress & Schedule',
-      items: [
-        { name: 'Progress Tracking', href: '/student/progress', icon: TrendingUp },
-        { name: 'Calendar', href: '/student/calendar', icon: Calendar },
-        { name: 'Placement Test', href: '/student/placement-test', icon: GraduationCap },
         { name: 'Certificates', href: '/student/certificates', icon: FileCheck },
-      ],
-    },
-    {
-      title: 'Account & Plan',
-      items: [
-        { name: 'Subscription & Plans', href: '/student/subscription', icon: Sparkles },
-        { name: 'Billing & Payments', href: '/student/payments', icon: CreditCard },
-        { name: 'Help & Feedback', href: '/student/feedback', icon: MessageSquare },
       ],
     },
   ];

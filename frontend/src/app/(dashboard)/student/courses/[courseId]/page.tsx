@@ -247,8 +247,8 @@ export default function StudentCoursePlayerPage() {
             <Link href="/student/courses">
               <Button variant="outline" size="sm">Back to Courses</Button>
             </Link>
-            <Link href="/student/payments">
-              <Button variant="gradient" size="sm">Check Payment Status</Button>
+            <Link href="/student/my-courses">
+              <Button variant="gradient" size="sm">View My Learning</Button>
             </Link>
           </div>
         </Card>
@@ -515,9 +515,9 @@ export default function StudentCoursePlayerPage() {
 
               {/* Bottom Complete Button */}
               <div className="flex justify-between items-center pt-4 border-t border-slate-200 dark:border-slate-800">
-                <Link href="/student/assignments">
+                <Link href="/student/my-courses">
                   <Button variant="outline" size="sm" className="text-xs">
-                    View Lesson Assignments
+                    My Learning
                   </Button>
                 </Link>
                 <Button

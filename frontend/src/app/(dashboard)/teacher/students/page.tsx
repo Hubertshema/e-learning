@@ -41,10 +41,13 @@ import {
   UserX,
   Layers,
   ChevronDown,
+  UserPlus,
 } from 'lucide-react';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
+import { ApplicationsTab } from '@/components/teacher/applications-tab';
+import { DirectAdmissionModal } from '@/components/teacher/direct-admission-modal';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -2048,16 +2051,23 @@ function ExpiringTab() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type Tab = 'directory' | 'enrollments' | 'expiring';
+type Tab = 'directory' | 'applications' | 'enrollments' | 'expiring';
 
 export default function StudentsDirectoryPage() {
   const [activeTab, setActiveTab] = useState<Tab>('directory');
+  const [isDirectModalOpen, setIsDirectModalOpen] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const showToast = (msg: { type: 'success' | 'error'; text: string }) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
       const t = p.get('tab') as Tab;
-      if (t && ['directory', 'enrollments', 'expiring'].includes(t)) {
+      if (t && ['directory', 'applications', 'enrollments', 'expiring'].includes(t)) {
         setActiveTab(t);
       }
     }
@@ -2091,6 +2101,16 @@ export default function StudentsDirectoryPage() {
     { ttl: 120_000, initialData: [] }
   );
 
+  const { data: applicationsData, refresh: refreshApplications } = useCachedData<{ counts?: { pending: number } }>(
+    'teacher_applications_counts',
+    async () => {
+      const res = await apiClient.get<any>('/teacher/applications?status=PENDING');
+      return (res as any)?.data || res;
+    },
+    { ttl: 30000, initialData: { counts: { pending: 0 } } }
+  );
+  const pendingAppsCount = applicationsData?.counts?.pending || 0;
+
   const studentList = students || [];
   const activeCount = studentList.filter((s) => s.status === 'ACTIVE').length;
   const suspendedCount = studentList.filter((s) => s.status === 'SUSPENDED').length;
@@ -2116,13 +2136,14 @@ export default function StudentsDirectoryPage() {
       border: 'border-emerald-100 dark:border-emerald-900/50',
     },
     {
-      label: 'Suspended Access',
-      value: suspendedCount,
-      sub: 'Paused or flagged',
-      icon: PauseCircle,
+      label: 'Pending Apps',
+      value: pendingAppsCount,
+      sub: 'Awaiting admission',
+      icon: GraduationCap,
       color: 'text-amber-600 dark:text-amber-400',
       bg: 'bg-amber-50 dark:bg-amber-950/50',
       border: 'border-amber-100 dark:border-amber-900/50',
+      pulse: pendingAppsCount > 0,
     },
     {
       label: 'Expiring Soon (7d)',
@@ -2138,6 +2159,7 @@ export default function StudentsDirectoryPage() {
 
   const TABS = [
     { id: 'directory' as Tab, label: 'All Students', icon: Users, count: studentList.length },
+    { id: 'applications' as Tab, label: 'Applications & Admissions', icon: GraduationCap, count: pendingAppsCount, isAlert: pendingAppsCount > 0 },
     { id: 'enrollments' as Tab, label: 'Enrollments & Access Control', icon: UserCheck },
     { id: 'expiring' as Tab, label: 'Expiring Watchlist', icon: AlertTriangle, count: expiringCount, isAlert: expiringCount > 0 },
   ];
@@ -2158,11 +2180,19 @@ export default function StudentsDirectoryPage() {
               Students Directory
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl font-normal">
-              Supervise all student profiles, manage enrollment authorizations, assign cohorts, and resolve expiring access watchlists.
+              Supervise all student profiles, review admission applications, configure payment decisions, and manage CEFR course access.
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-center">
+            <Button
+              onClick={() => setIsDirectModalOpen(true)}
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 shadow-lg shadow-emerald-700/30 gap-1.5"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              Direct Admission
+            </Button>
             <Link href="/teacher/courses">
               <Button
                 variant="outline"
@@ -2195,7 +2225,7 @@ export default function StudentsDirectoryPage() {
                     {s.value}
                   </p>
                   {s.pulse && (
-                    <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                   )}
                 </div>
                 <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 mt-1 truncate">
@@ -2231,7 +2261,7 @@ export default function StudentsDirectoryPage() {
                 <span
                   className={`flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full text-[10px] font-black ${
                     tab.isAlert
-                      ? 'bg-rose-500 text-white animate-pulse'
+                      ? 'bg-amber-500 text-white animate-pulse'
                       : isActive
                       ? 'bg-emerald-100 text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300'
                       : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
@@ -2248,9 +2278,30 @@ export default function StudentsDirectoryPage() {
       {/* ─── 4. Tab Workspace ────────────────────────────────────────────── */}
       <div className="animate-in fade-in duration-200">
         {activeTab === 'directory' && <DirectoryTab />}
+        {activeTab === 'applications' && (
+          <ApplicationsTab
+            showToast={showToast}
+            onRefreshParent={() => {
+              refreshApplications();
+              clientCache.invalidate('teacher_students');
+            }}
+          />
+        )}
         {activeTab === 'enrollments' && <EnrollmentsTab />}
         {activeTab === 'expiring' && <ExpiringTab />}
       </div>
+
+      <DirectAdmissionModal
+        isOpen={isDirectModalOpen}
+        onClose={() => setIsDirectModalOpen(false)}
+        onSuccess={(name) => {
+          showToast({ type: 'success', text: `Direct student ${name} admitted successfully.` });
+          refreshApplications();
+          clientCache.invalidate('teacher_students');
+        }}
+      />
+
+      {toast && <Toast msg={toast} />}
     </div>
   );
 }

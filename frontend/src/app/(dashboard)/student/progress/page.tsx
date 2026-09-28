@@ -69,10 +69,10 @@ export default function StudentProgressPage() {
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
             Sync Real-Time
           </Button>
-          <Link href="/student/placement">
+          <Link href="/student/my-courses">
             <Button variant="gradient" size="sm">
-              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Recalibrate Diagnostic Level
+              <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+              My Learning
             </Button>
           </Link>
         </div>

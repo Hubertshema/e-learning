@@ -154,17 +154,17 @@ export default function MyCoursesPage() {
               </Button>
             </Link>
           ) : item.isExpired ? (
-            <Link href={`/student/payments?courseId=${item.course.id}`} className="w-full">
+            <Link href="/student" className="w-full">
               <Button variant="outline" size="sm" className="w-full text-rose-600 border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30">
                 <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Renew Course Access
+                Contact Instructor
               </Button>
             </Link>
           ) : (
-            <Link href={`/student/payments`} className="w-full">
+            <Link href="/student" className="w-full">
               <Button variant="outline" size="sm" className="w-full text-xs">
                 <Clock className="mr-1.5 h-3.5 w-3.5" />
-                View Verification Status
+                Awaiting Level Access
               </Button>
             </Link>
           )}
@@ -183,13 +183,13 @@ export default function MyCoursesPage() {
             My Enrolled Courses
           </h1>
           <p className="text-xs text-slate-500">
-            Track syllabus progress, access video/audio lessons, and renew expiring access.
+            Track syllabus progress and access interactive lesson content.
           </p>
         </div>
-        <Link href="/student/courses">
-          <Button variant="gradient" size="sm">
-            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-            Explore New Courses
+        <Link href="/student">
+          <Button variant="outline" size="sm">
+            <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+            Learning Dashboard
           </Button>
         </Link>
       </div>
@@ -257,12 +257,12 @@ export default function MyCoursesPage() {
           <BookOpen className="mx-auto h-10 w-10 text-slate-300 mb-3" />
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">No enrolled courses found</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto mb-4">
-            You haven't enrolled in any courses in this category yet. Explore the course catalog to start your learning journey.
+            You don't have active course enrollments yet. Contact your instructor or check your CEFR level program on your dashboard.
           </p>
-          <Link href="/student/courses">
+          <Link href="/student">
             <Button variant="gradient" size="sm">
-              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Explore Course Catalog
+              <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+              Go to Learning Dashboard
             </Button>
           </Link>
         </Card>
