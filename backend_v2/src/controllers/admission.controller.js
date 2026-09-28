@@ -128,6 +128,9 @@ export class AdmissionController {
   static async getApplicationDetails(req, res) {
     try {
       const { studentId } = req.params;
+      if (!studentId || studentId === 'undefined') {
+        return sendError(res, 'Student ID parameter is missing or invalid', 400);
+      }
       const details = await AdmissionModel.getStudentStatus(studentId);
       if (!details) return sendError(res, 'Student application not found', 404);
 
@@ -147,6 +150,10 @@ export class AdmissionController {
       const teacherId = req.user.id;
       const { studentId } = req.params;
       const { decision, rejectionReason, paymentRequirement, levelId, notes } = req.body;
+
+      if (!studentId || studentId === 'undefined') {
+        return sendError(res, 'Student ID parameter is missing or invalid', 400);
+      }
 
       if (!decision || !['ACCEPT', 'REJECT'].includes(decision)) {
         return sendError(res, 'Decision must be either ACCEPT or REJECT', 400);
@@ -208,6 +215,10 @@ export class AdmissionController {
       const { studentId } = req.params;
       const { paymentRequirement, reason } = req.body;
 
+      if (!studentId || studentId === 'undefined') {
+        return sendError(res, 'Student ID parameter is missing or invalid', 400);
+      }
+
       if (!paymentRequirement) {
         return sendError(res, 'Payment requirement is required', 400);
       }
@@ -234,6 +245,10 @@ export class AdmissionController {
       const { studentId } = req.params;
       const { paymentId, notes } = req.body;
 
+      if (!studentId || studentId === 'undefined') {
+        return sendError(res, 'Student ID parameter is missing or invalid', 400);
+      }
+
       const result = await AdmissionModel.verifyPaymentProof(teacherId, studentId, {
         paymentId,
         notes,
@@ -256,6 +271,10 @@ export class AdmissionController {
       const { studentId } = req.params;
       const { paymentId, reason } = req.body;
 
+      if (!studentId || studentId === 'undefined') {
+        return sendError(res, 'Student ID parameter is missing or invalid', 400);
+      }
+
       const result = await AdmissionModel.rejectPaymentProof(teacherId, studentId, {
         paymentId,
         reason,
@@ -277,6 +296,10 @@ export class AdmissionController {
       const teacherId = req.user.id;
       const { studentId } = req.params;
       const { levelId } = req.body;
+
+      if (!studentId || studentId === 'undefined') {
+        return sendError(res, 'Student ID parameter is missing or invalid', 400);
+      }
 
       if (!levelId) {
         return sendError(res, 'Level ID is required', 400);

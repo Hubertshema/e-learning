@@ -100,7 +100,7 @@ export class AdmissionModel {
        FROM "public"."users" u
        LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
        LEFT JOIN "public"."levels" l ON l.id = sp."levelId"
-       WHERE u.id = $1`,
+       WHERE (u.id = $1 OR sp.id = $1)`,
       [studentUserId]
     );
 
@@ -192,7 +192,7 @@ export class AdmissionModel {
     const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const listQuery = `
-      SELECT u.id as "studentId", u.email, u."firstName", u."lastName", u.phone, u."avatarUrl", u."createdAt" as "registeredAt",
+      SELECT u.id as "id", u.id as "studentId", u.id as "userId", u.email, u."firstName", u."lastName", u.phone, u."avatarUrl", u."createdAt" as "registeredAt",
              sp.id as "profileId", sp."admissionType", sp."applicationStatus", sp."rejectionReason",
              sp."paymentRequirement", sp."paymentStatus", sp."learningAccess", sp."applicationData",
              sp."reviewedAt", sp."reviewedBy", sp."levelId",
@@ -248,6 +248,7 @@ export class AdmissionModel {
     const current = await this.getStudentStatus(studentUserId);
     if (!current) throw new Error('Student application not found');
 
+    const targetUserId = current.user.id;
     const fromState = { ...current.admission };
 
     if (decision === 'REJECT') {
@@ -264,11 +265,11 @@ export class AdmissionModel {
              "reviewedAt" = NOW(),
              "updatedAt" = NOW()
          WHERE "userId" = $3`,
-        [rejectionReason.trim(), teacherUserId, studentUserId]
+        [rejectionReason.trim(), teacherUserId, targetUserId]
       );
 
       await this.recordAudit({
-        studentId: studentUserId,
+        studentId: targetUserId,
         changedBy: teacherUserId,
         action: 'APPLICATION_REJECTED',
         fromState,
@@ -305,12 +306,12 @@ export class AdmissionModel {
              "reviewedAt" = NOW(),
              "updatedAt" = NOW()
          WHERE "userId" = $6`,
-        [req, paymentStatus, learningAccess, levelId || null, teacherUserId, studentUserId]
+        [req, paymentStatus, learningAccess, levelId || null, teacherUserId, targetUserId]
       );
 
       // If levelId specified and access is ACTIVE, enroll in level courses
       if (levelId && learningAccess === 'ACTIVE') {
-        await this.enrollStudentInLevelCourses(studentUserId, levelId);
+        await this.enrollStudentInLevelCourses(targetUserId, levelId);
       }
 
       await this.recordAudit({
@@ -416,6 +417,8 @@ export class AdmissionModel {
     const status = await this.getStudentStatus(studentUserId);
     if (!status) throw new Error('Student profile not found');
 
+    const targetUserId = status.user.id;
+
     const paymentId = crypto.randomUUID();
     const paymentRes = await query(
       `INSERT INTO "public"."payments"
@@ -431,12 +434,12 @@ export class AdmissionModel {
        SET "paymentStatus" = 'PROOF_SUBMITTED',
            "updatedAt" = NOW()
        WHERE "userId" = $1`,
-      [studentUserId]
+      [targetUserId]
     );
 
     await this.recordAudit({
-      studentId: studentUserId,
-      changedBy: studentUserId,
+      studentId: targetUserId,
+      changedBy: targetUserId,
       action: 'PAYMENT_PROOF_SUBMITTED',
       fromState: { paymentStatus: status.admission.paymentStatus },
       toState: { paymentStatus: 'PROOF_SUBMITTED', paymentId, amount, transactionRef },
@@ -453,6 +456,7 @@ export class AdmissionModel {
     const status = await this.getStudentStatus(studentUserId);
     if (!status) throw new Error('Student profile not found');
 
+    const targetUserId = status.user.id;
     const targetPaymentId = paymentId || status.latestPayment?.id;
 
     if (targetPaymentId) {
@@ -478,7 +482,7 @@ export class AdmissionModel {
 
     // If level is set, ensure enrolled into level courses
     if (status.admission.level?.id) {
-      await this.enrollStudentInLevelCourses(studentUserId, status.admission.level.id);
+      await this.enrollStudentInLevelCourses(targetUserId, status.admission.level.id);
     }
 
     await this.recordAudit({
@@ -496,6 +500,8 @@ export class AdmissionModel {
   static async rejectPaymentProof(teacherUserId, studentUserId, { paymentId = null, reason = 'Receipt could not be verified' }) {
     const status = await this.getStudentStatus(studentUserId);
     if (!status) throw new Error('Student profile not found');
+
+    const targetUserId = status.user.id;
 
     const targetPaymentId = paymentId || status.latestPayment?.id;
 
@@ -516,11 +522,11 @@ export class AdmissionModel {
            "learningAccess" = 'LOCKED',
            "updatedAt" = NOW()
        WHERE "userId" = $1`,
-      [studentUserId]
+      [targetUserId]
     );
 
     await this.recordAudit({
-      studentId: studentUserId,
+      studentId: targetUserId,
       changedBy: teacherUserId,
       action: 'PAYMENT_REJECTED',
       fromState: { paymentStatus: status.admission.paymentStatus, learningAccess: status.admission.learningAccess },
@@ -543,6 +549,7 @@ export class AdmissionModel {
     const current = await this.getStudentStatus(studentUserId);
     if (!current) throw new Error('Student profile not found');
 
+    const targetUserId = current.user.id;
     const fromState = {
       paymentRequirement: current.admission.paymentRequirement,
       paymentStatus: current.admission.paymentStatus,
@@ -570,16 +577,16 @@ export class AdmissionModel {
            "learningAccess" = $3,
            "updatedAt" = NOW()
        WHERE "userId" = $4`,
-      [paymentRequirement, paymentStatus, learningAccess, studentUserId]
+      [paymentRequirement, paymentStatus, learningAccess, targetUserId]
     );
 
     // If access unlocked and level is assigned, enroll into level courses
     if (learningAccess === 'ACTIVE' && current.admission.level?.id) {
-      await this.enrollStudentInLevelCourses(studentUserId, current.admission.level.id);
+      await this.enrollStudentInLevelCourses(targetUserId, current.admission.level.id);
     }
 
     await this.recordAudit({
-      studentId: studentUserId,
+      studentId: targetUserId,
       changedBy: teacherUserId,
       action: 'PAYMENT_REQUIREMENT_CHANGED',
       fromState,
@@ -606,23 +613,25 @@ export class AdmissionModel {
     const current = await this.getStudentStatus(studentUserId);
     if (!current) throw new Error('Student profile not found');
 
+    const targetUserId = current.user.id;
+
     // 1. Update levelId on profile
     await query(
       `UPDATE "public"."student_profiles"
        SET "levelId" = $1,
            "updatedAt" = NOW()
        WHERE "userId" = $2`,
-      [levelId, studentUserId]
+      [levelId, targetUserId]
     );
 
     // 2. If learningAccess is ACTIVE, enroll in all courses belonging to this level
     let enrolledCount = 0;
     if (current.admission.learningAccess === 'ACTIVE') {
-      enrolledCount = await this.enrollStudentInLevelCourses(studentUserId, levelId);
+      enrolledCount = await this.enrollStudentInLevelCourses(targetUserId, levelId);
     }
 
     await this.recordAudit({
-      studentId: studentUserId,
+      studentId: targetUserId,
       changedBy: teacherUserId,
       action: 'LEVEL_ENROLLED',
       fromState: { levelId: current.admission.level?.id },

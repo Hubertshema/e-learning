@@ -31,7 +31,8 @@ import {
 import { apiClient } from '@/lib/api-client';
 
 export interface ApplicationItem {
-  id: string; // studentProfileId
+  id: string; // studentProfileId or userId
+  studentId?: string;
   userId: string;
   firstName: string;
   lastName: string;
@@ -116,7 +117,17 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
 
       const res = await apiClient.get<any>(`/teacher/applications?${q.toString()}`);
       const data = res?.data || res;
-      setApplications(data?.applications || []);
+      const rawApps = data?.applications || [];
+      const normalizedApps: ApplicationItem[] = rawApps.map((app: any) => {
+        const resolvedId = app.id || app.studentId || app.userId || app.profileId;
+        return {
+          ...app,
+          id: resolvedId,
+          studentId: app.studentId || resolvedId,
+          userId: app.userId || resolvedId,
+        };
+      });
+      setApplications(normalizedApps);
       if (data?.counts) {
         setCounts(data.counts);
       }
@@ -149,11 +160,16 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
     setIsActionLoading(true);
 
     try {
+      const targetId = reviewModalStudent.id || (reviewModalStudent as any).studentId || reviewModalStudent.userId;
+      if (!targetId || targetId === 'undefined') {
+        throw new Error('Student identifier is missing. Please close and re-open the review modal.');
+      }
+
       if (reviewDecision === 'REJECT' && !rejectionReason.trim()) {
         throw new Error('Please provide an official rejection reason.');
       }
 
-      await apiClient.post(`/teacher/applications/${reviewModalStudent.id}/review`, {
+      await apiClient.post(`/teacher/applications/${targetId}/review`, {
         decision: reviewDecision,
         paymentRequirement: reviewPaymentReq,
         rejectionReason: reviewDecision === 'REJECT' ? rejectionReason.trim() : null,
@@ -180,11 +196,16 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
   const handleVerifyPayment = async (studentId: string, verify: boolean, notes = '') => {
     setIsActionLoading(true);
     try {
+      const targetId = studentId || paymentModalStudent?.id || (paymentModalStudent as any)?.studentId || paymentModalStudent?.userId;
+      if (!targetId || targetId === 'undefined') {
+        throw new Error('Student identifier is missing. Please close and re-open the payment modal.');
+      }
+
       if (verify) {
-        await apiClient.post(`/teacher/students/${studentId}/verify-payment`, { notes });
+        await apiClient.post(`/teacher/students/${targetId}/verify-payment`, { notes });
         showToast({ type: 'success', text: 'Payment verified! Student learning access is now ACTIVE.' });
       } else {
-        await apiClient.post(`/teacher/students/${studentId}/reject-payment`, {
+        await apiClient.post(`/teacher/students/${targetId}/reject-payment`, {
           reason: notes || 'Transaction reference not found on academy records.',
         });
         showToast({ type: 'success', text: 'Payment proof rejected. Student notified to resubmit.' });
@@ -207,7 +228,12 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
     setIsActionLoading(true);
 
     try {
-      await apiClient.patch(`/teacher/students/${reqModalStudent.id}/payment-requirement`, {
+      const targetId = reqModalStudent.id || (reqModalStudent as any).studentId || reqModalStudent.userId;
+      if (!targetId || targetId === 'undefined') {
+        throw new Error('Student identifier is missing.');
+      }
+
+      await apiClient.patch(`/teacher/students/${targetId}/payment-requirement`, {
         paymentRequirement: newPaymentReq,
         reason: reqReason || 'Instructor adjusted payment policy',
       });
@@ -235,7 +261,12 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
     setIsActionLoading(true);
 
     try {
-      await apiClient.post(`/teacher/students/${enrollLevelStudent.id}/enroll-level`, {
+      const targetId = enrollLevelStudent.id || (enrollLevelStudent as any).studentId || enrollLevelStudent.userId;
+      if (!targetId || targetId === 'undefined') {
+        throw new Error('Student identifier is missing.');
+      }
+
+      await apiClient.post(`/teacher/students/${targetId}/enroll-level`, {
         levelId: selectedEnrollLevelId,
       });
 
@@ -748,7 +779,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                 type="button"
                 variant="outline"
                 disabled={isActionLoading}
-                onClick={() => handleVerifyPayment(paymentModalStudent.id, false, 'Reference not verified')}
+                onClick={() => handleVerifyPayment(paymentModalStudent.id || (paymentModalStudent as any).studentId || paymentModalStudent.userId, false, 'Reference not verified')}
                 className="text-xs h-9 border-rose-200 text-rose-700 hover:bg-rose-50"
               >
                 Reject Proof
@@ -757,7 +788,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
               <Button
                 type="button"
                 disabled={isActionLoading}
-                onClick={() => handleVerifyPayment(paymentModalStudent.id, true, 'Payment verified by teacher')}
+                onClick={() => handleVerifyPayment(paymentModalStudent.id || (paymentModalStudent as any).studentId || paymentModalStudent.userId, true, 'Payment verified by teacher')}
                 className="text-xs h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
               >
                 {isActionLoading ? 'Verifying...' : 'Verify & Unlock Access'}
