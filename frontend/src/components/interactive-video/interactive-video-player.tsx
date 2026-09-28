@@ -11,6 +11,9 @@ import {
   Play,
   RotateCcw,
   Volume2,
+  VolumeX,
+  Mic,
+  MicOff,
   Sparkles,
   Lock,
   Unlock,
@@ -115,6 +118,113 @@ export function InteractiveVideoPlayer({
   const [restrictionNotice, setRestrictionNotice] = useState<string | null>(null);
   const noticeTimeoutRef = useRef<any>(null);
 
+  const [isMuted, setIsMuted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const toggleMute = () => {
+    if (isMuted) {
+      videoRef.current?.unMute?.();
+      setIsMuted(false);
+    } else {
+      videoRef.current?.mute?.();
+      setIsMuted(true);
+    }
+  };
+
+  const speeds = [0.75, 1, 1.25, 1.5];
+  const cycleSpeed = () => {
+    const currentIdx = speeds.indexOf(speed);
+    const nextSpeed = speeds[(currentIdx + 1) % speeds.length];
+    setSpeed(nextSpeed);
+    videoRef.current?.setPlaybackRate?.(nextSpeed);
+  };
+
+  const startVoiceInput = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showNotice('🎙️ Speech recognition not supported in this browser. Please tap an option.');
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const spoken = event.results?.[0]?.[0]?.transcript?.trim()?.toLowerCase() || '';
+        setIsListening(false);
+
+        if (active?.content?.options) {
+          const options = active.content.options.map((opt: any) =>
+            typeof opt === 'string' ? opt : opt.text || ''
+          );
+
+          let matchedOption: string | null = null;
+          if (spoken.includes('option a') || spoken === 'a' || spoken.startsWith('a ')) {
+            matchedOption = options[0];
+          } else if (spoken.includes('option b') || spoken === 'b' || spoken.startsWith('b ')) {
+            matchedOption = options[1];
+          } else if (spoken.includes('option c') || spoken === 'c' || spoken.startsWith('c ')) {
+            matchedOption = options[2];
+          } else if (spoken.includes('option d') || spoken === 'd' || spoken.startsWith('d ')) {
+            matchedOption = options[3];
+          } else {
+            const match = options.find((opt: string) =>
+              spoken.includes(opt.toLowerCase()) || opt.toLowerCase().includes(spoken)
+            );
+            if (match) matchedOption = match;
+          }
+
+          if (matchedOption) {
+            setAnswer(matchedOption);
+            showNotice(`🎙️ Heard: "${spoken}"`);
+          } else {
+            showNotice(`🎙️ Heard: "${spoken}". Please select your choice.`);
+          }
+        } else {
+          setAnswer(spoken);
+        }
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
+
+  const toggleVoiceInput = () => {
+    if (isListening) {
+      try {
+        recognitionRef.current?.abort();
+      } catch {}
+      setIsListening(false);
+    } else {
+      startVoiceInput();
+    }
+  };
+
   const [autoResumeSeconds, setAutoResumeSeconds] = useState<number | null>(null);
   const autoResumeTimerRef = useRef<any>(null);
 
@@ -130,6 +240,11 @@ export function InteractiveVideoPlayer({
     return () => {
       clearAutoResume();
       if (noticeTimeoutRef.current) clearTimeout(noticeTimeoutRef.current);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
     };
   }, []);
 
@@ -159,6 +274,21 @@ export function InteractiveVideoPlayer({
   const maxAllowedTime = allowFreeSeek
     ? (totalDuration > 0 ? totalDuration : 999999)
     : Math.min(Math.max(watched, position), checkpointBarrier);
+
+  const nextUpcomingCheckpoint = useMemo(() => {
+    return (activities || [])
+      .filter((a) => !completed[a.id])
+      .sort((a, b) => a.timestampSeconds - b.timestampSeconds)[0];
+  }, [activities, completed]);
+
+  const currentTranscriptLine = useMemo(() => {
+    if (!transcript || transcript.length === 0) return null;
+    return (
+      [...transcript]
+        .reverse()
+        .find((line) => line.time <= position + 0.5) || transcript[0]
+    );
+  }, [transcript, position]);
 
   const showNotice = (msg: string) => {
     setRestrictionNotice(msg);
@@ -375,382 +505,419 @@ export function InteractiveVideoPlayer({
   const isCheckpointBlocking = !!(active && active.required !== false && !completed[active.id]);
 
   return (
-    <div className={`mx-auto transition-all duration-300 space-y-4 ${isCompact ? 'max-w-3xl' : 'max-w-5xl'}`}>
-      {/* Video Container */}
-      <div className="relative overflow-hidden rounded-2xl bg-slate-950 shadow-2xl border border-slate-800 select-none">
-        <div className={`relative w-full bg-black transition-all duration-300 mx-auto aspect-video ${isCompact ? 'max-h-[380px] md:max-h-[420px]' : 'max-h-[560px]'}`}>
-          <UniversalVideo
-            ref={videoRef}
-            url={videoUrl}
-            controls={allowFreeSeek && isTeacher}
-            className="w-full h-full"
-            initialTime={initialPosition}
-            onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-            onDurationChange={(dur) => setDetectedDuration(dur)}
-            onTimeUpdate={handleTimeUpdate}
-          />
-
-          {/* Transparent Interaction Shield (intercepts clicks & blocks direct iframe tampering) */}
-          <div
-            onClick={togglePlay}
-            onContextMenu={(e) => e.preventDefault()}
-            onDoubleClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center group"
-          >
-            {/* Transient Restriction Warning Toast */}
-            {restrictionNotice && (
-              <div
-                role="alert"
-                onClick={(e) => e.stopPropagation()}
-                className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-slate-900/95 backdrop-blur-md px-4 py-2 text-xs font-semibold text-amber-300 border border-amber-500/50 shadow-2xl animate-in fade-in slide-in-from-top-2"
-              >
-                <Lock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                <span>{restrictionNotice}</span>
-              </div>
-            )}
-
-            {/* Centered Play Button when Paused */}
-            {!playing && !isCheckpointBlocking && (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 shadow-2xl transition-all transform group-hover:scale-110 group-hover:bg-emerald-600">
-                <Play className="h-7 w-7 fill-white translate-x-0.5" />
-              </div>
-            )}
-
-            {/* Checkpoint Blocking Badge */}
-            {isCheckpointBlocking && (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-2 rounded-2xl bg-amber-950/90 backdrop-blur-md px-5 py-3 text-amber-200 border border-amber-500/60 shadow-2xl"
-              >
-                <Lock className="h-4 w-4 text-amber-400 animate-pulse" />
-                <span className="text-xs font-bold">Checkpoint Active · Complete answer below to continue</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Custom Secured Control Bar */}
-        <div className="bg-slate-900/95 border-t border-slate-800 p-3.5 text-white">
-          {/* Integrated Visual Scrubber with Lock Zone & Markers */}
-          <div className="relative mb-3 flex items-center group/scrubber">
-            {/* Scrubber Track Container */}
-            <div className="relative w-full h-3 rounded-full bg-slate-800 overflow-hidden border border-slate-700/60">
-              {/* Unlocked / Watched Zone (Segment the student has unlocked) */}
-              <div
-                style={{ width: `${unlockedPercent}%` }}
-                className="absolute left-0 top-0 bottom-0 bg-slate-700/80 transition-all duration-150"
+    <div className="w-full space-y-6">
+      {/* Main Split Screen Stage: Left Video, Right Questions */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* LEFT COLUMN: Video Player (lg:col-span-7) */}
+        <div className="lg:col-span-7 flex flex-col justify-start">
+          <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl border border-slate-800 select-none">
+            {/* 16:9 Aspect Video Canvas */}
+            <div className="relative w-full aspect-video bg-black flex items-center justify-center">
+              <UniversalVideo
+                ref={videoRef}
+                url={videoUrl}
+                controls={allowFreeSeek && isTeacher}
+                className="w-full h-full"
+                initialTime={initialPosition}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
+                onDurationChange={(dur) => setDetectedDuration(dur)}
+                onTimeUpdate={handleTimeUpdate}
               />
 
-              {/* Current Progress Playhead */}
+              {/* Interaction Shield & Centered Circular Play Overlay */}
               <div
-                style={{ width: `${currentPercent}%` }}
-                className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-150"
-              />
+                onClick={togglePlay}
+                onContextMenu={(e) => e.preventDefault()}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center group"
+              >
+                {/* Restriction Notice Banner */}
+                {restrictionNotice && (
+                  <div
+                    role="alert"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-slate-900/95 backdrop-blur-md px-4 py-2 text-xs font-semibold text-amber-300 border border-amber-500/50 shadow-2xl animate-in fade-in slide-in-from-top-2"
+                  >
+                    <Lock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    <span>{restrictionNotice}</span>
+                  </div>
+                )}
 
-              {/* Locked Zone (Forward portion restricted from skipping) */}
-              {!allowFreeSeek && unlockedPercent < 100 && (
-                <div
-                  style={{ left: `${unlockedPercent}%`, width: `${100 - unlockedPercent}%` }}
-                  className="absolute top-0 bottom-0 bg-slate-900/90 border-l-2 border-amber-500/60 flex items-center justify-end pr-2 overflow-hidden"
-                  title="Forward skipping locked"
-                >
-                  <Lock className="h-2 w-2 text-slate-500 opacity-60" />
-                </div>
-              )}
+                {/* Centered Circular Play Button overlay (matches screenshot) */}
+                {!playing && !isCheckpointBlocking && (
+                  <div className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-full bg-black/60 backdrop-blur-xs text-white border border-white/20 shadow-2xl transition-all transform group-hover:scale-105 group-hover:bg-black/80">
+                    <Play className="h-6 w-6 md:h-7 md:w-7 fill-white translate-x-0.5" />
+                  </div>
+                )}
+
+                {/* Checkpoint Blocking Badge */}
+                {isCheckpointBlocking && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 rounded-2xl bg-amber-950/90 backdrop-blur-md px-4 py-2 text-amber-200 border border-amber-500/60 shadow-2xl"
+                  >
+                    <Lock className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                    <span className="text-xs font-bold">Checkpoint Active · Answer on the right</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Interactive Checkpoint Markers along the scrubber */}
-            {activities.length > 0 && totalDuration > 0 && (
-              <div className="absolute inset-0 pointer-events-none flex items-center px-0.5">
-                {activities.map((item) => {
-                  const leftPercent = Math.min(100, Math.max(0, (item.timestampSeconds / totalDuration) * 100));
-                  const isDone = !!completed[item.id];
-                  const isLocked = !allowFreeSeek && item.timestampSeconds > maxAllowedTime + 0.5;
-
-                  return (
-                    <div
-                      key={item.id}
-                      style={{ left: `${leftPercent}%` }}
-                      className="absolute -translate-x-1/2 pointer-events-auto"
-                      title={`${item.title} (${formatVideoTime(item.timestampSeconds)}) ${
-                        isDone ? '✓ Completed' : isLocked ? '🔒 Locked' : '⭐ Unlocked'
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        aria-label={`Activity: ${item.title}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          seek(item.timestampSeconds);
-                        }}
-                        className={`h-3 w-3 rounded-full border-2 transition-transform hover:scale-125 flex items-center justify-center ${
-                          isDone
-                            ? 'bg-emerald-400 border-white shadow-xs'
-                            : isLocked
-                            ? 'bg-slate-700 border-slate-500 shadow-xs'
-                            : 'bg-amber-400 border-amber-100 ring-2 ring-amber-400/40 shadow-xs'
-                        }`}
-                      >
-                        {isDone ? (
-                          <span className="block h-1 w-1 rounded-full bg-white" />
-                        ) : isLocked ? (
-                          <Lock className="h-1.5 w-1.5 text-slate-300" />
-                        ) : null}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Invisible native range input on top for drag and touch handling */}
-            <input
-              aria-label="Video scrubber"
-              type="range"
-              min={0}
-              max={totalDuration > 0 ? totalDuration : 100}
-              step={0.1}
-              value={position}
-              onChange={(e) => seek(Number(e.target.value))}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-          </div>
-
-          {/* Control Buttons & Indicators */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            {/* Sleek Minimalist Control Bar (matches screenshot) */}
+            <div className="bg-slate-950 border-t border-slate-900 px-3.5 py-3 text-white flex items-center gap-3">
               {/* Play/Pause Button */}
               <button
                 type="button"
                 aria-label={playing ? 'Pause video' : 'Play video'}
                 disabled={isCheckpointBlocking}
-                className={`rounded-xl p-2.5 transition-colors ${
-                  isCheckpointBlocking
-                    ? 'opacity-40 cursor-not-allowed bg-slate-800 text-slate-500'
-                    : 'hover:bg-white/10 text-white'
-                }`}
                 onClick={togglePlay}
-                title={isCheckpointBlocking ? 'Please complete checkpoint to resume' : playing ? 'Pause' : 'Play'}
+                className="text-white hover:text-emerald-400 transition-colors shrink-0"
               >
-                {playing ? <Pause size={18} /> : isCheckpointBlocking ? <Lock size={18} /> : <Play size={18} />}
-              </button>
-
-              {/* Rewind 10s Button */}
-              <button
-                type="button"
-                aria-label="Rewind 10 seconds"
-                className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors text-xs font-semibold"
-                onClick={rewind10}
-                title="Rewind 10 seconds"
-              >
-                <RotateCcw size={14} />
-                <span>-10s</span>
-              </button>
-
-              {/* Restart Button */}
-              <button
-                type="button"
-                aria-label="Restart from beginning"
-                className="rounded-xl p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                onClick={() => seek(0)}
-                title="Restart from beginning"
-              >
-                <RotateCcw size={15} />
-              </button>
-
-              {/* Time Display */}
-              <div className="ml-1 flex items-center gap-1.5 text-xs font-mono tabular-nums text-slate-300">
-                <span className="font-semibold text-white">{formatVideoTime(position)}</span>
-                <span className="text-slate-500">/</span>
-                <span className="text-slate-400">{formatVideoTime(totalDuration || 0)}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Anti-skip indicator pill */}
-              {!allowFreeSeek ? (
-                <span
-                  title="Forward skipping is restricted until checkpoints are completed"
-                  className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-amber-950/50 border border-amber-500/30 px-2.5 py-1 text-[11px] font-semibold text-amber-300"
-                >
-                  <Lock className="h-3 w-3 text-amber-400" />
-                  Anti-skip enabled
-                </span>
-              ) : (
-                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-950/50 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-                  <Unlock className="h-3 w-3 text-emerald-400" />
-                  Free seeking
-                </span>
-              )}
-
-              {/* Teacher test mode toggle */}
-              {isTeacher && (
-                <button
-                  type="button"
-                  onClick={() => setAllowFreeSeek((v) => !v)}
-                  className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition-all ${
-                    allowFreeSeek
-                      ? 'bg-indigo-600 border-indigo-400 text-white'
-                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
-                  }`}
-                  title="Teacher override for testing checkpoint transitions"
-                >
-                  {allowFreeSeek ? 'Testing Mode (Free Seek ON)' : 'Student Mode (Restricted)'}
-                </button>
-              )}
-
-              {/* Playback Speed Selector */}
-              <select
-                aria-label="Playback speed"
-                value={speed}
-                onChange={(e) => {
-                  const s = Number(e.target.value);
-                  setSpeed(s);
-                  videoRef.current?.setPlaybackRate?.(s);
-                }}
-                className="rounded-lg bg-slate-800 px-2 py-1 text-xs text-white outline-none border border-slate-700 hover:border-slate-600 transition-colors"
-              >
-                <option value={0.75}>0.75×</option>
-                <option value={1}>1×</option>
-                <option value={1.25}>1.25×</option>
-                <option value={1.5}>1.5×</option>
-              </select>
-
-              {/* Compact / Enlarge player size toggle */}
-              <button
-                type="button"
-                onClick={() => setIsCompact((v) => !v)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[11px] font-medium"
-                title={isCompact ? 'Enlarge player' : 'Minimize player size'}
-              >
-                {isCompact ? <Maximize2 size={15} /> : <Minimize2 size={15} />}
-                <span className="hidden md:inline">{isCompact ? 'Expand' : 'Minimize'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Checkpoint Card */}
-      {active && (
-        <Card className="border-amber-200 bg-amber-50/80 p-5 dark:bg-amber-950/30 dark:border-amber-900/50 shadow-md animate-in fade-in zoom-in-95">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                Interactive Checkpoint · {formatVideoTime(active.timestampSeconds)}
-              </p>
-              <h2 className="mt-1 text-base md:text-lg font-bold text-slate-900 dark:text-white">
-                {active.title}
-              </h2>
-            </div>
-            <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          </div>
-
-          {active.instructions && (
-            <p className="mb-4 text-xs md:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              {active.instructions}
-            </p>
-          )}
-
-          <ActivityAnswer activity={active} answer={answer} setAnswer={setAnswer} />
-
-          {feedback && (
-            <div
-              role="status"
-              className={`mt-4 rounded-xl p-4 text-xs md:text-sm font-medium transition-all ${
-                feedback.isCorrect
-                  ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
-                  : 'bg-rose-50 text-rose-900 dark:bg-rose-950/70 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
-              }`}
-            >
-              <div className="flex items-start gap-2.5">
-                {feedback.isCorrect ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                {playing ? (
+                  <Pause size={17} className="fill-white" />
+                ) : isCheckpointBlocking ? (
+                  <Lock size={16} className="text-slate-500" />
                 ) : (
-                  <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <Play size={17} className="fill-white" />
                 )}
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold text-sm">
-                      {feedback.isCorrect ? 'Correct! Well done! 🎉' : 'Incorrect — not quite right.'}
-                    </p>
-                    {feedback.isCorrect && autoResumeSeconds !== null && (
-                      <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
-                        <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                        Resuming in {autoResumeSeconds}s...
+              </button>
+
+              {/* Current Time (0:03) */}
+              <span className="font-mono text-xs font-bold text-slate-200 shrink-0 tabular-nums">
+                {formatVideoTime(position)}
+              </span>
+
+              {/* Timeline Scrubber Container with Diamond Checkpoint Markers */}
+              <div className="relative flex-1 h-3 flex items-center group/scrubber cursor-pointer">
+                <div className="relative w-full h-1.5 rounded-full bg-slate-800 overflow-visible">
+                  {/* Unlocked zone */}
+                  <div
+                    style={{ width: `${unlockedPercent}%` }}
+                    className="absolute left-0 top-0 bottom-0 bg-slate-700/60 rounded-full"
+                  />
+                  {/* Progress bar */}
+                  <div
+                    style={{ width: `${currentPercent}%` }}
+                    className="absolute left-0 top-0 bottom-0 bg-teal-400 rounded-full"
+                  />
+
+                  {/* Checkpoint Diamonds on Scrubber */}
+                  {activities && totalDuration > 0 && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      {activities.map((item) => {
+                        const leftPercent = Math.min(
+                          100,
+                          Math.max(0, (item.timestampSeconds / totalDuration) * 100)
+                        );
+                        const isDone = !!completed[item.id];
+                        return (
+                          <div
+                            key={item.id}
+                            style={{ left: `${leftPercent}%` }}
+                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto"
+                            title={`${item.title} (${formatVideoTime(item.timestampSeconds)})`}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                seek(item.timestampSeconds);
+                              }}
+                              className={`h-2.5 w-2.5 rotate-45 border transition-transform hover:scale-150 ${
+                                isDone
+                                  ? 'bg-emerald-400 border-white'
+                                  : 'bg-slate-300 border-slate-600'
+                              }`}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Native range input for scrubber dragging */}
+                <input
+                  aria-label="Video scrubber"
+                  type="range"
+                  min={0}
+                  max={totalDuration > 0 ? totalDuration : 100}
+                  step={0.1}
+                  value={position}
+                  onChange={(e) => seek(Number(e.target.value))}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </div>
+
+              {/* Total Duration (0:45) */}
+              <span className="font-mono text-xs font-medium text-slate-400 shrink-0 tabular-nums">
+                {formatVideoTime(totalDuration || 0)}
+              </span>
+
+              {/* Speed Toggle (1x) */}
+              <button
+                type="button"
+                onClick={cycleSpeed}
+                className="text-xs font-bold text-slate-300 hover:text-white px-1.5 py-0.5 rounded hover:bg-slate-800 transition-colors shrink-0"
+                title="Click to cycle playback speed"
+              >
+                {speed}x
+              </button>
+
+              {/* Volume Mute Toggle */}
+              <button
+                type="button"
+                onClick={toggleMute}
+                className="text-slate-300 hover:text-white transition-colors shrink-0"
+                title={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Teacher override mode banner */}
+          {isTeacher && (
+            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 px-2">
+              <span>Teacher Mode</span>
+              <button
+                type="button"
+                onClick={() => setAllowFreeSeek((v) => !v)}
+                className="underline hover:text-white"
+              >
+                {allowFreeSeek ? 'Free Seek ON (testing)' : 'Student Restriction ON'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: Question & Interaction Panel (lg:col-span-5) */}
+        <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 min-h-[420px] lg:min-h-[460px]">
+          {active ? (
+            <div className="flex flex-col h-full justify-between">
+              <div>
+                {/* Question Header */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full">
+                      Checkpoint · {formatVideoTime(active.timestampSeconds)}
+                    </span>
+                    {active.points > 0 && (
+                      <span className="text-[11px] font-semibold text-slate-400">
+                        +{active.points} pts
                       </span>
                     )}
                   </div>
-                  {feedback.feedback && <p className="opacity-90">{feedback.feedback}</p>}
-                  {feedback.explanation && (
-                    <p className="text-xs opacity-80 mt-1">
-                      <strong>Explanation:</strong> {feedback.explanation}
+                  <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white leading-snug">
+                    {active.title || 'Choose the best response:'}
+                  </h2>
+                  {active.instructions && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {active.instructions}
                     </p>
                   )}
-                  {feedback.correctAnswer && (
-                    <div className="mt-2.5 pt-2 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-1.5 text-xs">
-                      <span className="font-bold opacity-75">Correct answer:</span>
-                      <span className="font-bold text-emerald-800 dark:text-emerald-200 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-md border border-emerald-300/50">
-                        {Array.isArray(feedback.correctAnswer)
-                          ? feedback.correctAnswer.join(', ')
-                          : typeof feedback.correctAnswer === 'object'
-                          ? Object.entries(feedback.correctAnswer)
-                              .map(([k, v]) => `${k} → ${v}`)
-                              .join('; ')
-                          : String(feedback.correctAnswer)}
-                      </span>
+                </div>
+
+                {/* Hint Guidance Card (when toggled via Need a hint?) */}
+                {showHint && (
+                  <div className="mb-4 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in">
+                    <p className="font-bold flex items-center gap-1.5 mb-1">
+                      <span>💡</span> Guidance:
+                    </p>
+                    <p className="opacity-90 leading-relaxed">
+                      {active.explanation ||
+                        active.instructions ||
+                        active.content?.guidance ||
+                        'Listen to what the speaker mentions and choose the option that fits best.'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Question Answer Options (A., B., C. with hairline dividers) */}
+                <ActivityAnswer activity={active} answer={answer} setAnswer={setAnswer} />
+
+                {/* Instant Feedback Card with Auto-Resume */}
+                {feedback && (
+                  <div
+                    role="status"
+                    className={`mt-4 rounded-xl p-3.5 text-xs font-medium transition-all ${
+                      feedback.isCorrect
+                        ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
+                        : 'bg-rose-50 text-rose-900 dark:bg-rose-950/70 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      {feedback.isCorrect ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                      )}
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-sm">
+                            {feedback.isCorrect ? 'Correct! Well done! 🎉' : 'Incorrect — not quite right.'}
+                          </p>
+                          {feedback.isCorrect && autoResumeSeconds !== null && (
+                            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                              <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                              Resuming in {autoResumeSeconds}s...
+                            </span>
+                          )}
+                        </div>
+                        {feedback.feedback && <p className="opacity-90">{feedback.feedback}</p>}
+                        {feedback.explanation && (
+                          <p className="text-xs opacity-80 mt-1">
+                            <strong>Explanation:</strong> {feedback.explanation}
+                          </p>
+                        )}
+                        {feedback.correctAnswer && (
+                          <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-1.5 text-xs">
+                            <span className="font-bold opacity-75">Correct answer:</span>
+                            <span className="font-bold text-emerald-800 dark:text-emerald-200 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-md border border-emerald-300/50">
+                              {Array.isArray(feedback.correctAnswer)
+                                ? feedback.correctAnswer.join(', ')
+                                : typeof feedback.correctAnswer === 'object'
+                                ? Object.entries(feedback.correctAnswer)
+                                    .map(([k, v]) => `${k} → ${v}`)
+                                    .join('; ')
+                                : String(feedback.correctAnswer)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Actions Area: Hint on Left, Circular Black Mic Button in Center, Submit/Resume Buttons */}
+              <div className="pt-6">
+                <div className="relative flex items-center justify-center py-2">
+                  {/* Need a hint? button (bottom-left, matches screenshot) */}
+                  <div className="absolute left-0 bottom-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowHint((v) => !v)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 shadow-2xs transition-all flex items-center gap-1.5"
+                    >
+                      <span>💡</span>
+                      <span>Need a hint?</span>
+                    </button>
+                  </div>
+
+                  {/* Large Circular Microphone Button (centered, matches screenshot) */}
+                  <button
+                    type="button"
+                    onClick={toggleVoiceInput}
+                    className={`h-16 w-16 rounded-full bg-slate-950 text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all ${
+                      isListening ? 'ring-4 ring-rose-500 bg-rose-600 animate-pulse' : 'hover:bg-black'
+                    }`}
+                    title={isListening ? 'Listening... Speak your option (e.g. "Option A")' : 'Tap to speak your answer'}
+                  >
+                    <Mic className="h-7 w-7 text-white" />
+                  </button>
+                </div>
+
+                {/* Action Buttons: Try Again, Resume Video, or Submit Answer */}
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  {feedback && !feedback.isCorrect && active.allowRetry !== false && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        clearAutoResume();
+                        setFeedback(null);
+                        setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
+                      }}
+                      className="text-xs font-semibold rounded-xl"
+                    >
+                      <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                      Try Again
+                    </Button>
+                  )}
+
+                  {feedback && (feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
+                    <Button
+                      onClick={continueVideo}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs"
+                    >
+                      <Play className="mr-1.5 h-3.5 w-3.5 fill-white" />
+                      Resume Video Now
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={submit}
+                      disabled={!answer && answer !== 0}
+                      className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold rounded-xl text-xs px-5 shadow-xs"
+                    >
+                      Submit Answer
+                    </Button>
                   )}
                 </div>
               </div>
             </div>
+          ) : (
+            /* Standby State while Video is Playing */
+            <div className="flex flex-col h-full justify-between py-2">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    {playing ? 'Video Playing' : 'Ready to Play'}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Listen & Watch Carefully
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  Interactive checkpoints will pause the video automatically and display questions right here.
+                </p>
+
+                {/* Next upcoming checkpoint card */}
+                {nextUpcomingCheckpoint && (
+                  <div
+                    onClick={() => seek(nextUpcomingCheckpoint.timestampSeconds)}
+                    className="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between cursor-pointer hover:border-emerald-300 transition-all group"
+                  >
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Next Checkpoint</p>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 group-hover:text-emerald-600">
+                        {nextUpcomingCheckpoint.title}
+                      </p>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-1 rounded-lg">
+                      {formatVideoTime(nextUpcomingCheckpoint.timestampSeconds)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Current Transcript Line if available */}
+                {currentTranscriptLine && (
+                  <div className="mt-4 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 text-xs italic text-slate-600 dark:text-slate-300">
+                    "{currentTranscriptLine.text}"
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <span>{activities?.length || 0} checkpoints total</span>
+                <span className="font-semibold text-emerald-600">
+                  {Object.keys(completed).length} / {activities?.length || 0} completed
+                </span>
+              </div>
+            </div>
           )}
+        </div>
+      </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-            {feedback && !feedback.isCorrect && active.allowRetry !== false && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  clearAutoResume();
-                  setFeedback(null);
-                  setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
-                }}
-                className="text-xs font-semibold rounded-xl"
-              >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Try Again
-              </Button>
-            )}
-
-            {feedback && (feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
-              <Button
-                onClick={continueVideo}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs"
-              >
-                <Play className="mr-1.5 h-3.5 w-3.5 fill-white" />
-                Resume Video Now
-              </Button>
-            ) : (
-              <Button
-                onClick={submit}
-                className="bg-[#1f4325] hover:bg-[#285730] text-white font-bold rounded-xl text-xs"
-              >
-                Submit Answer
-              </Button>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* Transcript Card */}
+      {/* Transcript Card below if transcript exists */}
       {transcript.length > 0 && (
         <Card className="p-5 rounded-2xl border-slate-200 dark:border-slate-800">
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Transcript</h3>
-          <div className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Lesson Transcript</h3>
+          <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
             {transcript.map((line, i) => (
               <button
                 key={i}
@@ -846,27 +1013,29 @@ function ActivityAnswer({
             />
           </div>
         )}
-        <div className="grid gap-2">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
           {(content.options || []).map((option: any, idx: number) => {
             const optText = typeof option === 'string' ? option : option?.text || '';
+            const letter = String.fromCharCode(65 + idx);
+            const isSelected = answer === optText;
             return (
-              <label
+              <button
+                type="button"
                 key={idx}
-                className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer text-xs font-medium transition-all ${
-                  answer === optText
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-400'
-                    : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 hover:border-emerald-300'
+                onClick={() => setAnswer(optText)}
+                className={`w-full text-left py-3.5 px-3 flex items-start gap-4 transition-all rounded-lg ${
+                  isSelected
+                    ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-white font-medium ring-1 ring-slate-300 dark:ring-slate-700'
+                    : 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <input
-                  type="radio"
-                  name={activity.id}
-                  checked={answer === optText}
-                  onChange={() => setAnswer(optText)}
-                  className="accent-emerald-600"
-                />
-                <span>{optText}</span>
-              </label>
+                <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white min-w-[24px]">
+                  {letter}.
+                </span>
+                <span className="text-sm md:text-base leading-snug">
+                  {optText}
+                </span>
+              </button>
             );
           })}
         </div>
@@ -961,17 +1130,18 @@ function ActivityAnswer({
   // 9. MULTIPLE_SELECT
   if (activity.type === 'MULTIPLE_SELECT') {
     return (
-      <div className="grid gap-2">
+      <div className="divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
         {(content.options || []).map((option: any, idx: number) => {
           const optText = typeof option === 'string' ? option : option?.text || '';
+          const letter = String.fromCharCode(65 + idx);
           const isChecked = Array.isArray(answer) && answer.includes(optText);
           return (
             <label
               key={idx}
-              className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer text-xs font-medium transition-all ${
+              className={`w-full text-left py-3.5 px-3 flex items-start gap-4 cursor-pointer transition-all rounded-lg ${
                 isChecked
-                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-400'
-                  : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 hover:border-emerald-300'
+                  ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-white font-medium ring-1 ring-slate-300 dark:ring-slate-700'
+                  : 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
               }`}
             >
               <input
@@ -984,9 +1154,14 @@ function ActivityAnswer({
                       : (Array.isArray(answer) ? answer : []).filter((x: string) => x !== optText)
                   )
                 }
-                className="accent-emerald-600 h-4 w-4 rounded"
+                className="accent-slate-900 dark:accent-emerald-500 h-4 w-4 rounded mt-1 shrink-0"
               />
-              <span>{optText}</span>
+              <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white min-w-[24px]">
+                {letter}.
+              </span>
+              <span className="text-sm md:text-base leading-snug flex-1">
+                {optText}
+              </span>
             </label>
           );
         })}
@@ -1029,28 +1204,29 @@ function ActivityAnswer({
           </div>
         )}
 
-        <div className="grid gap-2">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
           {(content.options || []).map((option: any, idx: number) => {
             const optText = typeof option === 'string' ? option : option?.text || '';
+            const letter = String.fromCharCode(65 + idx);
             const isSelected = answer === optText;
             return (
-              <label
+              <button
+                type="button"
                 key={idx}
-                className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer text-xs font-medium transition-all ${
+                onClick={() => setAnswer(optText)}
+                className={`w-full text-left py-4 px-3 flex items-start gap-4 transition-all rounded-lg ${
                   isSelected
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-400'
-                    : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 hover:border-emerald-300'
+                    ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-white font-medium ring-1 ring-slate-300 dark:ring-slate-700'
+                    : 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <input
-                  type="radio"
-                  name={activity.id}
-                  checked={isSelected}
-                  onChange={() => setAnswer(optText)}
-                  className="accent-emerald-600"
-                />
-                <span>{optText}</span>
-              </label>
+                <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white min-w-[24px]">
+                  {letter}.
+                </span>
+                <span className="text-sm md:text-base leading-snug">
+                  {optText}
+                </span>
+              </button>
             );
           })}
         </div>

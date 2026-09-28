@@ -25,6 +25,9 @@ export interface UniversalVideoHandle {
   getCurrentTime: () => number;
   getDuration: () => number;
   setPlaybackRate?: (rate: number) => void;
+  mute?: () => void;
+  unMute?: () => void;
+  isMuted?: () => boolean;
 }
 
 export interface UniversalVideoProps {
@@ -275,6 +278,34 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
         } else if (videoRef.current) {
           videoRef.current.playbackRate = rate;
         }
+      },
+      mute: () => {
+        if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.mute === 'function') {
+          try {
+            ytPlayerRef.current.mute();
+          } catch {}
+        } else if (videoRef.current) {
+          videoRef.current.muted = true;
+        }
+      },
+      unMute: () => {
+        if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.unMute === 'function') {
+          try {
+            ytPlayerRef.current.unMute();
+          } catch {}
+        } else if (videoRef.current) {
+          videoRef.current.muted = false;
+        }
+      },
+      isMuted: () => {
+        if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.isMuted === 'function') {
+          try {
+            return ytPlayerRef.current.isMuted();
+          } catch {
+            return false;
+          }
+        }
+        return videoRef.current ? videoRef.current.muted : false;
       },
     }));
 
