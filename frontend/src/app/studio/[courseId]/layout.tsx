@@ -11,12 +11,7 @@ import { UserDropdown } from '@/components/layout/user-dropdown';
 import { DashboardSkeleton } from '@/components/layout/dashboard-skeleton';
 import {
   Layers,
-  ClipboardList,
-  CheckCircle2,
-  Settings,
   ArrowLeft,
-  Activity,
-  ShieldCheck,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -25,8 +20,6 @@ import {
   ExternalLink,
   Sparkles,
   ChevronRight,
-  GraduationCap,
-  Compass,
 } from 'lucide-react';
 
 interface CourseInfo {
@@ -50,26 +43,6 @@ const NAV_ITEMS: StudioNavItem[] = [
     href: (id) => `/studio/${id}`,
     exact: true,
     icon: Layers,
-  },
-  {
-    name: 'Interactive Activities',
-    href: (id) => `/studio/${id}/activities`,
-    icon: Activity,
-  },
-  {
-    name: 'Assignments',
-    href: (id) => `/studio/${id}/assignments`,
-    icon: ClipboardList,
-  },
-  {
-    name: 'Quizzes & Tests',
-    href: (id) => `/studio/${id}/quizzes`,
-    icon: CheckCircle2,
-  },
-  {
-    name: 'Course Settings',
-    href: (id) => `/studio/${id}/settings`,
-    icon: Settings,
   },
 ];
 
