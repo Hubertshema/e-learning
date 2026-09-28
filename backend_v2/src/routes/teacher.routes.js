@@ -3,7 +3,6 @@ import { TeacherController, getLibraryItems } from '../controllers/teacher.contr
 import { QuizController } from '../controllers/quiz.controller.js';
 import { DiagnosticController } from '../controllers/diagnostic.controller.js';
 import { PlacementController } from '../controllers/placement.controller.js';
-import { AssignmentController } from '../controllers/assignment.controller.js';
 import { AdmissionController } from '../controllers/admission.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
@@ -77,16 +76,6 @@ router.post('/placements/:id/questions/bulk', PlacementController.bulkAddQuestio
 router.put('/placements/:id/reorder', PlacementController.reorderQuestions);
 router.put('/placements/questions/:questionId', PlacementController.updateQuestion);
 router.delete('/placements/questions/:questionId', PlacementController.deleteQuestion);
-
-// Assignments & Submissions
-router.get('/assignments/lessons', AssignmentController.getTeacherLessons);
-router.get('/assignments', AssignmentController.getAssignments);
-router.post('/assignments', AssignmentController.createAssignment);
-router.get('/assignments/:id', AssignmentController.getAssignmentById);
-router.put('/assignments/:id', AssignmentController.updateAssignment);
-router.delete('/assignments/:id', AssignmentController.deleteAssignment);
-router.get('/assignments/:id/submissions', AssignmentController.getSubmissions);
-router.post('/submissions/:submissionId/grade', AssignmentController.gradeSubmission);
 
 // Students Directory & Progress Analytics
 router.get('/students', TeacherController.getStudents);

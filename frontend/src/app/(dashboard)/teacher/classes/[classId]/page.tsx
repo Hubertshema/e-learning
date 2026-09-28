@@ -168,9 +168,9 @@ export default function TeacherClassDetailPage() {
 
         <Card className="p-5 flex flex-col justify-center gap-2">
 
-          <Link href={`/teacher/assignments/create?classId=${cls.id}`} className="w-full">
+          <Link href="/teacher/students" className="w-full">
             <Button variant="gradient" size="sm" className="w-full text-xs">
-              Assign Cohort Homework
+              Manage Cohort Students
             </Button>
           </Link>
         </Card>

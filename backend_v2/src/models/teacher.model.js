@@ -57,6 +57,31 @@ export class TeacherModel {
     );
     const totalEarnings = parseFloat(earningsRes.rows[0].total);
 
+    // 4.1 Total Library Resources (PDFs & Videos)
+    let totalResources = 0;
+    try {
+      const resourcesRes = await query(
+        `SELECT (
+          (SELECT COUNT(*) FROM "interactive_video_resources" r
+           JOIN "lessons" l ON l.id = r."lessonId"
+           JOIN "units" u ON u.id = l."unitId"
+           JOIN "courses" c ON c.id = u."courseId"
+           WHERE c."teacherId" = ANY($1))
+          +
+          (SELECT COUNT(*) FROM "interactive_video_lessons" ivl
+           JOIN "lessons" l ON l.id = ivl."lessonId"
+           JOIN "units" u ON u.id = l."unitId"
+           JOIN "courses" c ON c.id = u."courseId"
+           WHERE ivl."videoUrl" IS NOT NULL AND ivl."videoUrl" != ''
+             AND c."teacherId" = ANY($1))
+        ) AS total`,
+        [teacherIds]
+      );
+      totalResources = parseInt(resourcesRes.rows[0]?.total || 0, 10);
+    } catch {
+      totalResources = 0;
+    }
+
     // 5. Active Classes
     const activeClassesRes = await query(
       `SELECT cl.*, 
@@ -194,6 +219,7 @@ export class TeacherModel {
       totalCourses,
       totalClasses,
       totalStudents,
+      totalResources,
       pendingPaymentsCount,
       pendingSubmissionsCount,
       expiringStudentsCount: expiringSoonCount,
@@ -207,6 +233,7 @@ export class TeacherModel {
         totalCourses,
         totalStudents,
         totalClasses,
+        totalResources,
         totalEarnings,
         expiringSoonCount,
         pendingPaymentsCount,
