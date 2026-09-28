@@ -256,7 +256,8 @@ export class InteractiveVideoModel {
       if (!expectedAnswer && acceptable.length > 0) expectedAnswer = acceptable[0];
     } else if (a.type === 'DRAG_DROP') {
       expectedAnswer = content.correctSentence || content.correctAnswer || '';
-      correct = normalized(answer) === normalized(expectedAnswer);
+      const submittedSentence = Array.isArray(answer) ? answer.join(' ') : String(answer ?? '');
+      correct = normalized(submittedSentence) === normalized(expectedAnswer);
     } else if (a.type === 'ORDERING') {
       expectedAnswer = content.items || content.correctOrder || [];
       correct = JSON.stringify(answer || []) === JSON.stringify(expectedAnswer || []);

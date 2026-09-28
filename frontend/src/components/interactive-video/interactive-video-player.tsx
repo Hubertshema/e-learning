@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -256,9 +256,13 @@ export function InteractiveVideoPlayer({
   const submit = async () => {
     if (!active) return;
     try {
+      const finalAnswer =
+        active.type === 'DRAG_DROP' && Array.isArray(answer)
+          ? answer.join(' ')
+          : answer;
       const result: any = await apiClient.post(
         `/student/interactive-videos/activities/${active.id}/attempts`,
-        { answer }
+        { answer: finalAnswer }
       );
       setFeedback(result);
       if (result.isCorrect || active.allowRetry === false) {
@@ -845,109 +849,17 @@ function ActivityAnswer({
 
   // 6. DRAG_DROP / SENTENCE BUILDER
   if (activity.type === 'DRAG_DROP') {
-    const rawTokens =
-      typeof content.tokens === 'string'
-        ? content.tokens.split(',').map((t: string) => t.trim()).filter(Boolean)
-        : Array.isArray(content.tokens)
-        ? content.tokens
-        : [];
-    const selectedWords: string[] = Array.isArray(answer) ? answer : [];
-
-    return (
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-          Tap words in the correct order to construct the sentence:
-        </p>
-        <div className="min-h-12 p-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap gap-1.5 items-center">
-          {selectedWords.length === 0 ? (
-            <span className="text-xs text-slate-400 italic">Constructed sentence will appear here...</span>
-          ) : (
-            selectedWords.map((word, i) => (
-              <span
-                key={i}
-                onClick={() => setAnswer(selectedWords.filter((_, idx) => idx !== i))}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-xs cursor-pointer hover:bg-rose-100 hover:text-rose-800"
-                title="Tap to remove"
-              >
-                {word} ×
-              </span>
-            ))
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2 pt-1">
-          {rawTokens.map((token: string, idx: number) => {
-            const usedCount = selectedWords.filter((w) => w === token).length;
-            const availableCount = rawTokens.filter((t: string) => t === token).length;
-            const isExhausted = usedCount >= availableCount;
-
-            return (
-              <button
-                key={idx}
-                type="button"
-                disabled={isExhausted}
-                onClick={() => setAnswer([...selectedWords, token])}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                  isExhausted
-                    ? 'opacity-30 border-slate-200 bg-slate-100 cursor-not-allowed'
-                    : 'border-slate-300 bg-white hover:border-emerald-400 hover:bg-emerald-50 dark:bg-slate-800 dark:border-slate-700'
-                }`}
-              >
-                {token}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
+    return <DragDropSentenceBuilder activity={activity} answer={answer} setAnswer={setAnswer} />;
   }
 
   // 7. ORDERING
   if (activity.type === 'ORDERING') {
-    const items = content.items || [];
-    return (
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-          Review the sequential order:
-        </p>
-        <div className="space-y-1.5">
-          {items.map((item: string, idx: number) => (
-            <div
-              key={idx}
-              className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-medium"
-            >
-              <span className="h-5 w-5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center font-mono font-bold text-[10px]">
-                {idx + 1}
-              </span>
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <OrderingActivity activity={activity} answer={answer} setAnswer={setAnswer} />;
   }
 
   // 8. MATCHING
   if (activity.type === 'MATCHING') {
-    const pairs = content.pairs || [];
-    return (
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-          Match each item on the left with its partner:
-        </p>
-        <div className="space-y-2">
-          {pairs.map((pair: any, idx: number) => (
-            <div
-              key={idx}
-              className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs"
-            >
-              <span className="font-bold text-slate-800 dark:text-slate-200">{pair.left}</span>
-              <span className="text-slate-400 font-bold">↔</span>
-              <span className="font-medium text-emerald-700 dark:text-emerald-400">{pair.right}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <MatchingActivity activity={activity} answer={answer} setAnswer={setAnswer} />;
   }
 
   // 9. MULTIPLE_SELECT
@@ -1080,6 +992,366 @@ function ActivityAnswer({
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+function DragDropSentenceBuilder({
+  activity,
+  answer,
+  setAnswer,
+}: {
+  activity: VideoActivity;
+  answer: any;
+  setAnswer: (val: any) => void;
+}) {
+  const content = activity.content || {};
+  const rawTokens: string[] = useMemo(() => {
+    if (typeof content.tokens === 'string') {
+      return content.tokens.split(',').map((t: string) => t.trim()).filter(Boolean);
+    }
+    if (Array.isArray(content.tokens)) {
+      return content.tokens.map((t: any) => String(t).trim()).filter(Boolean);
+    }
+    return [];
+  }, [content.tokens]);
+
+  const selectedWords: string[] = Array.isArray(answer) ? answer : [];
+  const [isOverDropZone, setIsOverDropZone] = useState(false);
+
+  const addToken = (tok: string) => {
+    setAnswer([...selectedWords, tok]);
+  };
+
+  const removeToken = (idxToRemove: number) => {
+    setAnswer(selectedWords.filter((_, idx) => idx !== idxToRemove));
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsOverDropZone(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsOverDropZone(false);
+  };
+
+  const handleDropOnZone = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsOverDropZone(false);
+    try {
+      const dataStr = e.dataTransfer.getData('application/json');
+      if (dataStr) {
+        const parsed = JSON.parse(dataStr);
+        if (parsed.type === 'bank' && parsed.token) {
+          addToken(parsed.token);
+          return;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    const plainToken = e.dataTransfer.getData('text/plain');
+    if (plainToken) {
+      addToken(plainToken);
+    }
+  };
+
+  const handleDropOnToken = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOverDropZone(false);
+    try {
+      const dataStr = e.dataTransfer.getData('application/json');
+      if (dataStr) {
+        const parsed = JSON.parse(dataStr);
+        if (parsed.type === 'reorder' && typeof parsed.index === 'number') {
+          const fromIdx = parsed.index;
+          if (fromIdx === targetIdx) return;
+          const next = [...selectedWords];
+          const [moved] = next.splice(fromIdx, 1);
+          next.splice(targetIdx, 0, moved);
+          setAnswer(next);
+          return;
+        }
+        if (parsed.type === 'bank' && parsed.token) {
+          const next = [...selectedWords];
+          next.splice(targetIdx, 0, parsed.token);
+          setAnswer(next);
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    const plainToken = e.dataTransfer.getData('text/plain');
+    if (plainToken) {
+      const next = [...selectedWords];
+      next.splice(targetIdx, 0, plainToken);
+      setAnswer(next);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+          Drag & drop or click words into place to build the correct sentence:
+        </p>
+        {selectedWords.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setAnswer([])}
+            className="text-[11px] font-bold text-rose-500 hover:text-rose-600 transition-colors"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {/* Interactive Drop Zone */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDropOnZone}
+        className={`min-h-16 p-3.5 rounded-2xl border-2 border-dashed transition-all flex flex-wrap gap-2 items-center ${
+          isOverDropZone
+            ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 ring-2 ring-emerald-400'
+            : selectedWords.length === 0
+            ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60'
+            : 'border-emerald-300 dark:border-emerald-900 bg-white dark:bg-slate-900'
+        }`}
+      >
+        {selectedWords.length === 0 ? (
+          <div className="w-full text-center py-2 flex flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 select-none">
+            <span className="text-base">✋ 🧩</span>
+            <span className="text-xs font-medium">Drag words here or tap them below</span>
+          </div>
+        ) : (
+          selectedWords.map((word, i) => (
+            <span
+              key={`${word}-${i}`}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData(
+                  'application/json',
+                  JSON.stringify({ type: 'reorder', token: word, index: i })
+                );
+                e.dataTransfer.setData('text/plain', word);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDropOnToken(e, i)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm cursor-grab active:cursor-grabbing hover:bg-emerald-700 transition-all select-none animate-in zoom-in-95 duration-100"
+              title="Drag to reorder, or click × to remove"
+            >
+              <span>{word}</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeToken(i);
+                }}
+                className="h-4 w-4 rounded-full bg-emerald-800/80 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] leading-none transition-colors"
+                title="Remove"
+              >
+                ×
+              </button>
+            </span>
+          ))
+        )}
+      </div>
+
+      {/* Draggable Word Token Bank */}
+      <div>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+          Word Bank (drag or click):
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {rawTokens.map((token: string, idx: number) => {
+            const usedCount = selectedWords.filter((w) => w === token).length;
+            const totalCount = rawTokens.filter((t: string) => t === token).length;
+            const isExhausted = usedCount >= totalCount;
+
+            return (
+              <div
+                key={idx}
+                draggable={!isExhausted}
+                onDragStart={(e) => {
+                  if (isExhausted) return;
+                  e.dataTransfer.setData(
+                    'application/json',
+                    JSON.stringify({ type: 'bank', token, index: idx })
+                  );
+                  e.dataTransfer.setData('text/plain', token);
+                  e.dataTransfer.effectAllowed = 'copyMove';
+                }}
+                onClick={() => {
+                  if (!isExhausted) addToken(token);
+                }}
+                className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all select-none ${
+                  isExhausted
+                    ? 'opacity-30 border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 cursor-not-allowed line-through'
+                    : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-slate-700 cursor-grab active:cursor-grabbing hover:-translate-y-0.5'
+                }`}
+                title={isExhausted ? 'Already used' : 'Drag or click to add'}
+              >
+                {token}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderingActivity({
+  activity,
+  answer,
+  setAnswer,
+}: {
+  activity: VideoActivity;
+  answer: any;
+  setAnswer: (val: any) => void;
+}) {
+  const content = activity.content || {};
+  const originalItems: string[] = useMemo(() => {
+    return Array.isArray(content.items) ? content.items : [];
+  }, [content.items]);
+
+  useEffect(() => {
+    if (!answer || !Array.isArray(answer) || answer.length === 0) {
+      setAnswer([...originalItems]);
+    }
+  }, [originalItems]);
+
+  const currentList: string[] = Array.isArray(answer) && answer.length > 0 ? answer : originalItems;
+
+  const move = (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= currentList.length) return;
+    const next = [...currentList];
+    const [item] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, item);
+    setAnswer(next);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.setData('text/plain', String(index));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    const fromIdx = Number(e.dataTransfer.getData('text/plain'));
+    if (!isNaN(fromIdx) && fromIdx !== targetIdx) {
+      move(fromIdx, targetIdx);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+        Drag items or use the arrows to arrange them in the correct sequence:
+      </p>
+      <div className="space-y-2">
+        {currentList.map((item: string, idx: number) => (
+          <div
+            key={`${item}-${idx}`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, idx)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDrop(e, idx)}
+            className="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm cursor-grab active:cursor-grabbing hover:border-emerald-400 transition-all text-xs font-medium"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="h-6 w-6 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center font-mono font-bold text-xs shrink-0">
+                {idx + 1}
+              </span>
+              <span className="text-slate-800 dark:text-slate-200">{item}</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                disabled={idx === 0}
+                onClick={() => move(idx, idx - 1)}
+                className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center font-bold text-slate-600 dark:text-slate-300"
+                title="Move Up"
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                disabled={idx === currentList.length - 1}
+                onClick={() => move(idx, idx + 1)}
+                className="h-7 w-7 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center font-bold text-slate-600 dark:text-slate-300"
+                title="Move Down"
+              >
+                ▼
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MatchingActivity({
+  activity,
+  answer,
+  setAnswer,
+}: {
+  activity: VideoActivity;
+  answer: any;
+  setAnswer: (val: any) => void;
+}) {
+  const content = activity.content || {};
+  const pairs: Array<{ left: string; right: string }> = useMemo(() => {
+    return Array.isArray(content.pairs) ? content.pairs : [];
+  }, [content.pairs]);
+
+  const rightOptions = useMemo(() => {
+    return Array.from(new Set(pairs.map((p) => p.right).filter(Boolean)));
+  }, [pairs]);
+
+  const currentAnswers: Record<string, string> =
+    answer && typeof answer === 'object' && !Array.isArray(answer) ? answer : {};
+
+  const handleSelect = (left: string, right: string) => {
+    setAnswer({ ...currentAnswers, [left]: right });
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+        Match each item on the left with its correct partner:
+      </p>
+      <div className="space-y-2">
+        {pairs.map((pair, idx) => (
+          <div
+            key={idx}
+            className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1.2fr] items-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs shadow-sm"
+          >
+            <span className="font-bold text-slate-900 dark:text-slate-100">{pair.left}</span>
+            <span className="hidden sm:inline text-slate-400 font-bold">➔</span>
+            <select
+              aria-label={`Match for ${pair.left}`}
+              value={currentAnswers[pair.left] || ''}
+              onChange={(e) => handleSelect(pair.left, e.target.value)}
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2 text-xs font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">-- Choose match --</option>
+              {rightOptions.map((opt, oIdx) => (
+                <option key={oIdx} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
