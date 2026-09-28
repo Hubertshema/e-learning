@@ -167,11 +167,7 @@ export default function TeacherClassDetailPage() {
         </Card>
 
         <Card className="p-5 flex flex-col justify-center gap-2">
-          <Link href={`/teacher/attendance?classId=${cls.id}`} className="w-full">
-            <Button variant="outline" size="sm" className="w-full text-xs">
-              <ClipboardList className="h-3.5 w-3.5 mr-1" /> Mark Session Attendance
-            </Button>
-          </Link>
+
           <Link href={`/teacher/assignments/create?classId=${cls.id}`} className="w-full">
             <Button variant="gradient" size="sm" className="w-full text-xs">
               Assign Cohort Homework

@@ -85,15 +85,11 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
     { name: 'Dashboard', href: '/teacher', icon: LayoutDashboard },
     { name: 'Learning Levels', href: '/teacher/levels', icon: FolderTree },
     { name: 'Courses & Syllabus', href: '/teacher/courses', icon: BookOpen },
-    { name: 'Diagnostic Placement', href: '/teacher/diagnostic-quiz', icon: FileCheck },
     { name: 'Students Directory', href: '/teacher/students', icon: Users },
     { name: 'Enrollments & Access', href: '/teacher/enrollments', icon: UserCheck },
     { name: 'Expiring Watchlist', href: '/teacher/expiring-students', icon: Clock },
-    { name: 'Attendance Register', href: '/teacher/attendance', icon: CalendarCheck },
-    { name: 'Coaching Feedback', href: '/teacher/feedback', icon: MessageSquare },
     { name: 'Resource Library', href: '/teacher/library', icon: Library },
     { name: 'Calendar & Agenda', href: '/teacher/calendar', icon: Calendar },
-    { name: 'Payment Verifications', href: '/teacher/payments', icon: CreditCard },
     { name: 'Performance Reports', href: '/teacher/reports', icon: Award },
   ];
 

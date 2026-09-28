@@ -156,15 +156,14 @@ export default function TeacherDashboardPage() {
       href: '/teacher/courses',
     },
     {
-      label: 'Pending Receipts',
-      value: stats?.pendingPaymentsCount ?? 0,
-      sub: 'Awaiting verification',
-      icon: CreditCard,
+      label: 'Enrolled Students',
+      value: stats?.totalStudents ?? 0,
+      sub: 'Active learner seats',
+      icon: GraduationCap,
       gradient: 'from-amber-600/15 via-amber-500/5 to-transparent',
       iconBg: 'bg-amber-600 text-white shadow-lg shadow-amber-500/30',
       borderColor: 'border-amber-200/60 dark:border-amber-900/60',
-      highlight: (stats?.pendingPaymentsCount ?? 0) > 0,
-      href: '/teacher/payments',
+      href: '/teacher/enrollments',
     },
     {
       label: 'Grading Queue',
@@ -224,12 +223,7 @@ export default function TeacherDashboardPage() {
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isValidating ? 'animate-spin' : ''}`} />
             </Button>
-            <Link href="/teacher/attendance">
-              <Button variant="outline" size="sm" className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md">
-                <CalendarCheck className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />
-                Attendance
-              </Button>
-            </Link>
+
             <Link href="/teacher/quizzes">
               <Button variant="outline" size="sm" className="border-indigo-400/40 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 backdrop-blur-md">
                 <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-indigo-300" />
@@ -517,10 +511,10 @@ export default function TeacherDashboardPage() {
             <CardFooter className="border-t border-slate-100 p-4 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between text-xs">
               <span className="text-slate-500">Real-time sync with database</span>
               <Link
-                href={activeTab === 'PAYMENTS' ? '/teacher/payments' : '/teacher/assignments'}
+                href={activeTab === 'PAYMENTS' ? '/teacher/enrollments' : '/teacher/assignments'}
                 className="font-bold text-primary-600 flex items-center hover:underline"
               >
-                Open Full {activeTab === 'PAYMENTS' ? 'Payment Ledger' : 'Grading Suite'} <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
+                Open Full {activeTab === 'PAYMENTS' ? 'Enrollment Manager' : 'Grading Suite'} <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
               </Link>
             </CardFooter>
           </Card>
@@ -543,17 +537,17 @@ export default function TeacherDashboardPage() {
               </Card>
             </Link>
 
-            <Link href="/teacher/feedback" className="group">
+            <Link href="/teacher/library" className="group">
               <Card className="p-4 rounded-2xl transition-all hover:border-primary-500 hover:shadow-lg bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 group-hover:bg-primary-600 group-hover:text-white transition-colors">
-                    <MessageSquare className="h-4 w-4" />
+                    <Library className="h-4 w-4" />
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-primary-600 transition-colors">
-                      Coaching Notes
+                      Resource Library
                     </h3>
-                    <p className="text-[10px] text-slate-500">Student feedback & tips</p>
+                    <p className="text-[10px] text-slate-500">Lesson assets & guides</p>
                   </div>
                 </div>
               </Card>

@@ -63,7 +63,7 @@ export function UserDropdown() {
     user.role === 'STUDENT'
       ? '/student/notifications'
       : user.role === 'TEACHER'
-      ? '/teacher/feedback'
+      ? '/teacher'
       : '/superadmin/email-logs';
 
   const roleLabel =
