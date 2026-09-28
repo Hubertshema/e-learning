@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
@@ -17,6 +17,32 @@ export default function StudentInteractiveVideoPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const lastSavedPosRef = useRef<number>(-1);
+  const saveTimeoutRef = useRef<any>(null);
+
+  const handleProgress = (position: number, watched: number, percent: number) => {
+    const roundedPos = Math.round(position);
+    if (Math.abs(roundedPos - lastSavedPosRef.current) < 2) return;
+    lastSavedPosRef.current = roundedPos;
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      apiClient
+        .post(`/student/interactive-videos/lessons/${lessonId}/progress`, {
+          lastPositionSeconds: roundedPos,
+          watchedSeconds: Math.round(watched),
+          completionPercent: Math.round(percent),
+        })
+        .catch(() => undefined);
+    }, 1500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!lessonId) return;
@@ -128,17 +154,7 @@ export default function StudentInteractiveVideoPage() {
             initialWatched={data.progress?.watchedSeconds || 0}
             completedActivityIds={data.completedActivityIds || []}
             isTeacher={false}
-            onProgress={(position, watched, percent) => {
-              if (Math.round(position) % 10 === 0) {
-                apiClient
-                  .post(`/student/interactive-videos/lessons/${lessonId}/progress`, {
-                    lastPositionSeconds: Math.round(position),
-                    watchedSeconds: Math.round(watched),
-                    completionPercent: percent,
-                  })
-                  .catch(() => undefined);
-              }
-            }}
+            onProgress={handleProgress}
           />
 
           {/* Progress Card */}

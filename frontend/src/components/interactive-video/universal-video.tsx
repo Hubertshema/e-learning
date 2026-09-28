@@ -248,10 +248,8 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
       seekTo: (timeSeconds: number) => {
         if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
           ytPlayerRef.current.seekTo(timeSeconds, true);
-          onTimeUpdateRef.current?.(timeSeconds);
         } else if (videoRef.current) {
           videoRef.current.currentTime = timeSeconds;
-          onTimeUpdateRef.current?.(timeSeconds);
         }
       },
       getCurrentTime: () => {

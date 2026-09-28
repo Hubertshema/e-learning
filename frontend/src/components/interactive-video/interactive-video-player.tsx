@@ -70,13 +70,39 @@ export function InteractiveVideoPlayer({
   completedActivityIds?: string[];
   onProgress?: (position: number, watched: number, percent: number) => void;
 }) {
+  // Check localStorage for saved position if initialPosition is 0
+  const savedLocalPos = useMemo(() => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const val = Number(localStorage.getItem(`iv_pos_${lessonId}`));
+      return val && val > 0 ? val : 0;
+    } catch {
+      return 0;
+    }
+  }, [lessonId]);
+
+  const effectiveInitialPosition = initialPosition && initialPosition > 0 ? initialPosition : savedLocalPos;
+  const [showResumeBanner, setShowResumeBanner] = useState(effectiveInitialPosition > 5);
+
   const videoRef = useRef<UniversalVideoHandle>(null);
-  const watchedRef = useRef(Math.max(initialWatched, initialPosition));
-  const lastTimeRef = useRef(initialPosition);
+  const watchedRef = useRef(Math.max(initialWatched, effectiveInitialPosition));
+  const lastTimeRef = useRef(effectiveInitialPosition);
   const [playing, setPlaying] = useState(false);
-  const [position, setPosition] = useState(initialPosition);
+  const [position, setPosition] = useState(effectiveInitialPosition);
   const [detectedDuration, setDetectedDuration] = useState(durationSeconds || 0);
-  const [watched, setWatched] = useState(Math.max(initialWatched, initialPosition));
+  const [watched, setWatched] = useState(Math.max(initialWatched, effectiveInitialPosition));
+
+  // Loop & recursion prevention refs
+  const isTriggeringCheckpointRef = useRef(false);
+  const recentlyTriggeredCheckpointRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    if (position > 0 && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`iv_pos_${lessonId}`, String(Math.floor(position)));
+      } catch {}
+    }
+  }, [position, lessonId]);
 
   const activitiesRef = useRef<VideoActivity[]>(activities || []);
   activitiesRef.current = activities || [];
@@ -314,25 +340,31 @@ export function InteractiveVideoPlayer({
   };
 
   const openCheckpoint = (item: VideoActivity) => {
+    if (isTriggeringCheckpointRef.current) return;
+    isTriggeringCheckpointRef.current = true;
+
     const dynamicBarrier = getDynamicBarrier();
     const isLocked = !allowFreeSeek && item.timestampSeconds > dynamicBarrier + 1.0;
     if (isLocked) {
       showNotice(
         `🔒 Checkpoint at ${formatVideoTime(item.timestampSeconds)} is locked. Complete earlier checkpoints first.`
       );
+      isTriggeringCheckpointRef.current = false;
       return;
     }
 
     clearAutoResume();
+    recentlyTriggeredCheckpointRef.current[item.id] = Date.now();
+
+    activeRef.current = item;
+    setActive(item);
+    setShowHint(false);
+
     videoRef.current?.pause();
     setPlaying(false);
     videoRef.current?.seekTo(item.timestampSeconds);
     lastTimeRef.current = item.timestampSeconds;
     setPosition(item.timestampSeconds);
-
-    activeRef.current = item;
-    setActive(item);
-    setShowHint(false);
 
     if (completedRef.current[item.id]) {
       setFeedback({
@@ -345,6 +377,10 @@ export function InteractiveVideoPlayer({
       setFeedback(null);
       setAnswer(item.type === 'MULTIPLE_SELECT' ? [] : '');
     }
+
+    setTimeout(() => {
+      isTriggeringCheckpointRef.current = false;
+    }, 600);
   };
 
   const handleTimeUpdate = (current: number) => {
@@ -396,8 +432,15 @@ export function InteractiveVideoPlayer({
     const reachedCheckpoint = (activitiesRef.current || []).find((item) => {
       if (completedRef.current[item.id]) return false;
       if (activeRef.current && activeRef.current.id === item.id) return false;
+
+      // Skip if this checkpoint was triggered recently (< 4s)
+      const recently = recentlyTriggeredCheckpointRef.current[item.id];
+      if (recently && Date.now() - recently < 4000) return false;
+
+      // Strict forward crossing or forward landing
       const crossed = prevTime < item.timestampSeconds && current >= item.timestampSeconds;
-      const landing = Math.abs(current - item.timestampSeconds) < 0.4 && prevTime <= item.timestampSeconds;
+      const landing =
+        Math.abs(current - item.timestampSeconds) < 0.25 && prevTime < item.timestampSeconds;
       return crossed || landing;
     });
 
@@ -534,10 +577,17 @@ export function InteractiveVideoPlayer({
     if (currentActive) {
       completedRef.current[currentActive.id] = true;
       setCompleted((v) => ({ ...v, [currentActive.id]: true }));
+      recentlyTriggeredCheckpointRef.current[currentActive.id] = Date.now();
     }
     activeRef.current = null;
     setActive(null);
     setFeedback(null);
+
+    // Smoothly resume playback +0.35s forward to clear checkpoint trigger zone and eliminate millisecond stutter
+    const safeResumeTime = currentActive ? currentActive.timestampSeconds + 0.35 : position;
+    lastTimeRef.current = safeResumeTime;
+    setPosition(safeResumeTime);
+    videoRef.current?.seekTo(safeResumeTime);
     videoRef.current?.play();
     setPlaying(true);
   };
@@ -548,6 +598,41 @@ export function InteractiveVideoPlayer({
 
   return (
     <div className="w-full space-y-6">
+      {/* Resume playback banner if user was previously watching */}
+      {showResumeBanner && effectiveInitialPosition > 5 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 px-4 py-3 text-xs text-teal-950 dark:text-teal-200 shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <Clock className="h-4 w-4 text-teal-600 shrink-0" />
+            <span>
+              Resume where you stopped at <strong>{formatVideoTime(effectiveInitialPosition)}</strong>?
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              onClick={() => {
+                seek(effectiveInitialPosition);
+                setShowResumeBanner(false);
+              }}
+              className="h-7 text-xs bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg px-3"
+            >
+              Resume at {formatVideoTime(effectiveInitialPosition)}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                seek(0);
+                setShowResumeBanner(false);
+              }}
+              className="h-7 text-xs border-teal-200 dark:border-teal-800 text-slate-600 dark:text-slate-400 rounded-lg px-2.5"
+            >
+              Start from 0:00
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Main Split Screen Stage: Left Video, Right Questions */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* LEFT COLUMN: Video Player (lg:col-span-7) */}
