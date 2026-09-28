@@ -157,6 +157,9 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
             playerVars: {
               autoplay: 0,
               controls: controls ? 1 : 0,
+              disablekb: controls ? 0 : 1,
+              fs: controls ? 1 : 0,
+              iv_load_policy: 3,
               rel: 0,
               modestbranding: 1,
               playsinline: 1,
@@ -279,6 +282,7 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
         src={url}
         controls={controls}
         playsInline
+        onContextMenu={(e) => e.preventDefault()}
         className={className || 'aspect-video w-full h-full object-contain bg-black'}
         onPlay={onPlay}
         onPause={onPause}

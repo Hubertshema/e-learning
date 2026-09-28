@@ -470,6 +470,9 @@ export default function StudentLearnPage() {
                     transcript={interactiveVideoData.transcript}
                     captions={interactiveVideoData.captions}
                     initialPosition={interactiveVideoData.progress?.lastPositionSeconds || 0}
+                    initialWatched={interactiveVideoData.progress?.watchedSeconds || 0}
+                    completedActivityIds={interactiveVideoData.completedActivityIds || []}
+                    isTeacher={false}
                     navigationMode={interactiveVideoData.navigationMode}
                     onProgress={(position, watched, percent) => {
                       if (position % 10 < 1) {

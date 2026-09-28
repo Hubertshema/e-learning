@@ -4,7 +4,21 @@ import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle2, Clock, Pause, Play, RotateCcw, Volume2, Sparkles } from 'lucide-react';
+import {
+  CheckCircle2,
+  Clock,
+  Pause,
+  Play,
+  RotateCcw,
+  Volume2,
+  Sparkles,
+  Lock,
+  Unlock,
+  AlertTriangle,
+  ShieldAlert,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react';
 import { UniversalVideo, UniversalVideoHandle, getYouTubeId } from './universal-video';
 
 export type VideoActivity = {
@@ -34,7 +48,10 @@ export function InteractiveVideoPlayer({
   transcript = [],
   captions = [],
   initialPosition = 0,
+  initialWatched = 0,
   navigationMode = 'FREE',
+  isTeacher = false,
+  completedActivityIds = [],
   onProgress,
 }: {
   lessonId: string;
@@ -44,54 +61,197 @@ export function InteractiveVideoPlayer({
   transcript?: Array<{ time: number; text: string }>;
   captions?: Array<{ time: number; text: string }>;
   initialPosition?: number;
+  initialWatched?: number;
   navigationMode?: string;
+  isTeacher?: boolean;
+  completedActivityIds?: string[];
   onProgress?: (position: number, watched: number, percent: number) => void;
 }) {
   const videoRef = useRef<UniversalVideoHandle>(null);
+  const watchedRef = useRef(Math.max(initialWatched, initialPosition));
+  const lastTimeRef = useRef(initialPosition);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(initialPosition);
   const [detectedDuration, setDetectedDuration] = useState(durationSeconds || 0);
-  const [watched, setWatched] = useState(0);
+  const [watched, setWatched] = useState(Math.max(initialWatched, initialPosition));
   const [active, setActive] = useState<VideoActivity | null>(null);
-  const [completed, setCompleted] = useState<Record<string, boolean>>({});
+  const [completed, setCompleted] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    (completedActivityIds || []).forEach((id) => {
+      init[id] = true;
+    });
+    return init;
+  });
   const [answer, setAnswer] = useState<any>('');
   const [feedback, setFeedback] = useState<any>(null);
   const [speed, setSpeed] = useState(1);
+  const [allowFreeSeek, setAllowFreeSeek] = useState(false);
+  const [isCompact, setIsCompact] = useState(true);
+  const [restrictionNotice, setRestrictionNotice] = useState<string | null>(null);
+  const noticeTimeoutRef = useRef<any>(null);
 
   const totalDuration = durationSeconds && durationSeconds > 0 ? durationSeconds : detectedDuration;
   const isYouTube = !!getYouTubeId(videoUrl);
 
+  // Determine earliest uncompleted required checkpoint barrier
+  const earliestUncompletedCheckpoint = activities
+    .filter((a) => a.required !== false && !completed[a.id])
+    .sort((a, b) => a.timestampSeconds - b.timestampSeconds)[0];
+
+  const checkpointBarrier = earliestUncompletedCheckpoint
+    ? earliestUncompletedCheckpoint.timestampSeconds
+    : (totalDuration > 0 ? totalDuration : 999999);
+
+  // Maximum timestamp the student is currently permitted to seek or play up to
+  const maxAllowedTime = allowFreeSeek
+    ? (totalDuration > 0 ? totalDuration : 999999)
+    : Math.min(Math.max(watched, position), checkpointBarrier);
+
+  const showNotice = (msg: string) => {
+    setRestrictionNotice(msg);
+    if (noticeTimeoutRef.current) clearTimeout(noticeTimeoutRef.current);
+    noticeTimeoutRef.current = setTimeout(() => {
+      setRestrictionNotice(null);
+    }, 3500);
+  };
+
   const handleTimeUpdate = (current: number) => {
-    setPosition(current);
-    setWatched((value) => Math.max(value, current));
-
-    // Check for interactive checkpoints
-    const next = activities.find(
-      (item) =>
-        item.timestampSeconds <= current + 0.5 &&
-        item.timestampSeconds > current - 1.2 &&
-        !completed[item.id]
-    );
-
-    if (next) {
+    // If an active required checkpoint is pending submission, keep paused
+    if (active && active.required !== false && !completed[active.id]) {
       videoRef.current?.pause();
       setPlaying(false);
-      setActive(next);
-      setAnswer(next.type === 'MULTIPLE_SELECT' ? [] : '');
+      return;
+    }
+
+    const prevTime = lastTimeRef.current;
+    const delta = current - prevTime;
+
+    // 1. Guard against external or unauthorized sudden forward jumps (> 3s without seek())
+    if (!allowFreeSeek && delta > 3.0) {
+      const safeTarget = Math.max(0, watchedRef.current);
+      videoRef.current?.pause();
+      setPlaying(false);
+      videoRef.current?.seekTo(safeTarget);
+      lastTimeRef.current = safeTarget;
+      setPosition(safeTarget);
+      showNotice('🔒 Fast-forwarding is restricted. Playback snapped back to your current position.');
+      return;
+    }
+
+    // 2. Normal playback progress: advance watched position smoothly
+    if (current > watchedRef.current) {
+      if (!allowFreeSeek && checkpointBarrier < 999999 && current > checkpointBarrier + 0.5) {
+        videoRef.current?.pause();
+        setPlaying(false);
+        videoRef.current?.seekTo(checkpointBarrier);
+        lastTimeRef.current = checkpointBarrier;
+        setPosition(checkpointBarrier);
+        return;
+      }
+      watchedRef.current = current;
+      setWatched(current);
+    }
+
+    lastTimeRef.current = current;
+    setPosition(current);
+
+    // 3. Trigger uncompleted checkpoints ONLY when the playback head crosses or reaches them
+    const reachedCheckpoint = activities.find((item) => {
+      if (completed[item.id]) return false;
+      const crossed = prevTime < item.timestampSeconds && current >= item.timestampSeconds;
+      const landing = Math.abs(current - item.timestampSeconds) < 0.35 && prevTime <= item.timestampSeconds;
+      return (crossed || landing) && (!active || active.id !== item.id);
+    });
+
+    if (reachedCheckpoint) {
+      videoRef.current?.pause();
+      setPlaying(false);
+      setActive(reachedCheckpoint);
+      setAnswer(reachedCheckpoint.type === 'MULTIPLE_SELECT' ? [] : '');
+      videoRef.current?.seekTo(reachedCheckpoint.timestampSeconds);
+      lastTimeRef.current = reachedCheckpoint.timestampSeconds;
+      setPosition(reachedCheckpoint.timestampSeconds);
+      return;
     }
 
     onProgress?.(
       current,
-      Math.max(watched, current),
+      Math.max(watchedRef.current, current),
       totalDuration ? Math.min(100, (current / totalDuration) * 100) : 0
     );
   };
 
-  const seek = (value: number) => {
-    const next = navigationMode === 'FREE' ? value : Math.min(value, watched + 2);
-    videoRef.current?.seekTo(next);
-    setPosition(next);
+  const seek = (targetTime: number) => {
+    const clampedTarget = Math.max(0, targetTime);
+    const maxSeekable = allowFreeSeek
+      ? (totalDuration > 0 ? totalDuration : 999999)
+      : Math.min(watchedRef.current, checkpointBarrier);
+
+    if (!allowFreeSeek && clampedTarget > maxSeekable + 0.5) {
+      if (earliestUncompletedCheckpoint && clampedTarget >= earliestUncompletedCheckpoint.timestampSeconds) {
+        showNotice(
+          `🔒 Forward jump locked. Complete checkpoint at ${formatVideoTime(
+            earliestUncompletedCheckpoint.timestampSeconds
+          )} first.`
+        );
+      } else {
+        showNotice('🔒 Skipping ahead is restricted. Please watch the video sequentially.');
+      }
+      const safeTarget = Math.max(0, maxSeekable);
+      videoRef.current?.seekTo(safeTarget);
+      lastTimeRef.current = safeTarget;
+      setPosition(safeTarget);
+      return;
+    }
+
+    videoRef.current?.seekTo(clampedTarget);
+    lastTimeRef.current = clampedTarget;
+    setPosition(clampedTarget);
   };
+
+  const togglePlay = () => {
+    if (active && active.required !== false && !completed[active.id]) {
+      showNotice('⚠️ Checkpoint required: Please submit your answer before continuing.');
+      return;
+    }
+    if (playing) {
+      videoRef.current?.pause();
+      setPlaying(false);
+    } else {
+      videoRef.current?.play();
+      setPlaying(true);
+    }
+  };
+
+  const rewind10 = () => {
+    seek(Math.max(0, position - 10));
+  };
+
+  // Keyboard shortcut restrictions (intercept ArrowRight, etc.)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'ArrowRight' || e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        if (allowFreeSeek) {
+          seek(position + 5);
+        } else {
+          showNotice('🔒 Skipping forward is disabled.');
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'j' || e.key === 'J') {
+        e.preventDefault();
+        seek(Math.max(0, position - 5));
+      } else if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        togglePlay();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [position, playing, active, completed, allowFreeSeek, maxAllowedTime]);
 
   const submit = async () => {
     if (!active) return;
@@ -110,107 +270,277 @@ export function InteractiveVideoPlayer({
   };
 
   const continueVideo = () => {
+    if (active) {
+      setCompleted((v) => ({ ...v, [active.id]: true }));
+    }
     setActive(null);
     setFeedback(null);
     videoRef.current?.play();
     setPlaying(true);
   };
 
+  const unlockedPercent = totalDuration > 0 ? Math.min(100, (maxAllowedTime / totalDuration) * 100) : 0;
+  const currentPercent = totalDuration > 0 ? Math.min(100, (position / totalDuration) * 100) : 0;
+  const isCheckpointBlocking = !!(active && active.required !== false && !completed[active.id]);
+
   return (
-    <div className="space-y-4">
+    <div className={`mx-auto transition-all duration-300 space-y-4 ${isCompact ? 'max-w-3xl' : 'max-w-5xl'}`}>
       {/* Video Container */}
-      <div className="relative overflow-hidden rounded-2xl bg-slate-950 shadow-xl border border-slate-800">
-        <UniversalVideo
-          ref={videoRef}
-          url={videoUrl}
-          controls={isYouTube}
-          className="aspect-video w-full"
-          initialTime={initialPosition}
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onDurationChange={(dur) => setDetectedDuration(dur)}
-          onTimeUpdate={handleTimeUpdate}
-        />
+      <div className="relative overflow-hidden rounded-2xl bg-slate-950 shadow-2xl border border-slate-800 select-none">
+        <div className={`relative w-full bg-black transition-all duration-300 mx-auto aspect-video ${isCompact ? 'max-h-[380px] md:max-h-[420px]' : 'max-h-[560px]'}`}>
+          <UniversalVideo
+            ref={videoRef}
+            url={videoUrl}
+            controls={allowFreeSeek && isTeacher}
+            className="w-full h-full"
+            initialTime={initialPosition}
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+            onDurationChange={(dur) => setDetectedDuration(dur)}
+            onTimeUpdate={handleTimeUpdate}
+          />
 
-        {/* Custom Bar for scrubbing and activity markers */}
-        <div className="bg-slate-900/95 border-t border-slate-800 p-3 text-white">
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              aria-label={playing ? 'Pause video' : 'Play video'}
-              className="rounded-lg p-2 hover:bg-white/10 transition-colors"
-              onClick={() => {
-                if (playing) {
-                  videoRef.current?.pause();
-                } else {
-                  videoRef.current?.play();
-                }
-              }}
-            >
-              {playing ? <Pause size={18} /> : <Play size={18} />}
-            </button>
+          {/* Transparent Interaction Shield (intercepts clicks & blocks direct iframe tampering) */}
+          <div
+            onClick={togglePlay}
+            onContextMenu={(e) => e.preventDefault()}
+            onDoubleClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center group"
+          >
+            {/* Transient Restriction Warning Toast */}
+            {restrictionNotice && (
+              <div
+                role="alert"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-slate-900/95 backdrop-blur-md px-4 py-2 text-xs font-semibold text-amber-300 border border-amber-500/50 shadow-2xl animate-in fade-in slide-in-from-top-2"
+              >
+                <Lock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span>{restrictionNotice}</span>
+              </div>
+            )}
 
-            <button
-              aria-label="Restart video"
-              className="rounded-lg p-2 hover:bg-white/10 transition-colors"
-              onClick={() => seek(0)}
-            >
-              <RotateCcw size={16} />
-            </button>
+            {/* Centered Play Button when Paused */}
+            {!playing && !isCheckpointBlocking && (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 shadow-2xl transition-all transform group-hover:scale-110 group-hover:bg-emerald-600">
+                <Play className="h-7 w-7 fill-white translate-x-0.5" />
+              </div>
+            )}
 
+            {/* Checkpoint Blocking Badge */}
+            {isCheckpointBlocking && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-2 rounded-2xl bg-amber-950/90 backdrop-blur-md px-5 py-3 text-amber-200 border border-amber-500/60 shadow-2xl"
+              >
+                <Lock className="h-4 w-4 text-amber-400 animate-pulse" />
+                <span className="text-xs font-bold">Checkpoint Active · Complete answer below to continue</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Custom Secured Control Bar */}
+        <div className="bg-slate-900/95 border-t border-slate-800 p-3.5 text-white">
+          {/* Integrated Visual Scrubber with Lock Zone & Markers */}
+          <div className="relative mb-3 flex items-center group/scrubber">
+            {/* Scrubber Track Container */}
+            <div className="relative w-full h-3 rounded-full bg-slate-800 overflow-hidden border border-slate-700/60">
+              {/* Unlocked / Watched Zone (Segment the student has unlocked) */}
+              <div
+                style={{ width: `${unlockedPercent}%` }}
+                className="absolute left-0 top-0 bottom-0 bg-slate-700/80 transition-all duration-150"
+              />
+
+              {/* Current Progress Playhead */}
+              <div
+                style={{ width: `${currentPercent}%` }}
+                className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-150"
+              />
+
+              {/* Locked Zone (Forward portion restricted from skipping) */}
+              {!allowFreeSeek && unlockedPercent < 100 && (
+                <div
+                  style={{ left: `${unlockedPercent}%`, width: `${100 - unlockedPercent}%` }}
+                  className="absolute top-0 bottom-0 bg-slate-900/90 border-l-2 border-amber-500/60 flex items-center justify-end pr-2 overflow-hidden"
+                  title="Forward skipping locked"
+                >
+                  <Lock className="h-2 w-2 text-slate-500 opacity-60" />
+                </div>
+              )}
+            </div>
+
+            {/* Interactive Checkpoint Markers along the scrubber */}
+            {activities.length > 0 && totalDuration > 0 && (
+              <div className="absolute inset-0 pointer-events-none flex items-center px-0.5">
+                {activities.map((item) => {
+                  const leftPercent = Math.min(100, Math.max(0, (item.timestampSeconds / totalDuration) * 100));
+                  const isDone = !!completed[item.id];
+                  const isLocked = !allowFreeSeek && item.timestampSeconds > maxAllowedTime + 0.5;
+
+                  return (
+                    <div
+                      key={item.id}
+                      style={{ left: `${leftPercent}%` }}
+                      className="absolute -translate-x-1/2 pointer-events-auto"
+                      title={`${item.title} (${formatVideoTime(item.timestampSeconds)}) ${
+                        isDone ? '✓ Completed' : isLocked ? '🔒 Locked' : '⭐ Unlocked'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        aria-label={`Activity: ${item.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          seek(item.timestampSeconds);
+                        }}
+                        className={`h-3 w-3 rounded-full border-2 transition-transform hover:scale-125 flex items-center justify-center ${
+                          isDone
+                            ? 'bg-emerald-400 border-white shadow-xs'
+                            : isLocked
+                            ? 'bg-slate-700 border-slate-500 shadow-xs'
+                            : 'bg-amber-400 border-amber-100 ring-2 ring-amber-400/40 shadow-xs'
+                        }`}
+                      >
+                        {isDone ? (
+                          <span className="block h-1 w-1 rounded-full bg-white" />
+                        ) : isLocked ? (
+                          <Lock className="h-1.5 w-1.5 text-slate-300" />
+                        ) : null}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Invisible native range input on top for drag and touch handling */}
             <input
-              aria-label="Video progress"
+              aria-label="Video scrubber"
               type="range"
               min={0}
-              max={totalDuration || 100}
+              max={totalDuration > 0 ? totalDuration : 100}
+              step={0.1}
               value={position}
               onChange={(e) => seek(Number(e.target.value))}
-              className="min-w-[120px] flex-1 accent-emerald-400 cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-
-            <span className="text-xs font-mono tabular-nums text-slate-300">
-              {formatVideoTime(position)} / {formatVideoTime(totalDuration || 0)}
-            </span>
-
-            <select
-              aria-label="Playback speed"
-              value={speed}
-              onChange={(e) => {
-                const s = Number(e.target.value);
-                setSpeed(s);
-                videoRef.current?.setPlaybackRate?.(s);
-              }}
-              className="rounded-lg bg-slate-800 px-2 py-1 text-xs text-white outline-none border border-slate-700"
-            >
-              <option value={0.75}>0.75×</option>
-              <option value={1}>1×</option>
-              <option value={1.25}>1.25×</option>
-              <option value={1.5}>1.5×</option>
-            </select>
           </div>
 
-          {/* Interactive Checkpoint Markers */}
-          {activities.length > 0 && totalDuration > 0 && (
-            <div className="mt-2.5 relative w-full h-3 flex items-center bg-slate-800/80 rounded-full px-1">
-              {activities.map((item) => {
-                const leftPercent = Math.min(100, Math.max(0, (item.timestampSeconds / totalDuration) * 100));
-                const isDone = !!completed[item.id];
-                return (
-                  <button
-                    key={item.id}
-                    aria-label={`Activity at ${formatVideoTime(item.timestampSeconds)}`}
-                    onClick={() => seek(item.timestampSeconds)}
-                    style={{ left: `${leftPercent}%` }}
-                    className={`absolute -translate-x-1/2 h-3 w-3 rounded-full border-2 transition-transform hover:scale-125 ${
-                      isDone
-                        ? 'bg-emerald-400 border-emerald-200'
-                        : 'bg-amber-400 border-amber-200 shadow-xs'
-                    }`}
-                    title={`${item.title} (${formatVideoTime(item.timestampSeconds)})`}
-                  />
-                );
-              })}
+          {/* Control Buttons & Indicators */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              {/* Play/Pause Button */}
+              <button
+                type="button"
+                aria-label={playing ? 'Pause video' : 'Play video'}
+                disabled={isCheckpointBlocking}
+                className={`rounded-xl p-2.5 transition-colors ${
+                  isCheckpointBlocking
+                    ? 'opacity-40 cursor-not-allowed bg-slate-800 text-slate-500'
+                    : 'hover:bg-white/10 text-white'
+                }`}
+                onClick={togglePlay}
+                title={isCheckpointBlocking ? 'Please complete checkpoint to resume' : playing ? 'Pause' : 'Play'}
+              >
+                {playing ? <Pause size={18} /> : isCheckpointBlocking ? <Lock size={18} /> : <Play size={18} />}
+              </button>
+
+              {/* Rewind 10s Button */}
+              <button
+                type="button"
+                aria-label="Rewind 10 seconds"
+                className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors text-xs font-semibold"
+                onClick={rewind10}
+                title="Rewind 10 seconds"
+              >
+                <RotateCcw size={14} />
+                <span>-10s</span>
+              </button>
+
+              {/* Restart Button */}
+              <button
+                type="button"
+                aria-label="Restart from beginning"
+                className="rounded-xl p-2 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                onClick={() => seek(0)}
+                title="Restart from beginning"
+              >
+                <RotateCcw size={15} />
+              </button>
+
+              {/* Time Display */}
+              <div className="ml-1 flex items-center gap-1.5 text-xs font-mono tabular-nums text-slate-300">
+                <span className="font-semibold text-white">{formatVideoTime(position)}</span>
+                <span className="text-slate-500">/</span>
+                <span className="text-slate-400">{formatVideoTime(totalDuration || 0)}</span>
+              </div>
             </div>
-          )}
+
+            <div className="flex items-center gap-3">
+              {/* Anti-skip indicator pill */}
+              {!allowFreeSeek ? (
+                <span
+                  title="Forward skipping is restricted until checkpoints are completed"
+                  className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-amber-950/50 border border-amber-500/30 px-2.5 py-1 text-[11px] font-semibold text-amber-300"
+                >
+                  <Lock className="h-3 w-3 text-amber-400" />
+                  Anti-skip enabled
+                </span>
+              ) : (
+                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-950/50 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+                  <Unlock className="h-3 w-3 text-emerald-400" />
+                  Free seeking
+                </span>
+              )}
+
+              {/* Teacher test mode toggle */}
+              {isTeacher && (
+                <button
+                  type="button"
+                  onClick={() => setAllowFreeSeek((v) => !v)}
+                  className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                    allowFreeSeek
+                      ? 'bg-indigo-600 border-indigo-400 text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                  }`}
+                  title="Teacher override for testing checkpoint transitions"
+                >
+                  {allowFreeSeek ? 'Testing Mode (Free Seek ON)' : 'Student Mode (Restricted)'}
+                </button>
+              )}
+
+              {/* Playback Speed Selector */}
+              <select
+                aria-label="Playback speed"
+                value={speed}
+                onChange={(e) => {
+                  const s = Number(e.target.value);
+                  setSpeed(s);
+                  videoRef.current?.setPlaybackRate?.(s);
+                }}
+                className="rounded-lg bg-slate-800 px-2 py-1 text-xs text-white outline-none border border-slate-700 hover:border-slate-600 transition-colors"
+              >
+                <option value={0.75}>0.75×</option>
+                <option value={1}>1×</option>
+                <option value={1.25}>1.25×</option>
+                <option value={1.5}>1.5×</option>
+              </select>
+
+              {/* Compact / Enlarge player size toggle */}
+              <button
+                type="button"
+                onClick={() => setIsCompact((v) => !v)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[11px] font-medium"
+                title={isCompact ? 'Enlarge player' : 'Minimize player size'}
+              >
+                {isCompact ? <Maximize2 size={15} /> : <Minimize2 size={15} />}
+                <span className="hidden md:inline">{isCompact ? 'Expand' : 'Minimize'}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -240,20 +570,63 @@ export function InteractiveVideoPlayer({
           {feedback && (
             <div
               role="status"
-              className={`mt-4 rounded-xl p-3 text-xs md:text-sm font-medium ${
+              className={`mt-4 rounded-xl p-4 text-xs md:text-sm font-medium transition-all ${
                 feedback.isCorrect
-                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                  : 'bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-200 border border-slate-200 dark:border-slate-800'
+                  ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
+                  : 'bg-rose-50 text-rose-900 dark:bg-rose-950/70 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
               }`}
             >
-              <strong>{feedback.isCorrect ? 'Correct! 🎉' : 'Not quite yet.'}</strong>{' '}
-              {feedback.feedback}
-              {feedback.explanation && <p className="mt-1 opacity-90">{feedback.explanation}</p>}
+              <div className="flex items-start gap-2.5">
+                {feedback.isCorrect ? (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                )}
+                <div className="space-y-1.5 flex-1">
+                  <p className="font-bold text-sm">
+                    {feedback.isCorrect ? 'Correct! Well done! 🎉' : 'Incorrect — not quite right.'}
+                  </p>
+                  {feedback.feedback && <p className="opacity-90">{feedback.feedback}</p>}
+                  {feedback.explanation && (
+                    <p className="text-xs opacity-80 mt-1">
+                      <strong>Explanation:</strong> {feedback.explanation}
+                    </p>
+                  )}
+                  {feedback.correctAnswer && (
+                    <div className="mt-2.5 pt-2 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="font-bold opacity-75">Correct answer:</span>
+                      <span className="font-bold text-emerald-800 dark:text-emerald-200 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-md border border-emerald-300/50">
+                        {Array.isArray(feedback.correctAnswer)
+                          ? feedback.correctAnswer.join(', ')
+                          : typeof feedback.correctAnswer === 'object'
+                          ? Object.entries(feedback.correctAnswer)
+                              .map(([k, v]) => `${k} → ${v}`)
+                              .join('; ')
+                          : String(feedback.correctAnswer)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="mt-4 flex justify-end gap-2">
-            {feedback && (feedback.isCorrect || active.allowRetry === false) ? (
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            {feedback && !feedback.isCorrect && active.allowRetry !== false && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFeedback(null);
+                  setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
+                }}
+                className="text-xs font-semibold rounded-xl"
+              >
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                Try Again
+              </Button>
+            )}
+
+            {feedback && (feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
               <Button
                 onClick={continueVideo}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs"

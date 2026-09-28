@@ -93,7 +93,7 @@ export class InteractiveVideoModel {
       };
     }
     const video = videoRes.rows[0];
-    const [activities, resources, progress] = await Promise.all([
+    const [activities, resources, progress, completedAttempts] = await Promise.all([
       query(`SELECT * FROM "interactive_video_activities" WHERE "lessonId" = $1
              ORDER BY "timestampSeconds", "orderIndex"`, [lessonId]),
       query(`SELECT id, title, description, url, "resourceType", "canView", "canDownload", "orderIndex"
@@ -101,13 +101,18 @@ export class InteractiveVideoModel {
              ORDER BY "orderIndex"`, [lessonId]),
       studentId ? query(`SELECT * FROM "interactive_video_progress"
              WHERE "lessonId" = $1 AND "studentId" = $2`, [lessonId, studentId]) : Promise.resolve({ rows: [] }),
+      studentId ? query(`SELECT DISTINCT a.id AS "activityId" FROM "interactive_video_activities" a
+             JOIN "interactive_video_attempts" att ON att."activityId" = a.id
+             WHERE a."lessonId" = $1 AND att."studentId" = $2 AND (att."isCorrect" = true OR a."allowRetry" = false)`, [lessonId, studentId]) : Promise.resolve({ rows: [] }),
     ]);
+    const completedActivityIds = (completedAttempts.rows || []).map(r => r.activityId);
     return {
       ...video,
       ...(includePrivate ? {} : { createdBy: video.createdBy }),
       activities: activities.rows,
       resources: resources.rows,
       progress: progress.rows[0] || null,
+      completedActivityIds,
     };
   }
 
@@ -201,19 +206,123 @@ export class InteractiveVideoModel {
     const a = activity.rows[0];
     const content = a.content || {};
     const normalized = (value) => String(value ?? '').trim().toLowerCase();
+
     let correct = false;
-    if (a.type === 'MULTIPLE_SELECT') correct = JSON.stringify([...(answer || [])].sort()) === JSON.stringify([...(content.correctAnswers || [])].sort());
-    else if (a.type === 'ORDERING') correct = JSON.stringify(answer || []) === JSON.stringify(content.correctOrder || []);
-    else if (a.type === 'MATCHING') correct = JSON.stringify(answer || {}) === JSON.stringify(content.pairs || {});
-    else correct = normalized(answer) === normalized(content.correctAnswer) ||
-      (Array.isArray(content.acceptableAnswers) && content.acceptableAnswers.some((x) => normalized(x) === normalized(answer)));
-    const count = await query(`SELECT COUNT(*)::int AS count FROM "interactive_video_attempts" WHERE "activityId"=$1 AND "studentId"=$2`, [activityId, studentId]);
+    let expectedAnswer = null;
+
+    if (['MULTIPLE_CHOICE', 'IMAGE', 'LISTENING', 'GRAMMAR', 'READING', 'VOCABULARY'].includes(a.type)) {
+      if (Array.isArray(content.options) && content.options.length > 0) {
+        const correctOpt = content.options.find((o) => o && (o.isCorrect === true || o.correct === true));
+        if (correctOpt) {
+          expectedAnswer = typeof correctOpt === 'string' ? correctOpt : (correctOpt.text || correctOpt.label || '');
+        } else if (content.correctIndex !== undefined && content.options[content.correctIndex]) {
+          const opt = content.options[content.correctIndex];
+          expectedAnswer = typeof opt === 'string' ? opt : (opt.text || opt.label || '');
+        }
+      }
+      if (!expectedAnswer && content.correctAnswer) {
+        expectedAnswer = content.correctAnswer;
+      }
+      correct = expectedAnswer ? normalized(answer) === normalized(expectedAnswer) : false;
+    } else if (a.type === 'MULTIPLE_SELECT') {
+      let expectedList = [];
+      if (Array.isArray(content.options) && content.options.some((o) => o && o.isCorrect)) {
+        expectedList = content.options
+          .filter((o) => o && o.isCorrect)
+          .map((o) => (typeof o === 'string' ? o : o.text || o.label || ''));
+      } else if (Array.isArray(content.correctAnswers)) {
+        expectedList = content.correctAnswers;
+      }
+      expectedAnswer = expectedList;
+      const studentList = Array.isArray(answer) ? answer.map(normalized) : [normalized(answer)];
+      const targetNormalized = expectedList.map(normalized);
+      correct =
+        targetNormalized.length > 0 &&
+        studentList.length === targetNormalized.length &&
+        studentList.every((s) => targetNormalized.includes(s));
+    } else if (a.type === 'TRUE_FALSE') {
+      expectedAnswer = String(content.correctAnswer ?? 'true').toLowerCase();
+      correct = normalized(answer) === normalized(expectedAnswer);
+    } else if (a.type === 'FILL_BLANK' || a.type === 'FILL_IN_BLANK') {
+      expectedAnswer = content.expectedText || content.correctAnswer || '';
+      const acceptable = [];
+      if (expectedAnswer) acceptable.push(expectedAnswer);
+      if (Array.isArray(content.acceptableAnswers)) {
+        acceptable.push(...content.acceptableAnswers);
+      } else if (typeof content.acceptableAnswers === 'string') {
+        acceptable.push(...content.acceptableAnswers.split(',').map((s) => s.trim()).filter(Boolean));
+      }
+      correct = acceptable.some((x) => normalized(x) === normalized(answer));
+      if (!expectedAnswer && acceptable.length > 0) expectedAnswer = acceptable[0];
+    } else if (a.type === 'DRAG_DROP') {
+      expectedAnswer = content.correctSentence || content.correctAnswer || '';
+      correct = normalized(answer) === normalized(expectedAnswer);
+    } else if (a.type === 'ORDERING') {
+      expectedAnswer = content.items || content.correctOrder || [];
+      correct = JSON.stringify(answer || []) === JSON.stringify(expectedAnswer || []);
+    } else if (a.type === 'MATCHING') {
+      expectedAnswer = {};
+      if (Array.isArray(content.pairs)) {
+        content.pairs.forEach((p) => {
+          if (p && p.left) expectedAnswer[p.left] = p.right;
+        });
+      } else if (content.pairs && typeof content.pairs === 'object') {
+        expectedAnswer = content.pairs;
+      }
+      correct = JSON.stringify(answer || {}) === JSON.stringify(expectedAnswer);
+    } else if (a.type === 'SHORT_ANSWER') {
+      expectedAnswer = content.expectedAnswer || content.correctAnswer || '';
+      const keywords =
+        typeof content.keywords === 'string'
+          ? content.keywords.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+          : Array.isArray(content.keywords)
+          ? content.keywords.map((s) => String(s).trim().toLowerCase())
+          : [];
+      if (expectedAnswer && normalized(answer) === normalized(expectedAnswer)) {
+        correct = true;
+      } else if (keywords.length > 0 && keywords.some((k) => normalized(answer).includes(k))) {
+        correct = true;
+      } else if (!expectedAnswer && keywords.length === 0 && String(answer || '').trim().length > 0) {
+        correct = true;
+      }
+    } else if (['SPEAKING', 'WRITING', 'POLL', 'NOTE', 'DISCUSSION', 'SURVEY'].includes(a.type)) {
+      expectedAnswer = content.targetSentence || content.prompt || 'Completed response';
+      correct = String(answer ?? '').trim().length > 0;
+    } else {
+      expectedAnswer = content.correctAnswer || content.expectedAnswer || content.expectedText || '';
+      correct = expectedAnswer ? normalized(answer) === normalized(expectedAnswer) : String(answer || '').trim().length > 0;
+    }
+
+    const count = await query(
+      `SELECT COUNT(*)::int AS count FROM "interactive_video_attempts" WHERE "activityId"=$1 AND "studentId"=$2`,
+      [activityId, studentId]
+    );
     const score = correct ? Number(a.points) : 0;
-    const result = await query(`INSERT INTO "interactive_video_attempts"
+    const feedbackText = correct
+      ? 'Correct — well done!'
+      : (a.feedback || 'Incorrect. Review the correct answer and explanation to learn more.');
+
+    const result = await query(
+      `INSERT INTO "interactive_video_attempts"
       (id,"activityId","studentId",answer,"isCorrect",score,feedback,"attemptNumber")
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [id(), activityId, studentId, JSON.stringify(answer), correct, score, correct ? 'Correct — well done!' : (a.feedback || 'Review the explanation and try again.'), count.rows[0].count + 1]);
-    return { ...result.rows[0], explanation: a.explanation, correctAnswer: correct ? undefined : content.correctAnswer };
+      [
+        id(),
+        activityId,
+        studentId,
+        JSON.stringify(answer),
+        correct,
+        score,
+        feedbackText,
+        count.rows[0].count + 1,
+      ]
+    );
+    return {
+      ...result.rows[0],
+      isCorrect: correct,
+      explanation: a.explanation,
+      correctAnswer: expectedAnswer,
+    };
   }
 
   static async saveProgress(lessonId, studentId, body, role = 'STUDENT') {

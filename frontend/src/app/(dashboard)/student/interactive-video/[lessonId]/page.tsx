@@ -64,7 +64,7 @@ export default function StudentInteractiveVideoPage() {
   const isTeacherOrAdmin = user?.role === 'TEACHER' || user?.role === 'SUPERADMIN';
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+    <main className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
       {/* Teacher Preview Banner */}
       {isTeacherOrAdmin && (
         <div className="flex items-center justify-between gap-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 px-4 py-2.5 text-xs text-amber-900 dark:text-amber-200">
@@ -125,6 +125,9 @@ export default function StudentInteractiveVideoPage() {
             transcript={data.transcript || []}
             captions={data.captions || []}
             initialPosition={data.progress?.lastPositionSeconds || 0}
+            initialWatched={data.progress?.watchedSeconds || 0}
+            completedActivityIds={data.completedActivityIds || []}
+            isTeacher={false}
             onProgress={(position, watched, percent) => {
               if (Math.round(position) % 10 === 0) {
                 apiClient
