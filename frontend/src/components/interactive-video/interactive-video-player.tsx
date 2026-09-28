@@ -74,14 +74,39 @@ export function InteractiveVideoPlayer({
   const [position, setPosition] = useState(initialPosition);
   const [detectedDuration, setDetectedDuration] = useState(durationSeconds || 0);
   const [watched, setWatched] = useState(Math.max(initialWatched, initialPosition));
+
+  const activitiesRef = useRef<VideoActivity[]>(activities || []);
+  activitiesRef.current = activities || [];
+
   const [active, setActive] = useState<VideoActivity | null>(null);
-  const [completed, setCompleted] = useState<Record<string, boolean>>(() => {
+  const activeRef = useRef<VideoActivity | null>(null);
+
+  const initialCompletedMap = useMemo(() => {
     const init: Record<string, boolean> = {};
     (completedActivityIds || []).forEach((id) => {
       init[id] = true;
     });
     return init;
-  });
+  }, [completedActivityIds]);
+
+  const [completed, setCompleted] = useState<Record<string, boolean>>(initialCompletedMap);
+  const completedRef = useRef<Record<string, boolean>>(initialCompletedMap);
+
+  useEffect(() => {
+    if (completedActivityIds && completedActivityIds.length > 0) {
+      completedActivityIds.forEach((id) => {
+        completedRef.current[id] = true;
+      });
+      setCompleted((prev) => {
+        const next = { ...prev };
+        completedActivityIds.forEach((id) => {
+          next[id] = true;
+        });
+        return next;
+      });
+    }
+  }, [completedActivityIds]);
+
   const [answer, setAnswer] = useState<any>('');
   const [feedback, setFeedback] = useState<any>(null);
   const [speed, setSpeed] = useState(1);
@@ -90,11 +115,39 @@ export function InteractiveVideoPlayer({
   const [restrictionNotice, setRestrictionNotice] = useState<string | null>(null);
   const noticeTimeoutRef = useRef<any>(null);
 
+  const [autoResumeSeconds, setAutoResumeSeconds] = useState<number | null>(null);
+  const autoResumeTimerRef = useRef<any>(null);
+
+  const clearAutoResume = () => {
+    if (autoResumeTimerRef.current) {
+      clearInterval(autoResumeTimerRef.current);
+      autoResumeTimerRef.current = null;
+    }
+    setAutoResumeSeconds(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearAutoResume();
+      if (noticeTimeoutRef.current) clearTimeout(noticeTimeoutRef.current);
+    };
+  }, []);
+
   const totalDuration = durationSeconds && durationSeconds > 0 ? durationSeconds : detectedDuration;
   const isYouTube = !!getYouTubeId(videoUrl);
 
-  // Determine earliest uncompleted required checkpoint barrier
-  const earliestUncompletedCheckpoint = activities
+  // Synchronous barrier helper: always relies on completedRef
+  const getDynamicBarrier = () => {
+    const uncompleted = (activitiesRef.current || [])
+      .filter((a) => a.required !== false && !completedRef.current[a.id])
+      .sort((a, b) => a.timestampSeconds - b.timestampSeconds);
+    return uncompleted[0]
+      ? uncompleted[0].timestampSeconds
+      : (totalDuration > 0 ? totalDuration : 999999);
+  };
+
+  // Determine earliest uncompleted required checkpoint barrier for scrubber UI
+  const earliestUncompletedCheckpoint = (activities || [])
     .filter((a) => a.required !== false && !completed[a.id])
     .sort((a, b) => a.timestampSeconds - b.timestampSeconds)[0];
 
@@ -116,8 +169,12 @@ export function InteractiveVideoPlayer({
   };
 
   const handleTimeUpdate = (current: number) => {
-    // If an active required checkpoint is pending submission, keep paused
-    if (active && active.required !== false && !completed[active.id]) {
+    // 0. If an active required checkpoint is pending submission, enforce pause
+    if (
+      activeRef.current &&
+      activeRef.current.required !== false &&
+      !completedRef.current[activeRef.current.id]
+    ) {
       videoRef.current?.pause();
       setPlaying(false);
       return;
@@ -125,6 +182,7 @@ export function InteractiveVideoPlayer({
 
     const prevTime = lastTimeRef.current;
     const delta = current - prevTime;
+    const dynamicBarrier = getDynamicBarrier();
 
     // 1. Guard against external or unauthorized sudden forward jumps (> 3s without seek())
     if (!allowFreeSeek && delta > 3.0) {
@@ -140,12 +198,12 @@ export function InteractiveVideoPlayer({
 
     // 2. Normal playback progress: advance watched position smoothly
     if (current > watchedRef.current) {
-      if (!allowFreeSeek && checkpointBarrier < 999999 && current > checkpointBarrier + 0.5) {
+      if (!allowFreeSeek && dynamicBarrier < 999999 && current > dynamicBarrier + 0.5) {
         videoRef.current?.pause();
         setPlaying(false);
-        videoRef.current?.seekTo(checkpointBarrier);
-        lastTimeRef.current = checkpointBarrier;
-        setPosition(checkpointBarrier);
+        videoRef.current?.seekTo(dynamicBarrier);
+        lastTimeRef.current = dynamicBarrier;
+        setPosition(dynamicBarrier);
         return;
       }
       watchedRef.current = current;
@@ -156,16 +214,18 @@ export function InteractiveVideoPlayer({
     setPosition(current);
 
     // 3. Trigger uncompleted checkpoints ONLY when the playback head crosses or reaches them
-    const reachedCheckpoint = activities.find((item) => {
-      if (completed[item.id]) return false;
+    const reachedCheckpoint = (activitiesRef.current || []).find((item) => {
+      if (completedRef.current[item.id]) return false;
+      if (activeRef.current && activeRef.current.id === item.id) return false;
       const crossed = prevTime < item.timestampSeconds && current >= item.timestampSeconds;
       const landing = Math.abs(current - item.timestampSeconds) < 0.35 && prevTime <= item.timestampSeconds;
-      return (crossed || landing) && (!active || active.id !== item.id);
+      return crossed || landing;
     });
 
     if (reachedCheckpoint) {
       videoRef.current?.pause();
       setPlaying(false);
+      activeRef.current = reachedCheckpoint;
       setActive(reachedCheckpoint);
       setAnswer(reachedCheckpoint.type === 'MULTIPLE_SELECT' ? [] : '');
       videoRef.current?.seekTo(reachedCheckpoint.timestampSeconds);
@@ -183,15 +243,19 @@ export function InteractiveVideoPlayer({
 
   const seek = (targetTime: number) => {
     const clampedTarget = Math.max(0, targetTime);
+    const dynamicBarrier = getDynamicBarrier();
     const maxSeekable = allowFreeSeek
       ? (totalDuration > 0 ? totalDuration : 999999)
-      : Math.min(watchedRef.current, checkpointBarrier);
+      : Math.min(watchedRef.current, dynamicBarrier);
 
     if (!allowFreeSeek && clampedTarget > maxSeekable + 0.5) {
-      if (earliestUncompletedCheckpoint && clampedTarget >= earliestUncompletedCheckpoint.timestampSeconds) {
+      const nextUncompleted = (activitiesRef.current || []).find(
+        (a) => a.required !== false && !completedRef.current[a.id]
+      );
+      if (nextUncompleted && clampedTarget >= nextUncompleted.timestampSeconds) {
         showNotice(
           `🔒 Forward jump locked. Complete checkpoint at ${formatVideoTime(
-            earliestUncompletedCheckpoint.timestampSeconds
+            nextUncompleted.timestampSeconds
           )} first.`
         );
       } else {
@@ -210,7 +274,11 @@ export function InteractiveVideoPlayer({
   };
 
   const togglePlay = () => {
-    if (active && active.required !== false && !completed[active.id]) {
+    if (
+      activeRef.current &&
+      activeRef.current.required !== false &&
+      !completedRef.current[activeRef.current.id]
+    ) {
       showNotice('⚠️ Checkpoint required: Please submit your answer before continuing.');
       return;
     }
@@ -251,7 +319,7 @@ export function InteractiveVideoPlayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [position, playing, active, completed, allowFreeSeek, maxAllowedTime]);
+  }, [position, playing, allowFreeSeek]);
 
   const submit = async () => {
     if (!active) return;
@@ -266,7 +334,22 @@ export function InteractiveVideoPlayer({
       );
       setFeedback(result);
       if (result.isCorrect || active.allowRetry === false) {
+        completedRef.current[active.id] = true;
         setCompleted((v) => ({ ...v, [active.id]: true }));
+
+        // Auto-resume playback: brief 1.5s countdown so student sees result, then auto-play
+        clearAutoResume();
+        let secondsLeft = 2;
+        setAutoResumeSeconds(secondsLeft);
+        autoResumeTimerRef.current = setInterval(() => {
+          secondsLeft -= 1;
+          if (secondsLeft <= 0) {
+            clearAutoResume();
+            continueVideo();
+          } else {
+            setAutoResumeSeconds(secondsLeft);
+          }
+        }, 750);
       }
     } catch (error: any) {
       setFeedback({ feedback: error.message || 'Could not submit your answer.' });
@@ -274,9 +357,13 @@ export function InteractiveVideoPlayer({
   };
 
   const continueVideo = () => {
-    if (active) {
-      setCompleted((v) => ({ ...v, [active.id]: true }));
+    clearAutoResume();
+    const currentActive = activeRef.current || active;
+    if (currentActive) {
+      completedRef.current[currentActive.id] = true;
+      setCompleted((v) => ({ ...v, [currentActive.id]: true }));
     }
+    activeRef.current = null;
     setActive(null);
     setFeedback(null);
     videoRef.current?.play();
@@ -587,9 +674,17 @@ export function InteractiveVideoPlayer({
                   <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                 )}
                 <div className="space-y-1.5 flex-1">
-                  <p className="font-bold text-sm">
-                    {feedback.isCorrect ? 'Correct! Well done! 🎉' : 'Incorrect — not quite right.'}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-sm">
+                      {feedback.isCorrect ? 'Correct! Well done! 🎉' : 'Incorrect — not quite right.'}
+                    </p>
+                    {feedback.isCorrect && autoResumeSeconds !== null && (
+                      <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                        <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        Resuming in {autoResumeSeconds}s...
+                      </span>
+                    )}
+                  </div>
                   {feedback.feedback && <p className="opacity-90">{feedback.feedback}</p>}
                   {feedback.explanation && (
                     <p className="text-xs opacity-80 mt-1">
@@ -620,6 +715,7 @@ export function InteractiveVideoPlayer({
               <Button
                 variant="outline"
                 onClick={() => {
+                  clearAutoResume();
                   setFeedback(null);
                   setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
                 }}
@@ -635,8 +731,8 @@ export function InteractiveVideoPlayer({
                 onClick={continueVideo}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs"
               >
-                <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                Continue Video
+                <Play className="mr-1.5 h-3.5 w-3.5 fill-white" />
+                Resume Video Now
               </Button>
             ) : (
               <Button

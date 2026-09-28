@@ -102,6 +102,17 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
     const ytPlayerRef = useRef<any>(null);
     const timerRef = useRef<any>(null);
 
+    const onTimeUpdateRef = useRef(onTimeUpdate);
+    onTimeUpdateRef.current = onTimeUpdate;
+    const onDurationChangeRef = useRef(onDurationChange);
+    onDurationChangeRef.current = onDurationChange;
+    const onPlayRef = useRef(onPlay);
+    onPlayRef.current = onPlay;
+    const onPauseRef = useRef(onPause);
+    onPauseRef.current = onPause;
+    const onEndedRef = useRef(onEnded);
+    onEndedRef.current = onEnded;
+
     const youtubeId = getYouTubeId(url);
 
     const startTimer = () => {
@@ -110,9 +121,9 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
         if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
           try {
             const cur = ytPlayerRef.current.getCurrentTime() || 0;
-            onTimeUpdate?.(cur);
+            onTimeUpdateRef.current?.(cur);
             const dur = ytPlayerRef.current.getDuration() || 0;
-            if (dur > 0) onDurationChange?.(dur);
+            if (dur > 0) onDurationChangeRef.current?.(dur);
           } catch {}
         }
       }, 250);
@@ -180,13 +191,13 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
                 if (isCancelled) return;
                 // YT.PlayerState: 1 = PLAYING, 2 = PAUSED, 0 = ENDED
                 if (event.data === 1) {
-                  onPlay?.();
+                  onPlayRef.current?.();
                   startTimer();
                 } else if (event.data === 2) {
-                  onPause?.();
+                  onPauseRef.current?.();
                   stopTimer();
                 } else if (event.data === 0) {
-                  onEnded?.();
+                  onEndedRef.current?.();
                   stopTimer();
                 }
               },
@@ -230,10 +241,10 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
       seekTo: (timeSeconds: number) => {
         if (youtubeId && ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
           ytPlayerRef.current.seekTo(timeSeconds, true);
-          onTimeUpdate?.(timeSeconds);
+          onTimeUpdateRef.current?.(timeSeconds);
         } else if (videoRef.current) {
           videoRef.current.currentTime = timeSeconds;
-          onTimeUpdate?.(timeSeconds);
+          onTimeUpdateRef.current?.(timeSeconds);
         }
       },
       getCurrentTime: () => {
@@ -284,15 +295,15 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
         playsInline
         onContextMenu={(e) => e.preventDefault()}
         className={className || 'aspect-video w-full h-full object-contain bg-black'}
-        onPlay={onPlay}
-        onPause={onPause}
-        onEnded={onEnded}
+        onPlay={() => onPlayRef.current?.()}
+        onPause={() => onPauseRef.current?.()}
+        onEnded={() => onEndedRef.current?.()}
         onTimeUpdate={() => {
-          if (videoRef.current) onTimeUpdate?.(videoRef.current.currentTime);
+          if (videoRef.current) onTimeUpdateRef.current?.(videoRef.current.currentTime);
         }}
         onLoadedMetadata={() => {
           if (videoRef.current) {
-            onDurationChange?.(videoRef.current.duration);
+            onDurationChangeRef.current?.(videoRef.current.duration);
             if (initialTime && initialTime > 0) {
               videoRef.current.currentTime = initialTime;
             }
