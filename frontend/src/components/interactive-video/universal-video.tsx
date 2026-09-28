@@ -184,7 +184,7 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
                 if (isCancelled) return;
                 try {
                   const dur = event.target.getDuration();
-                  if (dur && dur > 0) onDurationChange?.(dur);
+                  if (dur && dur > 0) onDurationChangeRef.current?.(dur);
                   if (initialTime && initialTime > 0) {
                     event.target.seekTo(initialTime, true);
                   }
@@ -192,6 +192,10 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
               },
               onStateChange: (event: any) => {
                 if (isCancelled) return;
+                try {
+                  const dur = event.target.getDuration();
+                  if (dur && dur > 0) onDurationChangeRef.current?.(dur);
+                } catch {}
                 // YT.PlayerState: 1 = PLAYING, 2 = PAUSED, 0 = ENDED
                 if (event.data === 1) {
                   onPlayRef.current?.();

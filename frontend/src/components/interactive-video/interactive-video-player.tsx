@@ -248,7 +248,17 @@ export function InteractiveVideoPlayer({
     };
   }, []);
 
-  const totalDuration = durationSeconds && durationSeconds > 0 ? durationSeconds : detectedDuration;
+  const maxActivityTime = useMemo(() => {
+    if (!activities || activities.length === 0) return 0;
+    return Math.max(...activities.map((a) => a.timestampSeconds || 0));
+  }, [activities]);
+
+  const totalDuration =
+    durationSeconds && durationSeconds > 0
+      ? durationSeconds
+      : detectedDuration > 0
+      ? detectedDuration
+      : Math.max(maxActivityTime + 10, 45);
   const isYouTube = !!getYouTubeId(videoUrl);
 
   // Synchronous barrier helper: always relies on completedRef
@@ -281,6 +291,11 @@ export function InteractiveVideoPlayer({
       .sort((a, b) => a.timestampSeconds - b.timestampSeconds)[0];
   }, [activities, completed]);
 
+  const activeCheckpointIndex = useMemo(() => {
+    if (!active) return -1;
+    return (activities || []).findIndex((a) => a.id === active.id);
+  }, [active, activities]);
+
   const currentTranscriptLine = useMemo(() => {
     if (!transcript || transcript.length === 0) return null;
     return (
@@ -296,6 +311,40 @@ export function InteractiveVideoPlayer({
     noticeTimeoutRef.current = setTimeout(() => {
       setRestrictionNotice(null);
     }, 3500);
+  };
+
+  const openCheckpoint = (item: VideoActivity) => {
+    const dynamicBarrier = getDynamicBarrier();
+    const isLocked = !allowFreeSeek && item.timestampSeconds > dynamicBarrier + 1.0;
+    if (isLocked) {
+      showNotice(
+        `🔒 Checkpoint at ${formatVideoTime(item.timestampSeconds)} is locked. Complete earlier checkpoints first.`
+      );
+      return;
+    }
+
+    clearAutoResume();
+    videoRef.current?.pause();
+    setPlaying(false);
+    videoRef.current?.seekTo(item.timestampSeconds);
+    lastTimeRef.current = item.timestampSeconds;
+    setPosition(item.timestampSeconds);
+
+    activeRef.current = item;
+    setActive(item);
+    setShowHint(false);
+
+    if (completedRef.current[item.id]) {
+      setFeedback({
+        isCorrect: true,
+        feedback: '✓ Checkpoint completed! You can review your response or try again.',
+        correctAnswer: item.content?.correctAnswer,
+        explanation: item.explanation,
+      });
+    } else {
+      setFeedback(null);
+      setAnswer(item.type === 'MULTIPLE_SELECT' ? [] : '');
+    }
   };
 
   const handleTimeUpdate = (current: number) => {
@@ -348,19 +397,12 @@ export function InteractiveVideoPlayer({
       if (completedRef.current[item.id]) return false;
       if (activeRef.current && activeRef.current.id === item.id) return false;
       const crossed = prevTime < item.timestampSeconds && current >= item.timestampSeconds;
-      const landing = Math.abs(current - item.timestampSeconds) < 0.35 && prevTime <= item.timestampSeconds;
+      const landing = Math.abs(current - item.timestampSeconds) < 0.4 && prevTime <= item.timestampSeconds;
       return crossed || landing;
     });
 
     if (reachedCheckpoint) {
-      videoRef.current?.pause();
-      setPlaying(false);
-      activeRef.current = reachedCheckpoint;
-      setActive(reachedCheckpoint);
-      setAnswer(reachedCheckpoint.type === 'MULTIPLE_SELECT' ? [] : '');
-      videoRef.current?.seekTo(reachedCheckpoint.timestampSeconds);
-      lastTimeRef.current = reachedCheckpoint.timestampSeconds;
-      setPosition(reachedCheckpoint.timestampSeconds);
+      openCheckpoint(reachedCheckpoint);
       return;
     }
 
@@ -591,9 +633,10 @@ export function InteractiveVideoPlayer({
                 {formatVideoTime(position)}
               </span>
 
-              {/* Timeline Scrubber Container with Diamond Checkpoint Markers */}
-              <div className="relative flex-1 h-3 flex items-center group/scrubber cursor-pointer">
-                <div className="relative w-full h-1.5 rounded-full bg-slate-800 overflow-visible">
+              {/* Timeline Scrubber Container with Interactive Diamond Checkpoints */}
+              <div className="relative flex-1 h-6 flex items-center group/scrubber">
+                {/* Visual Track */}
+                <div className="relative w-full h-1.5 rounded-full bg-slate-800 pointer-events-none">
                   {/* Unlocked zone */}
                   <div
                     style={{ width: `${unlockedPercent}%` }}
@@ -604,43 +647,9 @@ export function InteractiveVideoPlayer({
                     style={{ width: `${currentPercent}%` }}
                     className="absolute left-0 top-0 bottom-0 bg-teal-400 rounded-full"
                   />
-
-                  {/* Checkpoint Diamonds on Scrubber */}
-                  {activities && totalDuration > 0 && (
-                    <div className="absolute inset-0 pointer-events-none">
-                      {activities.map((item) => {
-                        const leftPercent = Math.min(
-                          100,
-                          Math.max(0, (item.timestampSeconds / totalDuration) * 100)
-                        );
-                        const isDone = !!completed[item.id];
-                        return (
-                          <div
-                            key={item.id}
-                            style={{ left: `${leftPercent}%` }}
-                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto"
-                            title={`${item.title} (${formatVideoTime(item.timestampSeconds)})`}
-                          >
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                seek(item.timestampSeconds);
-                              }}
-                              className={`h-2.5 w-2.5 rotate-45 border transition-transform hover:scale-150 ${
-                                isDone
-                                  ? 'bg-emerald-400 border-white'
-                                  : 'bg-slate-300 border-slate-600'
-                              }`}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
 
-                {/* Native range input for scrubber dragging */}
+                {/* Native range input for scrubber dragging - z-10 */}
                 <input
                   aria-label="Video scrubber"
                   type="range"
@@ -649,8 +658,76 @@ export function InteractiveVideoPlayer({
                   step={0.1}
                   value={position}
                   onChange={(e) => seek(Number(e.target.value))}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
+
+                {/* Checkpoint Diamonds on Scrubber - z-20 for direct clicks */}
+                {activities && activities.length > 0 && totalDuration > 0 && (
+                  <div className="absolute inset-0 pointer-events-none z-20">
+                    {activities.map((item, idx) => {
+                      const leftPercent = Math.min(
+                        100,
+                        Math.max(0, (item.timestampSeconds / totalDuration) * 100)
+                      );
+                      const isDone = !!completed[item.id];
+                      const isActive = active?.id === item.id;
+                      const isLocked = !allowFreeSeek && item.timestampSeconds > maxAllowedTime + 1.0;
+
+                      return (
+                        <div
+                          key={item.id}
+                          style={{ left: `${leftPercent}%` }}
+                          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-auto group/diamond"
+                        >
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openCheckpoint(item);
+                            }}
+                            className="relative w-7 h-7 flex items-center justify-center cursor-pointer focus:outline-none"
+                            aria-label={`Checkpoint ${idx + 1}: ${item.title || 'Question'} at ${formatVideoTime(item.timestampSeconds)}`}
+                          >
+                            {/* Visual Diamond */}
+                            <span
+                              className={`block rotate-45 transition-all duration-150 ${
+                                isActive
+                                  ? 'w-3.5 h-3.5 bg-white border-2 border-teal-400 ring-4 ring-teal-400/60 shadow-lg scale-125'
+                                  : isDone
+                                  ? 'w-2.5 h-2.5 bg-teal-400 border border-white hover:scale-150 hover:bg-teal-300 shadow-sm'
+                                  : isLocked
+                                  ? 'w-2.5 h-2.5 bg-slate-500 border border-slate-700 opacity-60 hover:opacity-100 hover:scale-125'
+                                  : 'w-2.5 h-2.5 bg-slate-200 border border-slate-600 hover:scale-150 hover:bg-white shadow-sm'
+                              }`}
+                            />
+
+                            {/* Rich Hover Tooltip */}
+                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover/diamond:flex flex-col items-center pointer-events-none z-50 whitespace-nowrap">
+                              <div className="rounded-lg bg-slate-950/95 text-white text-[11px] font-semibold px-2.5 py-1 shadow-2xl border border-slate-800 flex items-center gap-1.5 backdrop-blur-md">
+                                <span className={isDone ? 'text-teal-400' : isActive ? 'text-white' : 'text-slate-400'}>
+                                  {isDone ? '✓' : isActive ? '📍' : isLocked ? '🔒' : '◆'}
+                                </span>
+                                <span className="font-bold">
+                                  Checkpoint {idx + 1}
+                                </span>
+                                <span className="text-slate-400 font-mono text-[10px]">
+                                  · {formatVideoTime(item.timestampSeconds)}
+                                </span>
+                                {item.title && (
+                                  <span className="text-slate-300 font-normal max-w-[150px] truncate text-[10px]">
+                                    ({item.title})
+                                  </span>
+                                )}
+                              </div>
+                              <div className="w-1.5 h-1.5 bg-slate-950 rotate-45 -mt-1 border-r border-b border-slate-800" />
+                            </div>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Total Duration (0:45) */}
@@ -702,14 +779,51 @@ export function InteractiveVideoPlayer({
               <div>
                 {/* Question Header */}
                 <div className="mb-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full">
-                      Checkpoint · {formatVideoTime(active.timestampSeconds)}
-                    </span>
-                    {active.points > 0 && (
-                      <span className="text-[11px] font-semibold text-slate-400">
-                        +{active.points} pts
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800/80 px-3 py-1 rounded-full shadow-2xs">
+                        <span className="w-2 h-2 rotate-45 bg-teal-500 shrink-0 inline-block" />
+                        Checkpoint {activeCheckpointIndex >= 0 ? `${activeCheckpointIndex + 1} of ${activities.length}` : ''}
                       </span>
+                      <span className="font-mono text-xs font-bold text-slate-400">
+                        {formatVideoTime(active.timestampSeconds)}
+                      </span>
+                    </div>
+
+                    {/* Checkpoint Previous / Next Switcher */}
+                    {activities && activities.length > 1 && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={activeCheckpointIndex <= 0}
+                          onClick={() => {
+                            if (activeCheckpointIndex > 0) {
+                              openCheckpoint(activities[activeCheckpointIndex - 1]);
+                            }
+                          }}
+                          className="px-2.5 py-0.5 rounded text-[11px] font-bold border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                          title="Previous checkpoint"
+                        >
+                          ← Prev
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            activeCheckpointIndex >= activities.length - 1 ||
+                            (!allowFreeSeek &&
+                              activities[activeCheckpointIndex + 1]?.timestampSeconds > maxAllowedTime + 1)
+                          }
+                          onClick={() => {
+                            if (activeCheckpointIndex < activities.length - 1) {
+                              openCheckpoint(activities[activeCheckpointIndex + 1]);
+                            }
+                          }}
+                          className="px-2.5 py-0.5 rounded text-[11px] font-bold border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                          title="Next checkpoint"
+                        >
+                          Next →
+                        </button>
+                      </div>
                     )}
                   </div>
                   <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white leading-snug">
@@ -879,18 +993,71 @@ export function InteractiveVideoPlayer({
                 {/* Next upcoming checkpoint card */}
                 {nextUpcomingCheckpoint && (
                   <div
-                    onClick={() => seek(nextUpcomingCheckpoint.timestampSeconds)}
-                    className="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between cursor-pointer hover:border-emerald-300 transition-all group"
+                    onClick={() => openCheckpoint(nextUpcomingCheckpoint)}
+                    className="mt-5 p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/30 border border-teal-200/80 dark:border-teal-800/80 flex items-center justify-between cursor-pointer hover:border-teal-400 transition-all group shadow-2xs"
                   >
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Next Checkpoint</p>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 group-hover:text-emerald-600">
-                        {nextUpcomingCheckpoint.title}
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-3.5 h-3.5 rotate-45 bg-teal-500 ring-4 ring-teal-200 dark:ring-teal-900 shrink-0 inline-block animate-pulse" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-wider text-teal-800 dark:text-teal-300">
+                          Next Checkpoint
+                        </p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 group-hover:text-teal-600 truncate">
+                          {nextUpcomingCheckpoint.title || 'Interactive Question'}
+                        </p>
+                      </div>
                     </div>
-                    <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-1 rounded-lg">
+                    <span className="font-mono text-xs font-bold text-teal-800 dark:text-teal-200 bg-teal-100 dark:bg-teal-900/80 px-2.5 py-1 rounded-lg shrink-0 ml-2">
                       {formatVideoTime(nextUpcomingCheckpoint.timestampSeconds)}
                     </span>
+                  </div>
+                )}
+
+                {/* All Checkpoint Diamonds Strip */}
+                {activities && activities.length > 0 && (
+                  <div className="mt-5">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                      Checkpoints on timeline ({activities.length}):
+                    </p>
+                    <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                      {activities.map((item, idx) => {
+                        const isDone = !!completed[item.id];
+                        const isLocked = !allowFreeSeek && item.timestampSeconds > maxAllowedTime + 1.0;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => openCheckpoint(item)}
+                            disabled={isLocked}
+                            className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
+                              isDone
+                                ? 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800 text-teal-950 dark:text-teal-200 cursor-pointer'
+                                : isLocked
+                                ? 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-60 cursor-not-allowed'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-400 text-slate-800 dark:text-slate-200 cursor-pointer shadow-2xs'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className={`w-2.5 h-2.5 rotate-45 shrink-0 inline-block ${
+                                  isDone
+                                    ? 'bg-teal-500'
+                                    : isLocked
+                                    ? 'bg-slate-400'
+                                    : 'bg-amber-400 ring-2 ring-amber-300'
+                                }`}
+                              />
+                              <span className="text-xs font-bold truncate">
+                                Checkpoint {idx + 1}: {item.title || 'Question'}
+                              </span>
+                            </div>
+                            <span className="font-mono text-[11px] text-slate-400 shrink-0 ml-2">
+                              {formatVideoTime(item.timestampSeconds)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
