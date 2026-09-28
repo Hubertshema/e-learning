@@ -111,10 +111,10 @@ export class AdmissionModel {
     const paymentRes = await query(
       `SELECT p.id, p.amount, p.currency, p.status, p."paymentMethod", p."transactionRef", p."receiptUrl", p.notes, p."verifiedAt", p."createdAt"
        FROM "public"."payments" p
-       WHERE p."studentId" = $1
+       WHERE (p."studentId" = $1 OR p."studentId" = $2)
        ORDER BY p."createdAt" DESC
        LIMIT 1`,
-      [row.profileId]
+      [row.profileId, row.id]
     );
     const latestPayment = paymentRes.rows[0] || null;
 
@@ -413,7 +413,7 @@ export class AdmissionModel {
   /**
    * 6. Student submits payment proof
    */
-  static async submitPaymentProof(studentUserId, { amount, paymentMethod, transactionRef, receiptUrl = '', paymentDate, notes = '' }) {
+  static async submitPaymentProof(studentUserId, { amount, currency = 'RWF', paymentMethod, transactionRef, receiptUrl = '', paymentDate, notes = '' }) {
     const status = await this.getStudentStatus(studentUserId);
     if (!status) throw new Error('Student profile not found');
 
@@ -423,9 +423,9 @@ export class AdmissionModel {
     const paymentRes = await query(
       `INSERT INTO "public"."payments"
         (id, "studentId", amount, currency, status, "paymentMethod", "transactionRef", "receiptUrl", notes, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, 'USD', 'PENDING', $4, $5, $6, $7, NOW(), NOW())
+       VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, $7, $8, NOW(), NOW())
        RETURNING *`,
-      [paymentId, status.admission.profileId, Number(amount) || 0, paymentMethod || 'Bank Transfer', transactionRef || `REF-${Date.now()}`, receiptUrl || '', notes || '']
+      [paymentId, status.admission.profileId || targetUserId, Number(amount) || 0, currency || 'RWF', paymentMethod || 'Mobile Money', transactionRef || `REF-${Date.now()}`, receiptUrl || '', notes || '']
     );
 
     // Update student payment status to PROOF_SUBMITTED (learningAccess remains LOCKED until verified)
@@ -477,7 +477,7 @@ export class AdmissionModel {
            "learningAccess" = 'ACTIVE',
            "updatedAt" = NOW()
        WHERE "userId" = $1`,
-      [studentUserId]
+      [targetUserId]
     );
 
     // If level is set, ensure enrolled into level courses
@@ -486,7 +486,7 @@ export class AdmissionModel {
     }
 
     await this.recordAudit({
-      studentId: studentUserId,
+      studentId: targetUserId,
       changedBy: teacherUserId,
       action: 'PAYMENT_VERIFIED',
       fromState: { paymentStatus: status.admission.paymentStatus, learningAccess: status.admission.learningAccess },

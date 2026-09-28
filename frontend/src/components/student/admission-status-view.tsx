@@ -121,8 +121,10 @@ export function AdmissionStatusView({
         amount: Number(amount) || 0,
         currency,
         paymentMethod,
+        transactionRef: transactionReference.trim(),
         transactionReference: transactionReference.trim(),
         paymentDate,
+        receiptUrl: proofNotes ? `Notes: ${proofNotes}` : 'Direct mobile receipt',
         proofUrl: proofNotes ? `Notes: ${proofNotes}` : 'Direct mobile receipt',
         notes: proofNotes,
       });

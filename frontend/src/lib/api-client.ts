@@ -178,6 +178,11 @@ function getFriendlyErrorMessage(raw: string, code: string, status: number): str
 
   if (code && codeMap[code]) return codeMap[code];
 
+  // If the raw message looks like a clean sentence (not a code), prioritize it
+  if (raw && raw.length > 0 && raw.length < 160 && !raw.includes('_') && /[a-z]/i.test(raw)) {
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+
   // HTTP status fallbacks
   if (status === 400) return 'Some information is missing or incorrect. Please check and try again.';
   if (status === 401) return 'Your session has ended. Please sign in again to continue.';
@@ -187,11 +192,6 @@ function getFriendlyErrorMessage(raw: string, code: string, status: number): str
   if (status === 422) return 'Some information is missing or incorrect. Please check and try again.';
   if (status === 429) return 'Too many attempts. Please wait a moment and try again.';
   if (status >= 500) return 'Something went wrong on our end. Please try again in a moment.';
-
-  // If the raw message looks like a clean sentence (not a code), use it
-  if (raw && raw.length > 0 && raw.length < 120 && !raw.includes('_') && /[a-z]/.test(raw)) {
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  }
 
   return 'Something went wrong. Please try again.';
 }

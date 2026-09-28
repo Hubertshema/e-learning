@@ -72,29 +72,43 @@ export class AdmissionController {
   static async submitPaymentProof(req, res) {
     try {
       const studentId = req.user.id;
-      const { amount, paymentMethod, transactionRef, receiptUrl, paymentDate, notes } = req.body;
+      const {
+        amount,
+        currency,
+        paymentMethod,
+        transactionRef,
+        transactionReference,
+        receiptUrl,
+        proofUrl,
+        paymentDate,
+        notes,
+      } = req.body;
+
+      const resolvedRef = (transactionRef || transactionReference || '').trim();
+      const resolvedReceipt = receiptUrl || proofUrl || '';
 
       if (!amount || Number(amount) <= 0) {
         return sendError(res, 'Please provide a valid payment amount', 400);
       }
 
-      if (!transactionRef || !transactionRef.trim()) {
+      if (!resolvedRef) {
         return sendError(res, 'Transaction reference number is required', 400);
       }
 
       const payment = await AdmissionModel.submitPaymentProof(studentId, {
-        amount,
-        paymentMethod,
-        transactionRef,
-        receiptUrl,
+        amount: Number(amount),
+        currency: currency || 'RWF',
+        paymentMethod: paymentMethod || 'Mobile Money',
+        transactionRef: resolvedRef,
+        receiptUrl: resolvedReceipt,
         paymentDate,
-        notes,
+        notes: notes || '',
       });
 
       return sendSuccess(res, payment, 'Payment proof submitted successfully. Awaiting faculty verification.', 201);
     } catch (error) {
       console.error('Submit Payment Proof Error:', error);
-      return sendError(res, error.message || 'Failed to submit payment proof', 500);
+      return sendError(res, error.message || 'Failed to submit payment proof', 400);
     }
   }
 
