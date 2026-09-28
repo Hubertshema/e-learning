@@ -158,6 +158,12 @@ export default function HomePage() {
                   </button>
                 </Link>
 
+                <Link href="/apply">
+                  <button className="rounded-xl bg-[#315b36] text-white px-8 py-3.5 font-bold text-xs uppercase tracking-wider shadow-lg hover:bg-[#254629] transition-all hover:scale-105 active:scale-95">
+                    APPLY NOW
+                  </button>
+                </Link>
+
                 <Link href="/quiz">
                   <button className="rounded-xl bg-[#eff4ec] text-[#315b36] border border-[#e2ebe2] px-5 py-3 font-bold text-xs hover:bg-[#d5e4d4] transition-all flex items-center gap-1.5 shadow-sm">
                     <Sparkles className="h-3.5 w-3.5 text-[#315b36]" />

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Lock, LogIn, ArrowLeft, ShieldCheck, UserPlus } from 'lucide-react';
+import { Lock, LogIn, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function UnauthorizedPage() {
@@ -37,12 +37,7 @@ export default function UnauthorizedPage() {
               <span>Sign In Now</span>
             </Button>
           </Link>
-          <Link href="/register" className="w-full sm:w-auto flex-1">
-            <Button variant="outline" className="w-full rounded-full border-slate-300 text-slate-800 hover:bg-slate-100 text-xs font-bold py-2.5 flex items-center justify-center gap-2">
-              <UserPlus className="h-4 w-4 text-sky-600" />
-              <span>Create Account</span>
-            </Button>
-          </Link>
+
         </div>
 
         <div className="pt-4 border-t border-slate-100 flex justify-center">
