@@ -27,6 +27,8 @@ import {
   ShieldCheck,
   Smartphone,
   Building,
+  ExternalLink,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
@@ -64,6 +66,7 @@ export interface ApplicationItem {
     paymentMethod: string;
     transactionReference: string;
     status: string;
+    receiptUrl?: string;
     notes?: string;
     paymentDate?: string;
     submittedAt?: string;
@@ -120,11 +123,25 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
       const rawApps = data?.applications || [];
       const normalizedApps: ApplicationItem[] = rawApps.map((app: any) => {
         const resolvedId = app.id || app.studentId || app.userId || app.profileId;
+        const payment = app.latestPayment || (app.latestPaymentId ? {
+          id: app.latestPaymentId,
+          amount: Number(app.latestPaymentAmount) || 0,
+          currency: app.latestPaymentCurrency || 'RWF',
+          paymentMethod: app.latestPaymentMethod || 'Mobile Money',
+          transactionReference: app.latestTransactionRef || app.transactionRef || '',
+          status: app.latestPaymentStatus || app.paymentStatus,
+          receiptUrl: app.latestReceiptUrl || app.receiptUrl || '',
+          notes: app.latestPaymentNotes || app.notes || '',
+          paymentDate: app.latestPaymentDate || app.paymentDate,
+          submittedAt: app.latestPaymentDate || app.paymentDate,
+        } : null);
+
         return {
           ...app,
           id: resolvedId,
           studentId: app.studentId || resolvedId,
           userId: app.userId || resolvedId,
+          latestPayment: payment,
         };
       });
       setApplications(normalizedApps);
@@ -752,16 +769,64 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                   </div>
                   <div className="col-span-2">
                     <span className="text-slate-500 block">Reference / Transaction ID:</span>
-                    <span className="font-mono font-bold bg-white dark:bg-slate-900 px-2 py-1 rounded border block">
-                      {paymentModalStudent.latestPayment.transactionReference}
+                    <span className="font-mono font-bold bg-white dark:bg-slate-900 px-2 py-1 rounded border block select-all">
+                      {paymentModalStudent.latestPayment.transactionReference || 'N/A'}
                     </span>
                   </div>
+                  {paymentModalStudent.latestPayment.paymentDate && (
+                    <div className="col-span-2">
+                      <span className="text-slate-500 block">Payment Date / Submitted:</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {new Date(paymentModalStudent.latestPayment.paymentDate).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                  )}
                   {paymentModalStudent.latestPayment.notes && (
                     <div className="col-span-2">
                       <span className="text-slate-500 block">Notes from Student:</span>
-                      <p className="italic text-slate-700 dark:text-slate-300">
+                      <p className="italic text-slate-700 dark:text-slate-300 bg-white/70 dark:bg-slate-900/60 p-2 rounded border">
                         {paymentModalStudent.latestPayment.notes}
                       </p>
+                    </div>
+                  )}
+
+                  {/* Receipt Image / Proof Preview */}
+                  {paymentModalStudent.latestPayment.receiptUrl && (
+                    <div className="col-span-2 space-y-1.5 pt-1">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold block">
+                        Attached Receipt Proof:
+                      </span>
+                      {paymentModalStudent.latestPayment.receiptUrl.startsWith('http') ||
+                      paymentModalStudent.latestPayment.receiptUrl.startsWith('/') ||
+                      paymentModalStudent.latestPayment.receiptUrl.startsWith('data:') ? (
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 space-y-2">
+                          <div className="max-h-60 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                            <img
+                              src={paymentModalStudent.latestPayment.receiptUrl}
+                              alt="Payment proof screenshot"
+                              className="max-h-56 max-w-full object-contain rounded"
+                            />
+                          </div>
+                          <div className="flex justify-end">
+                            <a
+                              href={paymentModalStudent.latestPayment.receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
+                            >
+                              <ExternalLink className="h-3 w-3" /> Open Full Image
+                            </a>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                          {paymentModalStudent.latestPayment.receiptUrl}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

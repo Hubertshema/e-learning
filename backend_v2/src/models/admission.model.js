@@ -116,7 +116,13 @@ export class AdmissionModel {
        LIMIT 1`,
       [row.profileId, row.id]
     );
-    const latestPayment = paymentRes.rows[0] || null;
+    const latestPaymentRow = paymentRes.rows[0] || null;
+    const latestPayment = latestPaymentRow
+      ? {
+          ...latestPaymentRow,
+          transactionReference: latestPaymentRow.transactionRef || '',
+        }
+      : null;
 
     // Get recent audit logs
     const auditsRes = await query(
@@ -197,13 +203,25 @@ export class AdmissionModel {
              sp."paymentRequirement", sp."paymentStatus", sp."learningAccess", sp."applicationData",
              sp."reviewedAt", sp."reviewedBy", sp."levelId",
              l.name as "levelName", l.code as "levelCode",
-             (SELECT p.id FROM "public"."payments" p WHERE p."studentId" = sp.id ORDER BY p."createdAt" DESC LIMIT 1) as "latestPaymentId",
-             (SELECT p.status FROM "public"."payments" p WHERE p."studentId" = sp.id ORDER BY p."createdAt" DESC LIMIT 1) as "latestPaymentStatus",
-             (SELECT p."receiptUrl" FROM "public"."payments" p WHERE p."studentId" = sp.id ORDER BY p."createdAt" DESC LIMIT 1) as "latestReceiptUrl",
-             (SELECT p.amount FROM "public"."payments" p WHERE p."studentId" = sp.id ORDER BY p."createdAt" DESC LIMIT 1) as "latestPaymentAmount"
+             pay.id as "latestPaymentId",
+             pay.amount as "latestPaymentAmount",
+             pay.currency as "latestPaymentCurrency",
+             pay.status as "latestPaymentStatus",
+             pay."paymentMethod" as "latestPaymentMethod",
+             pay."transactionRef" as "latestTransactionRef",
+             pay."receiptUrl" as "latestReceiptUrl",
+             pay.notes as "latestPaymentNotes",
+             pay."createdAt" as "latestPaymentDate"
       FROM "public"."users" u
       JOIN "public"."student_profiles" sp ON sp."userId" = u.id
       LEFT JOIN "public"."levels" l ON l.id = sp."levelId"
+      LEFT JOIN LATERAL (
+        SELECT p.id, p.amount, p.currency, p.status, p."paymentMethod", p."transactionRef", p."receiptUrl", p.notes, p."createdAt"
+        FROM "public"."payments" p
+        WHERE p."studentId" = sp.id OR p."studentId" = u.id
+        ORDER BY p."createdAt" DESC
+        LIMIT 1
+      ) pay ON true
       ${whereStr}
       ORDER BY 
         CASE WHEN sp."applicationStatus" = 'PENDING' THEN 1
@@ -215,6 +233,25 @@ export class AdmissionModel {
 
     params.push(limit, offset);
     const res = await query(listQuery, params);
+
+    // Format latestPayment nested object for each application
+    const applications = res.rows.map((row) => ({
+      ...row,
+      latestPayment: row.latestPaymentId
+        ? {
+            id: row.latestPaymentId,
+            amount: Number(row.latestPaymentAmount) || 0,
+            currency: row.latestPaymentCurrency || 'RWF',
+            paymentMethod: row.latestPaymentMethod || 'Mobile Money',
+            transactionReference: row.latestTransactionRef || '',
+            status: row.latestPaymentStatus,
+            receiptUrl: row.latestReceiptUrl || '',
+            notes: row.latestPaymentNotes || '',
+            paymentDate: row.latestPaymentDate,
+            submittedAt: row.latestPaymentDate,
+          }
+        : null,
+    }));
 
     // Count totals for summary pills
     const countsRes = await query(`
@@ -230,7 +267,7 @@ export class AdmissionModel {
     `);
 
     return {
-      applications: res.rows,
+      applications,
       counts: countsRes.rows[0] || {
         pendingCount: 0,
         acceptedCount: 0,
@@ -663,8 +700,8 @@ export class AdmissionModel {
         const enrollmentId = crypto.randomUUID();
         await query(
           `INSERT INTO "public"."enrollments"
-            (id, "studentId", "courseId", "levelCourseId", status, "enrolledAt", "createdAt", "updatedAt")
-           VALUES ($1, $2, $3, $4, 'ACTIVE', NOW(), NOW(), NOW())`,
+            (id, "studentId", "courseId", "levelCourseId", status, "enrolledAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, 'ACTIVE', NOW(), NOW())`,
           [enrollmentId, studentUserId, lc.courseId, lc.levelCourseId]
         );
         enrolledCount++;

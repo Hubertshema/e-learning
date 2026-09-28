@@ -25,6 +25,10 @@ import {
   ArrowRight,
   Send,
   HelpCircle,
+  Upload,
+  FileCheck,
+  Trash2,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
@@ -96,6 +100,24 @@ export function AdmissionStatusView({
   const [transactionReference, setTransactionReference] = useState('');
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [proofNotes, setProofNotes] = useState('');
+  const [proofImageFile, setProofImageFile] = useState<File | null>(null);
+  const [proofImagePreview, setProofImagePreview] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setProofError('Receipt file size must be less than 10MB.');
+        return;
+      }
+      setProofImageFile(file);
+      if (file.type.startsWith('image/')) {
+        setProofImagePreview(URL.createObjectURL(file));
+      } else {
+        setProofImagePreview(null);
+      }
+    }
+  };
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -117,6 +139,21 @@ export function AdmissionStatusView({
         throw new Error('Please enter the transaction reference or receipt number.');
       }
 
+      let uploadedReceiptUrl = '';
+      if (proofImageFile) {
+        const formData = new FormData();
+        formData.append('file', proofImageFile);
+        formData.append('folder', 'elearning/receipts');
+        try {
+          const uploadRes: any = await apiClient.upload('/upload/media', formData);
+          uploadedReceiptUrl = uploadRes?.url || '';
+        } catch (upErr: any) {
+          console.warn('Image upload failed, falling back:', upErr);
+        }
+      }
+
+      const receiptFinal = uploadedReceiptUrl || (proofNotes ? `Notes: ${proofNotes}` : 'Direct mobile receipt');
+
       await apiClient.post('/student/payment-proof', {
         amount: Number(amount) || 0,
         currency,
@@ -124,12 +161,14 @@ export function AdmissionStatusView({
         transactionRef: transactionReference.trim(),
         transactionReference: transactionReference.trim(),
         paymentDate,
-        receiptUrl: proofNotes ? `Notes: ${proofNotes}` : 'Direct mobile receipt',
-        proofUrl: proofNotes ? `Notes: ${proofNotes}` : 'Direct mobile receipt',
+        receiptUrl: receiptFinal,
+        proofUrl: receiptFinal,
         notes: proofNotes,
       });
 
       setProofSuccess('Payment proof submitted successfully! The administration will review and verify your access.');
+      setProofImageFile(null);
+      setProofImagePreview(null);
       await onRefresh();
     } catch (err: any) {
       setProofError(err?.message || 'Failed to submit payment proof. Please try again.');
@@ -588,6 +627,74 @@ export function AdmissionStatusView({
                             className="h-9 text-xs rounded-xl"
                           />
                         </div>
+                      </div>
+
+                      {/* Receipt Picture / Screenshot Upload */}
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Upload className="h-3.5 w-3.5 text-[#315b36]" />
+                            Upload Receipt Picture / Screenshot (Recommended)
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-normal">PNG, JPG, WEBP, PDF up to 10MB</span>
+                        </label>
+
+                        {!proofImageFile ? (
+                          <label className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-[#315b36] dark:hover:border-emerald-500/50 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-slate-50/50 dark:bg-slate-900/50 group">
+                            <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 shadow-xs border flex items-center justify-center text-slate-400 group-hover:text-[#315b36] group-hover:scale-110 transition-all">
+                              <Upload className="h-5 w-5" />
+                            </div>
+                            <div className="text-center">
+                              <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">
+                                Click or tap to browse receipt image
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                Attach SMS confirmation screenshot or bank slip
+                              </p>
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
+                              onChange={handleFileChange}
+                              className="hidden"
+                            />
+                          </label>
+                        ) : (
+                          <div className="p-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {proofImagePreview ? (
+                                <img
+                                  src={proofImagePreview}
+                                  alt="Receipt preview"
+                                  className="h-12 w-12 rounded-xl object-cover border shrink-0 shadow-xs"
+                                />
+                              ) : (
+                                <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                                  <FileCheck className="h-6 w-6 text-emerald-700" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="font-bold text-slate-900 dark:text-white truncate text-xs">
+                                  {proofImageFile.name}
+                                </p>
+                                <p className="text-[10px] text-slate-500">
+                                  {(proofImageFile.size / 1024).toFixed(0)} KB &bull; Ready to upload
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProofImageFile(null);
+                                setProofImagePreview(null);
+                              }}
+                              className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors shrink-0"
+                              title="Remove image"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-1">
