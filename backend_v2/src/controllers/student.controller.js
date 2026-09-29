@@ -520,7 +520,12 @@ export class StudentController {
           courseId: e.courseId,
           title: e.title,
           level: e.level || 'CEFR Level',
-          status: e.status
+          status: e.status,
+          teacher: {
+            firstName: e.teacherFirstName || 'Faculty',
+            lastName: e.teacherLastName || 'Instructor',
+            avatarUrl: e.teacherAvatar
+          }
         })),
         studyStatistics,
         skillProficiency,

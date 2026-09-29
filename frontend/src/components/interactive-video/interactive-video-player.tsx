@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
   CheckCircle2,
+  Check,
   Clock,
   Pause,
   Play,
