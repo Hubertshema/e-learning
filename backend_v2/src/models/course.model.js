@@ -1,4 +1,4 @@
-import { query, parsePgArray } from '../config/database.js';
+import { query, pool, parsePgArray } from '../config/database.js';
 import crypto from 'crypto';
 
 export class CourseModel {
@@ -122,30 +122,69 @@ export class CourseModel {
   /**
    * Create course
    */
-  static async create({ title, slug, description, summary, level, category, currency = 'USD', durationDays = 30, teacherId }) {
+  static async create({ title, slug, description, summary, level, category, currency = 'USD', durationDays = 30, published, isPublished, teacherId }) {
     const id = crypto.randomUUID();
+    const finalPublished = published !== undefined ? Boolean(published) : (isPublished !== undefined ? Boolean(isPublished) : false);
+    const finalSlug = slug || `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${Date.now().toString().slice(-6)}`;
+    
+    // Resolve teacher_profile id if userId was passed
+    let resolvedTeacherId = teacherId;
+    if (teacherId) {
+      const tpRes = await query(`SELECT id FROM "public"."teacher_profiles" WHERE id = $1 OR "userId" = $1 LIMIT 1`, [teacherId]);
+      if (tpRes.rows[0]) {
+        resolvedTeacherId = tpRes.rows[0].id;
+      }
+    }
+
     const res = await query(
       `INSERT INTO "public"."courses"
         (id, title, slug, description, summary, level, category, currency, "durationDays", "isPublished", featured, "teacherId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, false, $10, NOW(), NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false, $11, NOW(), NOW())
        RETURNING *`,
-      [id, title, slug, description, summary, level, category, currency, durationDays, teacherId]
+      [id, title, finalSlug, description || '', summary || null, String(level || '1'), category || 'General English', currency, durationDays, finalPublished, resolvedTeacherId]
     );
     return res.rows[0];
+  }
+
+  /**
+   * Toggle or set publish status
+   */
+  static async setPublishStatus(id, isPublished) {
+    const res = await query(
+      `UPDATE "public"."courses" 
+       SET "isPublished" = $1, "updatedAt" = NOW() 
+       WHERE id = $2 
+       RETURNING *`,
+      [Boolean(isPublished), id]
+    );
+    return res.rows[0] || null;
   }
 
   /**
    * Update course
    */
   static async update(id, fields = {}) {
+    const allowedCols = new Set([
+      'title', 'slug', 'description', 'summary', 'level', 'category',
+      'currency', 'durationDays', 'thumbnailUrl', 'isPublished', 'featured', 'teacherId'
+    ]);
+
+    const mapped = { ...fields };
+    if (mapped.published !== undefined && mapped.isPublished === undefined) {
+      mapped.isPublished = Boolean(mapped.published);
+    }
+    delete mapped.published;
+
     const setClauses = [];
     const values = [];
     let idx = 1;
 
-    for (const [key, val] of Object.entries(fields)) {
-      setClauses.push(`"${key}" = $${idx}`);
-      values.push(val);
-      idx++;
+    for (const [key, val] of Object.entries(mapped)) {
+      if (allowedCols.has(key)) {
+        setClauses.push(`"${key}" = $${idx}`);
+        values.push(val);
+        idx++;
+      }
     }
 
     if (setClauses.length === 0) return this.findById(id);
@@ -162,4 +201,65 @@ export class CourseModel {
     );
     return res.rows[0] || null;
   }
+
+  /**
+   * Cascade Delete course and all curriculum units, lessons, and dependencies
+   */
+  static async delete(id) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Find all units and lessons for this course
+      const unitsRes = await client.query(`SELECT id FROM "public"."units" WHERE "courseId" = $1`, [id]);
+      const unitIds = unitsRes.rows.map(u => u.id);
+
+      if (unitIds.length > 0) {
+        const lessonsRes = await client.query(`SELECT id FROM "public"."lessons" WHERE "unitId" = ANY($1)`, [unitIds]);
+        const lessonIds = lessonsRes.rows.map(l => l.id);
+
+        if (lessonIds.length > 0) {
+          const lessonTables = [
+            'lesson_sections',
+            'activities',
+            'assignments',
+            'quizzes',
+            'progress',
+            'student_lesson_overrides',
+            'interactive_video_resources',
+            'interactive_video_activities',
+            'interactive_video_progress',
+            'interactive_videos',
+            'interactive_video_lessons'
+          ];
+          for (const tbl of lessonTables) {
+            try {
+              await client.query(`DELETE FROM "${tbl}" WHERE "lessonId" = ANY($1)`, [lessonIds]);
+            } catch {}
+          }
+          await client.query(`DELETE FROM "public"."lessons" WHERE id = ANY($1)`, [lessonIds]);
+        }
+        await client.query(`DELETE FROM "public"."units" WHERE id = ANY($1)`, [unitIds]);
+      }
+
+      // 2. Delete course associations
+      try {
+        await client.query(`DELETE FROM "public"."enrollments" WHERE "courseId" = $1`, [id]);
+        await client.query(`DELETE FROM "public"."level_courses" WHERE "courseId" = $1`, [id]);
+        await client.query(`DELETE FROM "public"."classes" WHERE "courseId" = $1`, [id]);
+      } catch {}
+
+      // 3. Delete course
+      const delCourse = await client.query(`DELETE FROM "public"."courses" WHERE id = $1 RETURNING *`, [id]);
+
+      await client.query('COMMIT');
+      return delCourse.rows[0] || null;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
 }
+

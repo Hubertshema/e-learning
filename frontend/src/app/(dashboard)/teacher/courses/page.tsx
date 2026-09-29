@@ -157,11 +157,12 @@ export default function TeacherCoursesPage() {
 
   const handleOpenEditModal = (c: Course) => {
     setEditingCourse(c);
+    const isPub = Boolean(c.published ?? (c as any).isPublished ?? false);
     setCourseForm({
       title: c.title,
       description: c.description || '',
       level: c.level ? String(c.level) : (levelsData.length > 0 ? String(levelsData[0].id) : ''),
-      published: Boolean(c.published),
+      published: isPub,
     });
     setShowCourseModal(true);
   };
@@ -195,17 +196,18 @@ export default function TeacherCoursesPage() {
   const handleTogglePublish = async (course: Course) => {
     try {
       setActionLoadingId(course.id);
-      const endpoint = course.published ? 'unpublish' : 'publish';
+      const isCurrentlyPublished = Boolean(course.published ?? (course as any).isPublished ?? false);
+      const endpoint = isCurrentlyPublished ? 'unpublish' : 'publish';
       await apiClient.post(`/teacher/courses/${course.id}/${endpoint}`);
-      const newStatus = !course.published;
+      const newStatus = !isCurrentlyPublished;
       mutate((prev) =>
-        prev ? prev.map((item) => (item.id === course.id ? { ...item, published: newStatus } : item)) : []
+        prev ? prev.map((item) => (item.id === course.id ? { ...item, published: newStatus, isPublished: newStatus } : item)) : []
       );
       setFeedback({
         type: 'success',
         message: newStatus
-          ? `"${course.title}" is now published and open for student enrollments.`
-          : `"${course.title}" is now draft/unpublished.`,
+          ? `"${course.title}" is now published and active for enrollments.`
+          : `"${course.title}" is now saved as a draft.`,
       });
       clientCache.invalidate('teacher_');
       await refreshCourses();
@@ -221,8 +223,9 @@ export default function TeacherCoursesPage() {
     try {
       setSaving(true);
       await apiClient.delete(`/teacher/courses/${deletingCourse.id}`);
-      setFeedback({ type: 'success', message: `Course "${deletingCourse.title}" deleted.` });
+      setFeedback({ type: 'success', message: `Course "${deletingCourse.title}" deleted successfully.` });
       setDeletingCourse(null);
+      mutate((prev) => (prev ? prev.filter((item) => item.id !== deletingCourse.id) : []));
       clientCache.invalidate('teacher_');
       await refreshCourses();
     } catch (err: any) {
@@ -467,20 +470,43 @@ export default function TeacherCoursesPage() {
             return (
               <Card
                 key={c.id}
-                className="overflow-hidden border-slate-200/80 dark:border-slate-800 transition-all hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between"
+                className="overflow-hidden border-slate-200/80 dark:border-slate-800 transition-all hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between group"
               >
                 {/* Top Card Content */}
-                <div className="p-6 space-y-4">
-                  {/* Badge & Status Header */}
+                <div className="p-5 sm:p-6 space-y-4">
+                  {/* Badge & Quick Actions Header */}
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant="indigo" className="font-bold text-xs px-2.5 py-0.5">
                       {levelsData.find(l => String(l.id) === String(c.level))?.name || `Level ${c.level}`}
                     </Badge>
 
                     <div className="flex items-center gap-1.5">
-                      <Badge variant={isPub ? 'success' : 'warning'} className="text-[11px] font-bold">
-                        {isPub ? 'Published' : 'Draft'}
-                      </Badge>
+                      {/* Publish / Draft Toggle Badge */}
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePublish(c)}
+                        disabled={isPublishLoading}
+                        title={isPub ? 'Click to unpublish (switch to draft)' : 'Click to publish course'}
+                        className="transition-transform active:scale-95"
+                      >
+                        <Badge
+                          variant={isPub ? 'success' : 'warning'}
+                          className="text-[11px] font-bold cursor-pointer hover:opacity-85 gap-1 select-none"
+                        >
+                          <Globe className={`h-3 w-3 ${isPublishLoading ? 'animate-spin' : ''}`} />
+                          {isPub ? 'Published' : 'Draft'}
+                        </Badge>
+                      </button>
+
+                      {/* Header Delete Icon */}
+                      <button
+                        type="button"
+                        onClick={() => setDeletingCourse(c)}
+                        className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        title="Delete Course"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
 
@@ -509,13 +535,13 @@ export default function TeacherCoursesPage() {
                 </div>
 
                 {/* Bottom Card Actions */}
-                <div className="bg-slate-50 dark:bg-slate-900/80 px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                <div className="bg-slate-50 dark:bg-slate-900/80 px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     {/* Curriculum Studio Link */}
                     <Link href={`/studio/${c.id}`}>
-                      <Button size="sm" variant="gradient" className="text-xs h-8 font-bold px-3">
+                      <Button size="sm" variant="gradient" className="text-xs h-8 font-bold px-3 shadow-xs">
                         <Layers className="h-3.5 w-3.5 mr-1" />
-                        Curriculum Studio
+                        Curriculum
                       </Button>
                     </Link>
 
@@ -534,27 +560,27 @@ export default function TeacherCoursesPage() {
                       variant="ghost"
                       onClick={() => handleTogglePublish(c)}
                       disabled={isPublishLoading}
-                      className="text-xs h-8 px-2"
-                      title={c.published ? 'Unpublish Course' : 'Publish Course'}
+                      className="text-xs h-8 px-2 text-slate-600 dark:text-slate-300 hover:text-emerald-600"
+                      title={isPub ? 'Unpublish Course' : 'Publish Course'}
                     >
-                      <Globe className={`h-3.5 w-3.5 ${c.published ? 'text-emerald-600' : 'text-slate-400'}`} />
+                      <Globe className={`h-3.5 w-3.5 ${isPub ? 'text-emerald-600' : 'text-slate-400'}`} />
                     </Button>
 
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => handleOpenEditModal(c)}
-                      className="text-xs h-8 px-2"
+                      className="text-xs h-8 px-2 text-slate-600 dark:text-slate-300 hover:text-primary-600"
                       title="Edit Course Settings"
                     >
-                      <Edit2 className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
+                      <Edit2 className="h-3.5 w-3.5" />
                     </Button>
 
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => setDeletingCourse(c)}
-                      className="text-xs h-8 px-2 text-destructive hover:bg-destructive/10"
+                      className="text-xs h-8 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                       title="Delete Course"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -580,64 +606,75 @@ export default function TeacherCoursesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredCourses.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-950 font-bold">
-                          <BookOpen className="h-4 w-4" />
+                {filteredCourses.map((c) => {
+                  const isPub = c.published ?? (c as any).isPublished ?? false;
+                  return (
+                    <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-950 font-bold">
+                            <BookOpen className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="font-bold">{c.title}</p>
+                            <p className="text-[11px] text-slate-400 font-normal line-clamp-1">{c.description || 'No description'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold">{c.title}</p>
-                          <p className="text-[11px] text-slate-400 font-normal line-clamp-1">{c.description || 'No description'}</p>
-                        </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="py-3.5 px-4">
-                      <Badge variant="indigo" className="text-[11px]">{levelsData.find(l => String(l.id) === String(c.level))?.name || `Level ${c.level}`}</Badge>
-                    </td>
+                      <td className="py-3.5 px-4">
+                        <Badge variant="indigo" className="text-[11px]">{levelsData.find(l => String(l.id) === String(c.level))?.name || `Level ${c.level}`}</Badge>
+                      </td>
 
-                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
-                      <strong>{c.units?.length || c._count?.units || (c as any).unitCount || 0}</strong> Units
-                    </td>
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                        <strong>{c.units?.length || c._count?.units || (c as any).unitCount || 0}</strong> Units
+                      </td>
 
-                    <td className="py-3.5 px-4">
-                      <Badge variant={(c.published ?? (c as any).isPublished) ? 'success' : 'warning'}>
-                        {(c.published ?? (c as any).isPublished) ? 'Published' : 'Draft'}
-                      </Badge>
-                    </td>
+                      <td className="py-3.5 px-4">
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePublish(c)}
+                          disabled={actionLoadingId === c.id}
+                          title={isPub ? 'Click to unpublish' : 'Click to publish'}
+                        >
+                          <Badge variant={isPub ? 'success' : 'warning'} className="cursor-pointer hover:opacity-85 gap-1">
+                            <Globe className="h-3 w-3" />
+                            {isPub ? 'Published' : 'Draft'}
+                          </Badge>
+                        </button>
+                      </td>
 
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link href={`/studio/${c.id}`}>
-                          <Button size="sm" variant="outline" className="text-xs h-7 px-2.5 font-bold">
-                            <Layers className="h-3 w-3 mr-1" />
-                            Studio
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link href={`/studio/${c.id}`}>
+                            <Button size="sm" variant="outline" className="text-xs h-7 px-2.5 font-bold">
+                              <Layers className="h-3 w-3 mr-1" />
+                              Studio
+                            </Button>
+                          </Link>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOpenEditModal(c)}
+                            className="h-7 w-7 p-0"
+                            title="Edit Course"
+                          >
+                            <Edit2 className="h-3.5 w-3.5 text-slate-500" />
                           </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleOpenEditModal(c)}
-                          className="h-7 w-7 p-0"
-                          title="Edit"
-                        >
-                          <Edit2 className="h-3.5 w-3.5 text-slate-500" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setDeletingCourse(c)}
-                          className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeletingCourse(c)}
+                            className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                            title="Delete Course"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -703,7 +740,7 @@ export default function TeacherCoursesPage() {
                     className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                   />
                   <label htmlFor="publishedCheck" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                    Publish immediately
+                    {editingCourse ? 'Published (visible in course catalog)' : 'Publish immediately'}
                   </label>
                 </div>
 

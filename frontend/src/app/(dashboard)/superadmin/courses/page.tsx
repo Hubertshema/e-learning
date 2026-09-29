@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api-client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Search, Star, CheckCircle2, AlertCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { BookOpen, Search, Star, CheckCircle2, AlertCircle, Eye, EyeOff, RefreshCw, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function SuperadminCoursesPage() {
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deletingCourse, setDeletingCourse] = useState<any | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const {
@@ -74,6 +75,23 @@ export default function SuperadminCoursesPage() {
       clientCache.invalidate('superadmin_');
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Failed to update feature status' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!deletingCourse) return;
+    setActionLoading(deletingCourse.id);
+    try {
+      await apiClient(`/superadmin/courses/${deletingCourse.id}`, { method: 'DELETE' });
+      setMessage({ type: 'success', text: `Course "${deletingCourse.title}" deleted successfully.` });
+      mutate((prev) => (prev ? prev.filter((c) => c.id !== deletingCourse.id) : []));
+      setDeletingCourse(null);
+      clientCache.invalidate('superadmin_');
+      await refresh();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to delete course' });
     } finally {
       setActionLoading(null);
     }
@@ -224,10 +242,59 @@ export default function SuperadminCoursesPage() {
                       </>
                     )}
                   </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeletingCourse(course)}
+                    disabled={actionLoading === course.id}
+                    className="text-xs h-8 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900"
+                    title="Delete Course Program"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="max-w-md w-full p-6 space-y-4 border-destructive/20 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Delete Course Program
+                </h3>
+                <p className="text-xs text-slate-500">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Are you sure you want to delete <strong>&quot;{deletingCourse.title}&quot;</strong> and all associated units, lessons, and activities?
+            </p>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button type="button" variant="outline" size="sm" onClick={() => setDeletingCourse(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={actionLoading === deletingCourse.id}
+                onClick={handleDeleteCourse}
+              >
+                {actionLoading === deletingCourse.id ? 'Deleting...' : 'Confirm Delete'}
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
     </div>

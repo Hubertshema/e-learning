@@ -31,6 +31,9 @@ router.get('/courses', TeacherController.getCourses);
 router.post('/courses', TeacherController.createCourse);
 router.get('/courses/:courseId', TeacherController.getCourseDetails);
 router.put('/courses/:courseId', TeacherController.updateCourse);
+router.delete('/courses/:courseId', TeacherController.deleteCourse);
+router.post('/courses/:courseId/publish', TeacherController.publishCourse);
+router.post('/courses/:courseId/unpublish', TeacherController.unpublishCourse);
 
 // Curriculum: Units & Lessons
 router.post('/courses/:courseId/units', TeacherController.addUnit);

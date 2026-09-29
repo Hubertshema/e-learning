@@ -1,4 +1,5 @@
 import { SuperadminModel } from '../models/superadmin.model.js';
+import { CourseModel } from '../models/course.model.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 import bcrypt from 'bcryptjs';
 
@@ -164,6 +165,21 @@ export class SuperadminController {
       next(err);
     }
   }
+
+  /**
+   * DELETE /api/v1/superadmin/courses/:id
+   */
+  static async deleteCourse(req, res, next) {
+    try {
+      const { id } = req.params;
+      const deleted = await CourseModel.delete(id);
+      if (!deleted) return sendError(res, 'Course not found', 404);
+      return sendSuccess(res, deleted, 'Course deleted successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
 
   /**
    * GET /api/v1/superadmin/classes

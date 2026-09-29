@@ -75,6 +75,46 @@ export class TeacherController {
   }
 
   /**
+   * POST /api/v1/teacher/courses/:courseId/publish
+   */
+  static async publishCourse(req, res, next) {
+    try {
+      const course = await CourseModel.setPublishStatus(req.params.courseId, true);
+      if (!course) return sendError(res, 'Course not found', 404);
+      return sendSuccess(res, course, 'Course published successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/v1/teacher/courses/:courseId/unpublish
+   */
+  static async unpublishCourse(req, res, next) {
+    try {
+      const course = await CourseModel.setPublishStatus(req.params.courseId, false);
+      if (!course) return sendError(res, 'Course not found', 404);
+      return sendSuccess(res, course, 'Course unpublished successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * DELETE /api/v1/teacher/courses/:courseId
+   */
+  static async deleteCourse(req, res, next) {
+    try {
+      const deleted = await CourseModel.delete(req.params.courseId);
+      if (!deleted) return sendError(res, 'Course not found', 404);
+      return sendSuccess(res, deleted, 'Course deleted successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+
+  /**
    * POST /api/v1/teacher/courses/:courseId/units
    */
   static async addUnit(req, res, next) {

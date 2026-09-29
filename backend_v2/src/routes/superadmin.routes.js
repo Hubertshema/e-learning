@@ -28,6 +28,7 @@ router.patch('/students/:id/status', SuperadminController.updateStudentStatus);
 // Course Management
 router.get('/courses', SuperadminController.getCourses);
 router.patch('/courses/:id/status', SuperadminController.updateCourseStatus);
+router.delete('/courses/:id', SuperadminController.deleteCourse);
 
 // Class / Cohort Management
 router.get('/classes', SuperadminController.getClasses);
