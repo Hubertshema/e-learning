@@ -140,8 +140,8 @@ export default function TeacherCoursesPage() {
   // KPI Calculations
   const totalCourses = courses.length;
   const publishedCourses = courses.filter((c) => c.published ?? (c as any).isPublished).length;
-  const totalUnits = courses.reduce((acc, c) => acc + (c.units?.length || c._count?.units || (c as any).unitCount || 0), 0);
-  const totalEnrollments = courses.reduce((acc, c) => acc + (c._count?.enrollments || (c as any).enrollmentCount || 0), 0);
+  const totalUnits = courses.reduce((acc, c) => acc + Number(c.units?.length ?? c._count?.units ?? (c as any).unitCount ?? 0), 0);
+  const totalEnrollments = courses.reduce((acc, c) => acc + Number(c._count?.enrollments ?? (c as any).enrollmentCount ?? 0), 0);
 
   // Handlers
   const handleOpenCreateModal = () => {

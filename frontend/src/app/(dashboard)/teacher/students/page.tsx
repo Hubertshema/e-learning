@@ -1193,10 +1193,10 @@ function DirectoryTab() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs whitespace-nowrap">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400">
-                <th className="w-10 px-4 py-3.5 text-center">
+                <th className="w-8 px-2 py-2 sm:px-4 sm:py-3.5 text-center">
                   <button
                     onClick={toggleSelectAll}
                     className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -1211,12 +1211,12 @@ function DirectoryTab() {
                     )}
                   </button>
                 </th>
-                <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px]">Learner Details</th>
-                <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px]">Course &amp; Level</th>
-                <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px]">Cohort / Class</th>
-                <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px]">Status</th>
-                <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px]">Enrolled On</th>
-                <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-right">Quick Actions</th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3.5 font-bold uppercase tracking-wider text-[10px]">Learner Details</th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3.5 font-bold uppercase tracking-wider text-[10px]">Course &amp; Level</th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3.5 font-bold uppercase tracking-wider text-[10px]">Cohort / Class</th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3.5 font-bold uppercase tracking-wider text-[10px]">Status</th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3.5 font-bold uppercase tracking-wider text-[10px]">Enrolled On</th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3.5 font-bold uppercase tracking-wider text-[10px] text-right">Quick Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -1232,7 +1232,7 @@ function DirectoryTab() {
                     }`}
                   >
                     {/* Checkbox column */}
-                    <td className="px-4 py-3.5 text-center">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3.5 text-center">
                       <button
                         onClick={() => toggleSelectOne(st.id)}
                         className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -1246,11 +1246,13 @@ function DirectoryTab() {
                     </td>
 
                     {/* Learner Details */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <AvatarCircle first={st.user.firstName} last={st.user.lastName} />
+                    <td className="px-2 py-2 sm:px-4 sm:py-3.5">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="hidden sm:block">
+                          <AvatarCircle first={st.user.firstName} last={st.user.lastName} />
+                        </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                             <Link
                               href={`/teacher/students/${st.studentId || st.user.id}`}
                               className="font-bold text-slate-900 dark:text-white leading-tight truncate hover:text-[#315b36] hover:underline flex items-center gap-1 group"
@@ -1259,17 +1261,17 @@ function DirectoryTab() {
                             </Link>
                             {st.user.isVerified && (
                               <span
-                                className="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded-md border border-emerald-200 dark:border-emerald-800"
+                                className="inline-flex items-center text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded-md border border-emerald-200 dark:border-emerald-800"
                                 title="Verified User Account"
                               >
                                 ✓ Verified
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5 truncate">{st.user.email}</p>
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate max-w-[120px] sm:max-w-xs">{st.user.email}</p>
                           <div className="flex items-center gap-1.5 mt-1">
                             <span
-                              className="inline-flex items-center text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.2 rounded-md border border-sky-200 dark:border-sky-800"
+                              className="inline-flex items-center text-[9px] sm:text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.2 rounded-md border border-sky-200 dark:border-sky-800"
                               title={`Proficiency: ${formatCefrLevel(st.currentLevel || st.user.studentProfile?.currentLevel)}`}
                             >
                               {formatCefrLevel(st.currentLevel || st.user.studentProfile?.currentLevel) || 'A1'}
@@ -1281,17 +1283,17 @@ function DirectoryTab() {
                     </td>
 
                     {/* Course & Level */}
-                    <td className="px-4 py-3.5">
-                      <p className="font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3.5">
+                      <p className="font-bold text-slate-800 dark:text-slate-200 leading-tight truncate max-w-[120px] sm:max-w-xs">
                         {st.course?.title || 'Course'}
                       </p>
                       <div className="flex flex-wrap items-center gap-1 mt-1">
-                        <span className="inline-block text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
+                        <span className="inline-block text-[9px] sm:text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
                           {formatCourseLevel(st.course?.level) || st.levelName || 'Level 1 (Beginner)'}
                         </span>
                         {Array.isArray((st as any).courses) && (st as any).courses.length > 1 && (
                           <span
-                            className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded-md border border-indigo-200/80 dark:border-indigo-800 cursor-help"
+                            className="inline-block text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded-md border border-indigo-200/80 dark:border-indigo-800 cursor-help"
                             title={(st as any).courses.map((c: any) => `${c.title} (${formatCourseLevel(c.level) || c.level || ''})`).join(', ')}
                           >
                             +{(st as any).courses.length - 1} more
@@ -1301,66 +1303,69 @@ function DirectoryTab() {
                     </td>
 
                     {/* Cohort / Class */}
-                    <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 font-medium">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3.5 text-slate-600 dark:text-slate-300 font-medium">
                       {st.class?.name ? (
-                        <span className="inline-flex items-center gap-1 text-xs">
+                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs">
                           <Users className="h-3 w-3 text-slate-400" />
-                          {st.class.name}
+                          <span className="truncate max-w-[80px] sm:max-w-[150px]">{st.class.name}</span>
                         </span>
                       ) : (
-                        <span className="text-slate-400 italic text-[11px]">Self-paced</span>
+                        <span className="text-slate-400 italic text-[10px] sm:text-[11px]">Self-paced</span>
                       )}
                     </td>
 
                     {/* Status & Access */}
-                    <td className="px-4 py-3.5">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3.5">
                       <div className="flex flex-col gap-1 items-start">
                         <StatusBadge status={st.status} />
                         {(st as any).learningAccess === 'LOCKED' ? (
                           <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-50 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                            className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9px] font-black bg-amber-50 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
                             title={(st as any).paymentStatus === 'UNPAID' ? 'Accepted but Unpaid — Access Locked' : 'Access Locked'}
                           >
-                            <Lock className="h-2.5 w-2.5 text-amber-600" />
-                            {(st as any).paymentStatus === 'UNPAID' ? 'Locked (Unpaid)' : 'Locked'}
+                            <Lock className="h-2.5 w-2.5 text-amber-600 shrink-0" />
+                            <span className="hidden sm:inline">{(st as any).paymentStatus === 'UNPAID' ? 'Locked (Unpaid)' : 'Locked'}</span>
+                            <span className="sm:hidden">Locked</span>
                           </span>
                         ) : (st as any).paymentStatus === 'UNPAID' ? (
                           <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                            className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9px] font-black bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
                             title="Active Learning Access but Payment is Pending"
                           >
-                            <Unlock className="h-2.5 w-2.5 text-blue-600" />
-                            Active (Unpaid)
+                            <Unlock className="h-2.5 w-2.5 text-blue-600 shrink-0" />
+                            <span className="hidden sm:inline">Active (Unpaid)</span>
+                            <span className="sm:hidden">Unpaid</span>
                           </span>
                         ) : (
                           <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                            className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9px] font-black bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                             title="Active Learning Access Unlocked & Paid"
                           >
-                            <Unlock className="h-2.5 w-2.5 text-emerald-600" />
-                            Active Access
+                            <Unlock className="h-2.5 w-2.5 text-emerald-600 shrink-0" />
+                            <span className="hidden sm:inline">Active Access</span>
+                            <span className="sm:hidden">Access</span>
                           </span>
                         )}
                       </div>
                     </td>
 
                     {/* Enrolled On */}
-                    <td className="px-4 py-3.5 text-slate-500 font-medium">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3.5 text-slate-500 font-medium text-[11px] sm:text-xs">
                       {new Date(st.enrolledAt).toLocaleDateString()}
                     </td>
 
                     {/* ─── Refined Quick Action Buttons ────────────────────── */}
-                    <td className="px-4 py-3.5 text-right">
-                      <div className="relative inline-flex items-center gap-1 justify-end">
+                    <td className="px-2 py-2 sm:px-4 sm:py-3.5 text-right">
+                      <div className="relative inline-flex items-center gap-0.5 sm:gap-1 justify-end">
                         {/* 1. View Portfolio Profile */}
                         <Link href={`/teacher/students/${st.studentId || st.user.id}`}>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg text-slate-600 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                             title="View student portfolio & assessment record"
                           >
-                            <Eye className="h-3.5 w-3.5" />
+                            <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                           </Button>
                         </Link>
 
@@ -1368,7 +1373,7 @@ function DirectoryTab() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                          className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg text-slate-600 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                           onClick={() =>
                             setCoachingStudent({
                               id: st.studentId || st.user.id,
@@ -1379,25 +1384,25 @@ function DirectoryTab() {
                           }
                           title="Send coaching note / feedback"
                         >
-                          <MessageSquare className="h-3.5 w-3.5" />
+                          <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Button>
 
                         {/* 3. Quick Edit Enrollment */}
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
                           onClick={() => openEdit(st)}
                           title="Edit enrollment & cohort"
                         >
-                          <Edit3 className="h-3.5 w-3.5" />
+                          <Edit3 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Button>
 
                         {/* 4. Quick +30 Days Access */}
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 px-2 rounded-lg text-[11px] font-bold text-emerald-700 border-emerald-200/80 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40 gap-1"
+                          className="h-7 sm:h-8 px-1.5 sm:px-2 rounded-lg text-[9.5px] sm:text-[11px] font-bold text-emerald-700 border-emerald-200/80 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40 gap-1 hidden md:flex"
                           onClick={() => quickExtendSingle(st)}
                           disabled={isItemLoading}
                           title="Grant 30 extra days of access"
@@ -1417,7 +1422,7 @@ function DirectoryTab() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
                             onClick={() => quickToggle(st, 'SUSPENDED')}
                             disabled={isItemLoading}
                             title="Suspend student access"
