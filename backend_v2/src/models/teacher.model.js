@@ -50,14 +50,16 @@ export class TeacherModel {
 
     // 4. Total Earnings
     const earningsRes = await query(
-      `SELECT COALESCE(SUM(amount), 0) AS total 
-       FROM "public"."payments" 
-       WHERE "teacherId" = ANY($1) AND status = 'VERIFIED'`,
+      `SELECT COALESCE(SUM(p.amount), 0) AS total 
+       FROM "public"."payments" p
+       LEFT JOIN "public"."enrollments" e ON e.id = p."enrollmentId"
+       LEFT JOIN "public"."courses" c ON c.id = e."courseId"
+       WHERE (p."teacherId" = ANY($1) OR c."teacherId" = ANY($1)) AND p.status = 'VERIFIED'`,
       [teacherIds]
     );
-    const totalEarnings = parseFloat(earningsRes.rows[0].total);
+    const totalEarnings = parseFloat(earningsRes.rows[0]?.total || 0);
 
-    // 4.1 Total Library Resources (PDFs & Videos)
+    // 4.1 Total Library Resources (PDFs & Videos & Lesson Sections)
     let totalResources = 0;
     try {
       const resourcesRes = await query(
@@ -101,13 +103,15 @@ export class TeacherModel {
               u."firstName" AS "studentFirstName", 
               u."lastName" AS "studentLastName",
               u."avatarUrl" AS "studentAvatar",
-              a.title AS "assignmentTitle"
+              a.title AS "assignmentTitle",
+              a."maxScore" AS "assignmentMaxScore"
        FROM "public"."assignment_submissions" s
        JOIN "public"."assignments" a ON a.id = s."assignmentId"
        JOIN "public"."lessons" l ON l.id = a."lessonId"
        JOIN "public"."units" un ON un.id = l."unitId"
        JOIN "public"."courses" c ON c.id = un."courseId"
-       JOIN "public"."users" u ON u.id = s."studentId"
+       LEFT JOIN "public"."student_profiles" sp ON (sp.id = s."studentId" OR sp."userId" = s."studentId")
+       LEFT JOIN "public"."users" u ON (u.id = sp."userId" OR u.id = s."studentId")
        WHERE c."teacherId" = ANY($1)
        ORDER BY s."submittedAt" DESC
        LIMIT 5`,
@@ -127,12 +131,24 @@ export class TeacherModel {
     );
     const expiringSoonCount = parseInt(expiringRes.rows[0]?.total || 0, 10);
 
-    // 8. Pending Payments Count
-    const pendingPaymentsRes = await query(
-      `SELECT COUNT(*) AS total FROM "public"."payments" WHERE "teacherId" = ANY($1) AND status = 'PENDING'`,
-      [teacherIds]
-    );
-    const pendingPaymentsCount = parseInt(pendingPaymentsRes.rows[0]?.total || 0, 10);
+    // 8. Pending Payments & Receipts Count
+    let pendingPaymentsCount = 0;
+    try {
+      const pendingPaymentsRes = await query(
+        `SELECT (
+          SELECT COUNT(*) 
+          FROM "public"."payments" p
+          LEFT JOIN "public"."enrollments" e ON e.id = p."enrollmentId"
+          LEFT JOIN "public"."courses" c ON c.id = e."courseId"
+          WHERE (p."teacherId" = ANY($1) OR p."teacherId" IS NULL OR c."teacherId" = ANY($1)) 
+            AND p.status = 'PENDING'
+        ) AS total`,
+        [teacherIds]
+      );
+      pendingPaymentsCount = parseInt(pendingPaymentsRes.rows[0]?.total || 0, 10);
+    } catch {
+      pendingPaymentsCount = 0;
+    }
 
     // 9. Pending Submissions Count
     const pendingSubmissionsRes = await query(
@@ -154,10 +170,11 @@ export class TeacherModel {
               u."firstName", u."lastName", u.email,
               c.title AS "courseTitle", c.level AS "courseLevel"
        FROM "public"."payments" p
-       LEFT JOIN "public"."users" u ON u.id = p."studentId"
+       LEFT JOIN "public"."student_profiles" sp ON (sp.id = p."studentId" OR sp."userId" = p."studentId")
+       LEFT JOIN "public"."users" u ON (u.id = sp."userId" OR u.id = p."studentId")
        LEFT JOIN "public"."enrollments" e ON e.id = p."enrollmentId"
        LEFT JOIN "public"."courses" c ON c.id = e."courseId"
-       WHERE p."teacherId" = ANY($1) AND p.status = 'PENDING'
+       WHERE (p."teacherId" = ANY($1) OR p."teacherId" IS NULL OR c."teacherId" = ANY($1)) AND p.status = 'PENDING'
        ORDER BY p."createdAt" DESC
        LIMIT 5`,
       [teacherIds]
@@ -198,7 +215,7 @@ export class TeacherModel {
       status: s.status,
       assignment: {
         title: s.assignmentTitle || 'Course Assignment',
-        maxScore: s.maxScore || 100,
+        maxScore: s.assignmentMaxScore || s.maxScore || 100,
       },
       student: {
         firstName: s.studentFirstName || 'Student',
