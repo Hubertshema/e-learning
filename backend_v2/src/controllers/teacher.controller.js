@@ -229,7 +229,8 @@ export class TeacherController {
     try {
       const teacherId = req.user.id || req.user.userId;
       const search = req.query.search || '';
-      const students = await TeacherModel.getStudents(teacherId, { search });
+      const courseId = req.query.courseId || '';
+      const students = await TeacherModel.getStudents(teacherId, { search, courseId });
       return sendSuccess(res, { students }, 'Teacher students retrieved');
     } catch (err) {
       next(err);

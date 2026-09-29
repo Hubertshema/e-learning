@@ -32,6 +32,9 @@ interface DetailedProgressData {
   student: {
     id: string;
     userId: string;
+    levelId?: number | string;
+    levelName?: string;
+    levelCode?: string;
     nativeLanguage?: string;
     currentLevel: string;
     targetLevel: string;
@@ -269,9 +272,14 @@ export default function TeacherStudentDetailPage() {
               <p className="text-xs text-slate-400">{data.student.user.email}</p>
             </div>
 
-            <div className="flex justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
+              {data.student.levelName && (
+                <Badge variant="outline" className="text-xs font-bold border-indigo-200 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                  Track: {data.student.levelName}
+                </Badge>
+              )}
               <Badge variant="primary" className="text-xs font-bold">
-                Current Level: {data.student.currentLevel}
+                CEFR: {data.student.currentLevel}
               </Badge>
               <Badge variant="outline" className="text-xs">
                 Goal: {data.student.targetLevel}

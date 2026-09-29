@@ -42,6 +42,8 @@ import {
   Layers,
   ChevronDown,
   UserPlus,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
@@ -60,12 +62,33 @@ interface EnrolledStudent {
   status: string;
   enrolledAt: string;
   expiresAt?: string;
+  learningAccess?: 'LOCKED' | 'ACTIVE';
+  paymentStatus?: string;
+  paymentRequirement?: string;
+  applicationStatus?: string;
+  levelId?: number | string | null;
+  levelName?: string | null;
+  levelCode?: string | null;
+  currentLevel?: string;
+  targetLevel?: string;
+  courses?: Array<{ id: string; title: string; level?: string }>;
+  courseIds?: string[];
   user: {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
-    studentProfile?: { id?: string; currentLevel: string; targetLevel: string };
+    isVerified?: boolean;
+    studentProfile?: {
+      id?: string;
+      levelId?: number | string | null;
+      levelName?: string | null;
+      levelCode?: string | null;
+      currentLevel: string;
+      targetLevel: string;
+      learningAccess?: 'LOCKED' | 'ACTIVE';
+      paymentStatus?: string;
+    };
   };
   course: { id: string; title: string; level: string };
   class?: { id: string; name: string };
@@ -76,7 +99,26 @@ interface EnrollmentItem {
   status: 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'PENDING';
   enrolledAt: string;
   expiresAt?: string;
-  student: { id: string; user: { firstName: string; lastName: string; email: string } };
+  learningAccess?: 'LOCKED' | 'ACTIVE';
+  paymentStatus?: string;
+  paymentRequirement?: string;
+  levelId?: number | string | null;
+  levelName?: string | null;
+  levelCode?: string | null;
+  currentLevel?: string;
+  targetLevel?: string;
+  student: {
+    id: string;
+    learningAccess?: 'LOCKED' | 'ACTIVE';
+    paymentStatus?: string;
+    paymentRequirement?: string;
+    levelId?: number | string | null;
+    levelName?: string | null;
+    levelCode?: string | null;
+    currentLevel?: string;
+    targetLevel?: string;
+    user: { firstName: string; lastName: string; email: string; isVerified?: boolean };
+  };
   course: { id: string; title: string; level: string };
   class?: { name: string };
 }
@@ -85,7 +127,20 @@ interface ExpiringStudent {
   id: string;
   expiresAt: string;
   status: string;
-  student: { id: string; user: { firstName: string; lastName: string; email: string } };
+  levelId?: number | string | null;
+  levelName?: string | null;
+  levelCode?: string | null;
+  currentLevel?: string;
+  targetLevel?: string;
+  student: {
+    id: string;
+    levelId?: number | string | null;
+    levelName?: string | null;
+    levelCode?: string | null;
+    currentLevel?: string;
+    targetLevel?: string;
+    user: { firstName: string; lastName: string; email: string };
+  };
   course: { id: string; title: string; level: string };
   class?: { name: string };
 }
@@ -109,6 +164,92 @@ function urgencyColor(days: number) {
   if (days <= 3) return 'text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900';
   if (days <= 7) return 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900';
   return 'text-sky-600 bg-sky-50 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900';
+}
+
+function formatCourseLevel(level?: string | number | null) {
+  if (!level) return null;
+  const str = String(level).trim();
+  if (str === '1' || str === 'L1') return 'Level 1 (Beginner)';
+  if (str === '2' || str === 'L2') return 'Level 2 (Intermediate)';
+  if (str === '3' || str === 'L3') return 'Level 3 (Advanced)';
+  return str.startsWith('Level') ? str : `Level ${str}`;
+}
+
+function formatCefrLevel(cefr?: string | null) {
+  if (!cefr) return null;
+  const labels: Record<string, string> = {
+    PRE_A1: 'Pre-A1 Starter',
+    A1: 'A1 Beginner',
+    A2: 'A2 Elementary',
+    B1: 'B1 Intermediate',
+    B2: 'B2 Upper Intermediate',
+    C1: 'C1 Advanced',
+    C2: 'C2 Mastery',
+  };
+  return labels[cefr] || cefr;
+}
+
+function matchesLearningLevel(item: any, lvl: string): boolean {
+  if (!lvl || lvl === 'ALL') return true;
+
+  if (lvl === '1' || lvl === 'L1') {
+    const isLevel1 =
+      item.levelId === 1 ||
+      item.levelId === '1' ||
+      item.levelCode === 'L1' ||
+      item.student?.levelId === 1 ||
+      item.student?.levelId === '1' ||
+      item.student?.levelCode === 'L1' ||
+      item.user?.studentProfile?.levelId === 1 ||
+      item.user?.studentProfile?.levelId === '1' ||
+      item.course?.level === '1' ||
+      item.course?.level === 'L1' ||
+      (Array.isArray(item.courses) && item.courses.some((c: any) => c.level === '1' || c.level === 'L1'));
+    return Boolean(isLevel1);
+  }
+
+  if (lvl === '2' || lvl === 'L2') {
+    const isLevel2 =
+      item.levelId === 2 ||
+      item.levelId === '2' ||
+      item.levelCode === 'L2' ||
+      item.student?.levelId === 2 ||
+      item.student?.levelId === '2' ||
+      item.student?.levelCode === 'L2' ||
+      item.user?.studentProfile?.levelId === 2 ||
+      item.user?.studentProfile?.levelId === '2' ||
+      item.course?.level === '2' ||
+      item.course?.level === 'L2' ||
+      (Array.isArray(item.courses) && item.courses.some((c: any) => c.level === '2' || c.level === 'L2'));
+    return Boolean(isLevel2);
+  }
+
+  if (lvl === '3' || lvl === 'L3') {
+    const isLevel3 =
+      item.levelId === 3 ||
+      item.levelId === '3' ||
+      item.levelCode === 'L3' ||
+      item.student?.levelId === 3 ||
+      item.student?.levelId === '3' ||
+      item.student?.levelCode === 'L3' ||
+      item.user?.studentProfile?.levelId === 3 ||
+      item.user?.studentProfile?.levelId === '3' ||
+      item.course?.level === '3' ||
+      item.course?.level === 'L3' ||
+      (Array.isArray(item.courses) && item.courses.some((c: any) => c.level === '3' || c.level === 'L3'));
+    return Boolean(isLevel3);
+  }
+
+  if (lvl.startsWith('CEFR_')) {
+    const cefr = lvl.replace('CEFR_', '');
+    const current =
+      item.currentLevel ||
+      item.student?.currentLevel ||
+      item.user?.studentProfile?.currentLevel;
+    return current === cefr;
+  }
+
+  return true;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -552,7 +693,9 @@ function BulkCohortModal({ selectedIds, teacherClasses, onClose, onSuccess }: Bu
 
 function DirectoryTab() {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'EXPIRED'>('ALL');
+  const [courseFilter, setCourseFilter] = useState<string>('ALL');
+  const [levelFilter, setLevelFilter] = useState<string>('ALL');
   const [classFilter, setClassFilter] = useState<string>('ALL');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
@@ -564,6 +707,7 @@ function DirectoryTab() {
   const [editStatus, setEditStatus] = useState('ACTIVE');
   const [editClassId, setEditClassId] = useState('');
   const [editExpiresAt, setEditExpiresAt] = useState('');
+  const [editProgramLevelId, setEditProgramLevelId] = useState('1');
   const [editCurrentLevel, setEditCurrentLevel] = useState('A1');
   const [editTargetLevel, setEditTargetLevel] = useState('B2');
   const [savingEdit, setSavingEdit] = useState(false);
@@ -592,6 +736,8 @@ function DirectoryTab() {
     return () => document.removeEventListener('click', close);
   }, []);
 
+  const [teacherCourses, setTeacherCourses] = useState<Array<{ id: string; title: string; level?: string }>>([]);
+
   useEffect(() => {
     apiClient
       .get<any>('/teacher/classes')
@@ -599,12 +745,23 @@ function DirectoryTab() {
         setTeacherClasses((res as any)?.classes || (res as any)?.data || (Array.isArray(res) ? res : []));
       })
       .catch(() => {});
+
+    apiClient
+      .get<any>('/teacher/courses')
+      .then((res) => {
+        const list = (res as any)?.courses || (res as any)?.data?.courses || (Array.isArray(res) ? res : []);
+        setTeacherCourses(list);
+      })
+      .catch(() => {});
   }, []);
 
   const { data: rawStudents, loading, refresh } = useCachedData<EnrolledStudent[]>(
-    `teacher_students_${search}`,
+    `teacher_students_${search}_${courseFilter}`,
     async () => {
-      const q = search ? `?search=${encodeURIComponent(search)}` : '';
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (courseFilter !== 'ALL') params.set('courseId', courseFilter);
+      const q = params.toString() ? `?${params.toString()}` : '';
       const res = await apiClient.get<any>(`/teacher/students${q}`);
       return (res as any)?.students || (res as any)?.data?.students || (Array.isArray(res) ? res : []);
     },
@@ -613,17 +770,79 @@ function DirectoryTab() {
 
   const allStudents = rawStudents || [];
 
-  // Local filtering
+  // Dynamic status counts reflecting active course/level/class scope
+  const statusCounts = useMemo(() => {
+    const counts = { ALL: 0, ACTIVE: 0, SUSPENDED: 0, EXPIRED: 0 };
+    const seen = new Set<string>();
+    for (const st of allStudents) {
+      const studentKey = st.userId || st.user?.id || st.user?.email || st.studentId || st.id;
+      if (seen.has(studentKey)) continue;
+
+      if (classFilter !== 'ALL') {
+        if (classFilter === 'SELF_PACED' && st.classId) continue;
+        if (classFilter !== 'SELF_PACED' && st.classId !== classFilter) continue;
+      }
+      if (courseFilter !== 'ALL') {
+        const matchesCourse =
+          st.courseId === courseFilter ||
+          st.course?.id === courseFilter ||
+          (Array.isArray(st.courseIds) && st.courseIds.includes(courseFilter)) ||
+          (Array.isArray(st.courses) && st.courses.some((c: any) => c.id === courseFilter));
+        if (!matchesCourse) continue;
+      }
+      if (!matchesLearningLevel(st, levelFilter)) continue;
+
+      seen.add(studentKey);
+      counts.ALL++;
+
+      const isExpired = st.status === 'EXPIRED' || (st.expiresAt && new Date(st.expiresAt).getTime() < Date.now());
+      if (isExpired) {
+        counts.EXPIRED++;
+      } else if (st.status === 'SUSPENDED') {
+        counts.SUSPENDED++;
+      } else {
+        counts.ACTIVE++;
+      }
+    }
+    return counts;
+  }, [allStudents, classFilter, courseFilter, levelFilter]);
+
+  // Local filtering & deduplication by individual student
   const filteredStudents = useMemo(() => {
-    return allStudents.filter((st) => {
-      if (statusFilter !== 'ALL' && st.status !== statusFilter) return false;
+    const seen = new Set<string>();
+    return allStudents.filter((st: any) => {
+      const studentKey = st.userId || st.user?.id || st.user?.email || st.studentId || st.id;
+      if (seen.has(studentKey)) return false;
+
       if (classFilter !== 'ALL') {
         if (classFilter === 'SELF_PACED' && st.classId) return false;
         if (classFilter !== 'SELF_PACED' && st.classId !== classFilter) return false;
       }
+      if (courseFilter !== 'ALL') {
+        const matchesCourse =
+          st.courseId === courseFilter ||
+          st.course?.id === courseFilter ||
+          (Array.isArray(st.courseIds) && st.courseIds.includes(courseFilter)) ||
+          (Array.isArray(st.courses) && st.courses.some((c: any) => c.id === courseFilter));
+        if (!matchesCourse) return false;
+      }
+      if (!matchesLearningLevel(st, levelFilter)) return false;
+
+      const isExpired = st.status === 'EXPIRED' || (st.expiresAt && new Date(st.expiresAt).getTime() < Date.now());
+      if (statusFilter !== 'ALL') {
+        if (statusFilter === 'EXPIRED') {
+          if (!isExpired) return false;
+        } else if (statusFilter === 'SUSPENDED') {
+          if (st.status !== 'SUSPENDED') return false;
+        } else if (statusFilter === 'ACTIVE') {
+          if (st.status !== 'ACTIVE' || isExpired) return false;
+        }
+      }
+
+      seen.add(studentKey);
       return true;
     });
-  }, [allStudents, statusFilter, classFilter]);
+  }, [allStudents, statusFilter, classFilter, courseFilter, levelFilter]);
 
   // Bulk Selection Handlers
   const toggleSelectAll = () => {
@@ -726,8 +945,9 @@ function DirectoryTab() {
     setEditStatus(st.status || 'ACTIVE');
     setEditClassId(st.classId || '');
     setEditExpiresAt(st.expiresAt ? new Date(st.expiresAt).toISOString().split('T')[0] : '');
-    setEditCurrentLevel(st.user.studentProfile?.currentLevel || 'A1');
-    setEditTargetLevel(st.user.studentProfile?.targetLevel || 'B2');
+    setEditProgramLevelId(String(st.levelId || st.user.studentProfile?.levelId || (st.course?.level === '3' ? '3' : st.course?.level === '2' ? '2' : '1')));
+    setEditCurrentLevel(st.currentLevel || st.user.studentProfile?.currentLevel || 'A1');
+    setEditTargetLevel(st.targetLevel || st.user.studentProfile?.targetLevel || 'B2');
   };
 
   const saveEdit = async (e: React.FormEvent) => {
@@ -741,6 +961,7 @@ function DirectoryTab() {
         expiresAt: editExpiresAt ? new Date(editExpiresAt).toISOString() : null,
         currentLevel: editCurrentLevel,
         targetLevel: editTargetLevel,
+        levelId: editProgramLevelId ? parseInt(editProgramLevelId, 10) : null,
       });
       clientCache.invalidate('teacher_');
       await refresh();
@@ -799,22 +1020,70 @@ function DirectoryTab() {
           />
         </div>
 
-        {/* Status filter pills */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
-          {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((st) => (
+        {/* Status filter pills with counts */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 flex-wrap">
+          {(['ALL', 'ACTIVE', 'SUSPENDED', 'EXPIRED'] as const).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                 statusFilter === st
                   ? 'bg-white dark:bg-slate-900 text-[#315b36] dark:text-emerald-400 shadow-xs'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              {st === 'ALL' ? 'All' : st === 'ACTIVE' ? 'Active' : 'Suspended'}
+              <span>{st === 'ALL' ? 'All' : st === 'ACTIVE' ? 'Active' : st === 'SUSPENDED' ? 'Suspended' : 'Expired'}</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  statusFilter === st
+                    ? 'bg-emerald-100 text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300'
+                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {statusCounts[st]}
+              </span>
             </button>
           ))}
         </div>
+
+        {/* Course Dropdown Filter */}
+        {teacherCourses.length > 0 && (
+          <select
+            value={courseFilter}
+            onChange={(e) => setCourseFilter(e.target.value)}
+            className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+          >
+            <option value="ALL">All Courses</option>
+            {teacherCourses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Learning Level Dropdown Filter */}
+        <select
+          value={levelFilter}
+          onChange={(e) => setLevelFilter(e.target.value)}
+          className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+        >
+          <option value="ALL">All Levels</option>
+          <optgroup label="Program Tracks">
+            <option value="1">Level 1 (Beginner)</option>
+            <option value="2">Level 2 (Intermediate)</option>
+            <option value="3">Level 3 (Advanced)</option>
+          </optgroup>
+          <optgroup label="CEFR Proficiency">
+            <option value="CEFR_PRE_A1">Pre-A1 Starter</option>
+            <option value="CEFR_A1">A1 Beginner</option>
+            <option value="CEFR_A2">A2 Elementary</option>
+            <option value="CEFR_B1">B1 Intermediate</option>
+            <option value="CEFR_B2">B2 Upper Intermediate</option>
+            <option value="CEFR_C1">C1 Advanced</option>
+            <option value="CEFR_C2">C2 Mastery</option>
+          </optgroup>
+        </select>
 
         {/* Cohort / Class Dropdown Filter */}
         {teacherClasses.length > 0 && (
@@ -981,13 +1250,32 @@ function DirectoryTab() {
                       <div className="flex items-center gap-3">
                         <AvatarCircle first={st.user.firstName} last={st.user.lastName} />
                         <div className="min-w-0">
-                          <Link
-                            href={`/teacher/students/${st.studentId || st.user.id}`}
-                            className="font-bold text-slate-900 dark:text-white leading-tight truncate hover:text-[#315b36] hover:underline flex items-center gap-1 group"
-                          >
-                            <span>{st.user.firstName} {st.user.lastName}</span>
-                          </Link>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              href={`/teacher/students/${st.studentId || st.user.id}`}
+                              className="font-bold text-slate-900 dark:text-white leading-tight truncate hover:text-[#315b36] hover:underline flex items-center gap-1 group"
+                            >
+                              <span>{st.user.firstName} {st.user.lastName}</span>
+                            </Link>
+                            {st.user.isVerified && (
+                              <span
+                                className="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded-md border border-emerald-200 dark:border-emerald-800"
+                                title="Verified User Account"
+                              >
+                                ✓ Verified
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-slate-400 mt-0.5 truncate">{st.user.email}</p>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span
+                              className="inline-flex items-center text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.2 rounded-md border border-sky-200 dark:border-sky-800"
+                              title={`Proficiency: ${formatCefrLevel(st.currentLevel || st.user.studentProfile?.currentLevel)}`}
+                            >
+                              {formatCefrLevel(st.currentLevel || st.user.studentProfile?.currentLevel) || 'A1'}
+                              {st.targetLevel || st.user.studentProfile?.targetLevel ? ` → ${st.targetLevel || st.user.studentProfile?.targetLevel}` : ''}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -995,11 +1283,21 @@ function DirectoryTab() {
                     {/* Course & Level */}
                     <td className="px-4 py-3.5">
                       <p className="font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                        {st.course.title}
+                        {st.course?.title || 'Course'}
                       </p>
-                      <span className="inline-block mt-1 text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
-                        {st.course.level}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        <span className="inline-block text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
+                          {formatCourseLevel(st.course?.level) || st.levelName || 'Level 1 (Beginner)'}
+                        </span>
+                        {Array.isArray((st as any).courses) && (st as any).courses.length > 1 && (
+                          <span
+                            className="inline-block text-[10px] font-bold px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded-md border border-indigo-200/80 dark:border-indigo-800 cursor-help"
+                            title={(st as any).courses.map((c: any) => `${c.title} (${formatCourseLevel(c.level) || c.level || ''})`).join(', ')}
+                          >
+                            +{(st as any).courses.length - 1} more
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Cohort / Class */}
@@ -1014,9 +1312,36 @@ function DirectoryTab() {
                       )}
                     </td>
 
-                    {/* Status */}
+                    {/* Status & Access */}
                     <td className="px-4 py-3.5">
-                      <StatusBadge status={st.status} />
+                      <div className="flex flex-col gap-1 items-start">
+                        <StatusBadge status={st.status} />
+                        {(st as any).learningAccess === 'LOCKED' ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-50 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                            title={(st as any).paymentStatus === 'UNPAID' ? 'Accepted but Unpaid — Access Locked' : 'Access Locked'}
+                          >
+                            <Lock className="h-2.5 w-2.5 text-amber-600" />
+                            {(st as any).paymentStatus === 'UNPAID' ? 'Locked (Unpaid)' : 'Locked'}
+                          </span>
+                        ) : (st as any).paymentStatus === 'UNPAID' ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                            title="Active Learning Access but Payment is Pending"
+                          >
+                            <Unlock className="h-2.5 w-2.5 text-blue-600" />
+                            Active (Unpaid)
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                            title="Active Learning Access Unlocked & Paid"
+                          >
+                            <Unlock className="h-2.5 w-2.5 text-emerald-600" />
+                            Active Access
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Enrolled On */}
@@ -1213,7 +1538,7 @@ function DirectoryTab() {
               <p className="text-[11px] text-slate-400 mt-0.5">{editingStudent.user.email}</p>
               <div className="pt-2 flex items-center gap-2">
                 <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] border border-emerald-200 rounded-md">
-                  {editingStudent.course.level}
+                  {formatCourseLevel(editingStudent.course.level) || 'Level 1'}
                 </span>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   {editingStudent.course.title}
@@ -1234,6 +1559,20 @@ function DirectoryTab() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Curriculum Program Track</label>
+              <select
+                value={editProgramLevelId}
+                onChange={(e) => setEditProgramLevelId(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+              >
+                <option value="1">Level 1 (Beginner Track)</option>
+                <option value="2">Level 2 (Intermediate Track)</option>
+                <option value="3">Level 3 (Advanced Track)</option>
+              </select>
+              <p className="text-[10px] text-slate-400">Institutional track tier assigned to student.</p>
             </div>
 
             <div className="space-y-1.5">
@@ -1430,6 +1769,9 @@ function DirectoryTab() {
 
 function EnrollmentsTab() {
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [courseFilter, setCourseFilter] = useState('ALL');
+  const [levelFilter, setLevelFilter] = useState('ALL');
+  const [teacherCourses, setTeacherCourses] = useState<Array<{ id: string; title: string; level?: string }>>([]);
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [suspendId, setSuspendId] = useState<string | null>(null);
@@ -1444,6 +1786,16 @@ function EnrollmentsTab() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  useEffect(() => {
+    apiClient
+      .get<any>('/teacher/courses')
+      .then((res) => {
+        const list = (res as any)?.courses || (res as any)?.data?.courses || (Array.isArray(res) ? res : []);
+        setTeacherCourses(list);
+      })
+      .catch(() => {});
+  }, []);
+
   const { data: rawEnrollments, loading, refresh } = useCachedData<EnrollmentItem[]>(
     'teacher_enrollments_list',
     async () => {
@@ -1455,9 +1807,53 @@ function EnrollmentsTab() {
 
   const enrollments = rawEnrollments || [];
 
+  const uniqueEnrollments = useMemo(() => {
+    const list = courseFilter === 'ALL' ? enrollments : enrollments.filter(e => e.course?.id === courseFilter);
+    const seen = new Set();
+    return list.filter(e => {
+      const id = e.student?.user?.email || e.student?.id || e.id;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }, [enrollments, courseFilter]);
+
+  // Dynamic status counts reflecting active course and level scope
+  const statusCounts = useMemo(() => {
+    const counts = { ALL: 0, ACTIVE: 0, SUSPENDED: 0, EXPIRED: 0, LOCKED: 0 };
+    for (const e of uniqueEnrollments) {
+      if (!matchesLearningLevel(e, levelFilter)) continue;
+      counts.ALL++;
+      
+      const isExpired = e.status === 'EXPIRED' || (e.expiresAt && new Date(e.expiresAt).getTime() < Date.now());
+      const isLocked = (e as any).learningAccess === 'LOCKED' || (e.student as any)?.learningAccess === 'LOCKED' || (e.student as any)?.paymentStatus === 'UNPAID';
+
+      if (isExpired) {
+        counts.EXPIRED++;
+      } else if (e.status === 'SUSPENDED') {
+        counts.SUSPENDED++;
+      } else if (isLocked) {
+        counts.LOCKED++;
+      } else {
+        counts.ACTIVE++;
+      }
+    }
+    return counts;
+  }, [uniqueEnrollments, levelFilter]);
+
   const filtered = useMemo(() => {
-    return enrollments.filter((e) => {
-      const matchStatus = filterStatus === 'ALL' || e.status === filterStatus;
+    return uniqueEnrollments.filter((e) => {
+      if (!matchesLearningLevel(e, levelFilter)) return false;
+      let matchStatus = true;
+      if (filterStatus !== 'ALL') {
+        const isExpired = e.status === 'EXPIRED' || (e.expiresAt && new Date(e.expiresAt).getTime() < Date.now());
+        const isLocked = (e as any).learningAccess === 'LOCKED' || (e.student as any)?.learningAccess === 'LOCKED' || (e.student as any)?.paymentStatus === 'UNPAID';
+        
+        if (filterStatus === 'EXPIRED') matchStatus = Boolean(isExpired);
+        else if (filterStatus === 'SUSPENDED') matchStatus = e.status === 'SUSPENDED' && !isExpired;
+        else if (filterStatus === 'LOCKED') matchStatus = Boolean(isLocked) && !isExpired && e.status !== 'SUSPENDED';
+        else if (filterStatus === 'ACTIVE') matchStatus = e.status === 'ACTIVE' && !isExpired && !isLocked;
+      }
       const q = search.toLowerCase();
       const matchSearch =
         !q ||
@@ -1466,7 +1862,7 @@ function EnrollmentsTab() {
         e.course.title.toLowerCase().includes(q);
       return matchStatus && matchSearch;
     });
-  }, [enrollments, filterStatus, search]);
+  }, [uniqueEnrollments, filterStatus, levelFilter, search]);
 
   const doExtend = async (id: string) => {
     try {
@@ -1516,27 +1912,75 @@ function EnrollmentsTab() {
     }
   };
 
-  const statusFilters = ['ALL', 'ACTIVE', 'SUSPENDED', 'EXPIRED'];
+  const statusFilters = ['ALL', 'ACTIVE', 'LOCKED', 'SUSPENDED', 'EXPIRED'];
 
   return (
     <div className="space-y-4">
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 flex-wrap">
           {statusFilters.map((st) => (
             <button
               key={st}
               onClick={() => setFilterStatus(st)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                 filterStatus === st
                   ? 'bg-white dark:bg-slate-900 text-[#315b36] dark:text-emerald-400 shadow-xs'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              {st}
+              <span>{st}</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  filterStatus === st
+                    ? 'bg-emerald-100 text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300'
+                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {statusCounts[st as keyof typeof statusCounts] ?? 0}
+              </span>
             </button>
           ))}
         </div>
+
+        {/* Course Dropdown Filter */}
+        {teacherCourses.length > 0 && (
+          <select
+            value={courseFilter}
+            onChange={(e) => setCourseFilter(e.target.value)}
+            className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+          >
+            <option value="ALL">All Courses</option>
+            {teacherCourses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Learning Level Dropdown Filter */}
+        <select
+          value={levelFilter}
+          onChange={(e) => setLevelFilter(e.target.value)}
+          className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+        >
+          <option value="ALL">All Levels</option>
+          <optgroup label="Program Tracks">
+            <option value="1">Level 1 (Beginner)</option>
+            <option value="2">Level 2 (Intermediate)</option>
+            <option value="3">Level 3 (Advanced)</option>
+          </optgroup>
+          <optgroup label="CEFR Proficiency">
+            <option value="CEFR_PRE_A1">Pre-A1 Starter</option>
+            <option value="CEFR_A1">A1 Beginner</option>
+            <option value="CEFR_A2">A2 Elementary</option>
+            <option value="CEFR_B1">B1 Intermediate</option>
+            <option value="CEFR_B2">B2 Upper Intermediate</option>
+            <option value="CEFR_C1">C1 Advanced</option>
+            <option value="CEFR_C2">C2 Mastery</option>
+          </optgroup>
+        </select>
 
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
@@ -1589,13 +2033,31 @@ function EnrollmentsTab() {
                     <div className="flex items-center gap-3">
                       <AvatarCircle first={item.student.user.firstName} last={item.student.user.lastName} size="sm" />
                       <div className="min-w-0">
-                        <Link
-                          href={`/teacher/students/${item.student.id}`}
-                          className="font-bold text-slate-900 dark:text-white truncate hover:text-[#315b36] hover:underline"
-                        >
-                          {item.student.user.firstName} {item.student.user.lastName}
-                        </Link>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Link
+                            href={`/teacher/students/${item.student.id}`}
+                            className="font-bold text-slate-900 dark:text-white truncate hover:text-[#315b36] hover:underline"
+                          >
+                            {item.student.user.firstName} {item.student.user.lastName}
+                          </Link>
+                          {(item.student.user as any)?.isVerified && (
+                            <span
+                              className="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded-md border border-emerald-200 dark:border-emerald-800"
+                              title="Verified User Account"
+                            >
+                              ✓ Verified
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-slate-400 truncate">{item.student.user.email}</p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span
+                            className="inline-flex items-center text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.2 rounded-md border border-sky-200 dark:border-sky-800"
+                            title={`Proficiency: ${formatCefrLevel(item.student.currentLevel || item.currentLevel)}`}
+                          >
+                            {formatCefrLevel(item.student.currentLevel || item.currentLevel) || 'A1'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -1603,7 +2065,7 @@ function EnrollmentsTab() {
                   <td className="px-5 py-3.5">
                     <p className="font-bold text-slate-800 dark:text-slate-200">{item.course.title}</p>
                     <span className="inline-block mt-0.5 text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
-                      {item.course.level}
+                      {formatCourseLevel(item.course.level) || item.levelName || 'Level 1'}
                     </span>
                   </td>
 
@@ -1622,7 +2084,26 @@ function EnrollmentsTab() {
                   </td>
 
                   <td className="px-5 py-3.5">
-                    <StatusBadge status={item.status} />
+                    <div className="flex flex-col gap-1 items-start">
+                      <StatusBadge status={item.status} />
+                      {(item as any).learningAccess === 'LOCKED' || (item.student as any)?.learningAccess === 'LOCKED' ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-50 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                          title={(item as any).paymentStatus === 'UNPAID' ? 'Awaiting Payment — Access Locked' : 'Access Locked'}
+                        >
+                          <Lock className="h-2.5 w-2.5 text-amber-600" />
+                          {(item as any).paymentStatus === 'UNPAID' ? 'Locked (Unpaid)' : 'Locked'}
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          title="Active Learning Access Unlocked"
+                        >
+                          <Unlock className="h-2.5 w-2.5 text-emerald-600" />
+                          Active Access
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   {/* ─── Actions in Enrollments ──────────────────────────── */}
@@ -1919,6 +2400,16 @@ function ExpiringTab() {
                             {item.student.user.firstName} {item.student.user.lastName}
                           </Link>
                           <p className="text-[11px] text-slate-400 truncate">{item.student.user.email}</p>
+                          {(item.currentLevel || item.student?.currentLevel) && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <span
+                                className="inline-flex items-center text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.2 rounded-md border border-sky-200 dark:border-sky-800"
+                                title={`Proficiency: ${formatCefrLevel(item.currentLevel || item.student?.currentLevel)}`}
+                              >
+                                {formatCefrLevel(item.currentLevel || item.student?.currentLevel)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -1926,7 +2417,7 @@ function ExpiringTab() {
                     <td className="px-5 py-3.5">
                       <p className="font-bold text-slate-800 dark:text-slate-200">{item.course.title}</p>
                       <span className="inline-block mt-0.5 text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
-                        {item.course.level}
+                        {formatCourseLevel(item.course.level) || item.levelName || 'Level 1'}
                       </span>
                     </td>
 
@@ -2101,15 +2592,31 @@ export default function StudentsDirectoryPage() {
     { ttl: 120_000, initialData: [] }
   );
 
-  const { data: applicationsData, refresh: refreshApplications } = useCachedData<{ counts?: { pending: number } }>(
+  const { data: applicationsData, refresh: refreshApplications } = useCachedData<{ counts?: { pending?: number; pendingCount?: number } }>(
     'teacher_applications_counts',
     async () => {
       const res = await apiClient.get<any>('/teacher/applications?status=PENDING');
       return (res as any)?.data || res;
     },
-    { ttl: 30000, initialData: { counts: { pending: 0 } } }
+    { ttl: 30000, initialData: { counts: { pending: 0, pendingCount: 0 } } }
   );
-  const pendingAppsCount = applicationsData?.counts?.pending || 0;
+  const pendingAppsCount = Number(
+    applicationsData?.counts?.pending ??
+    applicationsData?.counts?.pendingCount ??
+    0
+  );
+
+  const { data: enrollmentsData } = useCachedData<EnrollmentItem[]>(
+    'teacher_enrollments_tab_count',
+    async () => {
+      const res = await apiClient.get<EnrollmentItem[]>('/teacher/enrollments');
+      return Array.isArray(res) ? res : (res as any)?.data || [];
+    },
+    { ttl: 120_000, initialData: [] }
+  );
+  const totalEnrollmentsCount = new Set(
+    (enrollmentsData || []).map((e) => e.student?.id || e.id)
+  ).size;
 
   const studentList = students || [];
   const activeCount = studentList.filter((s) => s.status === 'ACTIVE').length;
@@ -2160,7 +2667,7 @@ export default function StudentsDirectoryPage() {
   const TABS = [
     { id: 'directory' as Tab, label: 'All Students', icon: Users, count: studentList.length },
     { id: 'applications' as Tab, label: 'Applications & Admissions', icon: GraduationCap, count: pendingAppsCount, isAlert: pendingAppsCount > 0 },
-    { id: 'enrollments' as Tab, label: 'Enrollments & Access Control', icon: UserCheck },
+    { id: 'enrollments' as Tab, label: 'Enrollments & Access Control', icon: UserCheck, count: totalEnrollmentsCount },
     { id: 'expiring' as Tab, label: 'Expiring Watchlist', icon: AlertTriangle, count: expiringCount, isAlert: expiringCount > 0 },
   ];
 

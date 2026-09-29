@@ -184,9 +184,19 @@ export class AdmissionModel {
     let idx = 1;
 
     if (status && status !== 'ALL') {
-      whereClauses.push(`sp."applicationStatus" = $${idx}`);
-      params.push(status);
-      idx++;
+      if (status === 'ACCEPTED_ACTIVE') {
+        whereClauses.push(`sp."applicationStatus" = 'ACCEPTED' AND sp."learningAccess" = 'ACTIVE'`);
+      } else if (status === 'ACCEPTED_LOCKED') {
+        whereClauses.push(`sp."applicationStatus" = 'ACCEPTED' AND sp."learningAccess" = 'LOCKED'`);
+      } else if (status === 'PROOF_SUBMITTED') {
+        whereClauses.push(`sp."paymentStatus" = 'PROOF_SUBMITTED'`);
+      } else if (status === 'UNPAID') {
+        whereClauses.push(`sp."paymentStatus" = 'UNPAID'`);
+      } else {
+        whereClauses.push(`sp."applicationStatus" = $${idx}`);
+        params.push(status);
+        idx++;
+      }
     }
 
     if (search && search.trim()) {
@@ -199,6 +209,7 @@ export class AdmissionModel {
 
     const listQuery = `
       SELECT u.id as "id", u.id as "studentId", u.id as "userId", u.email, u."firstName", u."lastName", u.phone, u."avatarUrl", u."createdAt" as "registeredAt",
+             u."isVerified",
              sp.id as "profileId", sp."admissionType", sp."applicationStatus", sp."rejectionReason",
              sp."paymentRequirement", sp."paymentStatus", sp."learningAccess", sp."applicationData",
              sp."reviewedAt", sp."reviewedBy", sp."levelId",
@@ -237,6 +248,7 @@ export class AdmissionModel {
     // Format latestPayment nested object for each application
     const applications = res.rows.map((row) => ({
       ...row,
+      isVerified: Boolean(row.isVerified),
       latestPayment: row.latestPaymentId
         ? {
             id: row.latestPaymentId,
@@ -260,20 +272,41 @@ export class AdmissionModel {
         COUNT(*) FILTER (WHERE sp."applicationStatus" = 'ACCEPTED') as "acceptedCount",
         COUNT(*) FILTER (WHERE sp."applicationStatus" = 'REJECTED') as "rejectedCount",
         COUNT(*) FILTER (WHERE sp."paymentStatus" = 'PROOF_SUBMITTED') as "proofPendingCount",
+        COUNT(*) FILTER (WHERE sp."applicationStatus" = 'ACCEPTED' AND sp."learningAccess" = 'ACTIVE') as "acceptedActiveCount",
+        COUNT(*) FILTER (WHERE sp."applicationStatus" = 'ACCEPTED' AND sp."learningAccess" = 'LOCKED') as "acceptedLockedCount",
+        COUNT(*) FILTER (WHERE sp."paymentStatus" = 'UNPAID') as "unpaidCount",
         COUNT(*) as "totalCount"
       FROM "public"."users" u
       JOIN "public"."student_profiles" sp ON sp."userId" = u.id
       WHERE u.role = 'STUDENT'
     `);
 
+    const countsRow = countsRes.rows[0] || {};
+    const pending = parseInt(countsRow.pendingCount || 0, 10);
+    const accepted = parseInt(countsRow.acceptedCount || 0, 10);
+    const rejected = parseInt(countsRow.rejectedCount || 0, 10);
+    const proofPending = parseInt(countsRow.proofPendingCount || 0, 10);
+    const acceptedActive = parseInt(countsRow.acceptedActiveCount || 0, 10);
+    const acceptedLocked = parseInt(countsRow.acceptedLockedCount || 0, 10);
+    const unpaid = parseInt(countsRow.unpaidCount || 0, 10);
+    const total = parseInt(countsRow.totalCount || 0, 10);
+
     return {
       applications,
-      counts: countsRes.rows[0] || {
-        pendingCount: 0,
-        acceptedCount: 0,
-        rejectedCount: 0,
-        proofPendingCount: 0,
-        totalCount: 0,
+      counts: {
+        pending,
+        accepted,
+        rejected,
+        proofPending,
+        acceptedActive,
+        acceptedLocked,
+        unpaid,
+        total,
+        pendingCount: pending,
+        acceptedCount: accepted,
+        rejectedCount: rejected,
+        proofPendingCount: proofPending,
+        totalCount: total,
       },
     };
   }
@@ -682,7 +715,17 @@ export class AdmissionModel {
   /**
    * Helper: Enroll student in all courses belonging to a level
    */
-  static async enrollStudentInLevelCourses(studentUserId, levelId) {
+  static async enrollStudentInLevelCourses(studentUserIdOrProfileId, levelId) {
+    const profileRes = await query(
+      `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 OR id = $1 LIMIT 1`,
+      [studentUserIdOrProfileId]
+    );
+    if (profileRes.rows.length === 0) {
+      console.warn(`Cannot enroll in level courses: profile not found for ${studentUserIdOrProfileId}`);
+      return 0;
+    }
+    const profileId = profileRes.rows[0].id;
+
     const levelCoursesRes = await query(
       `SELECT lc.id as "levelCourseId", lc."courseId"
        FROM "public"."level_courses" lc
@@ -694,7 +737,7 @@ export class AdmissionModel {
     for (const lc of levelCoursesRes.rows) {
       const existing = await query(
         `SELECT id FROM "public"."enrollments" WHERE "studentId" = $1 AND "courseId" = $2`,
-        [studentUserId, lc.courseId]
+        [profileId, lc.courseId]
       );
       if (existing.rows.length === 0) {
         const enrollmentId = crypto.randomUUID();
@@ -702,7 +745,7 @@ export class AdmissionModel {
           `INSERT INTO "public"."enrollments"
             (id, "studentId", "courseId", "levelCourseId", status, "enrolledAt", "updatedAt")
            VALUES ($1, $2, $3, $4, 'ACTIVE', NOW(), NOW())`,
-          [enrollmentId, studentUserId, lc.courseId, lc.levelCourseId]
+          [enrollmentId, profileId, lc.courseId, lc.levelCourseId]
         );
         enrolledCount++;
       }

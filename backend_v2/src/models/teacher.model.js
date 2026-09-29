@@ -163,6 +163,17 @@ export class TeacherModel {
     );
     const pendingSubmissionsCount = parseInt(pendingSubmissionsRes.rows[0]?.total || 0, 10);
 
+    // 9.1 Pending Admissions Count
+    let pendingApplicationsCount = 0;
+    try {
+      const pendingAppsRes = await query(
+        `SELECT COUNT(*) as total FROM "public"."student_profiles" WHERE "applicationStatus" = 'PENDING'`
+      );
+      pendingApplicationsCount = parseInt(pendingAppsRes.rows[0]?.total || 0, 10);
+    } catch {
+      pendingApplicationsCount = 0;
+    }
+
     // 10. Recent Payments
     const paymentsRes = await query(
       `SELECT p.id, p.amount, p.currency, p."paymentMethod", p."transactionRef" AS "referenceNumber",
@@ -240,6 +251,7 @@ export class TeacherModel {
       pendingPaymentsCount,
       pendingSubmissionsCount,
       expiringStudentsCount: expiringSoonCount,
+      pendingApplicationsCount,
       totalEarnings,
       recentPayments,
       recentSubmissions,
@@ -255,6 +267,7 @@ export class TeacherModel {
         expiringSoonCount,
         pendingPaymentsCount,
         pendingSubmissionsCount,
+        pendingApplicationsCount,
       },
       activeClasses: activeClassesRes.rows,
       skillsRadar: skillProficiency,
@@ -696,23 +709,39 @@ export class TeacherModel {
    * List enrolled students for a teacher (across all their courses)
    * GET /api/v1/teacher/students
    */
-  static async getStudents(teacherId, { search = '' } = {}) {
+  static async getStudents(teacherId, { search = '', courseId = '' } = {}) {
     const teacherIds = await this.resolveTeacherIds(teacherId);
     const searchTerm = `%${search}%`;
+    let courseFilterSql = '';
+    const params = [teacherIds, searchTerm];
+    if (courseId && courseId !== 'ALL') {
+      params.push(courseId);
+      courseFilterSql = `AND e."courseId" = $${params.length}`;
+    }
+
     const res = await query(
-      `SELECT e.id AS "enrollmentId",
+      `SELECT DISTINCT ON (COALESCE(u.id, sp."userId", e."studentId"))
+              e.id AS "enrollmentId",
               e."studentId",
               e."courseId",
               e."classId",
               e.status AS "enrollmentStatus",
               e."enrolledAt",
               e."expiresAt",
-              COALESCE(u.id, sp."userId") AS "userId",
+              COALESCE(u.id, sp."userId", e."studentId") AS "userId",
               u."firstName",
               u."lastName",
               u.email,
               sp."currentLevel",
               sp."targetLevel",
+              sp."levelId",
+              l.name AS "levelName",
+              l.code AS "levelCode",
+              sp."learningAccess",
+              sp."paymentStatus",
+              sp."paymentRequirement",
+              sp."applicationStatus",
+              u."isVerified",
               c.id AS "courseIdRef",
               c.title AS "courseTitle",
               c.level AS "courseLevel",
@@ -722,38 +751,100 @@ export class TeacherModel {
        JOIN "public"."courses" c ON c.id = e."courseId"
        LEFT JOIN "public"."student_profiles" sp ON (sp.id = e."studentId" OR sp."userId" = e."studentId")
        JOIN "public"."users" u ON (u.id = sp."userId" OR u.id = e."studentId")
+       LEFT JOIN "public"."levels" l ON l.id = sp."levelId"
        LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
        WHERE c."teacherId" = ANY($1)
          AND ($2 = '' OR u."firstName" ILIKE $2 OR u."lastName" ILIKE $2 OR u.email ILIKE $2)
-       ORDER BY u."firstName" ASC, u."lastName" ASC`,
-      [teacherIds, searchTerm]
+         ${courseFilterSql}
+       ORDER BY COALESCE(u.id, sp."userId", e."studentId"), e."enrolledAt" DESC`,
+      params
     );
 
-    return res.rows.map((r) => ({
-      id: r.enrollmentId,
-      studentId: r.studentId,
-      userId: r.userId,
-      courseId: r.courseId,
-      classId: r.classId,
-      status: r.enrollmentStatus,
-      enrolledAt: r.enrolledAt,
-      expiresAt: r.expiresAt,
-      user: {
-        id: r.userId,
-        firstName: r.firstName,
-        lastName: r.lastName,
-        email: r.email,
-        studentProfile: r.currentLevel
-          ? { currentLevel: r.currentLevel, targetLevel: r.targetLevel }
-          : undefined,
-      },
-      course: {
-        id: r.courseId,
-        title: r.courseTitle,
-        level: r.courseLevel,
-      },
-      class: r.classId ? { id: r.classId, name: r.className } : undefined,
-    }));
+    const sorted = res.rows.sort((a, b) =>
+      (a.firstName || '').localeCompare(b.firstName || '')
+    );
+
+    const studentIds = Array.from(new Set(res.rows.map((r) => r.studentId).filter(Boolean)));
+    const userIds = Array.from(new Set(res.rows.map((r) => r.userId).filter(Boolean)));
+    const studentCoursesMap = new Map();
+
+    if (studentIds.length > 0 || userIds.length > 0) {
+      try {
+        const coursesRes = await query(
+          `SELECT e."studentId", sp."userId", c.id AS "courseId", c.title AS "courseTitle", c.level AS "courseLevel"
+           FROM "public"."enrollments" e
+           JOIN "public"."courses" c ON c.id = e."courseId"
+           LEFT JOIN "public"."student_profiles" sp ON sp.id = e."studentId"
+           WHERE (e."studentId" = ANY($1) OR sp."userId" = ANY($2))
+             AND c."teacherId" = ANY($3)`,
+          [studentIds, userIds, teacherIds]
+        );
+        for (const row of coursesRes.rows) {
+          const keys = [row.studentId, row.userId].filter(Boolean);
+          for (const key of keys) {
+            if (!studentCoursesMap.has(key)) {
+              studentCoursesMap.set(key, []);
+            }
+            const list = studentCoursesMap.get(key);
+            if (!list.some((existing) => existing.id === row.courseId)) {
+              list.push({ id: row.courseId, title: row.courseTitle, level: row.courseLevel });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to attach student courses:', err);
+      }
+    }
+
+    return sorted.map((r) => {
+      const allStudentCourses = studentCoursesMap.get(r.studentId) || studentCoursesMap.get(r.userId) || [
+        { id: r.courseId, title: r.courseTitle, level: r.courseLevel },
+      ];
+      return {
+        id: r.enrollmentId,
+        studentId: r.studentId,
+        userId: r.userId,
+        courseId: r.courseId,
+        classId: r.classId,
+        status: r.enrollmentStatus,
+        enrolledAt: r.enrolledAt,
+        expiresAt: r.expiresAt,
+        learningAccess: r.learningAccess || 'ACTIVE',
+        paymentStatus: r.paymentStatus || 'UNPAID',
+        paymentRequirement: r.paymentRequirement || 'PAYMENT_NOT_REQUIRED',
+        applicationStatus: r.applicationStatus || 'ACCEPTED',
+        levelId: r.levelId,
+        levelName: r.levelName,
+        levelCode: r.levelCode,
+        currentLevel: r.currentLevel || 'A1',
+        targetLevel: r.targetLevel || 'B2',
+        courses: allStudentCourses,
+        courseIds: allStudentCourses.map((c) => c.id),
+        user: {
+          id: r.userId,
+          firstName: r.firstName,
+          lastName: r.lastName,
+          email: r.email,
+          isVerified: Boolean(r.isVerified),
+          studentProfile: {
+            id: r.studentId,
+            levelId: r.levelId,
+            levelName: r.levelName,
+            levelCode: r.levelCode,
+            currentLevel: r.currentLevel || 'A1',
+            targetLevel: r.targetLevel || 'B2',
+            learningAccess: r.learningAccess || 'ACTIVE',
+            paymentStatus: r.paymentStatus || 'UNPAID',
+          },
+        },
+        course: {
+          id: r.courseId,
+          title: r.courseTitle,
+          level: r.courseLevel,
+        },
+        class: r.classId ? { id: r.classId, name: r.className } : undefined,
+      };
+    });
   }
 
   /**
@@ -766,9 +857,11 @@ export class TeacherModel {
     // Resolve user & profile info
     const userRes = await query(
       `SELECT u.id AS "userId", u."firstName", u."lastName", u.email, u."avatarUrl", u."createdAt",
-              sp.id AS "profileId", sp."currentLevel", sp."targetLevel", sp."nativeLanguage"
+              sp.id AS "profileId", sp."currentLevel", sp."targetLevel", sp."nativeLanguage",
+              sp."levelId", l.name AS "levelName", l.code AS "levelCode"
        FROM "public"."users" u
        LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
+       LEFT JOIN "public"."levels" l ON l.id = sp."levelId"
        WHERE u.id = $1 OR sp.id = $1
        LIMIT 1`,
       [studentId]
@@ -1002,6 +1095,9 @@ export class TeacherModel {
       student: {
         id: u.userId,
         userId: u.userId,
+        levelId: u.levelId,
+        levelName: u.levelName,
+        levelCode: u.levelCode,
         nativeLanguage: u.nativeLanguage || 'English',
         currentLevel: u.currentLevel || 'A1',
         targetLevel: u.targetLevel || 'B2',
@@ -1062,7 +1158,7 @@ export class TeacherModel {
   /**
    * Update student enrollment by teacher
    */
-  static async updateStudentEnrollment(teacherId, enrollmentId, { status, classId, expiresAt, currentLevel, targetLevel }) {
+  static async updateStudentEnrollment(teacherId, enrollmentId, { status, classId, expiresAt, currentLevel, targetLevel, levelId }) {
     const teacherIds = await this.resolveTeacherIds(teacherId);
 
     // Verify teacher owns the course for this enrollment
@@ -1108,7 +1204,7 @@ export class TeacherModel {
     const res = await query(updateSql, params);
 
     // Update level if provided
-    if ((currentLevel || targetLevel) && (enr.profileId || enr.userId)) {
+    if ((currentLevel || targetLevel || levelId !== undefined) && (enr.profileId || enr.userId)) {
       const profUpdates = [];
       const profParams = [enr.profileId || enr.studentId];
       let profIdx = 2;
@@ -1119,6 +1215,10 @@ export class TeacherModel {
       if (targetLevel) {
         profUpdates.push(`"targetLevel" = $${profIdx++}`);
         profParams.push(targetLevel);
+      }
+      if (levelId !== undefined) {
+        profUpdates.push(`"levelId" = $${profIdx++}`);
+        profParams.push(levelId ? parseInt(levelId, 10) : null);
       }
       if (profUpdates.length > 0) {
         await query(
@@ -1181,6 +1281,15 @@ export class TeacherModel {
               u."firstName",
               u."lastName",
               u.email,
+              u."isVerified",
+              sp."currentLevel",
+              sp."targetLevel",
+              sp."levelId",
+              l.name AS "levelName",
+              l.code AS "levelCode",
+              sp."learningAccess",
+              sp."paymentStatus",
+              sp."paymentRequirement",
               c.id AS "courseId",
               c.title AS "courseTitle",
               c.level AS "courseLevel",
@@ -1190,6 +1299,7 @@ export class TeacherModel {
        JOIN "public"."courses" c ON c.id = e."courseId"
        LEFT JOIN "public"."student_profiles" sp ON (sp.id = e."studentId" OR sp."userId" = e."studentId")
        JOIN "public"."users" u ON (u.id = sp."userId" OR u.id = e."studentId")
+       LEFT JOIN "public"."levels" l ON l.id = sp."levelId"
        LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
        ${whereSql}
        ORDER BY e."enrolledAt" DESC`,
@@ -1201,12 +1311,29 @@ export class TeacherModel {
       status: r.status,
       enrolledAt: r.enrolledAt,
       expiresAt: r.expiresAt,
+      learningAccess: r.learningAccess || 'ACTIVE',
+      paymentStatus: r.paymentStatus || 'UNPAID',
+      paymentRequirement: r.paymentRequirement || 'PAYMENT_NOT_REQUIRED',
+      levelId: r.levelId,
+      levelName: r.levelName,
+      levelCode: r.levelCode,
+      currentLevel: r.currentLevel || 'A1',
+      targetLevel: r.targetLevel || 'B2',
       student: {
         id: r.studentUserId,
+        learningAccess: r.learningAccess || 'ACTIVE',
+        paymentStatus: r.paymentStatus || 'UNPAID',
+        paymentRequirement: r.paymentRequirement || 'PAYMENT_NOT_REQUIRED',
+        levelId: r.levelId,
+        levelName: r.levelName,
+        levelCode: r.levelCode,
+        currentLevel: r.currentLevel || 'A1',
+        targetLevel: r.targetLevel || 'B2',
         user: {
           firstName: r.firstName,
           lastName: r.lastName,
           email: r.email,
+          isVerified: Boolean(r.isVerified),
         },
       },
       course: {
@@ -1237,12 +1364,18 @@ export class TeacherModel {
               c.id AS "courseId",
               c.title AS "courseTitle",
               c.level AS "courseLevel",
+              sp."currentLevel",
+              sp."targetLevel",
+              sp."levelId",
+              l.name AS "levelName",
+              l.code AS "levelCode",
               cl.id AS "classId",
               cl.name AS "className"
        FROM "public"."enrollments" e
        JOIN "public"."courses" c ON c.id = e."courseId"
        LEFT JOIN "public"."student_profiles" sp ON (sp.id = e."studentId" OR sp."userId" = e."studentId")
        JOIN "public"."users" u ON (u.id = sp."userId" OR u.id = e."studentId")
+       LEFT JOIN "public"."levels" l ON l.id = sp."levelId"
        LEFT JOIN "public"."classes" cl ON cl.id = e."classId"
        WHERE c."teacherId" = ANY($1)
          AND e."expiresAt" IS NOT NULL
@@ -1256,8 +1389,18 @@ export class TeacherModel {
       id: r.id,
       expiresAt: r.expiresAt,
       status: r.status,
+      levelId: r.levelId,
+      levelName: r.levelName,
+      levelCode: r.levelCode,
+      currentLevel: r.currentLevel,
+      targetLevel: r.targetLevel,
       student: {
         id: r.studentUserId,
+        levelId: r.levelId,
+        levelName: r.levelName,
+        levelCode: r.levelCode,
+        currentLevel: r.currentLevel,
+        targetLevel: r.targetLevel,
         user: {
           firstName: r.firstName,
           lastName: r.lastName,

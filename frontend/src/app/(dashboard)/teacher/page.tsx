@@ -43,6 +43,7 @@ interface TeacherStats {
   totalStudents: number;
   totalResources?: number;
   pendingPaymentsCount: number;
+  pendingApplicationsCount?: number;
   pendingSubmissionsCount: number;
   expiringStudentsCount?: number;
   skillProficiency?: Array<{
@@ -131,13 +132,17 @@ export default function TeacherDashboardPage() {
     {
       label: 'Students Directory',
       value: stats?.totalStudents ?? 0,
-      sub: 'Active learners enrolled',
-      badge: 'Manage All',
+      sub: (stats?.pendingApplicationsCount ?? 0) > 0
+        ? `${stats?.totalStudents ?? 0} active • ${stats?.pendingApplicationsCount} pending apps`
+        : 'Active learners enrolled',
+      badge: (stats?.pendingApplicationsCount ?? 0) > 0 ? `${stats?.pendingApplicationsCount} New Apps` : 'Manage All',
       icon: Users,
       gradient: 'from-emerald-500/15 via-emerald-500/5 to-transparent',
       iconBg: 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25',
       borderColor: 'border-emerald-200/80 dark:border-emerald-900/60',
-      badgeBg: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
+      badgeBg: (stats?.pendingApplicationsCount ?? 0) > 0
+        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 font-bold'
+        : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
       href: '/teacher/students',
     },
     {

@@ -36,10 +36,20 @@ export class UserController {
       const { query: searchQuery } = req.query;
       
       let sql = `
-        SELECT u.id, u.email, u."firstName", u."lastName", u."avatarUrl", sp."levelId"
+        SELECT 
+          u.id, 
+          u.email, 
+          u."firstName", 
+          u."lastName", 
+          u."avatarUrl", 
+          sp."levelId",
+          sp."learningAccess",
+          sp."applicationStatus"
         FROM "public"."users" u
-        LEFT JOIN "public"."student_profiles" sp ON u.id = sp."userId"
+        INNER JOIN "public"."student_profiles" sp ON u.id = sp."userId"
         WHERE u.role = 'STUDENT'
+          AND u.status = 'ACTIVE'
+          AND sp."applicationStatus" = 'ACCEPTED'
       `;
       const params = [];
 

@@ -41,6 +41,7 @@ export interface ApplicationItem {
   email: string;
   phone: string;
   avatar?: string;
+  isVerified?: boolean;
   admissionType: 'APPLICATION' | 'DIRECT';
   applicationStatus: 'PENDING' | 'ACCEPTED' | 'REJECTED';
   rejectionReason: string | null;
@@ -80,13 +81,28 @@ interface ApplicationsTabProps {
 
 export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabProps) {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
-  const [counts, setCounts] = useState<{ total: number; pending: number; accepted: number; rejected: number }>({
+  const [counts, setCounts] = useState<{
+    total: number;
+    pending: number;
+    accepted: number;
+    rejected: number;
+    acceptedActive?: number;
+    acceptedLocked?: number;
+    unpaid?: number;
+    proofPending?: number;
+  }>({
     total: 0,
     pending: 0,
     accepted: 0,
     rejected: 0,
+    acceptedActive: 0,
+    acceptedLocked: 0,
+    unpaid: 0,
+    proofPending: 0,
   });
-  const [statusFilter, setStatusFilter] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'ALL'>('PENDING');
+  const [statusFilter, setStatusFilter] = useState<
+    'PENDING' | 'ACCEPTED' | 'ACCEPTED_ACTIVE' | 'ACCEPTED_LOCKED' | 'PROOF_SUBMITTED' | 'REJECTED' | 'ALL'
+  >('PENDING');
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -301,7 +317,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* ─── Summary Ribbon ─── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div
           onClick={() => setStatusFilter('PENDING')}
           className={`p-4 rounded-2xl border cursor-pointer transition-all ${
@@ -315,39 +331,55 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
             <Clock className="h-4 w-4 text-amber-500" />
           </div>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{counts.pending}</p>
-          <p className="text-[10px] text-slate-500">Requires academic evaluation</p>
+          <p className="text-[10px] text-slate-500">Requires academic review</p>
         </div>
 
         <div
-          onClick={() => setStatusFilter('ACCEPTED')}
+          onClick={() => setStatusFilter('ACCEPTED_ACTIVE')}
           className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-            statusFilter === 'ACCEPTED'
+            statusFilter === 'ACCEPTED_ACTIVE'
               ? 'border-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/40 ring-2 ring-emerald-400/30'
               : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-300'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">Accepted</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">Accepted • Active</span>
+            <Unlock className="h-4 w-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{counts.accepted}</p>
-          <p className="text-[10px] text-slate-500">Admitted students</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{counts.acceptedActive ?? 0}</p>
+          <p className="text-[10px] text-slate-500">Unlocked &amp; enrolled</p>
         </div>
 
         <div
-          onClick={() => setStatusFilter('REJECTED')}
+          onClick={() => setStatusFilter('ACCEPTED_LOCKED')}
           className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-            statusFilter === 'REJECTED'
-              ? 'border-rose-400 bg-rose-50/60 dark:bg-rose-950/40 ring-2 ring-rose-400/30'
-              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-rose-300'
+            statusFilter === 'ACCEPTED_LOCKED'
+              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 ring-2 ring-amber-400/30'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-300'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-rose-700 dark:text-rose-300">Not Approved</span>
-            <XCircle className="h-4 w-4 text-rose-500" />
+            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300">Accepted • Locked</span>
+            <Lock className="h-4 w-4 text-amber-600" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{counts.rejected}</p>
-          <p className="text-[10px] text-slate-500">Declined applications</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{counts.acceptedLocked ?? 0}</p>
+          <p className="text-[10px] text-slate-500">Verified account, unpaid</p>
+        </div>
+
+        <div
+          onClick={() => setStatusFilter('PROOF_SUBMITTED')}
+          className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+            statusFilter === 'PROOF_SUBMITTED'
+              ? 'border-blue-400 bg-blue-50/60 dark:bg-blue-950/40 ring-2 ring-blue-400/30'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300">Proof In Review</span>
+            <CreditCard className="h-4 w-4 text-blue-500" />
+          </div>
+          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{counts.proofPending ?? 0}</p>
+          <p className="text-[10px] text-slate-500">Receipts awaiting check</p>
         </div>
 
         <div
@@ -363,12 +395,12 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
             <GraduationCap className="h-4 w-4 text-indigo-500" />
           </div>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{counts.total}</p>
-          <p className="text-[10px] text-slate-500">Total admission ledger</p>
+          <p className="text-[10px] text-slate-500">Complete admission ledger</p>
         </div>
       </div>
 
-      {/* ─── Search & Controls Bar ─── */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      {/* ─── Search & Quick Filter Pills ─── */}
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
@@ -379,14 +411,46 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Filter Pills with Counts */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 flex-wrap">
+          {[
+            { id: 'PENDING', label: 'Pending', count: counts.pending },
+            { id: 'ACCEPTED', label: 'All Accepted', count: counts.accepted },
+            { id: 'ACCEPTED_ACTIVE', label: 'Active Access', count: counts.acceptedActive ?? 0 },
+            { id: 'ACCEPTED_LOCKED', label: 'Locked / Unpaid', count: counts.acceptedLocked ?? 0 },
+            { id: 'PROOF_SUBMITTED', label: 'Proof Review', count: counts.proofPending ?? 0 },
+            { id: 'REJECTED', label: 'Declined', count: counts.rejected },
+            { id: 'ALL', label: 'All', count: counts.total },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setStatusFilter(item.id as any)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                statusFilter === item.id
+                  ? 'bg-white dark:bg-slate-900 text-[#315b36] dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              <span>{item.label}</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  statusFilter === item.id
+                    ? 'bg-emerald-100 text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300'
+                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {item.count}
+              </span>
+            </button>
+          ))}
+
           <Button
             onClick={fetchApplications}
             variant="outline"
             size="sm"
-            className="h-10 text-xs font-bold rounded-2xl gap-1.5 border-slate-200 dark:border-slate-800"
+            className="h-7 text-xs font-bold rounded-lg gap-1 border-slate-200 dark:border-slate-700 ml-1"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -433,9 +497,26 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                           {app.lastName?.[0]}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900 dark:text-white truncate">
-                            {app.firstName} {app.lastName}
-                          </p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-slate-900 dark:text-white truncate">
+                              {app.firstName} {app.lastName}
+                            </p>
+                            {app.isVerified ? (
+                              <span
+                                className="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded-md border border-emerald-200 dark:border-emerald-800"
+                                title="User Account Verified"
+                              >
+                                ✓ Verified
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded-md"
+                                title="User Account Not Verified"
+                              >
+                                Unverified
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-slate-400 truncate">{app.email}</p>
                           {app.phone && <p className="text-[10px] text-slate-400 font-mono">{app.phone}</p>}
                         </div>
@@ -463,9 +544,20 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                         </span>
                       )}
                       {app.applicationStatus === 'ACCEPTED' && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="h-3 w-3" /> Accepted
-                        </span>
+                        <div className="flex flex-col gap-0.5 items-start">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="h-3 w-3" /> Accepted
+                          </span>
+                          {app.learningAccess === 'LOCKED' ? (
+                            <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-0.5">
+                              <Lock className="h-2.5 w-2.5" /> Locked
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                              <Unlock className="h-2.5 w-2.5" /> Active Access
+                            </span>
+                          )}
+                        </div>
                       )}
                       {app.applicationStatus === 'REJECTED' && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
@@ -501,17 +593,30 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                           <CreditCard className="h-3 w-3" /> Review Proof
                         </button>
                       ) : app.paymentStatus === 'VERIFIED' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <CheckCircle2 className="h-3 w-3" /> Verified
                         </span>
                       ) : app.paymentStatus === 'REJECTED' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                           Proof Rejected
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
-                          Unpaid
-                        </span>
+                        <div className="flex flex-col gap-0.5 items-start">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              app.applicationStatus === 'ACCEPTED'
+                                ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                            }`}
+                          >
+                            Unpaid
+                          </span>
+                          {app.applicationStatus === 'ACCEPTED' && app.isVerified && (
+                            <span className="text-[9px] text-amber-700 dark:text-amber-400 font-semibold" title="Account verified but tuition payment still pending">
+                              Verified • Unpaid
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
 
@@ -519,12 +624,21 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                     <td className="py-3.5 px-3">
                       {app.learningAccess === 'ACTIVE' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
-                          <Unlock className="h-3 w-3" /> Active
+                          <Unlock className="h-3 w-3" /> Active Access
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                          <Lock className="h-3 w-3" /> Locked
-                        </span>
+                        <div className="flex flex-col gap-0.5 items-start">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                            <Lock className="h-3 w-3 text-amber-600" /> Locked
+                          </span>
+                          <span className="text-[9px] text-amber-700 dark:text-amber-400 font-medium">
+                            {app.paymentStatus === 'PROOF_SUBMITTED'
+                              ? 'Proof in review'
+                              : app.paymentStatus === 'UNPAID'
+                              ? 'Requires payment'
+                              : 'Access withheld'}
+                          </span>
+                        </div>
                       )}
                     </td>
 

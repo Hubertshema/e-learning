@@ -2,6 +2,7 @@ import { LevelModel } from '../models/level.model.js';
 import { LevelCourseModel } from '../models/level_course.model.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 import { query } from '../config/database.js';
+import crypto from 'crypto';
 
 export class LevelController {
   static async list(req, res) {
@@ -11,21 +12,19 @@ export class LevelController {
       if (req.query.include === 'courses') {
         const enrichedLevels = [];
         for (const level of levels) {
+          // Fetch only the courses properly assigned to this level in level_courses
           const courses = await LevelCourseModel.findByLevelId(level.id);
-          // Also fetch student count for the level
+
+          // Count UNIQUE students whose profile levelId matches this level exactly.
+          // Do NOT use lc.levelId or c.level — those overcounted when the same course
+          // appeared under multiple levels in the old corrupted level_courses data.
           const studentRes = await query(
-            `SELECT COUNT(DISTINCT u.id)
-             FROM "public"."users" u
-             JOIN "public"."student_profiles" sp ON u.id = sp."userId"
-             LEFT JOIN "public"."enrollments" e ON e."studentId" = sp.id
-             LEFT JOIN "public"."courses" c ON c.id = e."courseId"
-             LEFT JOIN "public"."level_courses" lc ON lc."courseId" = c.id
-             WHERE sp."levelId" = $1
-                OR lc."levelId" = $1
-                OR (c.level IS NOT NULL AND (c.level = $1::text OR c.level = $2))`,
-            [level.id, level.code]
+            `SELECT COUNT(DISTINCT sp.id)
+             FROM "public"."student_profiles" sp
+             WHERE sp."levelId" = $1`,
+            [level.id]
           );
-          
+
           const enrichedCourses = await Promise.all(
             courses.map(async (c) => {
               const lessonsRes = await query(
@@ -147,13 +146,7 @@ export class LevelController {
         `SELECT DISTINCT u.id, u.email, u."firstName", u."lastName", u."avatarUrl"
          FROM "public"."users" u
          JOIN "public"."student_profiles" sp ON u.id = sp."userId"
-         LEFT JOIN "public"."enrollments" e ON e."studentId" = sp.id
-         LEFT JOIN "public"."courses" c ON c.id = e."courseId"
-         LEFT JOIN "public"."level_courses" lc ON lc."courseId" = c.id
-         LEFT JOIN "public"."levels" lvl ON lvl.id = $1
          WHERE sp."levelId" = $1
-            OR lc."levelId" = $1
-            OR (c.level IS NOT NULL AND (c.level = $1::text OR c.level = lvl.code))
          ORDER BY u."lastName" ASC, u."firstName" ASC`,
         [levelId]
       );
@@ -181,14 +174,41 @@ export class LevelController {
       const level = await LevelModel.findById(levelId);
       if (!level) return sendError(res, 'Level not found', 404);
 
+      // Get old profiles to track level history
+      const oldProfilesRes = await query(
+        `SELECT id, "levelId" FROM "public"."student_profiles" WHERE "userId" = ANY($1)`,
+        [studentIds]
+      );
+
       // We only update users who actually have a student profile
-      // In PostgreSQL we can do UPDATE ... WHERE "userId" = ANY($1)
       await query(
         `UPDATE "public"."student_profiles"
          SET "levelId" = $1, "updatedAt" = NOW()
          WHERE "userId" = ANY($2)`,
         [levelId, studentIds]
       );
+
+      // Record level change in audit history
+      const changedBy = req.user?.id || 'SYSTEM';
+      for (const row of oldProfilesRes.rows) {
+        if (row.levelId !== parseInt(levelId, 10) && row.levelId !== String(levelId)) {
+          const auditId = crypto.randomUUID();
+          await query(
+            `INSERT INTO "public"."student_status_audits" 
+             (id, "studentId", "changedBy", action, "fromState", "toState", notes, "createdAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+            [
+              auditId,
+              row.id,
+              changedBy,
+              'LEVEL_CHANGE',
+              JSON.stringify({ levelId: row.levelId }),
+              JSON.stringify({ levelId: levelId }),
+              'Primary level assignment changed'
+            ]
+          );
+        }
+      }
 
       return sendSuccess(res, null, 'Students enrolled successfully');
     } catch (error) {
@@ -217,6 +237,25 @@ export class LevelController {
       if (result.rowCount === 0) {
         return sendError(res, 'Student not found in this level', 404);
       }
+
+      // Record level history audit
+      const profileId = result.rows[0].id;
+      const changedBy = req.user?.id || 'SYSTEM';
+      const auditId = crypto.randomUUID();
+      await query(
+        `INSERT INTO "public"."student_status_audits" 
+         (id, "studentId", "changedBy", action, "fromState", "toState", notes, "createdAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+        [
+          auditId,
+          profileId,
+          changedBy,
+          'LEVEL_CHANGE',
+          JSON.stringify({ levelId: levelId }),
+          JSON.stringify({ levelId: null }),
+          'Student unenrolled from primary level'
+        ]
+      );
 
       return sendSuccess(res, null, 'Student unenrolled successfully');
     } catch (error) {
