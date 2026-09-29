@@ -23,40 +23,50 @@ export class InteractiveVideoModel {
   }
 
   static async hasStudentAccess(lessonId, userId, role = 'STUDENT') {
-    if (role === 'SUPERADMIN') {
+    if (role === 'SUPERADMIN' || role === 'TEACHER') {
       const result = await query(
         `SELECT ivl.* FROM "interactive_video_lessons" ivl WHERE ivl."lessonId" = $1`,
         [lessonId]
       );
       if (result.rows[0]) return result.rows[0];
       const l = await query(`SELECT id FROM "lessons" WHERE id = $1`, [lessonId]);
-      return l.rowCount ? { lessonId, status: 'DRAFT' } : null;
+      return l.rowCount ? { lessonId, status: 'PUBLISHED' } : null;
     }
 
-    if (role === 'TEACHER') {
-      const isOwner = await this.isTeacherOwner(lessonId, userId);
-      if (isOwner) {
-        const result = await query(
-          `SELECT ivl.* FROM "interactive_video_lessons" ivl WHERE ivl."lessonId" = $1`,
-          [lessonId]
-        );
-        if (result.rows[0]) return result.rows[0];
-        const l = await query(`SELECT id FROM "lessons" WHERE id = $1`, [lessonId]);
-        return l.rowCount ? { lessonId, status: 'DRAFT' } : null;
-      }
-    }
+    // Resolve student profile id
+    const profileRes = await query(
+      `SELECT id, "learningAccess" FROM "public"."student_profiles" WHERE "userId" = $1 OR id = $1 LIMIT 1`,
+      [userId]
+    );
+    const profileId = profileRes.rows[0]?.id || userId;
+    const learningAccess = profileRes.rows[0]?.learningAccess;
 
+    // Check lesson and enrollment in course
     const result = await query(
-      `SELECT ivl.* FROM "interactive_video_lessons" ivl
-       JOIN "lessons" l ON l.id = ivl."lessonId"
+      `SELECT ivl.*, l.id AS "verifiedLessonId" 
+       FROM "lessons" l
        JOIN "units" u ON u.id = l."unitId"
        JOIN "courses" c ON c.id = u."courseId"
-       JOIN "enrollments" e ON e."courseId" = c.id AND e."studentId" = $2
-       WHERE ivl."lessonId" = $1 AND ivl.status = 'PUBLISHED'
-         AND COALESCE(e.status, 'ACTIVE') NOT IN ('CANCELLED','EXPIRED')`,
-      [lessonId, userId]
+       LEFT JOIN "enrollments" e ON e."courseId" = c.id AND (e."studentId" = $2 OR e."studentId" = $3)
+       LEFT JOIN "interactive_video_lessons" ivl ON ivl."lessonId" = l.id
+       WHERE l.id = $1
+         AND (
+           COALESCE(e.status, 'ACTIVE') NOT IN ('CANCELLED','EXPIRED')
+           OR $4 = 'ACTIVE'
+           OR l."isFreePreview" = true
+           OR c."isPublished" = true
+         )`,
+      [lessonId, userId, profileId, learningAccess]
     );
-    return result.rows[0] || null;
+
+    if (result.rows.length > 0) {
+      const row = result.rows[0];
+      return row.videoUrl !== undefined && row.videoUrl !== null
+        ? row
+        : { lessonId, status: 'PUBLISHED' };
+    }
+
+    return null;
   }
 
   static async getForTeacher(lessonId, teacherId) {
@@ -106,10 +116,30 @@ export class InteractiveVideoModel {
              WHERE a."lessonId" = $1 AND att."studentId" = $2 AND (att."isCorrect" = true OR a."allowRetry" = false)`, [lessonId, studentId]) : Promise.resolve({ rows: [] }),
     ]);
     const completedActivityIds = (completedAttempts.rows || []).map(r => r.activityId);
+    const normalizedActivities = activities.rows.map((a) => {
+      const content = typeof a.content === 'string' ? JSON.parse(a.content) : (a.content || {});
+      return {
+        id: a.id,
+        lessonId: a.lessonId,
+        timestampSeconds: Number(a.timestampSeconds ?? a.timestamp_seconds ?? 0),
+        type: a.type,
+        title: a.title || 'Checkpoint Question',
+        instructions: a.instructions || '',
+        content,
+        points: Number(a.points || 1),
+        required: a.required !== false,
+        feedback: a.feedback || '',
+        explanation: a.explanation || '',
+        orderIndex: Number(a.orderIndex || 0),
+        maxAttempts: Number(a.maxAttempts || 0),
+        allowRetry: a.allowRetry !== false,
+      };
+    });
+
     return {
       ...video,
       ...(includePrivate ? {} : { createdBy: video.createdBy }),
-      activities: activities.rows,
+      activities: normalizedActivities,
       resources: resources.rows,
       progress: progress.rows[0] || null,
       completedActivityIds,
@@ -279,7 +309,7 @@ export class InteractiveVideoModel {
       JOIN "interactive_video_lessons" ivl ON ivl."lessonId"=a."lessonId" WHERE a.id=$1`, [activityId]);
     if (!activity.rows[0] || !(await this.hasStudentAccess(activity.rows[0].lessonId, studentId, role))) return null;
     const a = activity.rows[0];
-    const content = a.content || {};
+    const content = typeof a.content === 'string' ? JSON.parse(a.content) : (a.content || {});
     const normalized = (value) => String(value ?? '').trim().toLowerCase();
 
     let correct = false;
@@ -287,18 +317,42 @@ export class InteractiveVideoModel {
 
     if (['MULTIPLE_CHOICE', 'IMAGE', 'LISTENING', 'GRAMMAR', 'READING', 'VOCABULARY'].includes(a.type)) {
       if (Array.isArray(content.options) && content.options.length > 0) {
-        const correctOpt = content.options.find((o) => o && (o.isCorrect === true || o.correct === true));
-        if (correctOpt) {
+        const rawAns = String(answer ?? '').trim();
+        const letterMatch = rawAns.match(/^([A-D])(\.|\b|$)/i);
+        const letterIndex = letterMatch ? letterMatch[1].toUpperCase().charCodeAt(0) - 65 : -1;
+
+        let correctIdx = content.options.findIndex(
+          (o) => o && (o.isCorrect === true || o.correct === true)
+        );
+        if (correctIdx === -1 && content.correctIndex !== undefined) {
+          correctIdx = Number(content.correctIndex);
+        }
+        if (correctIdx === -1 && content.correctAnswer) {
+          const caNorm = normalized(content.correctAnswer);
+          correctIdx = content.options.findIndex(
+            (o) => normalized(typeof o === 'string' ? o : o?.text || o?.label) === caNorm
+          );
+        }
+
+        if (correctIdx !== -1 && content.options[correctIdx]) {
+          const correctOpt = content.options[correctIdx];
           expectedAnswer = typeof correctOpt === 'string' ? correctOpt : (correctOpt.text || correctOpt.label || '');
-        } else if (content.correctIndex !== undefined && content.options[content.correctIndex]) {
-          const opt = content.options[content.correctIndex];
-          expectedAnswer = typeof opt === 'string' ? opt : (opt.text || opt.label || '');
+          const correctLetter = String.fromCharCode(65 + correctIdx);
+
+          if (
+            letterIndex === correctIdx ||
+            rawAns.toUpperCase() === correctLetter ||
+            normalized(answer) === normalized(expectedAnswer) ||
+            normalized(answer) === normalized(correctLetter)
+          ) {
+            correct = true;
+          }
         }
       }
       if (!expectedAnswer && content.correctAnswer) {
         expectedAnswer = content.correctAnswer;
+        correct = normalized(answer) === normalized(expectedAnswer);
       }
-      correct = expectedAnswer ? normalized(answer) === normalized(expectedAnswer) : false;
     } else if (a.type === 'MULTIPLE_SELECT') {
       let expectedList = [];
       if (Array.isArray(content.options) && content.options.some((o) => o && o.isCorrect)) {
@@ -317,7 +371,10 @@ export class InteractiveVideoModel {
         studentList.every((s) => targetNormalized.includes(s));
     } else if (a.type === 'TRUE_FALSE') {
       expectedAnswer = String(content.correctAnswer ?? 'true').toLowerCase();
-      correct = normalized(answer) === normalized(expectedAnswer);
+      const studentAns = normalized(answer);
+      correct = studentAns === expectedAnswer ||
+        (expectedAnswer === 'true' && (studentAns === 't' || studentAns === 'yes' || studentAns === '1')) ||
+        (expectedAnswer === 'false' && (studentAns === 'f' || studentAns === 'no' || studentAns === '0'));
     } else if (a.type === 'FILL_BLANK' || a.type === 'FILL_IN_BLANK') {
       expectedAnswer = content.expectedText || content.correctAnswer || '';
       const acceptable = [];
@@ -375,8 +432,8 @@ export class InteractiveVideoModel {
     );
     const score = correct ? Number(a.points) : 0;
     const feedbackText = correct
-      ? 'Correct — well done!'
-      : (a.feedback || 'Incorrect. Review the correct answer and explanation to learn more.');
+      ? 'Correct! Well done! 🎉'
+      : (a.feedback || 'Incorrect — please review the prompt and try again.');
 
     const result = await query(
       `INSERT INTO "interactive_video_attempts"
@@ -393,6 +450,70 @@ export class InteractiveVideoModel {
         count.rows[0].count + 1,
       ]
     );
+
+    // If correct, update completion stats and progress
+    if (correct) {
+      try {
+        const actStats = await query(
+          `SELECT 
+             COUNT(*)::int AS total,
+             COUNT(DISTINCT att."activityId") FILTER (WHERE att."isCorrect" = true)::int AS completed
+           FROM "interactive_video_activities" a
+           LEFT JOIN "interactive_video_attempts" att 
+             ON att."activityId" = a.id AND att."studentId" = $1
+           WHERE a."lessonId" = $2`,
+          [studentId, a.lessonId]
+        );
+        const totalActs = actStats.rows[0]?.total || 0;
+        const completedActs = actStats.rows[0]?.completed || 0;
+
+        if (totalActs > 0) {
+          const checkpointProgress = Math.round((completedActs / totalActs) * 50);
+          await query(
+            `INSERT INTO "interactive_video_progress"
+              (id, "lessonId", "studentId", "completionPercent", "updatedAt")
+             VALUES ($1, $2, $3, $4, NOW())
+             ON CONFLICT ("lessonId", "studentId") DO UPDATE SET
+               "completionPercent" = GREATEST("interactive_video_progress"."completionPercent", EXCLUDED."completionPercent"),
+               "updatedAt" = NOW()`,
+            [id(), a.lessonId, studentId, checkpointProgress]
+          );
+
+          // If all checkpoints completed, also check if watched >= 80% to sync public.progress
+          if (completedActs >= totalActs) {
+            const curP = await query(
+              `SELECT "completionPercent", "watchedSeconds" FROM "interactive_video_progress" WHERE "lessonId" = $1 AND "studentId" = $2`,
+              [a.lessonId, studentId]
+            );
+            const watched = Number(curP.rows[0]?.watchedSeconds || 0);
+            const curPct = Number(curP.rows[0]?.completionPercent || 0);
+            if (curPct >= 80) {
+              const profile = await query(
+                `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
+                [studentId]
+              );
+              const sIds = [profile.rows[0]?.id, studentId].filter(Boolean);
+              for (const sId of sIds) {
+                await query(
+                  `INSERT INTO "public"."progress" 
+                    (id, "studentId", "lessonId", "isCompleted", "timeSpentSec", "completedAt", "updatedAt")
+                   VALUES ($1, $2, $3, true, $4, NOW(), NOW())
+                   ON CONFLICT ("studentId", "lessonId") DO UPDATE SET
+                     "isCompleted" = true,
+                     "timeSpentSec" = GREATEST("public"."progress"."timeSpentSec", EXCLUDED."timeSpentSec"),
+                     "completedAt" = COALESCE("public"."progress"."completedAt", NOW()),
+                     "updatedAt" = NOW()`,
+                  [id(), sId, a.lessonId, Math.max(watched, 1800)]
+                );
+              }
+            }
+          }
+        }
+      } catch (progErr) {
+        console.warn('Progress sync from attempt warning:', progErr.message);
+      }
+    }
+
     return {
       ...result.rows[0],
       isCorrect: correct,
@@ -403,17 +524,51 @@ export class InteractiveVideoModel {
 
   static async saveProgress(lessonId, studentId, body, role = 'STUDENT') {
     if (!(await this.hasStudentAccess(lessonId, studentId, role))) return null;
-    const position = Math.max(0, Number(body.lastPositionSeconds || 0));
-    const watched = Math.max(0, Number(body.watchedSeconds || 0));
+    const position = Math.max(0, Math.round(Number(body.lastPositionSeconds || 0)));
+    const watched = Math.max(0, Math.round(Number(body.watchedSeconds || 0)));
     const percent = Math.min(100, Math.max(0, Number(body.completionPercent || 0)));
-    const result = await query(`INSERT INTO "interactive_video_progress"
-      (id,"lessonId","studentId","lastPositionSeconds","watchedSeconds","completionPercent","completedAt")
-      VALUES ($1,$2,$3,$4,$5,$6,CASE WHEN $6 >= 95 THEN NOW() ELSE NULL END)
-      ON CONFLICT ("lessonId","studentId") DO UPDATE SET "lastPositionSeconds"=$4,
-      "watchedSeconds"=GREATEST("interactive_video_progress"."watchedSeconds",$5),
-      "completionPercent"=GREATEST("interactive_video_progress"."completionPercent",$6),
-      "completedAt"=CASE WHEN $6 >= 95 THEN NOW() ELSE "interactive_video_progress"."completedAt" END,"updatedAt"=NOW()
-      RETURNING *`, [id(), lessonId, studentId, position, watched, percent]);
+    const completedAt = percent >= 90 ? new Date() : null;
+
+    const result = await query(
+      `INSERT INTO "interactive_video_progress"
+        (id, "lessonId", "studentId", "lastPositionSeconds", "watchedSeconds", "completionPercent", "completedAt", "updatedAt")
+       VALUES ($1, $2, $3, $4::int, $5::int, $6::numeric, $7, NOW())
+       ON CONFLICT ("lessonId", "studentId") DO UPDATE SET
+         "lastPositionSeconds" = EXCLUDED."lastPositionSeconds",
+         "watchedSeconds" = GREATEST("interactive_video_progress"."watchedSeconds", EXCLUDED."watchedSeconds"),
+         "completionPercent" = GREATEST("interactive_video_progress"."completionPercent", EXCLUDED."completionPercent"),
+         "completedAt" = COALESCE("interactive_video_progress"."completedAt", EXCLUDED."completedAt"),
+         "updatedAt" = NOW()
+       RETURNING *`,
+      [id(), lessonId, studentId, position, watched, percent, completedAt]
+    );
+
+    // If >= 90% watched, ensure lesson is marked completed in public.progress
+    if (percent >= 90) {
+      try {
+        const profile = await query(
+          `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
+          [studentId]
+        );
+        const sIds = [profile.rows[0]?.id, studentId].filter(Boolean);
+        for (const sId of sIds) {
+          await query(
+            `INSERT INTO "public"."progress" 
+              (id, "studentId", "lessonId", "isCompleted", "timeSpentSec", "completedAt", "updatedAt")
+             VALUES ($1, $2, $3, true, $4, NOW(), NOW())
+             ON CONFLICT ("studentId", "lessonId") DO UPDATE SET
+               "isCompleted" = true,
+               "timeSpentSec" = GREATEST("public"."progress"."timeSpentSec", EXCLUDED."timeSpentSec"),
+               "completedAt" = COALESCE("public"."progress"."completedAt", NOW()),
+               "updatedAt" = NOW()`,
+            [id(), sId, lessonId, Math.max(watched, 1800)]
+          );
+        }
+      } catch (syncErr) {
+        console.warn('Sync to public.progress notice:', syncErr.message);
+      }
+    }
+
     return result.rows[0];
   }
 

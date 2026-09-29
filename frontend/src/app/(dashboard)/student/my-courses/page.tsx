@@ -68,7 +68,16 @@ export default function MyCoursesPage() {
   const courses = fetchResult?.enrolled || [];
   const primaryLevel = fetchResult?.primaryLevel || 'Level 1';
 
-  const filteredCourses = courses.filter((item) => {
+  // Deduplicate enrolled courses to prevent duplicates from multiple level assignments
+  const seenEnrollmentCourseIds = new Set<string>();
+  const uniqueCourses = courses.filter((item) => {
+    if (!item?.course?.id) return false;
+    if (seenEnrollmentCourseIds.has(item.course.id)) return false;
+    seenEnrollmentCourseIds.add(item.course.id);
+    return true;
+  });
+
+  const filteredCourses = uniqueCourses.filter((item) => {
     if (activeTab === 'ACTIVE' && (item.status !== 'ACTIVE' || item.isExpired)) return false;
     if (activeTab === 'PENDING' && item.status !== 'PENDING') return false;
     if (activeTab === 'EXPIRED' && (!item.isExpired && item.status !== 'EXPIRED')) return false;
@@ -80,11 +89,11 @@ export default function MyCoursesPage() {
   const primaryLevelCourses = filteredCourses.filter(c => c.course.level === primaryLevel);
   const additionalCourses = filteredCourses.filter(c => c.course.level !== primaryLevel);
 
-  function renderCourseCard(item: EnrolledCourseItem) {
+  function renderCourseCard(item: EnrolledCourseItem, idx: number) {
     const isAccessActive = item.status === 'ACTIVE' && !item.isExpired;
     return (
       <Card
-        key={item.id}
+        key={`${item.id}-${item.course?.id || ''}-${idx}`}
         className="overflow-hidden flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-md"
       >
         <div>
@@ -235,7 +244,7 @@ export default function MyCoursesPage() {
                 Primary Level Courses ({primaryLevel})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {primaryLevelCourses.map(renderCourseCard)}
+                {primaryLevelCourses.map((item, idx) => renderCourseCard(item, idx))}
               </div>
             </div>
           )}
@@ -247,7 +256,7 @@ export default function MyCoursesPage() {
                 Additional Course Access
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {additionalCourses.map(renderCourseCard)}
+                {additionalCourses.map((item, idx) => renderCourseCard(item, idx))}
               </div>
             </div>
           )}

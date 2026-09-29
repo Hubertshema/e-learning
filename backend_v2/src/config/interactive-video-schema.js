@@ -76,7 +76,18 @@ export async function ensureInteractiveVideoSchema() {
       "attemptNumber" INTEGER NOT NULL DEFAULT 1,
       "submittedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS "interactive_video_attempts_student_idx"
-      ON "interactive_video_attempts" ("studentId", "activityId");
+    CREATE TABLE IF NOT EXISTS "public"."progress" (
+      id TEXT PRIMARY KEY,
+      "studentId" TEXT NOT NULL,
+      "lessonId" TEXT NOT NULL,
+      "isCompleted" BOOLEAN NOT NULL DEFAULT false,
+      "timeSpentSec" INTEGER NOT NULL DEFAULT 0,
+      score NUMERIC(8,2),
+      "completedAt" TIMESTAMPTZ,
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "progress_student_lesson_unique_idx"
+      ON "public"."progress" ("studentId", "lessonId");
   `);
 }

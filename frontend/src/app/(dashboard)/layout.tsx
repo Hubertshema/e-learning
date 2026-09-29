@@ -48,9 +48,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ? 'Certified Instructor'
       : 'Enrolled Student';
 
-  // Preview simulator routes should be standalone without the dashboard sidebar and top navbar
-  if (pathname.includes('/preview')) {
-    return <div className="h-screen w-full bg-[#f8faf8] overflow-hidden">{children}</div>;
+  // Full-screen standalone mode for preview simulators & student classroom learning studio
+  if (pathname.includes('/preview') || pathname.startsWith('/student/learn')) {
+    return <div className="min-h-screen w-full bg-[#f8faf8] dark:bg-slate-950 overflow-y-auto">{children}</div>;
   }
 
   return (

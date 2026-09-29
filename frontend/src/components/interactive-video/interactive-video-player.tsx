@@ -135,6 +135,7 @@ export function InteractiveVideoPlayer({
   }, [completedActivityIds]);
 
   const [answer, setAnswer] = useState<any>('');
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<any>(null);
   const [speed, setSpeed] = useState(1);
   const [allowFreeSeek, setAllowFreeSeek] = useState(false);
@@ -338,18 +339,8 @@ export function InteractiveVideoPlayer({
   };
 
   const openCheckpoint = (item: VideoActivity) => {
-    if (isTriggeringCheckpointRef.current) return;
+    if (isTriggeringCheckpointRef.current && activeRef.current?.id === item.id) return;
     isTriggeringCheckpointRef.current = true;
-
-    const dynamicBarrier = getDynamicBarrier();
-    const isLocked = !allowFreeSeek && item.timestampSeconds > dynamicBarrier + 1.0;
-    if (isLocked) {
-      showNotice(
-        `🔒 Checkpoint at ${formatVideoTime(item.timestampSeconds)} is locked. Complete earlier checkpoints first.`
-      );
-      isTriggeringCheckpointRef.current = false;
-      return;
-    }
 
     clearAutoResume();
     recentlyTriggeredCheckpointRef.current[item.id] = Date.now();
@@ -358,16 +349,19 @@ export function InteractiveVideoPlayer({
     setActive(item);
     setShowHint(false);
 
+    // Stop playback immediately
     videoRef.current?.pause();
     setPlaying(false);
-    videoRef.current?.seekTo(item.timestampSeconds);
-    lastTimeRef.current = item.timestampSeconds;
-    setPosition(item.timestampSeconds);
+
+    const targetTime = Number(item.timestampSeconds || 0);
+    videoRef.current?.seekTo(targetTime);
+    lastTimeRef.current = targetTime;
+    setPosition(targetTime);
 
     if (completedRef.current[item.id]) {
       setFeedback({
         isCorrect: true,
-        feedback: '✓ Checkpoint completed! You can review your response or try again.',
+        feedback: '✓ Checkpoint completed! You can review your response or continue the video.',
         correctAnswer: item.content?.correctAnswer,
         explanation: item.explanation,
       });
@@ -378,7 +372,7 @@ export function InteractiveVideoPlayer({
 
     setTimeout(() => {
       isTriggeringCheckpointRef.current = false;
-    }, 600);
+    }, 400);
   };
 
   const handleTimeUpdate = (current: number) => {
@@ -409,16 +403,22 @@ export function InteractiveVideoPlayer({
       return;
     }
 
-    // 2. Normal playback progress: advance watched position smoothly
-    if (current > watchedRef.current) {
-      if (!allowFreeSeek && dynamicBarrier < 999999 && current > dynamicBarrier + 0.5) {
-        videoRef.current?.pause();
-        setPlaying(false);
-        videoRef.current?.seekTo(dynamicBarrier);
-        lastTimeRef.current = dynamicBarrier;
-        setPosition(dynamicBarrier);
+    // 2. Barrier Check: If playback reached or is crossing the earliest uncompleted required checkpoint
+    if (!allowFreeSeek && dynamicBarrier < 999999 && current >= dynamicBarrier - 0.2) {
+      const barrierCheckpoint = (activitiesRef.current || []).find(
+        (a) =>
+          a.required !== false &&
+          !completedRef.current[a.id] &&
+          Number(a.timestampSeconds || 0) <= dynamicBarrier + 0.5
+      );
+      if (barrierCheckpoint) {
+        openCheckpoint(barrierCheckpoint);
         return;
       }
+    }
+
+    // 3. Normal playback progress: advance watched position smoothly
+    if (current > watchedRef.current) {
       watchedRef.current = current;
       setWatched(current);
     }
@@ -426,20 +426,22 @@ export function InteractiveVideoPlayer({
     lastTimeRef.current = current;
     setPosition(current);
 
-    // 3. Trigger uncompleted checkpoints ONLY when the playback head crosses or reaches them
+    // 4. Trigger uncompleted checkpoints when playback crosses or is within threshold of their timestamp
     const reachedCheckpoint = (activitiesRef.current || []).find((item) => {
+      const itemTime = Number(item.timestampSeconds || 0);
       if (completedRef.current[item.id]) return false;
       if (activeRef.current && activeRef.current.id === item.id) return false;
 
-      // Skip if this checkpoint was triggered recently (< 4s)
+      // Skip only if this exact checkpoint was triggered within the last 1.8s
       const recently = recentlyTriggeredCheckpointRef.current[item.id];
-      if (recently && Date.now() - recently < 4000) return false;
+      if (recently && Date.now() - recently < 1800) return false;
 
-      // Strict forward crossing or forward landing
-      const crossed = prevTime < item.timestampSeconds && current >= item.timestampSeconds;
-      const landing =
-        Math.abs(current - item.timestampSeconds) < 0.25 && prevTime < item.timestampSeconds;
-      return crossed || landing;
+      // Has playback reached or crossed this checkpoint?
+      const crossed = (prevTime <= itemTime + 0.1 && current >= itemTime);
+      const inRange = Math.abs(current - itemTime) <= 0.4;
+      const jumpedPast = !allowFreeSeek && current > itemTime;
+
+      return crossed || inRange || jumpedPast;
     });
 
     if (reachedCheckpoint) {
@@ -447,14 +449,34 @@ export function InteractiveVideoPlayer({
       return;
     }
 
+    // Report curriculum progress to parent
+    const totalActs = (activitiesRef.current || []).length;
+    const nowCompletedActs = Object.keys(completedRef.current).filter(
+      (k) => completedRef.current[k]
+    ).length;
+    const checkPct = totalActs > 0 ? (nowCompletedActs / totalActs) * 50 : 0;
+    const watchPct = totalDuration > 0 ? Math.min(50, (current / totalDuration) * 50) : 0;
+    const progressPercent = totalActs > 0
+      ? Math.min(100, Math.round(checkPct + watchPct))
+      : (totalDuration > 0 ? Math.min(100, Math.round((current / totalDuration) * 100)) : 0);
+
     onProgress?.(
       current,
       Math.max(watchedRef.current, current),
-      totalDuration ? Math.min(100, (current / totalDuration) * 100) : 0
+      progressPercent
     );
   };
 
   const seek = (targetTime: number) => {
+    if (
+      activeRef.current &&
+      activeRef.current.required !== false &&
+      !completedRef.current[activeRef.current.id]
+    ) {
+      showNotice('🔒 Checkpoint reached: Please submit your answer to unlock the timeline.');
+      return;
+    }
+
     const clampedTarget = Math.max(0, targetTime);
     const dynamicBarrier = getDynamicBarrier();
     const maxSeekable = allowFreeSeek
@@ -535,8 +557,9 @@ export function InteractiveVideoPlayer({
   }, [position, playing, allowFreeSeek]);
 
   const submit = async () => {
-    if (!active) return;
+    if (!active || submitting) return;
     try {
+      setSubmitting(true);
       const finalAnswer =
         active.type === 'DRAG_DROP' && Array.isArray(answer)
           ? answer.join(' ')
@@ -550,9 +573,19 @@ export function InteractiveVideoPlayer({
         completedRef.current[active.id] = true;
         setCompleted((v) => ({ ...v, [active.id]: true }));
 
-        // Auto-resume playback: brief 1.5s countdown so student sees result, then auto-play
+        // Update progress immediately
+        const totalActs = (activitiesRef.current || []).length;
+        const nowCompletedActs = Object.keys(completedRef.current).filter(
+          (k) => completedRef.current[k]
+        ).length;
+        const checkPct = totalActs > 0 ? (nowCompletedActs / totalActs) * 50 : 0;
+        const watchPct = totalDuration > 0 ? Math.min(50, (watchedRef.current / totalDuration) * 50) : 0;
+        const calculatedPercent = Math.min(100, Math.round(checkPct + watchPct));
+        onProgress?.(position, Math.max(watchedRef.current, position), calculatedPercent);
+
+        // Gentle auto-resume timer giving student time to review response
         clearAutoResume();
-        let secondsLeft = 2;
+        let secondsLeft = 4;
         setAutoResumeSeconds(secondsLeft);
         autoResumeTimerRef.current = setInterval(() => {
           secondsLeft -= 1;
@@ -562,10 +595,12 @@ export function InteractiveVideoPlayer({
           } else {
             setAutoResumeSeconds(secondsLeft);
           }
-        }, 750);
+        }, 1000);
       }
     } catch (error: any) {
       setFeedback({ feedback: error.message || 'Could not submit your answer.' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -581,10 +616,12 @@ export function InteractiveVideoPlayer({
     setActive(null);
     setFeedback(null);
 
-    // Smoothly resume playback +0.35s forward to clear checkpoint trigger zone and eliminate millisecond stutter
-    const safeResumeTime = currentActive ? currentActive.timestampSeconds + 0.35 : position;
+    // Smoothly resume playback +0.4s forward to clear checkpoint trigger zone and eliminate loop
+    const safeResumeTime = currentActive ? Number(currentActive.timestampSeconds || 0) + 0.4 : position + 0.1;
     lastTimeRef.current = safeResumeTime;
     setPosition(safeResumeTime);
+    watchedRef.current = Math.max(watchedRef.current, safeResumeTime);
+    setWatched(watchedRef.current);
     videoRef.current?.seekTo(safeResumeTime);
     videoRef.current?.play();
     setPlaying(true);
@@ -740,13 +777,19 @@ export function InteractiveVideoPlayer({
                   max={totalDuration > 0 ? totalDuration : 100}
                   step={0.1}
                   value={position}
-                  onChange={(e) => seek(Number(e.target.value))}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  disabled={isCheckpointBlocking}
+                  onChange={(e) => {
+                    if (isCheckpointBlocking) return;
+                    seek(Number(e.target.value));
+                  }}
+                  className={`absolute inset-0 w-full h-full opacity-0 z-10 ${
+                    isCheckpointBlocking ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+                  }`}
                 />
 
                 {/* Checkpoint Diamonds on Scrubber - z-20 for direct clicks */}
                 {activities && activities.length > 0 && totalDuration > 0 && (
-                  <div className="absolute inset-0 pointer-events-none z-20">
+                  <div className={`absolute inset-0 z-20 ${isCheckpointBlocking ? 'pointer-events-none opacity-60' : 'pointer-events-none'}`}>
                     {activities.map((item, idx) => {
                       const leftPercent = Math.min(
                         100,
@@ -754,7 +797,7 @@ export function InteractiveVideoPlayer({
                       );
                       const isDone = !!completed[item.id];
                       const isActive = active?.id === item.id;
-                      const isLocked = !allowFreeSeek && item.timestampSeconds > maxAllowedTime + 1.0;
+                      const isLocked = (!allowFreeSeek && item.timestampSeconds > maxAllowedTime + 1.0) || isCheckpointBlocking;
 
                       return (
                         <div
@@ -764,12 +807,16 @@ export function InteractiveVideoPlayer({
                         >
                           <button
                             type="button"
+                            disabled={isLocked || isCheckpointBlocking}
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              if (isLocked || isCheckpointBlocking) return;
                               openCheckpoint(item);
                             }}
-                            className="relative w-7 h-7 flex items-center justify-center cursor-pointer focus:outline-none"
+                            className={`relative w-7 h-7 flex items-center justify-center focus:outline-none ${
+                              isLocked || isCheckpointBlocking ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+                            }`}
                             aria-label={`Checkpoint ${idx + 1}: ${item.title || 'Question'} at ${formatVideoTime(item.timestampSeconds)}`}
                           >
                             {/* Visual Diamond */}
@@ -780,7 +827,7 @@ export function InteractiveVideoPlayer({
                                   : isDone
                                   ? 'w-2.5 h-2.5 bg-teal-400 border border-white hover:scale-150 hover:bg-teal-300 shadow-sm'
                                   : isLocked
-                                  ? 'w-2.5 h-2.5 bg-slate-500 border border-slate-700 opacity-60 hover:opacity-100 hover:scale-125'
+                                  ? 'w-2.5 h-2.5 bg-slate-500 border border-slate-700 opacity-60'
                                   : 'w-2.5 h-2.5 bg-slate-200 border border-slate-600 hover:scale-150 hover:bg-white shadow-sm'
                               }`}
                             />
@@ -934,8 +981,8 @@ export function InteractiveVideoPlayer({
                   </div>
                 )}
 
-                {/* Question Answer Options (A., B., C. with hairline dividers) */}
-                <ActivityAnswer activity={active} answer={answer} setAnswer={setAnswer} />
+                {/* Question Answer Options */}
+                <ActivityAnswer activity={active} answer={answer} setAnswer={setAnswer} feedback={feedback} />
 
                 {/* Instant Feedback Card with Auto-Resume */}
                 {feedback && (
@@ -991,58 +1038,62 @@ export function InteractiveVideoPlayer({
                 )}
               </div>
 
-              {/* Bottom Actions Area: Hint on Left, Circular Black Mic Button in Center, Submit/Resume Buttons */}
-              <div className="pt-6">
-                <div className="relative flex items-center justify-center py-2">
-                  {/* Need a hint? button (bottom-left, matches screenshot) */}
-                  <div className="absolute left-0 bottom-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowHint((v) => !v)}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 shadow-2xs transition-all flex items-center gap-1.5"
-                    >
-                      <span>💡</span>
-                      <span>Need a hint?</span>
-                    </button>
+                {/* Bottom Actions Area */}
+                <div className="pt-6">
+                  <div className="flex items-center justify-between">
+                    {/* Need a hint? button - only show before answering correctly */}
+                    {!feedback?.isCorrect ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowHint((v) => !v)}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 shadow-2xs transition-all flex items-center gap-1.5"
+                      >
+                        <span>💡</span>
+                        <span>{showHint ? 'Hide hint' : 'Need a hint?'}</span>
+                      </button>
+                    ) : <div />}
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2">
+                    {feedback && !feedback.isCorrect && active.allowRetry !== false && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          clearAutoResume();
+                          setFeedback(null);
+                          setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
+                        }}
+                        className="text-xs font-semibold rounded-xl"
+                      >
+                        <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                        Try Again
+                      </Button>
+                    )}
+
+                    {feedback && (feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
+                      <Button
+                        onClick={continueVideo}
+                        className="bg-[#315b36] hover:bg-[#254629] text-white font-bold rounded-xl text-xs px-6 py-2.5 shadow-lg flex items-center gap-2"
+                      >
+                        <Play className="h-4 w-4 fill-white" />
+                        <span>Continue Video ▶</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={submit}
+                        disabled={
+                          submitting ||
+                          (!answer && answer !== 0 && (!Array.isArray(answer) || answer.length === 0))
+                        }
+                        className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold rounded-xl text-xs px-6 py-2.5 shadow-md transition-all flex items-center gap-2"
+                      >
+                        {submitting && (
+                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        )}
+                        <span>{submitting ? 'Checking Answer...' : 'Submit Answer'}</span>
+                      </Button>
+                    )}
                   </div>
-
-
-                </div>
-
-                {/* Action Buttons: Try Again, Resume Video, or Submit Answer */}
-                <div className="mt-4 flex items-center justify-end gap-2">
-                  {feedback && !feedback.isCorrect && active.allowRetry !== false && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        clearAutoResume();
-                        setFeedback(null);
-                        setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
-                      }}
-                      className="text-xs font-semibold rounded-xl"
-                    >
-                      <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                      Try Again
-                    </Button>
-                  )}
-
-                  {feedback && (feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
-                    <Button
-                      onClick={continueVideo}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs"
-                    >
-                      <Play className="mr-1.5 h-3.5 w-3.5 fill-white" />
-                      Resume Video Now
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={submit}
-                      disabled={!answer && answer !== 0}
-                      className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold rounded-xl text-xs px-5 shadow-xs"
-                    >
-                      Submit Answer
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
@@ -1181,10 +1232,12 @@ function ActivityAnswer({
   activity,
   answer,
   setAnswer,
+  feedback,
 }: {
   activity: VideoActivity;
   answer: any;
   setAnswer: (v: any) => void;
+  feedback?: any;
 }) {
   const content = activity.content || {};
 
@@ -1444,28 +1497,52 @@ function ActivityAnswer({
           </div>
         )}
 
-        <div className="divide-y divide-slate-100 dark:divide-slate-800 border-y border-slate-100 dark:border-slate-800">
+        <div className="space-y-2.5 mt-3">
           {(content.options || []).map((option: any, idx: number) => {
             const optText = typeof option === 'string' ? option : option?.text || '';
             const letter = String.fromCharCode(65 + idx);
             const isSelected = answer === optText;
+            const showSuccess = feedback?.isCorrect && isSelected;
+            const showError = feedback && !feedback.isCorrect && isSelected;
+
             return (
               <button
                 type="button"
                 key={idx}
+                disabled={feedback?.isCorrect}
                 onClick={() => setAnswer(optText)}
-                className={`w-full text-left py-4 px-3 flex items-start gap-4 transition-all rounded-lg ${
-                  isSelected
-                    ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-white font-medium ring-1 ring-slate-300 dark:ring-slate-700'
-                    : 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                className={`w-full text-left p-3.5 flex items-center justify-between gap-3 transition-all rounded-2xl border ${
+                  showSuccess
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/40 font-bold shadow-xs'
+                    : showError
+                    ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-400 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/40 font-bold shadow-xs'
+                    : isSelected
+                    ? 'bg-[#eff4ec] dark:bg-slate-800 border-[#315b36] text-[#315b36] dark:text-emerald-300 font-bold ring-2 ring-[#315b36]/30 shadow-xs'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-850'
                 }`}
               >
-                <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white min-w-[24px]">
-                  {letter}.
-                </span>
-                <span className="text-sm md:text-base leading-snug">
-                  {optText}
-                </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-xs font-black transition-colors ${
+                      showSuccess
+                        ? 'bg-emerald-500 text-white'
+                        : showError
+                        ? 'bg-rose-500 text-white'
+                        : isSelected
+                        ? 'bg-[#315b36] text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {letter}
+                  </span>
+                  <span className="text-xs sm:text-sm leading-relaxed">{optText}</span>
+                </div>
+
+                {showSuccess && (
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300">
+                    <Check className="h-4 w-4 stroke-[3]" />
+                  </span>
+                )}
               </button>
             );
           })}

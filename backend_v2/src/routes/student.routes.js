@@ -24,12 +24,18 @@ router.post('/placement-test', PlacementController.submitStudentPlacementTest);
 // Student Dashboard
 router.get('/dashboard', StudentController.getDashboard);
 
-// Student Courses
+// Student Courses & Learning Room
 router.get('/courses', (req, res, next) => {
   req.params.id = 'me';
   return StudentController.getStudentCourses(req, res, next);
 });
+router.get('/courses/:courseId', StudentController.getCourseLearningData);
+router.get('/courses/:courseId/learn', StudentController.getCourseLearningData);
 router.get('/:id/courses', StudentController.getStudentCourses);
 router.get('/:id/course-access/:courseId', StudentController.getCourseAccess);
+
+// Lesson Progress & Completion
+router.post('/lessons/:lessonId/complete', StudentController.completeLesson);
+router.get('/lessons/:lessonId/activities', StudentController.getLessonActivities);
 
 export default router;
