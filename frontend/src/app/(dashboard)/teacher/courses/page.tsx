@@ -535,52 +535,67 @@ export default function TeacherCoursesPage() {
                 </div>
 
                 {/* Bottom Card Actions */}
-                <div className="bg-slate-50 dark:bg-slate-900/80 px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    {/* Curriculum Studio Link */}
-                    <Link href={`/studio/${c.id}`}>
-                      <Button size="sm" variant="gradient" className="text-xs h-8 font-bold px-3 shadow-xs">
-                        <Layers className="h-3.5 w-3.5 mr-1" />
-                        Curriculum
-                      </Button>
-                    </Link>
+                <div className="bg-slate-50 dark:bg-slate-900/80 px-3.5 sm:px-4 py-2.5 sm:py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                  {/* Curriculum Studio Link */}
+                  <Link href={`/studio/${c.id}`} className="flex-1 min-w-0">
+                    <Button
+                      size="sm"
+                      variant="gradient"
+                      className="w-full text-xs h-8 font-bold px-2 sm:px-3 shadow-xs justify-center"
+                      title="Open Curriculum Studio"
+                    >
+                      <Layers className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                      <span className="truncate">Curriculum</span>
+                    </Button>
+                  </Link>
 
+                  {/* Actions (Preview / Toggle Publish / Edit / Delete) */}
+                  <div className="flex items-center gap-1 shrink-0">
                     {/* Preview Simulator */}
                     <Link href={`/studio/${c.id}/preview`}>
-                      <Button size="sm" variant="outline" className="text-xs h-8 px-2.5" title="Preview as Student">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 text-slate-600 dark:text-slate-300 hover:text-primary-600 hover:border-primary-300"
+                        title="Preview as Student"
+                      >
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
                     </Link>
-                  </div>
 
-                  {/* Actions (Toggle Publish / Edit / Delete) */}
-                  <div className="flex items-center gap-1">
+                    {/* Toggle Publish */}
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                       onClick={() => handleTogglePublish(c)}
                       disabled={isPublishLoading}
-                      className="text-xs h-8 px-2 text-slate-600 dark:text-slate-300 hover:text-emerald-600"
-                      title={isPub ? 'Unpublish Course' : 'Publish Course'}
+                      className={`h-8 w-8 p-0 ${
+                        isPub
+                          ? 'text-emerald-600 hover:text-emerald-700 border-emerald-200 bg-emerald-50/70 dark:bg-emerald-950/30 dark:border-emerald-800'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                      title={isPub ? 'Published (click to unpublish)' : 'Draft (click to publish)'}
                     >
-                      <Globe className={`h-3.5 w-3.5 ${isPub ? 'text-emerald-600' : 'text-slate-400'}`} />
+                      <Globe className="h-3.5 w-3.5" />
                     </Button>
 
+                    {/* Edit Course Settings */}
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                       onClick={() => handleOpenEditModal(c)}
-                      className="text-xs h-8 px-2 text-slate-600 dark:text-slate-300 hover:text-primary-600"
+                      className="h-8 w-8 p-0 text-slate-600 dark:text-slate-300 hover:text-primary-600 hover:border-primary-300"
                       title="Edit Course Settings"
                     >
                       <Edit2 className="h-3.5 w-3.5" />
                     </Button>
 
+                    {/* Delete Course */}
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                       onClick={() => setDeletingCourse(c)}
-                      className="text-xs h-8 px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                      className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 bg-rose-50/80 hover:bg-rose-100 border-rose-200 dark:border-rose-900/60 dark:bg-rose-950/30"
                       title="Delete Course"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
