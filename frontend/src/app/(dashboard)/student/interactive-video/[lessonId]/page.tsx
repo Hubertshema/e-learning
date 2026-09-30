@@ -74,6 +74,24 @@ export default function StudentInteractiveVideoPage() {
     );
   }
 
+  const handleExitPreview = () => {
+    if (typeof window !== 'undefined' && window.opener) {
+      try {
+        window.close();
+        return;
+      } catch {}
+    }
+    if (data?.courseId) {
+      router.push(`/studio/${data.courseId}`);
+      return;
+    }
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push('/teacher/courses');
+  };
+
   if (error) {
     return (
       <div className="mx-auto max-w-lg p-10 mt-12 text-center">
@@ -83,7 +101,7 @@ export default function StudentInteractiveVideoPage() {
         <h2 className="text-base font-bold text-slate-900 dark:text-white">Lesson Unavailable</h2>
         <p className="mt-1 text-xs text-slate-500">{error}</p>
         <div className="mt-6 flex justify-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => router.back()} className="text-xs">
+          <Button variant="outline" size="sm" onClick={handleExitPreview} className="text-xs">
             <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Go Back
           </Button>
         </div>
@@ -109,8 +127,8 @@ export default function StudentInteractiveVideoPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => router.back()}
-            className="h-7 text-xs border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-200"
+            onClick={handleExitPreview}
+            className="h-7 text-xs border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-200 font-bold hover:bg-amber-100 dark:hover:bg-slate-800"
           >
             Exit Preview
           </Button>
@@ -142,7 +160,7 @@ export default function StudentInteractiveVideoPage() {
           <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-6">
             This lesson does not have a video URL or interactive checkpoints configured yet.
           </p>
-          <Button variant="outline" size="sm" onClick={() => router.back()} className="text-xs">
+          <Button variant="outline" size="sm" onClick={handleExitPreview} className="text-xs font-bold">
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to Curriculum
           </Button>
         </Card>

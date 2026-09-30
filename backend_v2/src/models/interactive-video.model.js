@@ -81,14 +81,17 @@ export class InteractiveVideoModel {
   }
 
   static async getFull(lessonId, includePrivate, studentId) {
-    const videoRes = await query(`SELECT ivl.*, l.title AS "lessonTitle"
-      FROM "interactive_video_lessons" ivl JOIN "lessons" l ON l.id = ivl."lessonId"
+    const videoRes = await query(`SELECT ivl.*, l.title AS "lessonTitle", u."courseId"
+      FROM "interactive_video_lessons" ivl
+      JOIN "lessons" l ON l.id = ivl."lessonId"
+      LEFT JOIN "units" u ON u.id = l."unitId"
       WHERE ivl."lessonId" = $1`, [lessonId]);
     if (!videoRes.rows[0]) {
-      const lessonRes = await query(`SELECT l.id AS "lessonId", l.title AS "lessonTitle" FROM "lessons" l WHERE l.id = $1`, [lessonId]);
+      const lessonRes = await query(`SELECT l.id AS "lessonId", l.title AS "lessonTitle", u."courseId" FROM "lessons" l LEFT JOIN "units" u ON u.id = l."unitId" WHERE l.id = $1`, [lessonId]);
       if (!lessonRes.rows[0]) return null;
       return {
         lessonId,
+        courseId: lessonRes.rows[0].courseId,
         lessonTitle: lessonRes.rows[0].lessonTitle,
         videoUrl: '',
         thumbnailUrl: null,
