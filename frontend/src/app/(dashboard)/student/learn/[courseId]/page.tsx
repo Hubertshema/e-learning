@@ -38,6 +38,7 @@ import {
   Download
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { fastDeepEqual } from '@/lib/cache';
 import {
   ResourcePreviewModal,
   ResourceTypeBadge,
@@ -168,33 +169,42 @@ export default function StudentLearnPage() {
     }));
   };
 
-  const fetchCourse = async () => {
+  const fetchCourse = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await apiClient.get<CourseLearningData>(`/student/courses/${courseId}`);
       const learningData: CourseLearningData = (res as any)?.data || res;
       if (learningData && learningData.course) {
-        setData(learningData);
+        if (!silent) {
+          setData(learningData);
 
-        const allLessons = (learningData.course.units || []).flatMap((u) => u.lessons || []);
-        const completedIds = (learningData.progressRecords || []).filter((p) => p.isCompleted).map((p) => p.lessonId);
+          const allLessons = (learningData.course.units || []).flatMap((u) => u.lessons || []);
+          const completedIds = (learningData.progressRecords || []).filter((p) => p.isCompleted).map((p) => p.lessonId);
 
-        let initialLesson: Lesson | undefined;
-        if (targetLessonId) {
-          initialLesson = allLessons.find((l) => l.id === targetLessonId);
-        }
-        if (!initialLesson) {
-          initialLesson = allLessons.find((l) => !completedIds.includes(l.id)) || allLessons[0];
-        }
+          let initialLesson: Lesson | undefined;
+          if (targetLessonId) {
+            initialLesson = allLessons.find((l) => l.id === targetLessonId);
+          }
+          if (!initialLesson) {
+            initialLesson = allLessons.find((l) => !completedIds.includes(l.id)) || allLessons[0];
+          }
 
-        if (initialLesson) {
-          setSelectedLesson(initialLesson);
+          if (initialLesson) {
+            setSelectedLesson(initialLesson);
+          }
+        } else {
+          // Silent background auto-sync: only update if data changed structurally
+          setData((prev) => {
+            if (!prev) return learningData;
+            if (fastDeepEqual(prev, learningData)) return prev;
+            return learningData;
+          });
         }
       }
     } catch (err) {
-      console.error('Failed to load course player', err);
+      if (!silent) console.error('Failed to load course player', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -263,6 +273,29 @@ export default function StudentLearnPage() {
     if (courseId) {
       fetchCourse();
     }
+  }, [courseId]);
+
+  // Periodic silent background auto-sync for course curriculum and progress
+  useEffect(() => {
+    if (!courseId) return;
+
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      fetchCourse(true);
+    }, 30000);
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchCourse(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [courseId]);
 
   useEffect(() => {

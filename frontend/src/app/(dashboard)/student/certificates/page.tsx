@@ -15,6 +15,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { useCachedData } from '@/lib/cache';
 import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
 
 interface Certificate {
@@ -37,20 +38,17 @@ interface Certificate {
 
 export default function StudentCertificatesPage() {
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
-    apiClient
-      .get<any>('/student/certificates')
-      .then((res) => {
-        const list = Array.isArray(res) ? res : (res as any)?.data ?? [];
-        setCertificates(list);
-      })
-      .catch(() => setCertificates([]))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: certificatesData, loading } = useCachedData<Certificate[]>(
+    'student_certificates',
+    async () => {
+      const res = await apiClient.get<any>('/student/certificates');
+      return Array.isArray(res) ? res : (res as any)?.data ?? [];
+    },
+    { ttl: 60000, initialData: [] }
+  );
+
+  const certificates = certificatesData || [];
 
   return (
     <div className="space-y-8">

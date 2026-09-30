@@ -210,13 +210,8 @@ export default function TeacherDashboardPage() {
                   Active Instructor
                 </span>
               )}
-
-              {isValidating && (
-                <span className="flex items-center gap-1 text-[10px] text-emerald-200/70">
-                  <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Live sync...
-                </span>
-              )}
             </div>
+
 
             {/* Time-aware Greeting */}
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">

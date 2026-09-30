@@ -254,13 +254,8 @@ export default function StudentDashboardPage() {
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
                 <ShieldCheck className="h-3 w-3" /> {currentLevel} Verified
               </span>
-
-              {isValidating && (
-                <span className="flex items-center gap-1 text-[10px] text-emerald-200/70">
-                  <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Live sync...
-                </span>
-              )}
             </div>
+
 
             {/* Time-aware Greeting */}
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">

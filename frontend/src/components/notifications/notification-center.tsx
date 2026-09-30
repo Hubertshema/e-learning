@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
 
+import { fastDeepEqual } from '@/lib/cache';
+
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface NotificationItem {
@@ -26,27 +28,47 @@ export function NotificationCenter() {
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (silent = false) => {
     try {
+      if (!silent && notifications.length === 0) setLoading(true);
       const res = await apiClient.get<{ notifications: NotificationItem[]; unreadCount: number }>(
         '/notifications'
       );
       if (res) {
         const payload = (res as any).data || res;
-        setNotifications(payload.notifications || (res as any).notifications || []);
-        setUnreadCount(payload.unreadCount || (res as any).unreadCount || 0);
+        const newNotifs: NotificationItem[] = payload.notifications || (res as any).notifications || [];
+        const newCount: number = payload.unreadCount ?? (res as any).unreadCount ?? 0;
+
+        setNotifications((prev) => (fastDeepEqual(prev, newNotifs) ? prev : newNotifs));
+        setUnreadCount((prev) => (prev === newCount ? prev : newCount));
       }
     } catch (err) {
-      // Graceful fallback
+      // Graceful silent fallback
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000); // Polling every 15s
-    return () => clearInterval(interval);
+    fetchNotifications(false);
+
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      fetchNotifications(true);
+    }, 15000);
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   // Handle outside click
