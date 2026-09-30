@@ -36,6 +36,10 @@ router.get('/:id/course-access/:courseId', StudentController.getCourseAccess);
 
 // Lesson Progress & Completion
 router.post('/lessons/:lessonId/complete', StudentController.completeLesson);
+router.post('/lessons/:lessonId/reset', StudentController.resetLesson);
 router.get('/lessons/:lessonId/activities', StudentController.getLessonActivities);
+
+// Certificates
+router.get('/certificates', StudentController.getCertificates);
 
 export default router;

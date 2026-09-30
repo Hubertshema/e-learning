@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { query } from '../config/database.js';
+import { CertificateModel } from './certificate.model.js';
 import { AIService } from '../services/ai.service.js';
 
 const allowedTypes = new Set([
@@ -569,6 +570,13 @@ export class InteractiveVideoModel {
         }
       } catch (syncErr) {
         console.warn('Sync to public.progress notice:', syncErr.message);
+      }
+
+      // Check course completion and issue certificate
+      try {
+        await CertificateModel.checkAndIssueForLesson(studentId, lessonId);
+      } catch (certErr) {
+        console.warn('InteractiveVideo saveProgress certificate check error:', certErr.message);
       }
     }
 
