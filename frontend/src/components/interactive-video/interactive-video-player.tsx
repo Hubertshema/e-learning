@@ -53,6 +53,7 @@ export function InteractiveVideoPlayer({
   initialWatched = 0,
   navigationMode = 'FREE',
   isTeacher = false,
+  layoutMode = 'default',
   completedActivityIds = [],
   onProgress,
 }: {
@@ -66,6 +67,7 @@ export function InteractiveVideoPlayer({
   initialWatched?: number;
   navigationMode?: string;
   isTeacher?: boolean;
+  layoutMode?: 'default' | 'student-hub';
   completedActivityIds?: string[];
   onProgress?: (position: number, watched: number, percent: number) => void;
 }) {
@@ -670,9 +672,9 @@ export function InteractiveVideoPlayer({
       )}
 
       {/* Main Split Screen Stage: Left Video, Right Questions */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* LEFT COLUMN: Video Player (lg:col-span-7) */}
-        <div className="lg:col-span-7 flex flex-col justify-start">
+      <div className={`grid grid-cols-1 gap-6 items-stretch lg:grid-cols-12`}>
+        {/* LEFT COLUMN: Video Player */}
+        <div className={`lg:col-span-8 flex flex-col justify-start`}>
           <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl border border-slate-800 select-none">
             {/* 16:9 Aspect Video Canvas */}
             <div className="relative w-full aspect-video bg-black flex items-center justify-center">
@@ -903,8 +905,8 @@ export function InteractiveVideoPlayer({
           )}
         </div>
 
-        {/* RIGHT COLUMN: Question & Interaction Panel (lg:col-span-5) */}
-        <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 min-h-[420px] lg:min-h-[460px]">
+        {/* RIGHT COLUMN: Question & Interaction Panel */}
+        <div className={`lg:col-span-4 flex flex-col justify-between rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#e2ebe2]/80 dark:border-slate-800 shadow-xs p-6 sm:p-8 min-h-[420px] lg:min-h-[460px] relative`}>
           {active ? (
             <div className="flex flex-col h-full justify-between">
               <div>

@@ -345,43 +345,12 @@ export class StudentController {
         }
       }
 
-      // If still no inProgressCourse but enrollments exist
-      if (!inProgressCourse && enrollmentsRes.rows.length > 0) {
-        const first = enrollmentsRes.rows[0];
-        inProgressCourse = {
-          id: first.enrollmentId,
-          status: first.status,
-          totalUnitsCount: 1,
-          totalLessonsCount: 4,
-          completedLessonsCount: 1,
-          progressPercentage: 25,
-          course: {
-            id: first.courseId,
-            title: first.title,
-            level: first.level || userRow.currentLevel || 'A2 Elementary',
-            teacher: {
-              user: {
-                firstName: first.teacherFirstName || 'Faculty',
-                lastName: first.teacherLastName || 'Instructor',
-                avatarUrl: first.teacherAvatar
-              }
-            }
-          },
-          nextLesson: {
-            id: 'resume',
-            title: 'Everyday Fluency Essentials',
-            skill: 'Speaking',
-            durationMinutes: 15
-          }
-        };
-      }
-
       const activeCoursesCount = enrollmentsRes.rows.filter(e => e.status === 'ACTIVE').length;
       const completedCoursesCount = enrollmentsRes.rows.filter(e => e.status === 'COMPLETED').length;
       const completedLessonsCount = completedLessonIds.size;
       const overallProgressPercentage = totalLessonsInAllEnrolled > 0
         ? Math.round((completedLessonsCount / totalLessonsInAllEnrolled) * 100)
-        : (completedLessonsCount > 0 ? 30 : (inProgressCourse ? 25 : 0));
+        : 0;
 
       // 5. Teacher feedbacks for student
       let recentFeedbacks = [];
@@ -497,18 +466,18 @@ export class StudentController {
           totalEnrolledCount: enrollmentsRes.rows.length,
           completedCoursesCount,
           completedLessonsCount,
-          studyTimeMinutes: Math.max(studyTimeMinutes, 240),
-          studyTimeHours: Math.max(studyTimeHours, 4),
-          streakDays: 5,
-          totalActivityHoursText: `${Math.max(studyTimeHours, 4)} hours ${studyTimeMinutes % 60 || 15} minutes`,
-          overallProgressPercentage: Math.max(overallProgressPercentage, 25),
-          growthPercentage: 14,
-          activityDots,
-          goalDistance: Math.max(10, 100 - (overallProgressPercentage || 25)),
+          studyTimeMinutes,
+          studyTimeHours,
+          streakDays: 0,
+          totalActivityHoursText: studyTimeHours > 0 ? `${studyTimeHours} hours ${studyTimeMinutes % 60} minutes` : '0 minutes',
+          overallProgressPercentage,
+          growthPercentage: 0,
+          activityDots: [],
+          goalDistance: overallProgressPercentage > 0 ? 100 - overallProgressPercentage : 0,
           learnTracking: {
-            month: Math.min(100, (overallProgressPercentage || 25) + 15),
-            week: 65,
-            day: 40
+            month: overallProgressPercentage,
+            week: 0,
+            day: 0
           },
           hasTakenPlacementTest,
           latestPlacementScore,

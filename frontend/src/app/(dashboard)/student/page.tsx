@@ -160,8 +160,8 @@ export default function StudentDashboardPage() {
   );
 
   const studentFirstName = dashboardData?.profile?.user?.firstName || user?.firstName || 'Learner';
-  const currentLevel = dashboardData?.profile?.currentLevel || 'A2 Elementary';
-  const targetLevel = dashboardData?.profile?.targetLevel || 'B2 Upper-Intermediate';
+  const currentLevel = dashboardData?.profile?.currentLevel || 'Unknown Level';
+  const targetLevel = dashboardData?.profile?.targetLevel || 'Unknown Goal';
   const stats = dashboardData?.stats;
   const inProgress = dashboardData?.inProgressCourse;
   const enrollments = dashboardData?.activeEnrollments || [];
@@ -204,8 +204,8 @@ export default function StudentDashboardPage() {
     },
     {
       label: 'Certificates & Goals',
-      value: targetLevel.split(' ')[0] || 'B2',
-      sub: `${stats?.goalDistance ?? 75}% to completion`,
+      value: targetLevel.split(' ')[0] || 'TBD',
+      sub: `${stats?.goalDistance ?? 0}% to completion`,
       badge: 'Accredited',
       icon: Award,
       iconBg: 'bg-purple-600 text-white shadow-lg shadow-purple-600/25',
