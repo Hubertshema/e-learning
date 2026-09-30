@@ -42,6 +42,50 @@ export function formatVideoTime(seconds: number) {
   return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
 }
 
+function ResumeBanner({
+  position,
+  onResume,
+  onStartOver,
+  onMount,
+}: {
+  position: number;
+  onResume: () => void;
+  onStartOver: () => void;
+  onMount: () => void;
+}) {
+  useEffect(() => {
+    onMount();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 px-4 py-3 text-xs text-teal-950 dark:text-teal-200 shadow-xs animate-in fade-in">
+      <div className="flex items-center gap-2.5">
+        <Clock className="h-4 w-4 text-teal-600 shrink-0" />
+        <span>
+          Resume where you stopped at <strong>{formatVideoTime(position)}</strong>?
+        </span>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <Button
+          size="sm"
+          onClick={onResume}
+          className="h-7 text-xs bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg px-3"
+        >
+          Resume at {formatVideoTime(position)}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onStartOver}
+          className="h-7 text-xs border-teal-200 dark:border-teal-800 text-slate-600 dark:text-slate-400 rounded-lg px-2.5"
+        >
+          Start from 0:00
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function InteractiveVideoPlayer({
   lessonId,
   videoUrl,
@@ -55,6 +99,7 @@ export function InteractiveVideoPlayer({
   isTeacher = false,
   layoutMode = 'default',
   completedActivityIds = [],
+  isLessonCompleted = false,
   onProgress,
 }: {
   lessonId: string;
@@ -69,6 +114,7 @@ export function InteractiveVideoPlayer({
   isTeacher?: boolean;
   layoutMode?: 'default' | 'student-hub';
   completedActivityIds?: string[];
+  isLessonCompleted?: boolean;
   onProgress?: (position: number, watched: number, percent: number) => void;
 }) {
   // Check localStorage for saved position if initialPosition is 0
@@ -84,6 +130,9 @@ export function InteractiveVideoPlayer({
 
   const effectiveInitialPosition = initialPosition && initialPosition > 0 ? initialPosition : savedLocalPos;
   const [showResumeBanner, setShowResumeBanner] = useState(effectiveInitialPosition > 5);
+  const resumeBannerTimerRef = useRef<any>(null);
+  const [showLessonCompletedPrompt, setShowLessonCompletedPrompt] = useState(isLessonCompleted && !isTeacher);
+  const [showManualResetPrompt, setShowManualResetPrompt] = useState(false);
 
   const videoRef = useRef<UniversalVideoHandle>(null);
   const watchedRef = useRef(Math.max(initialWatched, effectiveInitialPosition));
@@ -268,6 +317,7 @@ export function InteractiveVideoPlayer({
     return () => {
       clearAutoResume();
       if (noticeTimeoutRef.current) clearTimeout(noticeTimeoutRef.current);
+      if (resumeBannerTimerRef.current) clearTimeout(resumeBannerTimerRef.current);
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -559,14 +609,15 @@ export function InteractiveVideoPlayer({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [position, playing, allowFreeSeek]);
 
-  const submit = async () => {
+  const submit = async (overrideAnswer?: any) => {
     if (!active || submitting) return;
     try {
       setSubmitting(true);
+      const valToSubmit = overrideAnswer !== undefined ? overrideAnswer : answer;
       const finalAnswer =
-        active.type === 'DRAG_DROP' && Array.isArray(answer)
-          ? answer.join(' ')
-          : answer;
+        active.type === 'DRAG_DROP' && Array.isArray(valToSubmit)
+          ? valToSubmit.join(' ')
+          : valToSubmit;
       const result: any = await apiClient.post(
         `/student/interactive-videos/activities/${active.id}/attempts`,
         { answer: finalAnswer }
@@ -631,7 +682,6 @@ export function InteractiveVideoPlayer({
   };
 
   const handleResetLesson = async () => {
-    if (!window.confirm('Are you sure you want to reset your progress? This will clear your checkpoint answers and watched time so you can review from scratch.')) return;
     try {
       await apiClient.post(`/student/interactive-videos/lessons/${lessonId}/reset`);
       window.location.reload();
@@ -647,39 +697,24 @@ export function InteractiveVideoPlayer({
 
   return (
     <div className="w-full space-y-6">
-      {/* Resume playback banner if user was previously watching */}
+      {/* Resume playback banner — auto-dismisses after 3 s */}
       {showResumeBanner && effectiveInitialPosition > 5 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 px-4 py-3 text-xs text-teal-950 dark:text-teal-200 shadow-xs animate-in fade-in">
-          <div className="flex items-center gap-2.5">
-            <Clock className="h-4 w-4 text-teal-600 shrink-0" />
-            <span>
-              Resume where you stopped at <strong>{formatVideoTime(effectiveInitialPosition)}</strong>?
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              size="sm"
-              onClick={() => {
-                seek(effectiveInitialPosition);
-                setShowResumeBanner(false);
-              }}
-              className="h-7 text-xs bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg px-3"
-            >
-              Resume at {formatVideoTime(effectiveInitialPosition)}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                seek(0);
-                setShowResumeBanner(false);
-              }}
-              className="h-7 text-xs border-teal-200 dark:border-teal-800 text-slate-600 dark:text-slate-400 rounded-lg px-2.5"
-            >
-              Start from 0:00
-            </Button>
-          </div>
-        </div>
+        <ResumeBanner
+          position={effectiveInitialPosition}
+          onResume={() => {
+            if (resumeBannerTimerRef.current) clearTimeout(resumeBannerTimerRef.current);
+            seek(effectiveInitialPosition);
+            setShowResumeBanner(false);
+          }}
+          onStartOver={() => {
+            if (resumeBannerTimerRef.current) clearTimeout(resumeBannerTimerRef.current);
+            seek(0);
+            setShowResumeBanner(false);
+          }}
+          onMount={() => {
+            resumeBannerTimerRef.current = setTimeout(() => setShowResumeBanner(false), 3000);
+          }}
+        />
       )}
 
       {/* Main Split Screen Stage: Left Video, Right Questions */}
@@ -687,6 +722,67 @@ export function InteractiveVideoPlayer({
         {/* LEFT COLUMN: Video Player */}
         <div className={`${(!playing || active) ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} flex flex-col justify-start transition-all duration-500`}>
           <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl border border-slate-800 select-none">
+            
+            {/* Completion Reset Prompt Overlay */}
+            {showLessonCompletedPrompt && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl shadow-2xl max-w-sm text-center border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
+                  <div className="mx-auto w-14 h-14 bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-5">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Lesson Completed!</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
+                    Do you want to reset this lesson and study it again?
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <Button 
+                      onClick={() => { setShowLessonCompletedPrompt(false); handleResetLesson(); }} 
+                      className="w-full bg-[#315b36] hover:bg-[#25462a] text-white font-bold h-11"
+                    >
+                      Yes
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowLessonCompletedPrompt(false)} 
+                      className="w-full h-11 border-slate-200 dark:border-slate-700 font-semibold"
+                    >
+                      No
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Manual Reset Prompt Overlay */}
+            {showManualResetPrompt && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl shadow-2xl max-w-sm text-center border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
+                  <div className="mx-auto w-14 h-14 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mb-5">
+                    <RotateCcw className="w-7 h-7 text-red-600 dark:text-red-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Reset Progress?</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
+                    Are you sure you want to reset your progress? This will clear your checkpoint answers and watched time so you can review from scratch.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <Button 
+                      onClick={() => { setShowManualResetPrompt(false); handleResetLesson(); }} 
+                      className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-11"
+                    >
+                      Yes, reset my progress
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowManualResetPrompt(false)} 
+                      className="w-full h-11 border-slate-200 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 16:9 Aspect Video Canvas */}
             <div className="relative w-full aspect-video bg-black flex items-center justify-center">
               <UniversalVideo
@@ -919,7 +1015,7 @@ export function InteractiveVideoPlayer({
             <div className="mt-2 flex items-center justify-end text-[11px] text-slate-400 px-2">
               <button
                 type="button"
-                onClick={handleResetLesson}
+                onClick={() => setShowManualResetPrompt(true)}
                 className="underline hover:text-red-400 flex items-center gap-1 transition-colors"
                 title="Reset your progress for this lesson and start over"
               >
@@ -1021,103 +1117,111 @@ export function InteractiveVideoPlayer({
 
         {/* RIGHT COLUMN: Question & Interaction Panel */}
         {(!playing || active) && (
-          <div className={`lg:col-span-4 flex flex-col justify-between rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#e2ebe2]/80 dark:border-slate-800 shadow-xs p-6 sm:p-8 min-h-[420px] lg:min-h-0 h-full relative animate-in fade-in slide-in-from-right-4 duration-500 overflow-y-auto`}>
-            {active ? (
-            <div className="flex flex-col h-full overflow-y-auto pr-2 custom-scrollbar">
-              <div>
-                {/* Question Header */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800/80 px-3 py-1 rounded-full shadow-2xs">
-                        <span className="w-2 h-2 rotate-45 bg-teal-500 shrink-0 inline-block" />
-                        Checkpoint {activeCheckpointIndex >= 0 ? `${activeCheckpointIndex + 1} of ${activities.length}` : ''}
-                      </span>
-                      <span className="font-mono text-xs font-bold text-slate-400">
-                        {formatVideoTime(active.timestampSeconds)}
-                      </span>
-                    </div>
-
-                    {/* Checkpoint Previous / Next Switcher */}
-                    {activities && activities.length > 1 && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          disabled={activeCheckpointIndex <= 0}
-                          onClick={() => {
-                            if (activeCheckpointIndex > 0) {
-                              openCheckpoint(activities[activeCheckpointIndex - 1]);
-                            }
-                          }}
-                          className="px-2.5 py-0.5 rounded text-[11px] font-bold border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          title="Previous checkpoint"
-                        >
-                          ← Prev
-                        </button>
-                        <button
-                          type="button"
-                          disabled={
-                            activeCheckpointIndex >= activities.length - 1 ||
-                            (!allowFreeSeek &&
-                              activities[activeCheckpointIndex + 1]?.timestampSeconds > maxAllowedTime + 1)
-                          }
-                          onClick={() => {
-                            if (activeCheckpointIndex < activities.length - 1) {
-                              openCheckpoint(activities[activeCheckpointIndex + 1]);
-                            }
-                          }}
-                          className="px-2.5 py-0.5 rounded text-[11px] font-bold border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          title="Next checkpoint"
-                        >
-                          Next →
-                        </button>
+          <div className="lg:col-span-4 relative flex flex-col min-h-[420px] lg:h-[calc(100vh-8rem)] lg:sticky lg:top-8">
+            <div className={`flex-1 flex flex-col overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#e2ebe2]/80 dark:border-slate-800 shadow-xs p-4 sm:p-6 animate-in fade-in slide-in-from-right-4 duration-500`}>
+              {active ? (
+              <div className="flex flex-col h-full overflow-hidden">
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-4">
+                  {/* Question Header */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800/80 px-3 py-1 rounded-full shadow-2xs">
+                          <span className="w-2 h-2 rotate-45 bg-teal-500 shrink-0 inline-block" />
+                          Checkpoint {activeCheckpointIndex >= 0 ? `${activeCheckpointIndex + 1} of ${activities.length}` : ''}
+                        </span>
+                        <span className="font-mono text-xs font-bold text-slate-400">
+                          {formatVideoTime(active.timestampSeconds)}
+                        </span>
                       </div>
+
+                      {/* Checkpoint Previous / Next Switcher */}
+                      {activities && activities.length > 1 && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={activeCheckpointIndex <= 0}
+                            onClick={() => {
+                              if (activeCheckpointIndex > 0) {
+                                openCheckpoint(activities[activeCheckpointIndex - 1]);
+                              }
+                            }}
+                            className="px-2.5 py-0.5 rounded text-[11px] font-bold border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Previous checkpoint"
+                          >
+                            ← Prev
+                          </button>
+                          <button
+                            type="button"
+                            disabled={
+                              activeCheckpointIndex >= activities.length - 1 ||
+                              (!allowFreeSeek &&
+                                activities[activeCheckpointIndex + 1]?.timestampSeconds > maxAllowedTime + 1)
+                            }
+                            onClick={() => {
+                              if (activeCheckpointIndex < activities.length - 1) {
+                                openCheckpoint(activities[activeCheckpointIndex + 1]);
+                              }
+                            }}
+                            className="px-2.5 py-0.5 rounded text-[11px] font-bold border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Next checkpoint"
+                          >
+                            Next →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white leading-snug">
+                      {active.title || 'Choose the best response:'}
+                    </h2>
+                    {active.instructions && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        {active.instructions}
+                      </p>
                     )}
                   </div>
-                  <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white leading-snug">
-                    {active.title || 'Choose the best response:'}
-                  </h2>
-                  {active.instructions && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {active.instructions}
-                    </p>
-                  )}
-                </div>
-                </div>
 
-                {/* Top Action Bar */}
-                <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/95 dark:bg-slate-900/95 z-10 -mx-2 px-2 py-2">
-                  {!feedback ? (
-                    <Button
-                      onClick={submit}
-                      disabled={submitting || (!answer && answer !== 0 && (!Array.isArray(answer) || answer.length === 0))}
-                      className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md transition-all flex items-center gap-2 shrink-0"
+                  {/* Top Action Bar */}
+                  <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/95 dark:bg-slate-900/95 z-10 -mx-2 px-2 py-2">
+                    {!feedback ? (
+                      ['FILL_BLANK', 'FILL_IN_BLANK', 'VOCABULARY', 'DRAG_DROP', 'ORDERING', 'MULTIPLE_SELECT', 'SPEAKING'].includes(active.type) ? (
+                        <Button
+                          onClick={() => submit()}
+                          disabled={submitting || (!answer && answer !== 0 && (!Array.isArray(answer) || answer.length === 0))}
+                          className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md transition-all flex items-center gap-2 shrink-0"
+                        >
+                          {submitting && <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                          {submitting ? 'Checking...' : 'Submit Answer'}
+                        </Button>
+                      ) : (
+                        <div className="text-sm font-bold text-slate-500 flex items-center gap-2">
+                          Select an option below
+                        </div>
+                      )
+                    ) : (
+                      <div className="text-sm font-bold text-slate-500 flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" /> Answer Submitted
+                      </div>
+                    )}
+                    
+                    <button
+                      type="button"
+                      onClick={() => setShowHint((v) => !v)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-2xs flex items-center gap-1.5 transition-colors"
                     >
-                      {submitting && <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
-                      {submitting ? 'Checking...' : 'Submit Answer'}
-                    </Button>
-                  ) : (
-                    <div className="text-sm font-bold text-slate-500 flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4" /> Answer Submitted
-                    </div>
-                  )}
-                  
-                  <button
-                    type="button"
-                    onClick={() => setShowHint((v) => !v)}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-2xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>💡</span> {showHint ? 'Hide hint' : 'Need a hint?'}
-                  </button>
-                </div>
+                      <span>💡</span> {showHint ? 'Hide hint' : 'Need a hint?'}
+                    </button>
+                  </div>
 
-                {/* Question Answer Options */}
-                <ActivityAnswer activity={active} answer={answer} setAnswer={setAnswer} feedback={feedback} />
+                  {/* Question Answer Options */}
+                  <ActivityAnswer activity={active} answer={answer} setAnswer={setAnswer} feedback={feedback} onSubmit={submit} submitting={submitting} />
+                </div>
               </div>
-          ) : (
-            /* Standby State while Video is Playing */
-            <div className="flex flex-col h-full justify-between py-2">
-              <div>
+            ) : (
+              /* Standby State while Video is Playing */
+              <div className="flex flex-col h-full overflow-hidden">
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-4 flex flex-col justify-between py-2">
+                  <div>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
@@ -1156,11 +1260,11 @@ export function InteractiveVideoPlayer({
 
                 {/* All Checkpoint Diamonds Strip */}
                 {activities && activities.length > 0 && (
-                  <div className="mt-5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  <div className="mt-5 flex-1 flex flex-col overflow-hidden min-h-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 shrink-0">
                       Checkpoints on timeline ({activities.length}):
                     </p>
-                    <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                    <div className="space-y-1.5 flex-1 overflow-y-auto pr-1 custom-scrollbar">
                       {activities.map((item, idx) => {
                         const isDone = !!completed[item.id];
                         const isLocked = !allowFreeSeek && item.timestampSeconds > maxAllowedTime + 1.0;
@@ -1217,8 +1321,10 @@ export function InteractiveVideoPlayer({
                 </span>
               </div>
             </div>
+            </div>
           )}
           </div>
+        </div>
         )}
       </div>
 
@@ -1251,11 +1357,15 @@ function ActivityAnswer({
   answer,
   setAnswer,
   feedback,
+  onSubmit,
+  submitting,
 }: {
   activity: VideoActivity;
   answer: any;
   setAnswer: (v: any) => void;
   feedback?: any;
+  onSubmit?: (val?: any) => void;
+  submitting?: boolean;
 }) {
   const content = activity.content || {};
 
@@ -1275,8 +1385,12 @@ function ActivityAnswer({
             <input
               type="radio"
               name={activity.id}
+              disabled={feedback?.isCorrect || submitting}
               checked={String(answer) === value}
-              onChange={() => setAnswer(value)}
+              onChange={() => {
+                setAnswer(value);
+                onSubmit?.(value);
+              }}
               className="accent-emerald-600"
             />
             {value === 'true' ? 'True' : 'False'}
@@ -1333,7 +1447,11 @@ function ActivityAnswer({
               <button
                 type="button"
                 key={idx}
-                onClick={() => setAnswer(optText)}
+                disabled={feedback?.isCorrect || submitting}
+                onClick={() => {
+                  setAnswer(optText);
+                  onSubmit?.(optText);
+                }}
                 className={`w-full text-left py-3.5 px-3 flex items-start gap-4 transition-all rounded-lg ${
                   isSelected
                     ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-white font-medium ring-1 ring-slate-300 dark:ring-slate-700'
@@ -1527,8 +1645,11 @@ function ActivityAnswer({
               <button
                 type="button"
                 key={idx}
-                disabled={feedback?.isCorrect}
-                onClick={() => setAnswer(optText)}
+                disabled={feedback?.isCorrect || submitting}
+                onClick={() => {
+                  setAnswer(optText);
+                  onSubmit?.(optText);
+                }}
                 className={`w-full text-left p-3.5 flex items-center justify-between gap-3 transition-all rounded-2xl border ${
                   showSuccess
                     ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/40 font-bold shadow-xs'

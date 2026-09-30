@@ -15,7 +15,32 @@ export class AccessService {
    * @param {string} courseId 
    */
   static async getStudentCourseAccess(studentId, courseId) {
-    // 1. Check Overrides
+    // 1. Check Course is published
+    const courseRes = await query(
+      `SELECT "isPublished" FROM "public"."courses" WHERE id = $1 LIMIT 1`,
+      [courseId]
+    );
+
+    if (courseRes.rows.length === 0) {
+       return { isAccessible: false, accessType: 'NONE', reason: 'Course does not exist' };
+    }
+
+    if (!courseRes.rows[0].isPublished) {
+       return { isAccessible: false, accessType: 'NONE', reason: 'Course is not published' };
+    }
+
+    // 2. Check Enrollment
+    const enrollRes = await query(
+      `SELECT status FROM "public"."enrollments" 
+       WHERE "studentId" = $1 AND "courseId" = $2 LIMIT 1`,
+      [studentId, courseId]
+    );
+
+    if (enrollRes.rows.length === 0 || enrollRes.rows[0].status !== 'ACTIVE') {
+       return { isAccessible: false, accessType: 'NONE', reason: 'Not actively enrolled in course' };
+    }
+
+    // 3. Check Overrides (Only to restrict an already valid enrollment, per rules)
     const overrideRes = await query(
       `SELECT status, reason FROM "public"."student_course_overrides" 
        WHERE "studentId" = $1 AND "courseId" = $2 LIMIT 1`,
@@ -27,27 +52,9 @@ export class AccessService {
       if (override.status === 'RESTRICT') {
         return { isAccessible: false, accessType: 'RESTRICTED', reason: override.reason };
       }
-      if (override.status === 'ALLOW') {
-        return { isAccessible: true, accessType: 'ADDITIONAL', reason: override.reason };
-      }
     }
 
-    // 2. Check Enrollment
-    const enrollRes = await query(
-      `SELECT status FROM "public"."enrollments" 
-       WHERE "studentId" = $1 AND "courseId" = $2 LIMIT 1`,
-      [studentId, courseId]
-    );
-
-    if (enrollRes.rows.length > 0) {
-      const enrollment = enrollRes.rows[0];
-      if (enrollment.status === 'ACTIVE') {
-        // Technically it's DEFAULT if it's in their level, but we just call it ENROLLED here.
-        return { isAccessible: true, accessType: 'DEFAULT', reason: 'Enrolled in course' };
-      }
-    }
-
-    return { isAccessible: false, accessType: 'NONE', reason: 'Not enrolled and no access override provided' };
+    return { isAccessible: true, accessType: 'ENROLLED', reason: 'Enrolled in published course' };
   }
 
   /**

@@ -129,6 +129,14 @@ export default function StudentLearnPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [justCompletedLesson, setJustCompletedLesson] = useState<Lesson | null>(null);
+  const [showCourseCompletionModal, setShowCourseCompletionModal] = useState(false);
+  const [earnedCertificate, setEarnedCertificate] = useState<any>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [lessonToReset, setLessonToReset] = useState<Lesson | null>(null);
+  const [resettingLesson, setResettingLesson] = useState(false);
+  const [showCongratsLesson, setShowCongratsLesson] = useState<Lesson | null>(null);
+  const autoCompleteTimerRef = useRef<any>(null);
+  const autoAdvanceTimerRef = useRef<any>(null);
 
   // Fullscreen toggle handler
   const toggleFullscreen = () => {
@@ -267,6 +275,69 @@ export default function StudentLearnPage() {
     }
   }, [selectedLesson]);
 
+  // Auto-complete non-IV lessons when opened (if not already completed)
+  useEffect(() => {
+    if (!selectedLesson || selectedLesson.type === 'INTERACTIVE_VIDEO') return;
+    const alreadyDone = data?.progressRecords?.some(
+      (p) => p.lessonId === selectedLesson.id && p.isCompleted
+    );
+    if (alreadyDone) return;
+
+    // Clear any pending timers from previous lesson
+    if (autoCompleteTimerRef.current) clearTimeout(autoCompleteTimerRef.current);
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+
+    // Wait 2s (let content render) then auto-complete
+    autoCompleteTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await apiClient.post(`/student/lessons/${selectedLesson.id}/complete`, {
+          timeSpentSec: (selectedLesson.estimatedMinutes || 30) * 60,
+        });
+
+        // Update local progress
+        setData((prev) => {
+          if (!prev) return prev;
+          const exists = prev.progressRecords?.some((p) => p.lessonId === selectedLesson.id);
+          const updatedRecords = exists
+            ? prev.progressRecords.map((p) =>
+                p.lessonId === selectedLesson.id ? { ...p, isCompleted: true } : p
+              )
+            : [...(prev.progressRecords || []), { lessonId: selectedLesson.id, isCompleted: true, timeSpentSec: (selectedLesson.estimatedMinutes || 30) * 60 }];
+          return { ...prev, progressRecords: updatedRecords };
+        });
+
+        setJustCompletedLesson(selectedLesson);
+        const completionData: any = res || {};
+
+        if (completionData.courseCompleted) {
+          setEarnedCertificate(completionData.certificate);
+          setShowCourseCompletionModal(true);
+        } else {
+          setShowCongratsLesson(selectedLesson);
+          // Auto-advance to next lesson after 3s
+          autoAdvanceTimerRef.current = setTimeout(() => {
+            setShowCongratsLesson(null);
+            const allL = (data?.course?.units || []).flatMap((u) => u.lessons || []);
+            const idx = allL.findIndex((l) => l.id === selectedLesson.id);
+            const next = idx < allL.length - 1 ? allL[idx + 1] : null;
+            if (next) {
+              setSelectedLesson(next);
+              setActiveTab('CONTENT');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }, 3000);
+        }
+      } catch (err: any) {
+        console.error('Auto-complete failed', err);
+      }
+    }, 2000);
+
+    return () => {
+      if (autoCompleteTimerRef.current) clearTimeout(autoCompleteTimerRef.current);
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    };
+  }, [selectedLesson?.id]);
+
   const lastProgressSyncRef = useRef<{ time: number; pos: number }>({ time: 0, pos: -1 });
 
   const handleVideoProgressUpdate = async (
@@ -352,7 +423,7 @@ export default function StudentLearnPage() {
     if (!selectedLesson) return;
     try {
       setCompleting(true);
-      await apiClient.post(`/student/lessons/${selectedLesson.id}/complete`, {
+      const res = await apiClient.post(`/student/lessons/${selectedLesson.id}/complete`, {
         timeSpentSec: (selectedLesson.estimatedMinutes || 30) * 60,
       });
 
@@ -373,7 +444,12 @@ export default function StudentLearnPage() {
 
       setJustCompletedLesson(selectedLesson);
 
-      if (andGoToNext && nextLesson) {
+      const completionData: any = res || {};
+      
+      if (completionData.courseCompleted) {
+        setEarnedCertificate(completionData.certificate);
+        setShowCourseCompletionModal(true);
+      } else if (andGoToNext && nextLesson) {
         setFeedback(`🎉 "${selectedLesson.title}" completed! Proceeding to "${nextLesson.title}"...`);
         setSelectedLesson(nextLesson);
         setActiveTab('CONTENT');
@@ -390,14 +466,7 @@ export default function StudentLearnPage() {
     }
   };
 
-  const handleLessonClick = (lesson: Lesson) => {
-    const unlocked = isLessonUnlocked(lesson);
-    if (!unlocked) {
-      const idx = allLessons.findIndex((l) => l.id === lesson.id);
-      const prev = idx > 0 ? allLessons[idx - 1] : null;
-      setFeedback(`🔒 This lesson is locked. Please complete "${prev?.title || 'the previous lesson'}" first to unlock.`);
-      return;
-    }
+  const navigateToLesson = (lesson: Lesson) => {
     setSelectedLesson(lesson);
     setActiveTab('CONTENT');
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -406,12 +475,61 @@ export default function StudentLearnPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const confirmResetLesson = async (reset: boolean) => {
+    if (!lessonToReset) return;
+    if (reset) {
+      try {
+        setResettingLesson(true);
+        await apiClient.post(`/student/lessons/${lessonToReset.id}/reset`);
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            progressRecords: prev.progressRecords?.filter((p) => p.lessonId !== lessonToReset.id) || [],
+          };
+        });
+        setFeedback(`Progress reset for "${lessonToReset.title}".`);
+      } catch (err: any) {
+        console.error('Failed to reset lesson', err);
+        setFeedback(err.message || 'Failed to reset lesson progress.');
+      } finally {
+        setResettingLesson(false);
+      }
+    }
+    
+    const target = lessonToReset;
+    setShowResetModal(false);
+    setLessonToReset(null);
+    navigateToLesson(target);
+  };
+
+  const handleLessonClick = (lesson: Lesson) => {
+    const unlocked = isLessonUnlocked(lesson);
+    if (!unlocked) {
+      const idx = allLessons.findIndex((l) => l.id === lesson.id);
+      const prev = idx > 0 ? allLessons[idx - 1] : null;
+      setFeedback(`🔒 This lesson is locked. Please complete "${prev?.title || 'the previous lesson'}" first to unlock.`);
+      return;
+    }
+    const isCompleted = data?.progressRecords?.some(p => p.lessonId === lesson.id && p.isCompleted);
+    if (isCompleted && lesson.id !== selectedLesson?.id) {
+      setLessonToReset(lesson);
+      setShowResetModal(true);
+      return;
+    }
+    navigateToLesson(lesson);
+  };
+
   const handleContinueToNextLesson = () => {
     setShowCompletionModal(false);
     if (nextLesson) {
-      setSelectedLesson(nextLesson);
-      setActiveTab('CONTENT');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const isCompleted = data?.progressRecords?.some(p => p.lessonId === nextLesson.id && p.isCompleted);
+      if (isCompleted) {
+        setLessonToReset(nextLesson);
+        setShowResetModal(true);
+      } else {
+        navigateToLesson(nextLesson);
+      }
     }
   };
 
@@ -699,6 +817,7 @@ export default function StudentLearnPage() {
                     </div>
                   );
                 })}
+              </div>
 
                 {/* Sidebar Footer: Lesson Actions & Progress */}
                 <div className="mt-6 border-t border-slate-100 pt-6 pb-2 dark:border-slate-800 space-y-3">
@@ -749,60 +868,8 @@ export default function StudentLearnPage() {
                     {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
                   </Button>
 
-                {selectedLesson && (
-                  <Button
-                    size="sm"
-                    variant={isCurrentLessonCompleted ? 'outline' : 'secondary'}
-                    disabled={completing}
-                    onClick={() => handleMarkComplete(false)}
-                    className="w-full h-8 rounded-xl text-xs font-bold shadow-sm"
-                  >
-                    <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                    {isCurrentLessonCompleted
-                      ? 'Marked Completed'
-                      : completing
-                      ? 'Saving...'
-                      : 'Mark as Completed'}
-                  </Button>
-                )}
-
-                {nextLesson && !isCurrentLessonCompleted && (
-                  <Button
-                    size="sm"
-                    variant="gradient"
-                    disabled={completing}
-                    onClick={() => handleMarkComplete(true)}
-                    className="w-full h-8 rounded-xl text-xs font-bold shadow-sm"
-                  >
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                    {completing ? 'Completing...' : 'Complete & Continue'}
-                  </Button>
-                )}
-                
-                {nextLesson && isCurrentLessonCompleted && (
-                  <Button
-                    size="sm"
-                    variant={isNextLessonUnlocked ? 'gradient' : 'outline'}
-                    disabled={!isNextLessonUnlocked}
-                    onClick={() => {
-                      if (isNextLessonUnlocked) {
-                        setSelectedLesson(nextLesson);
-                        setActiveTab('CONTENT');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }
-                    }}
-                    className={`w-full h-8 rounded-xl text-xs font-bold ${
-                      !isNextLessonUnlocked ? 'opacity-60 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {!isNextLessonUnlocked && <Lock className="h-3 w-3 mr-1.5 text-slate-400" />}
-                    Next Lesson
-                    <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
-                )}
                 </div>
               </div>
-            </div>
             </div>
           </aside>
         )}
@@ -810,6 +877,33 @@ export default function StudentLearnPage() {
         {/* Right Main Content Area - Expands to 100% when sidebar is closed */}
         <main className="flex-1 overflow-hidden p-4 sm:p-6 lg:p-8 min-w-0 transition-all duration-300">
           <div className="mx-auto w-full max-w-[1600px] space-y-6">
+            {/* Congratulations auto-complete banner */}
+            {showCongratsLesson && (
+              <div className="flex items-center justify-between rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 dark:border-emerald-700 p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center shrink-0">
+                    <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-900 dark:text-emerald-200">🎉 Lesson Completed!</p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                      <strong>&quot;{showCongratsLesson.title}&quot;</strong> — Moving to next lesson in 3 seconds...
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+                    setShowCongratsLesson(null);
+                  }}
+                  className="text-[11px] font-semibold underline text-emerald-700 dark:text-emerald-400 shrink-0"
+                >
+                  Stay here
+                </button>
+              </div>
+            )}
+
+            {/* General feedback banner */}
             {feedback && (
               <div className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 shadow-sm animate-in fade-in dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                 <div className="flex items-center gap-2">
@@ -846,6 +940,7 @@ export default function StudentLearnPage() {
                         isTeacher={false}
                         layoutMode="student-hub"
                         navigationMode={interactiveVideoData.navigationMode}
+                        isLessonCompleted={!!data.progressRecords?.some((p) => p.lessonId === selectedLesson.id && p.isCompleted)}
                         onProgress={(position, watched, percent) => {
                           handleVideoProgressUpdate(selectedLesson.id, position, watched, percent);
                         }}
@@ -1118,16 +1213,9 @@ export default function StudentLearnPage() {
                           <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
                         </Button>
                       ) : (
-                        <Button
-                          size="default"
-                          variant="gradient"
-                          disabled={completing}
-                          onClick={() => handleMarkComplete(true)}
-                          className="rounded-xl text-xs font-bold shadow-md"
-                        >
-                          <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                          Complete & Continue to Next Lesson
-                          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                        <Button size="default" variant="outline" disabled className="rounded-xl text-xs font-bold opacity-60">
+                          <Lock className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
+                          Next lesson locked
                         </Button>
                       )
                     ) : (
@@ -1222,6 +1310,77 @@ export default function StudentLearnPage() {
               className="w-full rounded-xl text-xs font-semibold sm:w-auto"
             >
               Review Current Lesson
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Course Completion Modal */}
+      <Modal isOpen={showCourseCompletionModal} onClose={() => setShowCourseCompletionModal(false)} title="Course Completed!">
+        <div className="py-8 text-center flex flex-col items-center">
+          <div className="relative mb-6">
+            <div className="absolute -inset-4 rounded-full bg-yellow-100 dark:bg-yellow-900/20 animate-pulse" />
+            <Award className="relative h-24 w-24 text-yellow-500 dark:text-yellow-400" />
+          </div>
+          <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white">Congratulations!</h2>
+          <p className="mb-6 text-base text-slate-600 dark:text-slate-300">
+            You have successfully completed all lessons in <br/><strong>{data?.course?.title}</strong>.
+          </p>
+          
+          {earnedCertificate && (
+            <div className="mb-8 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-left dark:border-yellow-900/50 dark:bg-yellow-900/10">
+              <div className="flex items-start gap-4">
+                <div className="rounded-lg bg-yellow-100 p-2 dark:bg-yellow-900/50">
+                  <FileText className="h-6 w-6 text-yellow-700 dark:text-yellow-500" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-900 dark:text-white">Certificate Issued!</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Code: {earnedCertificate.certificateCode}</p>
+                  <Link href="/student/certificates" onClick={() => setShowCourseCompletionModal(false)}>
+                    <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                      View Certificate <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Link href="/student/my-courses">
+              <Button variant="outline" onClick={() => setShowCourseCompletionModal(false)}>
+                Return to Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reset Lesson Modal */}
+      <Modal isOpen={showResetModal} onClose={() => setShowResetModal(false)} title="Revisit Completed Lesson">
+        <div className="py-6 px-2 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+            <CheckCircle2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">Lesson Already Completed</h3>
+          <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">
+            You have already completed <strong>&quot;{lessonToReset?.title}&quot;</strong>. <br/><br/>
+            Do you want to reset your progress and study it again, or just review it without resetting?
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button
+              variant="outline"
+              disabled={resettingLesson}
+              onClick={() => confirmResetLesson(false)}
+            >
+              Just Review
+            </Button>
+            <Button
+              variant="gradient"
+              disabled={resettingLesson}
+              onClick={() => confirmResetLesson(true)}
+            >
+              {resettingLesson ? 'Resetting...' : 'Reset & Study Again'}
             </Button>
           </div>
         </div>

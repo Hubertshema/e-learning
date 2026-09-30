@@ -3,6 +3,7 @@ import { sendSuccess, sendError } from '../utils/response.util.js';
 import { UserModel } from '../models/user.model.js';
 import { LevelCourseModel } from '../models/level_course.model.js';
 import { OverrideModel } from '../models/override.model.js';
+import { CertificateModel } from '../models/certificate.model.js';
 import { AccessService } from '../services/access.service.js';
 import { query } from '../config/database.js';
 
@@ -64,7 +65,7 @@ export class StudentController {
          LEFT JOIN "public"."level_courses" lc ON lc."courseId" = c.id
          LEFT JOIN "public"."levels" l ON lc."levelId" = l.id
          LEFT JOIN "public"."users" u ON c."teacherId" = u.id
-         WHERE e."studentId" = $1 OR e."studentId" = $2
+         WHERE (e."studentId" = $1 OR e."studentId" = $2) AND c."isPublished" = true
          ORDER BY e.id, e."enrolledAt" DESC`,
         [targetId, studentProfileId]
       );
@@ -125,70 +126,8 @@ export class StudentController {
       const enrolledCourseIds = new Set(enrolled.map((e) => e.course.id));
 
       // 4. Get catalog (primary level courses not enrolled)
+      // Per rules: Unenrolled students must never see the course.
       const catalog = [];
-      for (const lc of levelCourses) {
-        if (!enrolledCourseIds.has(lc.courseId)) {
-          const cRes = await query(
-            `SELECT c.id, c.title, c.description, 0 as price, c.currency, u."firstName", u."lastName"
-             FROM "public"."courses" c
-             LEFT JOIN "public"."users" u ON c."teacherId" = u.id
-             WHERE c.id = $1`,
-            [lc.courseId]
-          );
-          if (cRes.rows.length > 0) {
-            const row = cRes.rows[0];
-            catalog.push({
-              id: row.id,
-              title: row.title,
-              description: row.description || '',
-              level: primaryLevelName,
-              currency: row.currency || 'USD',
-              durationDays: 365,
-              teacher: {
-                user: {
-                  firstName: row.firstName || 'Faculty',
-                  lastName: row.lastName || 'Instructor'
-                }
-              },
-              _count: { units: 0, enrollments: 0 }
-            });
-          }
-        }
-      }
-
-      // Add overrides to catalog if allowed and not enrolled
-      try {
-        const overrides = await OverrideModel.getAllStudentCourseOverrides(targetId);
-        for (const o of overrides) {
-          if (o.status === 'ALLOW' && !enrolledCourseIds.has(o.courseId)) {
-            const cRes = await query(
-              `SELECT c.id, c.title, c.description, 0 as price, c.currency, u."firstName", u."lastName"
-               FROM "public"."courses" c
-               LEFT JOIN "public"."users" u ON c."teacherId" = u.id
-               WHERE c.id = $1`,
-              [o.courseId]
-            );
-            if (cRes.rows.length > 0) {
-              const row = cRes.rows[0];
-              catalog.push({
-                id: row.id,
-                title: row.title,
-                description: row.description || '',
-                level: 'Special Access',
-                currency: row.currency || 'USD',
-                durationDays: 365,
-                teacher: {
-                  user: {
-                    firstName: row.firstName || 'Faculty',
-                    lastName: row.lastName || 'Instructor'
-                  }
-                },
-                _count: { units: 0, enrollments: 0 }
-              });
-            }
-          }
-        }
-      } catch {}
 
       // 5. Return payload matching frontend MyCourses and Catalog
       return sendSuccess(res, {
@@ -253,7 +192,7 @@ export class StudentController {
          LEFT JOIN "public"."level_courses" lc ON lc."courseId" = c.id
          LEFT JOIN "public"."levels" l ON lc."levelId" = l.id
          LEFT JOIN "public"."users" t ON c."teacherId" = t.id
-         WHERE e."studentId" = $1 OR e."studentId" = $2`,
+         WHERE (e."studentId" = $1 OR e."studentId" = $2) AND c."isPublished" = true`,
         [studentId, userRow.profileId || studentId]
       );
 
@@ -270,6 +209,18 @@ export class StudentController {
         for (const row of progressRes.rows) {
           if (row.isCompleted) completedLessonIds.add(row.lessonId);
           totalSeconds += parseInt(row.timeSpentSec, 10) || 0;
+        }
+
+        const ivProgressRes = await query(
+          `SELECT ivp."lessonId", ivp."watchedSeconds" 
+           FROM "interactive_video_progress" ivp 
+           WHERE (ivp."studentId" = $1 OR ivp."studentId" = $2) 
+             AND (ivp."completionPercent" >= 90 OR ivp."completedAt" IS NOT NULL)`,
+          [studentId, userRow.profileId || studentId]
+        );
+        for (const row of ivProgressRes.rows) {
+          completedLessonIds.add(row.lessonId);
+          totalSeconds += parseInt(row.watchedSeconds, 10) || 0;
         }
       } catch (err) {
         console.error('Progress query warning:', err.message);
@@ -297,7 +248,7 @@ export class StudentController {
 
           for (const unit of unitsRes.rows) {
             const lRes = await query(
-              `SELECT l.id, l.title, l.skill, l."duration", l."orderIndex"
+              `SELECT l.id, l.title, l.skill, l."estimatedMinutes" as "duration", l."orderIndex"
                FROM "public"."lessons" l
                WHERE l."unitId" = $1
                ORDER BY l."orderIndex" ASC`,
@@ -473,7 +424,7 @@ export class StudentController {
           overallProgressPercentage,
           growthPercentage: 0,
           activityDots: [],
-          goalDistance: overallProgressPercentage > 0 ? 100 - overallProgressPercentage : 0,
+          goalDistance: 100 - overallProgressPercentage,
           learnTracking: {
             month: overallProgressPercentage,
             week: 0,
@@ -536,6 +487,10 @@ export class StudentController {
 
       const course = courseRes.rows[0];
 
+      if (!course.isPublished && req.user.role !== 'SUPERADMIN' && req.user.role !== 'TEACHER') {
+        return sendError(res, 'Course is not published', 403, 'FORBIDDEN');
+      }
+
       // 2. Fetch student profile & enrollment access
       const profile = await UserModel.getStudentProfile(studentId);
       const studentProfileId = profile?.id || studentId;
@@ -561,10 +516,12 @@ export class StudentController {
         isAccessActive = enr.status === 'ACTIVE' && !isExpired;
       } else {
         // Allow access if learningAccess is ACTIVE or for demo/faculty roles
-        if (profile?.learningAccess === 'ACTIVE' || req.user.role === 'SUPERADMIN' || req.user.role === 'TEACHER') {
+        if (req.user.role === 'SUPERADMIN' || req.user.role === 'TEACHER') {
           isEnrolled = true;
           isAccessActive = true;
           enrollmentStatus = 'ACTIVE';
+        } else {
+          return sendError(res, 'You are not enrolled in this course', 403, 'FORBIDDEN');
         }
       }
 
@@ -795,10 +752,69 @@ export class StudentController {
         );
       } catch {}
 
-      return sendSuccess(res, { lessonId, isCompleted: true }, 'Lesson marked as completed');
+      // 3. Check if all lessons in the course are completed to issue certificate
+      try {
+        const checkRes = await CertificateModel.checkAndIssueForLesson(studentId, lessonId);
+        if (checkRes?.allCompleted) {
+          return sendSuccess(res, { lessonId, isCompleted: true, courseCompleted: true, certificate: checkRes.cert }, 'Lesson and course completed');
+        }
+      } catch (err) {
+        console.warn('Certificate generation warning:', err.message);
+      }
+
+      return sendSuccess(res, { lessonId, isCompleted: true, courseCompleted: false }, 'Lesson marked as completed');
     } catch (error) {
       console.error('Complete Lesson Error:', error);
       return sendError(res, 'Failed to complete lesson', 500);
+    }
+  }
+
+  /**
+   * POST /api/v1/student/lessons/:lessonId/reset
+   * Resets progress for a lesson.
+   */
+  static async resetLesson(req, res) {
+    try {
+      const studentId = req.user.id;
+      const lessonId = req.params.lessonId;
+
+      let profile = null;
+      try {
+        profile = await UserModel.getStudentProfile(studentId);
+      } catch {}
+      const studentProfileId = profile?.id || studentId;
+
+      const candidates = Array.from(new Set([studentProfileId, studentId].filter(Boolean)));
+
+      for (const sId of candidates) {
+        try {
+          await query(
+            `DELETE FROM "public"."progress" WHERE "studentId" = $1 AND "lessonId" = $2`,
+            [sId, lessonId]
+          );
+        } catch (err) {}
+      }
+
+      for (const sId of candidates) {
+        try {
+          await query(
+            `DELETE FROM "interactive_video_progress" WHERE "studentId" = $1 AND "lessonId" = $2`,
+            [sId, lessonId]
+          );
+          await query(
+            `DELETE FROM "interactive_video_attempts" 
+             WHERE "studentId" = $1 AND "activityId" IN (
+               SELECT id FROM "interactive_video_activities" WHERE "lessonId" = $2
+             )`,
+            [sId, lessonId]
+          );
+        } catch (err) {}
+      }
+
+      return sendSuccess(res, { lessonId, isReset: true }, 'Lesson progress reset successfully');
+    } catch (error) {
+      console.error('Reset Lesson Error:', error);
+      return sendError(res, 'Failed to reset lesson progress', 500);
     }
   }
 
@@ -859,6 +875,21 @@ export class StudentController {
     } catch (error) {
       console.error('Get Lesson Activities Error:', error);
       return sendError(res, 'Failed to fetch lesson activities', 500);
+    }
+  }
+
+  /**
+   * GET /api/v1/student/certificates
+   */
+  static async getCertificates(req, res) {
+    try {
+      const studentId = req.user.id;
+      const certificates = await CertificateModel.getStudentCertificates(studentId);
+      
+      return sendSuccess(res, certificates, 'Certificates retrieved successfully');
+    } catch (error) {
+      console.error('Get Certificates Error:', error);
+      return sendError(res, 'Failed to fetch certificates', 500);
     }
   }
 }

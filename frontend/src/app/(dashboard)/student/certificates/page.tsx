@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
-import { useCachedData } from '@/lib/cache';
 
 interface Certificate {
   id: string;
@@ -38,17 +37,20 @@ interface Certificate {
 
 export default function StudentCertificatesPage() {
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: rawCertificates, loading } = useCachedData<Certificate[]>(
-    'student_certificates',
-    async () => {
-      const res = await apiClient.get<Certificate[]>('/student/certificates');
-      return (res as any)?.data || res || [];
-    },
-    { ttl: 120_000, initialData: [] }
-  );
-
-  const certificates = Array.isArray(rawCertificates) ? rawCertificates : [];
+  useEffect(() => {
+    setLoading(true);
+    apiClient
+      .get<any>('/student/certificates')
+      .then((res) => {
+        const list = Array.isArray(res) ? res : (res as any)?.data ?? [];
+        setCertificates(list);
+      })
+      .catch(() => setCertificates([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -142,7 +144,7 @@ export default function StudentCertificatesPage() {
 
               <div>
                 <span className="text-xs uppercase tracking-widest font-black text-amber-600">
-                  FluentEdge Academy • Certificate of Completion
+                  LinguaChris Academy • Certificate of Completion
                 </span>
                 <h2 className="text-2xl font-serif font-black text-slate-900 dark:text-white mt-1">
                   CEFR English Proficiency Award
@@ -151,7 +153,7 @@ export default function StudentCertificatesPage() {
                   This certifies that the candidate has successfully completed all required modules for
                 </p>
                 <h3 className="text-lg font-bold text-primary-700 dark:text-primary-300 mt-1">
-                  {selectedCert.course.title} ({selectedCert.levelCompleted})
+                  {selectedCert.course.title}
                 </h3>
               </div>
 

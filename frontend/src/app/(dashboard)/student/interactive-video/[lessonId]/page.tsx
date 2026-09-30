@@ -178,6 +178,7 @@ export default function StudentInteractiveVideoPage() {
             initialWatched={data.progress?.watchedSeconds || 0}
             completedActivityIds={data.completedActivityIds || []}
             isTeacher={false}
+            isLessonCompleted={data.progress?.status === 'COMPLETED'}
             onProgress={handleProgress}
           />
 
