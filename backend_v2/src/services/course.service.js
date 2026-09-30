@@ -121,6 +121,19 @@ export class CourseService {
   }
 
   /**
+   * Wipe all progress related to a course for a student
+   */
+  static async wipeStudentCourseProgress(studentId, courseId) {
+    const { query } = await import('../config/database.js');
+    await query(`DELETE FROM "public"."progress" WHERE "studentId" = $1 AND "lessonId" IN (SELECT id FROM "public"."lessons" WHERE "unitId" IN (SELECT id FROM "public"."units" WHERE "courseId" = $2))`, [studentId, courseId]);
+    await query(`DELETE FROM "public"."interactive_video_progress" WHERE "studentId" = $1 AND "lessonId" IN (SELECT id FROM "public"."lessons" WHERE "unitId" IN (SELECT id FROM "public"."units" WHERE "courseId" = $2))`, [studentId, courseId]);
+    await query(`DELETE FROM "public"."interactive_video_attempts" WHERE "studentId" = $1 AND "activityId" IN (SELECT id FROM "public"."interactive_video_activities" WHERE "lessonId" IN (SELECT id FROM "public"."lessons" WHERE "unitId" IN (SELECT id FROM "public"."units" WHERE "courseId" = $2)))`, [studentId, courseId]);
+    await query(`DELETE FROM "public"."student_activity_attempts" WHERE "studentId" = $1 AND "activityId" IN (SELECT id FROM "public"."video_activities" WHERE "videoId" IN (SELECT id FROM "public"."interactive_videos" WHERE "lessonId" IN (SELECT id FROM "public"."lessons" WHERE "unitId" IN (SELECT id FROM "public"."units" WHERE "courseId" = $2))))`, [studentId, courseId]);
+    await query(`DELETE FROM "public"."quiz_attempts" WHERE "studentId" = $1 AND "quizId" IN (SELECT id FROM "public"."quizzes" WHERE "lessonId" IN (SELECT id FROM "public"."lessons" WHERE "unitId" IN (SELECT id FROM "public"."units" WHERE "courseId" = $2)))`, [studentId, courseId]);
+    await query(`DELETE FROM "public"."assignment_submissions" WHERE "studentId" = $1 AND "assignmentId" IN (SELECT id FROM "public"."assignments" WHERE "lessonId" IN (SELECT id FROM "public"."lessons" WHERE "unitId" IN (SELECT id FROM "public"."units" WHERE "courseId" = $2)))`, [studentId, courseId]);
+  }
+
+  /**
    * Unenroll a student from a course
    */
   static async unenrollStudent(studentId, courseId) {
@@ -129,6 +142,7 @@ export class CourseService {
       `DELETE FROM "public"."enrollments" WHERE "studentId" = $1 AND "courseId" = $2`,
       [studentId, courseId]
     );
+    await CourseService.wipeStudentCourseProgress(studentId, courseId);
   }
 
   /**

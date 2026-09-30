@@ -1240,7 +1240,7 @@ export class TeacherModel {
     const teacherIds = await this.resolveTeacherIds(teacherId);
 
     const verifyRes = await query(
-      `SELECT e.id
+      `SELECT e.id, e."studentId", e."courseId"
        FROM "public"."enrollments" e
        JOIN "public"."courses" c ON c.id = e."courseId"
        WHERE e.id = $1 AND c."teacherId" = ANY($2)
@@ -1249,7 +1249,14 @@ export class TeacherModel {
     );
     if (verifyRes.rows.length === 0) return false;
 
+    const { studentId, courseId } = verifyRes.rows[0];
+
     await query(`DELETE FROM "public"."enrollments" WHERE id = $1`, [enrollmentId]);
+    
+    // Wipe progress
+    const { CourseService } = await import('../services/course.service.js');
+    await CourseService.wipeStudentCourseProgress(studentId, courseId);
+
     return true;
   }
 

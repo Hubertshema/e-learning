@@ -575,6 +575,41 @@ export class InteractiveVideoModel {
     return result.rows[0];
   }
 
+  static async resetProgress(lessonId, studentId, role = 'STUDENT') {
+    if (!(await this.hasStudentAccess(lessonId, studentId, role))) return null;
+
+    // Delete attempts for this lesson's activities
+    await query(`
+      DELETE FROM "interactive_video_attempts" 
+      WHERE "studentId" = $1 AND "activityId" IN (
+        SELECT id FROM "interactive_video_activities" WHERE "lessonId" = $2
+      )`, [studentId, lessonId]);
+
+    // Delete interactive video progress
+    await query(`
+      DELETE FROM "interactive_video_progress" 
+      WHERE "studentId" = $1 AND "lessonId" = $2`, [studentId, lessonId]);
+
+    // Delete from public progress
+    try {
+      const profile = await query(
+        `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
+        [studentId]
+      );
+      const sIds = [profile.rows[0]?.id, studentId].filter(Boolean);
+      for (const sId of sIds) {
+        await query(
+          `DELETE FROM "public"."progress" WHERE "studentId" = $1 AND "lessonId" = $2`,
+          [sId, lessonId]
+        );
+      }
+    } catch (syncErr) {
+      console.warn('Sync to public.progress notice (reset):', syncErr.message);
+    }
+
+    return { success: true, message: 'Lesson progress has been reset.' };
+  }
+
   static async generateActivities(lessonId, teacherId, { density = 'medium', targetLevel = 'B1' }) {
     if (!(await this.isTeacherOwner(lessonId, teacherId))) return null;
     const lesson = await query(`SELECT l.title, ivl.transcript, ivl.skill FROM "interactive_video_lessons" ivl

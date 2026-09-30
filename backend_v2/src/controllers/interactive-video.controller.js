@@ -135,4 +135,11 @@ export class InteractiveVideoController {
       return result ? sendSuccess(res, result) : sendError(res, 'Lesson is unavailable', 404, 'NOT_FOUND');
     } catch (error) { next(error); }
   }
+
+  static async resetProgress(req, res, next) {
+    try {
+      const result = await InteractiveVideoModel.resetProgress(req.params.lessonId, userId(req), req.user?.role);
+      return result ? sendSuccess(res, result) : sendError(res, 'Lesson is unavailable', 404, 'NOT_FOUND');
+    } catch (error) { next(error); }
+  }
 }

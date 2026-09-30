@@ -53,6 +53,7 @@ export function InteractiveVideoPlayer({
   initialWatched = 0,
   navigationMode = 'FREE',
   isTeacher = false,
+  layoutMode = 'default',
   completedActivityIds = [],
   onProgress,
 }: {
@@ -66,6 +67,7 @@ export function InteractiveVideoPlayer({
   initialWatched?: number;
   navigationMode?: string;
   isTeacher?: boolean;
+  layoutMode?: 'default' | 'student-hub';
   completedActivityIds?: string[];
   onProgress?: (position: number, watched: number, percent: number) => void;
 }) {
@@ -586,7 +588,7 @@ export function InteractiveVideoPlayer({
 
         // Gentle auto-resume timer giving student time to review response
         clearAutoResume();
-        let secondsLeft = 4;
+        let secondsLeft = 1;
         setAutoResumeSeconds(secondsLeft);
         autoResumeTimerRef.current = setInterval(() => {
           secondsLeft -= 1;
@@ -626,6 +628,17 @@ export function InteractiveVideoPlayer({
     videoRef.current?.seekTo(safeResumeTime);
     videoRef.current?.play();
     setPlaying(true);
+  };
+
+  const handleResetLesson = async () => {
+    if (!window.confirm('Are you sure you want to reset your progress? This will clear your checkpoint answers and watched time so you can review from scratch.')) return;
+    try {
+      await apiClient.post(`/student/interactive-videos/lessons/${lessonId}/reset`);
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to reset lesson', error);
+      alert('Failed to reset lesson. Please try again.');
+    }
   };
 
   const unlockedPercent = totalDuration > 0 ? Math.min(100, (maxAllowedTime / totalDuration) * 100) : 0;
@@ -670,9 +683,9 @@ export function InteractiveVideoPlayer({
       )}
 
       {/* Main Split Screen Stage: Left Video, Right Questions */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* LEFT COLUMN: Video Player (lg:col-span-7) */}
-        <div className="lg:col-span-7 flex flex-col justify-start">
+      <div className={`grid grid-cols-1 gap-6 items-stretch lg:grid-cols-12 transition-all duration-500`}>
+        {/* LEFT COLUMN: Video Player */}
+        <div className={`${(!playing || active) ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} flex flex-col justify-start transition-all duration-500`}>
           <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl border border-slate-800 select-none">
             {/* 16:9 Aspect Video Canvas */}
             <div className="relative w-full aspect-video bg-black flex items-center justify-center">
@@ -901,12 +914,116 @@ export function InteractiveVideoPlayer({
               </button>
             </div>
           )}
+          
+          {!isTeacher && (
+            <div className="mt-2 flex items-center justify-end text-[11px] text-slate-400 px-2">
+              <button
+                type="button"
+                onClick={handleResetLesson}
+                className="underline hover:text-red-400 flex items-center gap-1 transition-colors"
+                title="Reset your progress for this lesson and start over"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reset Lesson
+              </button>
+            </div>
+          )}
+
+        {/* Hint & Feedback Below Video */}
+        {active && (
+            <div className="mt-4 flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {showHint && (
+                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200">
+                  <p className="font-bold flex items-center gap-1.5 mb-1">
+                    <span>💡</span> Guidance:
+                  </p>
+                  <p className="opacity-90 leading-relaxed">
+                    {active.explanation || active.instructions || active.content?.guidance || 'Listen to what the speaker mentions and choose the option that fits best.'}
+                  </p>
+                </div>
+              )}
+
+              {feedback && (
+                <div className={`rounded-xl p-3.5 text-xs font-medium transition-all flex flex-col sm:flex-row gap-4 sm:items-center justify-between shadow-sm ${
+                  feedback.isCorrect
+                    ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
+                    : 'bg-rose-50 text-rose-900 dark:bg-rose-950/70 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
+                }`}>
+                  <div className="flex items-start gap-2.5 flex-1">
+                    {feedback.isCorrect ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-1.5 w-full">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-sm">
+                          {feedback.isCorrect ? 'Correct!' : 'Incorrect — not quite right.'}
+                        </p>
+                        {feedback.isCorrect && autoResumeSeconds !== null && (
+                          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse shrink-0">
+                            <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                            Resuming in {autoResumeSeconds}s...
+                          </span>
+                        )}
+                      </div>
+                      {feedback.feedback && !feedback.isCorrect && <p className="opacity-90">{feedback.feedback}</p>}
+                      {feedback.explanation && (
+                        <p className="text-xs opacity-80 mt-1">
+                          <strong>Explanation:</strong> {feedback.explanation}
+                        </p>
+                      )}
+                      {feedback.correctAnswer && (
+                        <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="font-bold opacity-75">Correct answer:</span>
+                          <span className="font-bold text-emerald-800 dark:text-emerald-200 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-md border border-emerald-300/50">
+                            {Array.isArray(feedback.correctAnswer)
+                              ? feedback.correctAnswer.join(', ')
+                              : typeof feedback.correctAnswer === 'object'
+                              ? Object.entries(feedback.correctAnswer).map(([k, v]) => `${k} → ${v}`).join('; ')
+                              : String(feedback.correctAnswer)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 shrink-0">
+                    {!feedback.isCorrect && active.allowRetry !== false && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          clearAutoResume();
+                          setFeedback(null);
+                          setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
+                        }}
+                        className="text-xs font-bold h-9 px-4 rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 w-full sm:w-auto shadow-sm"
+                      >
+                        <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                        Try Again
+                      </Button>
+                    )}
+                    {(feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
+                      <Button
+                        onClick={continueVideo}
+                        className="bg-[#315b36] hover:bg-[#254629] text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md flex items-center gap-1.5 w-full sm:w-auto"
+                      >
+                        <Play className="h-3.5 w-3.5 fill-white" />
+                        Continue Video
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* RIGHT COLUMN: Question & Interaction Panel (lg:col-span-5) */}
-        <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 min-h-[420px] lg:min-h-[460px]">
-          {active ? (
-            <div className="flex flex-col h-full justify-between">
+        {/* RIGHT COLUMN: Question & Interaction Panel */}
+        {(!playing || active) && (
+          <div className={`lg:col-span-4 flex flex-col justify-between rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#e2ebe2]/80 dark:border-slate-800 shadow-xs p-6 sm:p-8 min-h-[420px] lg:min-h-0 h-full relative animate-in fade-in slide-in-from-right-4 duration-500 overflow-y-auto`}>
+            {active ? (
+            <div className="flex flex-col h-full overflow-y-auto pr-2 custom-scrollbar">
               <div>
                 {/* Question Header */}
                 <div className="mb-4">
@@ -966,149 +1083,36 @@ export function InteractiveVideoPlayer({
                     </p>
                   )}
                 </div>
+                </div>
 
-                {/* Hint Guidance Card (when toggled via Need a hint?) */}
-                {showHint && (
-                  <div className="mb-4 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in">
-                    <p className="font-bold flex items-center gap-1.5 mb-1">
-                      <span>💡</span> Guidance:
-                    </p>
-                    <p className="opacity-90 leading-relaxed">
-                      {active.explanation ||
-                        active.instructions ||
-                        active.content?.guidance ||
-                        'Listen to what the speaker mentions and choose the option that fits best.'}
-                    </p>
-                  </div>
-                )}
+                {/* Top Action Bar */}
+                <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/95 dark:bg-slate-900/95 z-10 -mx-2 px-2 py-2">
+                  {!feedback ? (
+                    <Button
+                      onClick={submit}
+                      disabled={submitting || (!answer && answer !== 0 && (!Array.isArray(answer) || answer.length === 0))}
+                      className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md transition-all flex items-center gap-2 shrink-0"
+                    >
+                      {submitting && <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+                      {submitting ? 'Checking...' : 'Submit Answer'}
+                    </Button>
+                  ) : (
+                    <div className="text-sm font-bold text-slate-500 flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" /> Answer Submitted
+                    </div>
+                  )}
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowHint((v) => !v)}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-2xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>💡</span> {showHint ? 'Hide hint' : 'Need a hint?'}
+                  </button>
+                </div>
 
                 {/* Question Answer Options */}
                 <ActivityAnswer activity={active} answer={answer} setAnswer={setAnswer} feedback={feedback} />
-
-                {/* Instant Feedback Card with Auto-Resume */}
-                {feedback && (
-                  <div
-                    role="status"
-                    className={`mt-4 rounded-xl p-3.5 text-xs font-medium transition-all ${
-                      feedback.isCorrect
-                        ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
-                        : 'bg-rose-50 text-rose-900 dark:bg-rose-950/70 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
-                    }`}
-                  >
-                    <div className="flex items-start gap-2.5">
-                      {feedback.isCorrect ? (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                      ) : (
-                        <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                      )}
-                      <div className="space-y-1.5 flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-bold text-sm">
-                            {feedback.isCorrect ? 'Correct! Well done! 🎉' : 'Incorrect — not quite right.'}
-                          </p>
-                          {feedback.isCorrect && autoResumeSeconds !== null && (
-                            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
-                              <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                              Resuming in {autoResumeSeconds}s...
-                            </span>
-                          )}
-                        </div>
-                        {feedback.feedback && <p className="opacity-90">{feedback.feedback}</p>}
-                        {feedback.explanation && (
-                          <p className="text-xs opacity-80 mt-1">
-                            <strong>Explanation:</strong> {feedback.explanation}
-                          </p>
-                        )}
-                        {feedback.correctAnswer && (
-                          <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-1.5 text-xs">
-                            <span className="font-bold opacity-75">Correct answer:</span>
-                            <span className="font-bold text-emerald-800 dark:text-emerald-200 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-md border border-emerald-300/50">
-                              {Array.isArray(feedback.correctAnswer)
-                                ? feedback.correctAnswer.join(', ')
-                                : typeof feedback.correctAnswer === 'object'
-                                ? Object.entries(feedback.correctAnswer)
-                                    .map(([k, v]) => `${k} → ${v}`)
-                                    .join('; ')
-                                : String(feedback.correctAnswer)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-                {/* Bottom Actions Area */}
-                <div className="pt-5 mt-auto border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
-                    {/* Need a hint? button */}
-                    {!feedback ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowHint((v) => !v)}
-                        className="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap"
-                      >
-                        <span>💡</span>
-                        <span className="whitespace-nowrap">{showHint ? 'Hide hint' : 'Need a hint?'}</span>
-                      </button>
-                    ) : !feedback.isCorrect ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowHint((v) => !v)}
-                        className="text-xs font-semibold px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-2xs transition-all flex items-center gap-1 shrink-0 whitespace-nowrap"
-                        title="View Hint"
-                      >
-                        <span>💡</span>
-                        <span className="whitespace-nowrap">{showHint ? 'Hide hint' : 'Hint'}</span>
-                      </button>
-                    ) : (
-                      <div />
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-2 shrink-0 ml-auto">
-                      {feedback && !feedback.isCorrect && active.allowRetry !== false && (
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            clearAutoResume();
-                            setFeedback(null);
-                            setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
-                          }}
-                          className="text-xs font-semibold h-9 px-3 rounded-xl shrink-0 whitespace-nowrap border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        >
-                          <RotateCcw className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                          <span>Try Again</span>
-                        </Button>
-                      )}
-
-                      {feedback && (feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
-                        <Button
-                          onClick={continueVideo}
-                          className="bg-[#315b36] hover:bg-[#254629] text-white font-bold rounded-xl text-xs h-9 px-4 sm:px-5 shadow-md flex items-center gap-1.5 shrink-0 whitespace-nowrap active:scale-95 transition-all"
-                        >
-                          <Play className="h-3.5 w-3.5 fill-white shrink-0" />
-                          <span>Continue Video</span>
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={submit}
-                          disabled={
-                            submitting ||
-                            (!answer && answer !== 0 && (!Array.isArray(answer) || answer.length === 0))
-                          }
-                          className="bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md transition-all flex items-center gap-2 shrink-0 whitespace-nowrap"
-                        >
-                          {submitting && (
-                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent shrink-0" />
-                          )}
-                          <span>{submitting ? 'Checking Answer...' : 'Submit Answer'}</span>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
           ) : (
             /* Standby State while Video is Playing */
@@ -1214,7 +1218,8 @@ export function InteractiveVideoPlayer({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Transcript Card below if transcript exists */}

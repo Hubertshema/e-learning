@@ -33,9 +33,16 @@ import {
   Sidebar,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Eye,
+  Download
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import {
+  ResourcePreviewModal,
+  ResourceTypeBadge,
+  LessonResource,
+} from '@/components/resources/resource-preview-modal';
 import { RichTextRenderer } from '@/components/ui/rich-text-editor';
 import { ActivityContainer, ActivityData } from '@/components/activities/activity-container';
 import { InteractiveVideoPlayer } from '@/components/interactive-video/interactive-video-player';
@@ -113,6 +120,7 @@ export default function StudentLearnPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [interactiveVideoData, setInteractiveVideoData] = useState<any>(null);
   const [loadingInteractive, setLoadingInteractive] = useState(false);
+  const [previewResource, setPreviewResource] = useState<LessonResource | null>(null);
 
   // Flexible Classroom UI States
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -468,10 +476,10 @@ export default function StudentLearnPage() {
     );
   }
 
-  const sidebarWidthClass = sidebarWidth === 'wide' ? 'w-80 sm:w-96 xl:w-[420px]' : 'w-72 sm:w-80 xl:w-84';
+  const sidebarWidthClass = sidebarWidth === 'wide' ? 'w-80 lg:w-[320px]' : 'w-64 lg:w-72';
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8faf8] text-slate-900 dark:bg-slate-950 dark:text-slate-100 relative">
+    <div className="flex h-[100dvh] flex-col bg-[#f8faf8] text-slate-900 dark:bg-slate-950 dark:text-slate-100 relative overflow-hidden">
       {/* 1. Full-Screen Classroom Top Navigation Bar */}
       <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
         {/* Left: Back & Course Title */}
@@ -490,106 +498,43 @@ export default function StudentLearnPage() {
           <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
 
           <div>
-            <div className="flex items-center gap-2">
-              <Badge variant="indigo" className="text-[10px] font-bold uppercase tracking-wider">
-                CEFR {data.course.level}
-              </Badge>
-              {data.course.teacher?.user && (
-                <span className="hidden text-[11px] text-slate-400 md:inline">
-                  Instructor: {data.course.teacher.user.firstName} {data.course.teacher.user.lastName}
-                </span>
-              )}
-            </div>
-            <h1 className="truncate text-sm font-black text-slate-900 dark:text-white sm:text-base">
-              {data.course.title}
-            </h1>
+            {selectedLesson ? (
+              <h1 className="truncate text-sm font-black text-slate-900 dark:text-white sm:text-base">
+                {selectedLesson.title}
+              </h1>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <Badge variant="indigo" className="text-[10px] font-bold uppercase tracking-wider">
+                    CEFR {data.course.level}
+                  </Badge>
+                </div>
+                <h1 className="truncate text-sm font-black text-slate-900 dark:text-white sm:text-base">
+                  {data.course.title}
+                </h1>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Center: Overall Progress */}
-        <div className="hidden items-center gap-3 lg:flex">
-          <div className="flex flex-col items-end">
-            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
-              {completedCount} of {totalLessonsCount} Lessons Completed
-            </span>
-            <div className="mt-1 h-2 w-36 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-              <div
-                className="h-full bg-[#315b36] transition-all duration-500 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-          <span className="rounded-full bg-[#eff4ec] px-2 py-0.5 text-xs font-black text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300">
-            {progressPercent}%
-          </span>
-        </div>
+        {/* Overall Progress Moved to Sidebar */}
 
-        {/* Right: Actions (Syllabus Drawer, Fullscreen, Next Lesson) */}
+        {/* Right: Actions (Syllabus Drawer) */}
         <div className="flex items-center gap-2">
           {/* Flexible Syllabus Toggle */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setSidebarOpen((prev) => !prev)}
-            className={`flex h-9 items-center gap-1.5 rounded-xl border-slate-200 text-xs font-semibold transition-all ${
-              sidebarOpen
-                ? 'bg-[#eff4ec] text-[#315b36] border-[#315b36]/30 dark:bg-emerald-950/40 dark:text-emerald-300'
-                : 'text-slate-700 hover:bg-[#eff4ec] hover:text-[#315b36] dark:border-slate-700 dark:text-slate-300'
-            }`}
-            title={sidebarOpen ? 'Hide Syllabus Sidebar' : 'Show Syllabus Sidebar'}
-          >
-            {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
-            <span className="hidden md:inline">{sidebarOpen ? 'Hide Syllabus' : 'Curriculum'}</span>
-          </Button>
-
-          {/* Fullscreen Mode Toggle */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={toggleFullscreen}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border-slate-200 text-slate-700 hover:bg-[#eff4ec] hover:text-[#315b36] dark:border-slate-700 dark:text-slate-300"
-            title={isFullscreen ? 'Exit Full Screen' : 'Full Screen Mode'}
-          >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
-
-          {/* Quick Next Lesson CTA */}
-          {nextLesson && (
+          {!sidebarOpen && (
             <Button
               size="sm"
-              variant={isNextLessonUnlocked ? 'gradient' : 'outline'}
-              disabled={!isNextLessonUnlocked}
-              onClick={() => {
-                if (isNextLessonUnlocked) {
-                  setSelectedLesson(nextLesson);
-                  setActiveTab('CONTENT');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              }}
-              className={`hidden h-9 items-center gap-1 rounded-xl text-xs font-bold sm:flex ${
-                !isNextLessonUnlocked ? 'opacity-60 cursor-not-allowed' : ''
-              }`}
-              title={!isNextLessonUnlocked ? 'Complete current lesson to unlock' : 'Go to next lesson'}
+              variant="outline"
+              onClick={() => setSidebarOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border-slate-200 text-slate-700 hover:bg-[#eff4ec] hover:text-[#315b36] transition-all dark:border-slate-700 dark:text-slate-300"
+              title="Show Curriculum"
             >
-              {!isNextLessonUnlocked && <Lock className="h-3 w-3 mr-0.5 text-slate-400" />}
-              <span>Next Lesson</span>
-              <ChevronRight className="h-3.5 w-3.5" />
+              <PanelLeftOpen className="h-4 w-4" />
             </Button>
           )}
         </div>
       </header>
-
-      {/* Floating Syllabus Re-opener Button when Sidebar is Closed */}
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed left-4 top-20 z-40 flex items-center gap-2 rounded-full bg-[#315b36] px-4 py-2.5 text-xs font-black text-white shadow-2xl hover:bg-[#254629] transition-all transform hover:scale-105 animate-in fade-in slide-in-from-left-4"
-          title="Open Curriculum Syllabus"
-        >
-          <Layers className="h-4 w-4 text-emerald-300" />
-          <span>Curriculum ({data.course.units?.length || 0} Units)</span>
-        </button>
-      )}
 
       {/* Mobile Drawer Overlay Backdrop */}
       {sidebarOpen && (
@@ -604,7 +549,7 @@ export default function StudentLearnPage() {
         {/* Left Column: Flexible & Collapsible Curriculum Syllabus Sidebar */}
         {sidebarOpen && (
           <aside
-            className={`fixed inset-y-0 left-0 z-40 lg:static lg:z-20 ${sidebarWidthClass} shrink-0 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all duration-300 ease-in-out flex flex-col shadow-2xl lg:shadow-none animate-in slide-in-from-left duration-200`}
+            className={`fixed inset-y-0 left-0 z-40 lg:static lg:z-20 ${sidebarWidthClass} shrink-0 border-r border-[#e2ebe2]/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-all duration-300 ease-in-out select-none flex flex-col shadow-xs animate-in slide-in-from-left duration-200`}
           >
             <div className="flex h-full flex-col">
               {/* Sidebar Header with Width Resizer & Close Button */}
@@ -627,10 +572,10 @@ export default function StudentLearnPage() {
 
                   <button
                     onClick={() => setSidebarOpen(false)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    title="Close Sidebar"
+                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eff4ec] text-[#315b36] border border-[#315b36]/30 dark:bg-emerald-950/40 dark:text-emerald-300 hover:opacity-80 transition-opacity"
+                    title="Hide Curriculum"
                   >
-                    <X className="h-4 w-4" />
+                    <PanelLeftClose className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -754,14 +699,117 @@ export default function StudentLearnPage() {
                     </div>
                   );
                 })}
+
+                {/* Sidebar Footer: Lesson Actions & Progress */}
+                <div className="mt-6 border-t border-slate-100 pt-6 pb-2 dark:border-slate-800 space-y-3">
+                  {selectedLesson && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {selectedLesson.skill && (
+                        <Badge variant="indigo" className="text-[9px] font-bold uppercase tracking-wider bg-[#eff4ec] text-[#315b36] border-[#315b36]/30 dark:bg-emerald-950/40 dark:text-emerald-300">
+                          {selectedLesson.skill}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 bg-white dark:bg-slate-900">
+                        <Clock className="h-3 w-3" />
+                        {selectedLesson.estimatedMinutes || 30} mins
+                      </Badge>
+                      {isCurrentLessonCompleted && (
+                        <span className="flex items-center gap-1 rounded-full bg-[#dff0d8] px-2 py-0.5 text-[10px] font-bold text-[#2d4a22] dark:bg-emerald-950 dark:text-emerald-300">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Completed
+                        </span>
+                      )}
+                    </div>
+                    {selectedLesson.type === 'INTERACTIVE_VIDEO' && interactiveVideoData && (
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                          <span>Video Progress</span>
+                          <span className="text-[#315b36] dark:text-[#7ba27a]">{Math.round(interactiveVideoData.progress?.completionPercent || 0)}%</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#7ba27a] to-[#315b36] transition-all duration-300"
+                            style={{ width: `${interactiveVideoData.progress?.completionPercent || 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={toggleFullscreen}
+                    className="w-full flex h-8 items-center justify-center rounded-xl border-slate-200 text-xs text-slate-700 hover:bg-[#eff4ec] hover:text-[#315b36] dark:border-slate-700 dark:text-slate-300"
+                  >
+                    {isFullscreen ? <Minimize2 className="mr-1.5 h-3.5 w-3.5" /> : <Maximize2 className="mr-1.5 h-3.5 w-3.5" />}
+                    {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+                  </Button>
+
+                {selectedLesson && (
+                  <Button
+                    size="sm"
+                    variant={isCurrentLessonCompleted ? 'outline' : 'secondary'}
+                    disabled={completing}
+                    onClick={() => handleMarkComplete(false)}
+                    className="w-full h-8 rounded-xl text-xs font-bold shadow-sm"
+                  >
+                    <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                    {isCurrentLessonCompleted
+                      ? 'Marked Completed'
+                      : completing
+                      ? 'Saving...'
+                      : 'Mark as Completed'}
+                  </Button>
+                )}
+
+                {nextLesson && !isCurrentLessonCompleted && (
+                  <Button
+                    size="sm"
+                    variant="gradient"
+                    disabled={completing}
+                    onClick={() => handleMarkComplete(true)}
+                    className="w-full h-8 rounded-xl text-xs font-bold shadow-sm"
+                  >
+                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                    {completing ? 'Completing...' : 'Complete & Continue'}
+                  </Button>
+                )}
+                
+                {nextLesson && isCurrentLessonCompleted && (
+                  <Button
+                    size="sm"
+                    variant={isNextLessonUnlocked ? 'gradient' : 'outline'}
+                    disabled={!isNextLessonUnlocked}
+                    onClick={() => {
+                      if (isNextLessonUnlocked) {
+                        setSelectedLesson(nextLesson);
+                        setActiveTab('CONTENT');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    className={`w-full h-8 rounded-xl text-xs font-bold ${
+                      !isNextLessonUnlocked ? 'opacity-60 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {!isNextLessonUnlocked && <Lock className="h-3 w-3 mr-1.5 text-slate-400" />}
+                    Next Lesson
+                    <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                )}
+                </div>
               </div>
+            </div>
             </div>
           </aside>
         )}
 
         {/* Right Main Content Area - Expands to 100% when sidebar is closed */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 min-w-0 transition-all duration-300">
-          <div className="mx-auto max-w-5xl space-y-6">
+        <main className="flex-1 overflow-hidden p-4 sm:p-6 lg:p-8 min-w-0 transition-all duration-300">
+          <div className="mx-auto w-full max-w-[1600px] space-y-6">
             {feedback && (
               <div className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 shadow-sm animate-in fade-in dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                 <div className="flex items-center gap-2">
@@ -776,74 +824,6 @@ export default function StudentLearnPage() {
 
             {selectedLesson ? (
               <>
-                {/* Active Lesson Header Card */}
-                <Card className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div className="space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {selectedLesson.skill && (
-                          <Badge variant="indigo" className="font-black uppercase tracking-wider">
-                            {selectedLesson.skill}
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className="flex items-center gap-1 text-[11px] font-semibold">
-                          <Clock className="h-3 w-3" />
-                          {selectedLesson.estimatedMinutes || 30} mins
-                        </Badge>
-                        {isCurrentLessonCompleted ? (
-                          <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Completed
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                            In Progress
-                          </span>
-                        )}
-                      </div>
-                      <h2 className="text-xl font-black text-slate-900 dark:text-white sm:text-2xl">
-                        {selectedLesson.title}
-                      </h2>
-                      {selectedLesson.description && (
-                        <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                          {selectedLesson.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {nextLesson && !isCurrentLessonCompleted && (
-                        <Button
-                          size="default"
-                          variant="gradient"
-                          disabled={completing}
-                          onClick={() => handleMarkComplete(true)}
-                          className="rounded-xl font-bold shadow-sm"
-                        >
-                          <Sparkles className="mr-1.5 h-4 w-4" />
-                          {completing ? 'Completing...' : 'Complete & Continue'}
-                          <ArrowRight className="ml-1.5 h-4 w-4" />
-                        </Button>
-                      )}
-
-                      <Button
-                        size="default"
-                        variant={isCurrentLessonCompleted ? 'outline' : 'secondary'}
-                        disabled={completing}
-                        onClick={() => handleMarkComplete(false)}
-                        className="rounded-xl font-bold shadow-sm"
-                      >
-                        <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                        {isCurrentLessonCompleted
-                          ? 'Marked Completed'
-                          : completing
-                          ? 'Saving...'
-                          : 'Mark as Completed'}
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-
                 {/* Lesson Body: Interactive Video OR Theory + Drills */}
                 {selectedLesson.type === 'INTERACTIVE_VIDEO' ? (
                   loadingInteractive ? (
@@ -852,22 +832,140 @@ export default function StudentLearnPage() {
                       <p className="text-xs font-semibold">Loading interactive video studio...</p>
                     </Card>
                   ) : interactiveVideoData ? (
-                    <InteractiveVideoPlayer
-                      lessonId={selectedLesson.id}
-                      videoUrl={interactiveVideoData.videoUrl}
-                      durationSeconds={interactiveVideoData.durationSeconds}
-                      activities={interactiveVideoData.activities}
-                      transcript={interactiveVideoData.transcript}
-                      captions={interactiveVideoData.captions}
-                      initialPosition={interactiveVideoData.progress?.lastPositionSeconds || 0}
-                      initialWatched={interactiveVideoData.progress?.watchedSeconds || 0}
-                      completedActivityIds={interactiveVideoData.completedActivityIds || []}
-                      isTeacher={false}
-                      navigationMode={interactiveVideoData.navigationMode}
-                      onProgress={(position, watched, percent) => {
-                        handleVideoProgressUpdate(selectedLesson.id, position, watched, percent);
-                      }}
-                    />
+                    <div className="space-y-6">
+                      <InteractiveVideoPlayer
+                        lessonId={selectedLesson.id}
+                        videoUrl={interactiveVideoData.videoUrl}
+                        durationSeconds={interactiveVideoData.durationSeconds}
+                        activities={interactiveVideoData.activities}
+                        transcript={interactiveVideoData.transcript}
+                        captions={interactiveVideoData.captions}
+                        initialPosition={interactiveVideoData.progress?.lastPositionSeconds || 0}
+                        initialWatched={interactiveVideoData.progress?.watchedSeconds || 0}
+                        completedActivityIds={interactiveVideoData.completedActivityIds || []}
+                        isTeacher={false}
+                        layoutMode="student-hub"
+                        navigationMode={interactiveVideoData.navigationMode}
+                        onProgress={(position, watched, percent) => {
+                          handleVideoProgressUpdate(selectedLesson.id, position, watched, percent);
+                        }}
+                      />
+
+                      {/* Progress Card Moved to Sidebar */}                      {/* Lesson Resources Section */}
+                      {interactiveVideoData.resources && interactiveVideoData.resources.length > 0 && (
+                        <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm space-y-3.5">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-2 rounded-xl bg-[#eff4ec] dark:bg-[#132519] text-[#315b36] border border-[#7ba27a]/30 dark:border-[#315b36]">
+                                <FileText className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                  Lesson PDF Resources
+                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                    {interactiveVideoData.resources.length}
+                                  </span>
+                                </h2>
+                                <p className="text-[11px] text-slate-500">
+                                  Study handouts, worksheets, and reference PDF materials uploaded for this lesson.
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                              <span className="flex items-center gap-1">
+                                <Eye className="h-3 w-3" /> Click PDF badge to preview
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {interactiveVideoData.resources.map((res: LessonResource) => {
+                              const canDownload = Boolean(res.canDownload);
+
+                              return (
+                                <div
+                                  key={res.id}
+                                  className="group p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-900 hover:border-[#7ba27a] dark:hover:border-[#315b36] hover:shadow-sm transition-all flex flex-col justify-between gap-3"
+                                >
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <ResourceTypeBadge
+                                        resource={res}
+                                        onClick={() => setPreviewResource(res)}
+                                        className="hover:scale-105 active:scale-95 transition-transform"
+                                      />
+                                      {canDownload ? (
+                                        <span
+                                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#315b36] dark:text-[#7ba27a]"
+                                          title="Downloads allowed"
+                                        >
+                                          <CheckCircle2 className="h-3 w-3" /> Downloadable
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400"
+                                          title="Downloads restricted by teacher (View Only)"
+                                        >
+                                          <Lock className="h-3 w-3" /> View Only
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <h4
+                                        className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-[#315b36] dark:hover:text-[#7ba27a] transition-colors"
+                                        onClick={() => setPreviewResource(res)}
+                                        title={res.title}
+                                      >
+                                        {res.title}
+                                      </h4>
+                                      {res.description && (
+                                        <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
+                                          {res.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="flex-1 h-7 text-xs font-semibold gap-1 hover:border-[#7ba27a] hover:text-[#315b36] dark:hover:text-[#7ba27a]"
+                                      onClick={() => setPreviewResource(res)}
+                                    >
+                                      <Eye className="h-3.5 w-3.5" />
+                                      Preview PDF
+                                    </Button>
+                                    {canDownload && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2.5 text-xs font-semibold gap-1 text-[#315b36] hover:bg-[#eff4ec] dark:text-[#7ba27a] dark:hover:bg-[#132519]"
+                                        onClick={() => {
+                                          const a = document.createElement('a');
+                                          a.href = res.url;
+                                          a.download = res.title ? `${res.title}.pdf` : 'download.pdf';
+                                          a.target = '_blank';
+                                          a.rel = 'noopener noreferrer';
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          document.body.removeChild(a);
+                                        }}
+                                        title="Download PDF document"
+                                      >
+                                        <Download className="h-3.5 w-3.5" />
+                                        <span className="hidden sm:inline">Save PDF</span>
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      )}
+                    </div>
                   ) : (
                     <Card className="p-12 text-center text-rose-500">
                       Failed to load interactive video content.
@@ -1128,6 +1226,14 @@ export default function StudentLearnPage() {
           </div>
         </div>
       </Modal>
+
+      {/* In-App Resource Preview Modal */}
+      <ResourcePreviewModal
+        resource={previewResource}
+        isOpen={Boolean(previewResource)}
+        onClose={() => setPreviewResource(null)}
+        isTeacher={false}
+      />
     </div>
   );
 }
