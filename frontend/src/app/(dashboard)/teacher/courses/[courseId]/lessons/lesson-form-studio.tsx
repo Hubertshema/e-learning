@@ -281,6 +281,30 @@ export function LessonFormStudio({
     );
   }
 
+  if (mode === 'edit' && error && !title) {
+    return (
+      <div className="max-w-md mx-auto mt-12 p-8 text-center space-y-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-200 dark:border-rose-900">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">Lesson Not Found</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            {error || 'This lesson could not be found or has been deleted.'}
+          </p>
+        </div>
+        <div className="pt-2 flex justify-center">
+          <Link href={backHref || `/studio/${courseId}`}>
+            <Button size="sm" variant="gradient" className="font-bold shadow-sm">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Return to Course Studio
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24 animate-fade-in">
       {/* 1. TOP HEADER & NAVIGATION */}

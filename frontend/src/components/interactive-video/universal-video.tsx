@@ -178,7 +178,8 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
               modestbranding: 1,
               playsinline: 1,
               enablejsapi: 1,
-              origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+              origin: typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000',
+              widget_referrer: typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000',
             },
             events: {
               onReady: (event: any) => {
