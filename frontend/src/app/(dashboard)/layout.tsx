@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -73,17 +74,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-              <span className="hidden sm:inline">LinguaChris LMS</span>
-              <span className="hidden sm:inline">/</span>
-              <span className="text-slate-900 dark:text-white capitalize">
+              <Link
+                href={user?.role ? `/${user.role.toLowerCase()}` : '/'}
+                className="hidden sm:inline hover:text-[#315B36] dark:hover:text-emerald-400 font-bold transition-colors cursor-pointer"
+                title="Go to Dashboard Home"
+              >
+                LinguaChris LMS
+              </Link>
+              <span className="hidden sm:inline text-slate-300 dark:text-slate-700">/</span>
+              <Link
+                href={`/${pathname.split('/')[1] || (user?.role ? user.role.toLowerCase() : 'teacher')}`}
+                className="hover:text-slate-900 dark:hover:text-white capitalize transition-colors cursor-pointer"
+                title={`Go to ${pathname.split('/')[1] || 'Dashboard'} Overview`}
+              >
                 {pathname.split('/')[1] || 'Dashboard'}
-              </span>
+              </Link>
               {pathname.split('/')[2] && (
                 <>
-                  <span>/</span>
-                  <span className="text-[#315B36] capitalize">
+                  <span className="text-slate-300 dark:text-slate-700">/</span>
+                  <Link
+                    href={`/${pathname.split('/')[1]}/${pathname.split('/')[2]}`}
+                    className={`capitalize transition-colors cursor-pointer ${
+                      !pathname.split('/')[3]
+                        ? 'text-[#315B36] dark:text-emerald-400 font-bold hover:underline'
+                        : 'hover:text-[#315B36] dark:hover:text-emerald-400'
+                    }`}
+                    title={`Go to ${pathname.split('/')[2].replace(/-/g, ' ')}`}
+                  >
                     {pathname.split('/')[2].replace(/-/g, ' ')}
-                  </span>
+                  </Link>
+                </>
+              )}
+              {pathname.split('/')[3] && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-700">/</span>
+                  <Link
+                    href={`/${pathname.split('/')[1]}/${pathname.split('/')[2]}/${pathname.split('/')[3]}`}
+                    className="text-[#315B36] dark:text-emerald-400 font-bold capitalize hover:underline transition-colors cursor-pointer"
+                    title={`Go to ${pathname.split('/')[3].replace(/-/g, ' ')}`}
+                  >
+                    {pathname.split('/')[3].replace(/-/g, ' ')}
+                  </Link>
                 </>
               )}
             </div>
