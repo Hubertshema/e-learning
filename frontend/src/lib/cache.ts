@@ -156,6 +156,7 @@ export const clientCache = {
 export interface UseCachedDataOptions<T> {
   ttl?: number;
   revalidateOnFocus?: boolean;
+  revalidateInterval?: number;
   initialData?: T;
   onSuccess?: (data: T) => void;
   onError?: (err: any) => void;
@@ -166,7 +167,7 @@ export function useCachedData<T>(
   fetcher: () => Promise<T>,
   options: UseCachedDataOptions<T> = {}
 ) {
-  const { ttl = 180000, revalidateOnFocus = false, initialData } = options;
+  const { ttl = 180000, revalidateOnFocus = true, revalidateInterval = 30000, initialData } = options;
 
   // Stale-While-Revalidate: initialize data immediately if cached (allowStale = true)
   const [data, setData] = useState<T | null>(() => {
@@ -265,6 +266,15 @@ export function useCachedData<T>(
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [key, revalidateOnFocus, revalidate]);
+
+  // Optional: background periodic revalidation
+  useEffect(() => {
+    if (!revalidateInterval || !key) return;
+    const interval = setInterval(() => {
+      revalidate(false);
+    }, revalidateInterval);
+    return () => clearInterval(interval);
+  }, [key, revalidateInterval, revalidate]);
 
   const mutate = useCallback(
     (newData: T | ((prev: T | null) => T | null), shouldRevalidate = true) => {

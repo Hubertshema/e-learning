@@ -19,5 +19,6 @@ export const studentInteractiveVideoRoutes = Router();
 studentInteractiveVideoRoutes.use(authenticate, authorize('STUDENT', 'TEACHER', 'SUPERADMIN'));
 studentInteractiveVideoRoutes.get('/lessons/:lessonId', C.getStudentLesson);
 studentInteractiveVideoRoutes.post('/lessons/:lessonId/progress', C.saveProgress);
+studentInteractiveVideoRoutes.post('/lessons/:lessonId/reset', C.resetProgress);
 studentInteractiveVideoRoutes.post('/activities/:activityId/attempts', C.submitAttempt);
 studentInteractiveVideoRoutes.get('/resources/:resourceId/download', C.downloadResource);

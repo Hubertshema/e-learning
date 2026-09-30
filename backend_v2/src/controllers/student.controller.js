@@ -253,8 +253,8 @@ export class StudentController {
          LEFT JOIN "public"."level_courses" lc ON lc."courseId" = c.id
          LEFT JOIN "public"."levels" l ON lc."levelId" = l.id
          LEFT JOIN "public"."users" t ON c."teacherId" = t.id
-         WHERE e."studentId" = $1`,
-        [studentId]
+         WHERE e."studentId" = $1 OR e."studentId" = $2`,
+        [studentId, userRow.profileId || studentId]
       );
 
       // 3. Query progress data for completed lessons
@@ -264,8 +264,8 @@ export class StudentController {
         const progressRes = await query(
           `SELECT p."lessonId", p."isCompleted", p."timeSpentSec"
            FROM "public"."progress" p
-           WHERE p."studentId" = $1`,
-          [studentId]
+           WHERE p."studentId" = $1 OR p."studentId" = $2`,
+          [studentId, userRow.profileId || studentId]
         );
         for (const row of progressRes.rows) {
           if (row.isCompleted) completedLessonIds.add(row.lessonId);
@@ -360,10 +360,10 @@ export class StudentController {
                   t."firstName" as "teacherFirstName", t."lastName" as "teacherLastName", t."avatarUrl" as "teacherAvatar"
            FROM "public"."teacher_feedbacks" tf
            JOIN "public"."users" t ON t.id = tf."teacherId"
-           WHERE tf."studentId" = $1
+           WHERE tf."studentId" = $1 OR tf."studentId" = $2
            ORDER BY tf."createdAt" DESC
            LIMIT 5`,
-          [studentId]
+          [studentId, userRow.profileId || studentId]
         );
         recentFeedbacks = fbRes.rows.map(r => ({
           id: r.id,
@@ -390,10 +390,10 @@ export class StudentController {
         const placeRes = await query(
           `SELECT pa.score, pa."recommendedLevel", pa."createdAt"
            FROM "public"."placement_attempts" pa
-           WHERE pa."studentId" = $1
+           WHERE pa."studentId" = $1 OR pa."studentId" = $2
            ORDER BY pa."createdAt" DESC
            LIMIT 1`,
-          [studentId]
+          [studentId, userRow.profileId || studentId]
         );
         if (placeRes.rows.length > 0) {
           hasTakenPlacementTest = true;
