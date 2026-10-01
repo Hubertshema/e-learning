@@ -35,6 +35,26 @@ interface Student {
   enrolledWithTeacher?: boolean;
 }
 
+function isSafeAvatarUrl(url?: string | null): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const lower = url.trim().toLowerCase();
+  if (
+    lower.includes('facebook.com') ||
+    lower.includes('fb.com') ||
+    lower.includes('instagram.com') ||
+    lower.includes('twitter.com') ||
+    lower.includes('x.com')
+  ) {
+    return false;
+  }
+  return (
+    lower.startsWith('data:image/') ||
+    lower.startsWith('/') ||
+    lower.startsWith('http://') ||
+    lower.startsWith('https://')
+  );
+}
+
 interface StartLiveSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -640,12 +660,15 @@ export function StartLiveSessionModal({
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#012970] to-[#006EF3] flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
-                          {student.avatarUrl ? (
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#012970] to-[#006EF3] flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm overflow-hidden">
+                          {student.avatarUrl && isSafeAvatarUrl(student.avatarUrl) ? (
                             <img
                               src={student.avatarUrl}
                               alt=""
                               className="h-full w-full rounded-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                              }}
                             />
                           ) : (
                             `${displayName[0]?.toUpperCase() || 'S'}${

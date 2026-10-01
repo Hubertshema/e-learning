@@ -334,11 +334,14 @@ export default function TeacherLiveSessionsPage() {
                         title={`${p.firstName} ${p.lastName}`}
                         className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[9px] font-bold text-slate-700 dark:text-slate-200 shrink-0"
                       >
-                        {p.avatarUrl ? (
+                        {p.avatarUrl && !p.avatarUrl.includes('facebook.com') ? (
                           <img
                             src={p.avatarUrl}
                             alt=""
                             className="h-full w-full rounded-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                            }}
                           />
                         ) : (
                           `${p.firstName?.[0] || 'S'}`

@@ -339,9 +339,16 @@ export default function LiveSessionRoomPage() {
                   className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/70 border border-slate-800 transition-colors"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-200 shrink-0">
-                      {peer.avatarUrl ? (
-                        <img src={peer.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+                    <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-200 shrink-0 overflow-hidden">
+                      {peer.avatarUrl && !peer.avatarUrl.includes('facebook.com') ? (
+                        <img
+                          src={peer.avatarUrl}
+                          alt=""
+                          className="h-full w-full rounded-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
                       ) : (
                         `${peer.firstName?.[0] || 'P'}`
                       )}
