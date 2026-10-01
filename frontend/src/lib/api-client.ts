@@ -1,20 +1,26 @@
 export function getApiBaseUrl(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+  }
+
+  const defaultUrl = 'http://localhost:5000/api/v1';
+
   if (typeof window !== 'undefined') {
     const currentHost = window.location.hostname;
-    if (currentHost && currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+    // Only adapt hostname if testing on local network (e.g. mobile testing over Wi-Fi: 192.168.x.x or 10.x.x.x)
+    const isLanIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(currentHost);
+    if (isLanIp && currentHost !== '127.0.0.1') {
       try {
-        const parsed = new URL(envUrl);
-        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-          parsed.hostname = currentHost;
-          return parsed.toString().replace(/\/$/, '');
-        }
+        const parsed = new URL(defaultUrl);
+        parsed.hostname = currentHost;
+        return parsed.toString().replace(/\/+$/, '');
       } catch {
-        // fallback to envUrl
+        // fallback
       }
     }
   }
-  return envUrl;
+
+  return defaultUrl;
 }
 
 export const API_BASE_URL = getApiBaseUrl();

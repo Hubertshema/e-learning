@@ -643,9 +643,9 @@ export function useLiveSession(sessionId: string) {
     }
 
     // Replace track in all peer connections
-    for (const [targetSocketId, pc] of peerConnections.current.entries()) {
+    for (const [targetSocketId, pc] of Array.from(peerConnections.current.entries())) {
       const videoSender =
-        pc.getSenders().find((s) => s.track && s.track.kind === 'video') ||
+        pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'video') ||
         videoSenders.current.get(targetSocketId);
 
       if (videoSender && cameraTrack) {
@@ -691,9 +691,9 @@ export function useLiveSession(sessionId: string) {
         };
 
         // Replace video track in all active peer connections
-        for (const [targetSocketId, pc] of peerConnections.current.entries()) {
+        for (const [targetSocketId, pc] of Array.from(peerConnections.current.entries())) {
           const videoSender =
-            pc.getSenders().find((s) => s.track && s.track.kind === 'video') ||
+            pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'video') ||
             videoSenders.current.get(targetSocketId);
 
           if (videoSender) {
