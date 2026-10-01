@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useRouter, usePathname } from 'next/navigation';
 import { User, Role } from '../types/auth';
 import { apiClient, tokenStorage } from '../lib/api-client';
+import { reconnectSocketWithAuth } from '../lib/socket-client';
 
 interface AuthContextType {
   user: User | null;
@@ -149,6 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       tokenStorage.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
+      reconnectSocketWithAuth();
       setUser(data.user);
 
       // Navigate to corresponding dashboard
@@ -174,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       tokenStorage.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
+      reconnectSocketWithAuth();
       setUser(data.user);
 
       const targetRoute = getDashboardRoute(data.user.role);
@@ -203,6 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       tokenStorage.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
+      reconnectSocketWithAuth();
       setUser(data.user);
 
       const targetRoute = getDashboardRoute(data.user.role);

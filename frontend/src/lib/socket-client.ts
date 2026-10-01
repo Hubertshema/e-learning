@@ -8,19 +8,20 @@ export function getSocketClient(): Socket {
     return {} as Socket;
   }
 
+  const token = tokenStorage.getAccessToken();
+
   if (!socketInstance) {
     const apiBase = getApiBaseUrl();
     const serverUrl = apiBase.replace(/\/api\/v1\/?$/, '');
-    const token = tokenStorage.getAccessToken();
 
     socketInstance = io(serverUrl, {
-      auth: {
-        token,
+      auth: (cb) => {
+        cb({ token: tokenStorage.getAccessToken() });
       },
       transports: ['websocket', 'polling'],
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 15,
       reconnectionDelay: 1000,
     });
 
@@ -33,7 +34,27 @@ export function getSocketClient(): Socket {
     });
   }
 
+  // Ensure current auth token is updated in memory
+  if (token && socketInstance.auth) {
+    if (typeof socketInstance.auth === 'object') {
+      (socketInstance.auth as any).token = token;
+    }
+  }
+
+  if (!socketInstance.connected) {
+    socketInstance.connect();
+  }
+
   return socketInstance;
+}
+
+export function reconnectSocketWithAuth() {
+  if (typeof window === 'undefined') return;
+  if (socketInstance) {
+    const token = tokenStorage.getAccessToken();
+    (socketInstance.auth as any) = { token };
+    socketInstance.disconnect().connect();
+  }
 }
 
 export function joinLessonRoom(lessonId: string) {

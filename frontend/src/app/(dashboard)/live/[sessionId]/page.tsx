@@ -63,10 +63,14 @@ export default function LiveSessionRoomPage() {
 
   // Attach local stream to local video element
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
+    const videoEl = localVideoRef.current;
+    if (videoEl && localStream) {
+      if (videoEl.srcObject !== localStream) {
+        videoEl.srcObject = localStream;
+      }
+      videoEl.play().catch(() => {});
     }
-  }, [localStream]);
+  }, [localStream, isVideoOff, isScreenSharing]);
 
   // Handle Fullscreen toggle
   const toggleFullscreen = () => {
@@ -238,9 +242,9 @@ export default function LiveSessionRoomPage() {
                 autoPlay
                 playsInline
                 muted
-                className={`w-full h-full object-cover transform -scale-x-100 ${
-                  isVideoOff ? 'hidden' : 'block'
-                }`}
+                className={`w-full h-full object-cover ${
+                  isScreenSharing ? '' : 'transform -scale-x-100'
+                } ${isVideoOff ? 'hidden' : 'block'}`}
               />
 
               {isVideoOff && (
@@ -532,10 +536,16 @@ function RemoteVideoTile({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current && peer.stream) {
-      videoRef.current.srcObject = peer.stream;
+    const videoEl = videoRef.current;
+    if (videoEl && peer.stream) {
+      if (videoEl.srcObject !== peer.stream) {
+        videoEl.srcObject = peer.stream;
+      }
+      videoEl.play().catch((err) => {
+        console.warn('Playback error / autoplay blocked on remote video:', err);
+      });
     }
-  }, [peer.stream]);
+  }, [peer.stream, peer.isVideoOff]);
 
   const hasVideoStream = Boolean(peer.stream && !peer.isVideoOff);
 
@@ -545,17 +555,20 @@ function RemoteVideoTile({
         ref={videoRef}
         autoPlay
         playsInline
-        className={`w-full h-full object-cover ${hasVideoStream ? 'block' : 'hidden'}`}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${
+          hasVideoStream ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
+        }`}
       />
 
       {!hasVideoStream && (
-        <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+        <div className="flex flex-col items-center justify-center gap-2 p-4 text-center z-10">
           <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-slate-700 to-slate-800 border-2 border-slate-600 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-xl">
             {peer.firstName?.[0] || 'P'}
           </div>
           <p className="text-xs font-medium text-slate-400">
             {peer.firstName} {peer.lastName}
           </p>
+          <span className="text-[10px] text-slate-500">Camera is paused</span>
         </div>
       )}
 

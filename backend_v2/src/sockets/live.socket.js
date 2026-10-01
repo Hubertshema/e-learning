@@ -1,4 +1,5 @@
 import { LiveSessionModel } from '../models/live-session.model.js';
+import { verifyAccessToken } from '../utils/jwt.util.js';
 
 // In-memory active live room participant registry: sessionId -> Map<socketId, { socketId, user, isTeacher, isAudioMuted, isVideoOff }>
 const activeRooms = new Map();
@@ -12,8 +13,17 @@ export function registerLiveSessionHandlers(io, socket) {
   /**
    * Client joins a live session room
    */
-  socket.on('live:join-room', async ({ sessionId }, callback) => {
+  socket.on('live:join-room', async ({ sessionId, token }, callback) => {
     try {
+      if (!socket.user && token) {
+        try {
+          socket.user = verifyAccessToken(token);
+          console.log(`🔑 Authenticated socket ${socket.id} via fallback token for user ${socket.user.firstName}`);
+        } catch (e) {
+          console.warn('Fallback token verification in live:join-room failed:', e.message);
+        }
+      }
+
       if (!socket.user || !socket.user.id) {
         if (typeof callback === 'function') {
           callback({ success: false, error: 'Authentication required' });
@@ -46,6 +56,17 @@ export function registerLiveSessionHandlers(io, socket) {
       socket.join(roomName);
       socket.currentLiveSessionId = sessionId;
 
+      // If teacher enters an UPCOMING session, transition it to LIVE automatically
+      if (access.isTeacher && access.session.status === 'UPCOMING') {
+        try {
+          access.session = await LiveSessionModel.startSession(sessionId, socket.user.id);
+          io.to(roomName).emit('live:session-status-changed', { session: access.session });
+          io.emit('live:session-started', { session: access.session });
+        } catch (e) {
+          console.warn('Could not auto-start upcoming session on teacher join:', e.message);
+        }
+      }
+
       // Update DB participant status if student
       if (!access.isTeacher && access.session.status === 'LIVE') {
         await LiveSessionModel.updateParticipantStatus(sessionId, socket.user.id, 'JOINED').catch((e) =>
@@ -58,6 +79,14 @@ export function registerLiveSessionHandlers(io, socket) {
         activeRooms.set(sessionId, new Map());
       }
       const roomMap = activeRooms.get(sessionId);
+
+      // Clean up previous socket of same user if still present (e.g. page refresh)
+      for (const [sId, p] of roomMap.entries()) {
+        if (p.userId === socket.user.id && sId !== socket.id) {
+          roomMap.delete(sId);
+          socket.to(roomName).emit('live:user-left', { socketId: sId, userId: p.userId });
+        }
+      }
 
       const participantInfo = {
         socketId: socket.id,

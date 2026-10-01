@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSocketClient } from './socket-client';
-import { apiClient } from './api-client';
+import { apiClient, tokenStorage } from './api-client';
 
 export interface ParticipantMedia {
   socketId: string;
@@ -50,6 +50,8 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
   ],
 };
 
@@ -70,18 +72,26 @@ export function useLiveSession(sessionId: string) {
   // Remote participants map: socketId -> ParticipantMedia
   const [remotePeers, setRemotePeers] = useState<Map<string, ParticipantMedia>>(new Map());
 
-  // WebRTC Peer connections map: socketId -> RTCPeerConnection
+  // WebRTC Peer connections & ICE queues
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const pendingCandidates = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const videoSenders = useRef<Map<string, RTCRtpSender>>(new Map());
+
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
+  const isScreenSharingRef = useRef<boolean>(false);
 
-  // Sync ref with state
+  // Keep refs synchronized with state
   useEffect(() => {
     localStreamRef.current = localStream;
   }, [localStream]);
 
+  useEffect(() => {
+    isScreenSharingRef.current = isScreenSharing;
+  }, [isScreenSharing]);
+
   /**
-   * Initialize User Media (Camera & Mic)
+   * Initialize Local Media (Camera & Mic)
    */
   const initLocalMedia = useCallback(async () => {
     try {
@@ -89,7 +99,6 @@ export function useLiveSession(sessionId: string) {
         return null;
       }
 
-      // Try camera + mic first
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -112,8 +121,7 @@ export function useLiveSession(sessionId: string) {
             audio: true,
           });
         } catch {
-          // If no devices available at all, create an empty dummy canvas stream
-          console.warn('No media devices available, creating fallback blank stream');
+          console.warn('No media devices available, creating blank placeholder stream');
           const canvas = document.createElement('canvas');
           canvas.width = 640;
           canvas.height = 360;
@@ -148,12 +156,30 @@ export function useLiveSession(sessionId: string) {
       const pc = new RTCPeerConnection(ICE_SERVERS);
       peerConnections.current.set(targetSocketId, pc);
 
-      // Add local stream tracks to PC
-      const activeStream = localStreamRef.current;
-      if (activeStream) {
-        activeStream.getTracks().forEach((track) => {
-          pc.addTrack(track, activeStream);
-        });
+      // Determine active video track (screen or camera)
+      const currentStream = localStreamRef.current;
+      const screenStream = screenStreamRef.current;
+      const activeVideoTrack = isScreenSharingRef.current && screenStream
+        ? screenStream.getVideoTracks()[0]
+        : currentStream?.getVideoTracks()[0];
+
+      const activeAudioTrack = currentStream?.getAudioTracks()[0];
+
+      if (activeAudioTrack && currentStream) {
+        try {
+          pc.addTrack(activeAudioTrack, currentStream);
+        } catch (e) {
+          console.warn('Error adding audio track:', e);
+        }
+      }
+
+      if (activeVideoTrack && currentStream) {
+        try {
+          const sender = pc.addTrack(activeVideoTrack, currentStream);
+          videoSenders.current.set(targetSocketId, sender);
+        } catch (e) {
+          console.warn('Error adding video track:', e);
+        }
       }
 
       // Handle ICE Candidates
@@ -161,15 +187,19 @@ export function useLiveSession(sessionId: string) {
         if (event.candidate && socket?.emit) {
           socket.emit('live:signal', {
             targetSocketId,
-            signalData: event.candidate,
+            signalData: event.candidate.toJSON(),
             type: 'ice-candidate',
           });
         }
       };
 
-      // Handle remote incoming tracks
+      // Handle incoming remote tracks
       pc.ontrack = (event) => {
-        const [remoteStream] = event.streams;
+        let remoteStream = event.streams && event.streams[0];
+        if (!remoteStream) {
+          remoteStream = new MediaStream([event.track]);
+        }
+
         setRemotePeers((prev) => {
           const next = new Map(prev);
           const currentPeer = next.get(targetSocketId) || {
@@ -184,25 +214,49 @@ export function useLiveSession(sessionId: string) {
             isVideoOff: Boolean(peerInfo.isVideoOff),
           };
 
+          const existingStream = currentPeer.stream;
+          let combinedStream = remoteStream;
+          if (existingStream && existingStream !== remoteStream) {
+            if (!existingStream.getTracks().find((t) => t.id === event.track.id)) {
+              existingStream.addTrack(event.track);
+            }
+            combinedStream = existingStream;
+          }
+
           next.set(targetSocketId, {
             ...currentPeer,
-            stream: remoteStream,
+            stream: combinedStream,
           });
           return next;
         });
       };
 
-      // Handle connection state changes
+      // Connection state logging
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-          console.log(`Peer ${targetSocketId} connection state: ${pc.connectionState}`);
-        }
+        console.log(`📡 Peer ${targetSocketId} connectionState:`, pc.connectionState);
       };
 
       return pc;
     },
     []
   );
+
+  /**
+   * Drain queued ICE candidates once remote description is set
+   */
+  const drainIceCandidates = useCallback(async (socketId: string, pc: RTCPeerConnection) => {
+    const queue = pendingCandidates.current.get(socketId);
+    if (!queue || queue.length === 0) return;
+
+    for (const candidate of queue) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.warn('Failed to add queued ICE candidate:', err);
+      }
+    }
+    pendingCandidates.current.delete(socketId);
+  }, []);
 
   /**
    * Main Setup: Fetch Session & Wire Socket Events
@@ -231,29 +285,37 @@ export function useLiveSession(sessionId: string) {
         }
 
         // 2. Initialize local camera/mic stream
-        const stream = await initLocalMedia();
+        await initLocalMedia();
         if (!isSubscribed) return;
 
-        // 3. Connect to Socket.IO room
+        // 3. Connect to Socket.IO room with token
         const socket = getSocketClient();
         if (!socket) {
           throw new Error('Could not establish real-time socket connection');
         }
 
-        socket.emit('live:join-room', { sessionId }, (response: any) => {
-          if (!response?.success) {
-            console.warn('Join room callback:', response?.error);
-            if (response?.error) {
-              setError(response.error);
+        const joinRoom = () => {
+          const token = tokenStorage.getAccessToken();
+          socket.emit('live:join-room', { sessionId, token }, (response: any) => {
+            if (!response?.success) {
+              console.warn('Join room callback:', response?.error);
+              if (response?.error) {
+                setError(response.error);
+              }
             }
-          }
-        });
+          });
+        };
+
+        socket.on('connect', joinRoom);
+        if (socket.connected) {
+          joinRoom();
+        }
 
         // Event: Session successfully joined with existing peers
         socket.on('live:joined-success', async ({ peers }: { peers: ParticipantMedia[] }) => {
           if (!isSubscribed) return;
 
-          // For each existing peer, create a peer connection and send an Offer
+          // For each existing peer, create connection and initiate Offer
           for (const peer of peers) {
             const pc = createPeerConnection(peer.socketId, peer);
 
@@ -266,7 +328,10 @@ export function useLiveSession(sessionId: string) {
             });
 
             try {
-              const offer = await pc.createOffer();
+              const offer = await pc.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: true,
+              });
               await pc.setLocalDescription(offer);
 
               socket.emit('live:signal', {
@@ -285,7 +350,7 @@ export function useLiveSession(sessionId: string) {
         // Event: A new user joined the room
         socket.on('live:user-joined', (newPeer: ParticipantMedia) => {
           if (!isSubscribed) return;
-          console.log('Peer joined room:', newPeer.firstName);
+          console.log('👤 Participant joined room:', newPeer.firstName, newPeer.socketId);
 
           setRemotePeers((prev) => {
             const next = new Map(prev);
@@ -293,7 +358,7 @@ export function useLiveSession(sessionId: string) {
             return next;
           });
 
-          // Pre-create PC, we'll wait for their offer
+          // Pre-create PC, we will answer their incoming offer
           createPeerConnection(newPeer.socketId, newPeer);
         });
 
@@ -308,6 +373,8 @@ export function useLiveSession(sessionId: string) {
           try {
             if (type === 'offer') {
               await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+              await drainIceCandidates(fromSocketId, pc);
+
               const answer = await pc.createAnswer();
               await pc.setLocalDescription(answer);
 
@@ -318,9 +385,18 @@ export function useLiveSession(sessionId: string) {
               });
             } else if (type === 'answer') {
               await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+              await drainIceCandidates(fromSocketId, pc);
             } else if (type === 'ice-candidate') {
               if (signalData) {
-                await pc.addIceCandidate(new RTCIceCandidate(signalData));
+                if (pc.remoteDescription && pc.remoteDescription.type) {
+                  await pc.addIceCandidate(new RTCIceCandidate(signalData));
+                } else {
+                  // Queue candidate until remote description is set
+                  if (!pendingCandidates.current.has(fromSocketId)) {
+                    pendingCandidates.current.set(fromSocketId, []);
+                  }
+                  pendingCandidates.current.get(fromSocketId)!.push(signalData);
+                }
               }
             }
           } catch (err) {
@@ -350,6 +426,9 @@ export function useLiveSession(sessionId: string) {
             peerConnections.current.get(socketId)?.close();
             peerConnections.current.delete(socketId);
           }
+          pendingCandidates.current.delete(socketId);
+          videoSenders.current.delete(socketId);
+
           setRemotePeers((prev) => {
             const next = new Map(prev);
             next.delete(socketId);
@@ -373,7 +452,6 @@ export function useLiveSession(sessionId: string) {
 
         // Event: Participant removed from session
         socket.on('live:participant-removed', ({ studentId }: { studentId: string }) => {
-          // Remove peer matching studentId
           setRemotePeers((prev) => {
             const next = new Map<string, ParticipantMedia>();
             Array.from(prev.entries()).forEach(([sId, peer]) => {
@@ -382,16 +460,21 @@ export function useLiveSession(sessionId: string) {
               } else {
                 peerConnections.current.get(sId)?.close();
                 peerConnections.current.delete(sId);
+                pendingCandidates.current.delete(sId);
+                videoSenders.current.delete(sId);
               }
             });
             return next;
           });
         });
 
-        // Event: Session status changed (e.g. from UPCOMING to LIVE)
+        // Event: Session status changed
         socket.on('live:session-status-changed', ({ session: updatedSession }: any) => {
           if (updatedSession) {
             setSession(updatedSession);
+            if (updatedSession.status === 'ENDED') {
+              setIsEnded(true);
+            }
           }
         });
 
@@ -416,6 +499,7 @@ export function useLiveSession(sessionId: string) {
       const socket = getSocketClient();
       if (socket) {
         socket.emit('live:leave-room', { sessionId });
+        socket.off('connect');
         socket.off('live:joined-success');
         socket.off('live:user-joined');
         socket.off('live:signal');
@@ -431,6 +515,8 @@ export function useLiveSession(sessionId: string) {
       // Close all peer connections
       peerConnections.current.forEach((pc) => pc.close());
       peerConnections.current.clear();
+      pendingCandidates.current.clear();
+      videoSenders.current.clear();
 
       // Stop local tracks
       if (localStreamRef.current) {
@@ -440,7 +526,7 @@ export function useLiveSession(sessionId: string) {
         screenStreamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [sessionId, initLocalMedia, createPeerConnection]);
+  }, [sessionId, initLocalMedia, createPeerConnection, drainIceCandidates]);
 
   /**
    * Toggle Audio Mute
@@ -487,74 +573,103 @@ export function useLiveSession(sessionId: string) {
   }, [sessionId, isAudioMuted]);
 
   /**
+   * Stop Screen Sharing and revert to Camera
+   */
+  const stopScreenShare = useCallback(async () => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+    }
+
+    let cameraTrack: MediaStreamTrack | null = null;
+    try {
+      const cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      });
+      cameraTrack = cameraStream.getVideoTracks()[0];
+    } catch (e) {
+      console.warn('Could not restore camera track after screen share:', e);
+    }
+
+    // Replace track in all peer connections
+    for (const [targetSocketId, pc] of peerConnections.current.entries()) {
+      const videoSender =
+        pc.getSenders().find((s) => s.track && s.track.kind === 'video') ||
+        videoSenders.current.get(targetSocketId);
+
+      if (videoSender && cameraTrack) {
+        try {
+          await videoSender.replaceTrack(cameraTrack);
+        } catch (err) {
+          console.error('Error replacing camera track:', err);
+        }
+      }
+    }
+
+    if (cameraTrack && localStreamRef.current) {
+      const oldVideoTrack = localStreamRef.current.getVideoTracks()[0];
+      if (oldVideoTrack) {
+        localStreamRef.current.removeTrack(oldVideoTrack);
+        oldVideoTrack.stop();
+      }
+      localStreamRef.current.addTrack(cameraTrack);
+      setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+    }
+
+    setIsScreenSharing(false);
+  }, []);
+
+  /**
    * Toggle Screen Sharing
    */
   const toggleScreenShare = useCallback(async () => {
     try {
-      if (isScreenSharing) {
-        // Stop screen sharing and revert to camera
-        if (screenStreamRef.current) {
-          screenStreamRef.current.getTracks().forEach((t) => t.stop());
-          screenStreamRef.current = null;
-        }
-
-        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const newVideoTrack = cameraStream.getVideoTracks()[0];
-
-        // Replace track in all peer connections
-        peerConnections.current.forEach((pc) => {
-          const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
-          if (sender) {
-            sender.replaceTrack(newVideoTrack);
-          }
-        });
-
-        // Update localStream
-        if (localStreamRef.current) {
-          const oldTrack = localStreamRef.current.getVideoTracks()[0];
-          if (oldTrack) {
-            localStreamRef.current.removeTrack(oldTrack);
-            oldTrack.stop();
-          }
-          localStreamRef.current.addTrack(newVideoTrack);
-        }
-
-        setIsScreenSharing(false);
+      if (isScreenSharingRef.current) {
+        await stopScreenShare();
       } else {
-        // Start screen sharing
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: false,
+        });
         screenStreamRef.current = screenStream;
         const screenTrack = screenStream.getVideoTracks()[0];
 
-        // Listen for user stopping screen share via browser UI
+        // Listen for user stopping screen share via browser stop button
         screenTrack.onended = () => {
-          toggleScreenShare();
+          stopScreenShare();
         };
 
-        // Replace track in all peer connections
-        peerConnections.current.forEach((pc) => {
-          const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
-          if (sender) {
-            sender.replaceTrack(screenTrack);
-          }
-        });
+        // Replace video track in all active peer connections
+        for (const [targetSocketId, pc] of peerConnections.current.entries()) {
+          const videoSender =
+            pc.getSenders().find((s) => s.track && s.track.kind === 'video') ||
+            videoSenders.current.get(targetSocketId);
 
-        // Update localStream
+          if (videoSender) {
+            try {
+              await videoSender.replaceTrack(screenTrack);
+            } catch (err) {
+              console.error('Error replacing track with screen share:', err);
+            }
+          }
+        }
+
+        // Update localStream so local preview shows screen share
         if (localStreamRef.current) {
-          const oldTrack = localStreamRef.current.getVideoTracks()[0];
-          if (oldTrack) {
-            localStreamRef.current.removeTrack(oldTrack);
-            oldTrack.stop();
+          const oldVideoTrack = localStreamRef.current.getVideoTracks()[0];
+          if (oldVideoTrack) {
+            localStreamRef.current.removeTrack(oldVideoTrack);
           }
           localStreamRef.current.addTrack(screenTrack);
+          setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
         }
 
         setIsScreenSharing(true);
       }
     } catch (err: any) {
-      console.warn('Screen share toggle failed/cancelled:', err.message);
+      console.warn('Screen share toggle cancelled or failed:', err.message);
     }
-  }, [isScreenSharing]);
+  }, [stopScreenShare]);
 
   /**
    * Teacher ends the live session
@@ -565,7 +680,6 @@ export function useLiveSession(sessionId: string) {
       setIsEnded(true);
     } catch (err: any) {
       console.error('Error ending session:', err);
-      // Fallback via socket
       const socket = getSocketClient();
       if (socket?.emit) {
         socket.emit('live:end-session', { sessionId });

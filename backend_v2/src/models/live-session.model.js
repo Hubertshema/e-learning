@@ -251,14 +251,18 @@ export class LiveSessionModel {
       throw new Error('Unauthorized: Only the creator teacher can start this session');
     }
 
-    if (session.status === 'ENDED') {
-      throw new Error('This session has already ended');
-    }
-
     await query(
       `UPDATE "live_sessions" 
-       SET status = 'LIVE', "startedAt" = COALESCE("startedAt", NOW()), "updatedAt" = NOW()
+       SET status = 'LIVE', "startedAt" = COALESCE("startedAt", NOW()), "endedAt" = NULL, "updatedAt" = NOW()
        WHERE id = $1`,
+      [sessionId]
+    );
+
+    // If participants were marked LEFT, reset them to INVITED so they can join freely
+    await query(
+      `UPDATE "live_session_participants"
+       SET status = 'INVITED', "leftAt" = NULL
+       WHERE "sessionId" = $1 AND status = 'LEFT'`,
       [sessionId]
     );
 
