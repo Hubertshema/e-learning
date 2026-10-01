@@ -98,8 +98,8 @@ export function Navbar() {
                 href={item.href}
                 className={`rounded-xl px-4 py-2.5 text-[15.5px] font-medium tracking-normal transition-all ${
                   isActive
-                    ? 'bg-[#315b36] text-white shadow-sm font-semibold'
-                    : 'text-[#2e3339] hover:text-[#315b36] hover:bg-[#eff4ec]'
+                    ? 'bg-[#012970] text-white shadow-sm font-semibold'
+                    : 'text-[#172033] hover:text-[#006EF3] hover:bg-[#F3F7FC]'
                 }`}
               >
                 {item.name}
@@ -114,34 +114,34 @@ export function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2.5 rounded-xl border border-[#e2ebe2] bg-[#eff4ec]/50 p-1.5 sm:px-4 sm:py-2.5 shadow-sm hover:bg-[#eff4ec] transition"
+                className="flex items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F3F7FC] p-1.5 sm:px-4 sm:py-2.5 shadow-sm hover:bg-[#eaf1fa] transition"
               >
                 <Avatar
                   src={user.avatarUrl}
                   fallback={`${user.firstName[0]}${user.lastName[0]}`}
                   size="sm"
-                  className="h-8 w-8 text-xs font-semibold rounded-lg bg-[#315b36] text-white"
+                  className="h-8 w-8 text-xs font-semibold rounded-lg bg-[#012970] text-white"
                 />
-                <span className="hidden sm:inline text-[15px] font-semibold text-[#2e3339] truncate max-w-[120px]">
+                <span className="hidden sm:inline text-[15px] font-semibold text-[#172033] truncate max-w-[120px]">
                   {user.firstName}
                 </span>
-                <ChevronDown className="h-4 w-4 text-[#5a5e63]" />
+                <ChevronDown className="h-4 w-4 text-[#667085]" />
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-[#e2ebe2] bg-white p-2.5 shadow-2xl animate-fade-in z-50 text-[#2e3339]">
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-[#E2E8F0] bg-white p-2.5 shadow-2xl animate-fade-in z-50 text-[#172033]">
                   <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                    <p className="text-xs font-medium text-[#5a5e63]">Signed in as</p>
-                    <p className="text-sm font-semibold text-[#2e3339] truncate">
+                    <p className="text-xs font-medium text-[#667085]">Signed in as</p>
+                    <p className="text-sm font-semibold text-[#172033] truncate">
                       {user.email}
                     </p>
                   </div>
                   <Link
                     href={getDashboardRoute()}
                     onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[15px] font-medium text-[#2e3339] hover:bg-[#eff4ec]"
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[15px] font-medium text-[#172033] hover:bg-[#F3F7FC]"
                   >
-                    <LayoutDashboard className="h-4 w-4 text-[#315b36]" />
+                    <LayoutDashboard className="h-4 w-4 text-[#006EF3]" />
                     <span>Dashboard</span>
                   </Link>
                   <button
@@ -160,12 +160,12 @@ export function Navbar() {
           ) : (
             <div className="flex items-center gap-2 sm:gap-3">
               <Link href="/login">
-                <button className="rounded-xl text-[#2e3339] hover:text-[#315b36] hover:bg-[#eff4ec] px-4 py-2.5 sm:px-5 sm:py-2.5 text-[15px] font-semibold transition">
+                <button className="rounded-xl text-[#172033] hover:text-[#006EF3] hover:bg-[#F3F7FC] px-4 py-2.5 sm:px-5 sm:py-2.5 text-[15px] font-semibold transition">
                   Sign In
                 </button>
               </Link>
               <Link href="/register">
-                <button className="rounded-xl bg-[#315b36] text-white hover:bg-[#254629] px-5 sm:px-6 py-2.5 sm:py-2.5 text-[15px] font-bold shadow-md transition hover:scale-105 active:scale-95">
+                <button className="rounded-xl bg-[#006EF3] text-white hover:bg-[#005ed1] px-5 sm:px-6 py-2.5 sm:py-2.5 text-[15px] font-bold shadow-md transition hover:scale-105 active:scale-95">
                   Get Started
                 </button>
               </Link>
@@ -176,7 +176,7 @@ export function Navbar() {
           <div className="flex lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff4ec] text-[#2e3339] hover:bg-[#e2ebe2] transition ml-0.5"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#172033] hover:bg-[#eaf1fa] transition ml-0.5"
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -187,7 +187,7 @@ export function Navbar() {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden mt-2 mx-auto max-w-5xl rounded-2xl border border-[#e2ebe2] bg-white/95 backdrop-blur-xl p-5 shadow-2xl animate-in fade-in slide-in-from-top-2">
+        <div className="lg:hidden mt-2 mx-auto max-w-5xl rounded-2xl border border-[#E2E8F0] bg-white/95 backdrop-blur-xl p-5 shadow-2xl animate-in fade-in slide-in-from-top-2">
           <div className="space-y-1.5">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
@@ -198,8 +198,8 @@ export function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block rounded-xl px-5 py-3 text-base font-medium transition ${
                     isActive
-                      ? 'bg-[#315b36] text-white font-semibold'
-                      : 'text-[#2e3339] hover:bg-[#eff4ec]'
+                      ? 'bg-[#012970] text-white font-semibold'
+                      : 'text-[#172033] hover:bg-[#F3F7FC]'
                   }`}
                 >
                   {item.name}
@@ -208,15 +208,15 @@ export function Navbar() {
             })}
           </div>
 
-          <div className="mt-5 border-t border-[#e2ebe2] pt-4">
+          <div className="mt-5 border-t border-[#E2E8F0] pt-4">
             {isAuthenticated && user ? (
               <div className="space-y-2.5">
                 <Link
                   href={getDashboardRoute()}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2.5 rounded-xl bg-[#eff4ec] px-5 py-3 text-sm font-medium text-[#2e3339] hover:bg-[#e2ebe2]"
+                  className="flex items-center gap-2.5 rounded-xl bg-[#F3F7FC] px-5 py-3 text-sm font-medium text-[#172033] hover:bg-[#eaf1fa]"
                 >
-                  <LayoutDashboard className="h-4 w-4 text-[#315b36]" />
+                  <LayoutDashboard className="h-4 w-4 text-[#006EF3]" />
                   <span>Go to Dashboard</span>
                 </Link>
                 <button
@@ -233,12 +233,12 @@ export function Navbar() {
             ) : (
               <div className="flex flex-col gap-2.5 pt-1">
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <button className="w-full rounded-xl border border-[#e2ebe2] py-3 text-sm font-semibold text-[#2e3339] hover:bg-[#eff4ec]">
+                  <button className="w-full rounded-xl border border-[#E2E8F0] py-3 text-sm font-semibold text-[#172033] hover:bg-[#F3F7FC]">
                     Sign In
                   </button>
                 </Link>
                 <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <button className="w-full rounded-xl bg-[#315b36] py-3 text-sm font-bold text-white hover:bg-[#254629]">
+                  <button className="w-full rounded-xl bg-[#006EF3] py-3 text-sm font-bold text-white hover:bg-[#005ed1]">
                     Get Started
                   </button>
                 </Link>

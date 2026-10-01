@@ -132,61 +132,80 @@ export default function PublicCertificateVerificationPage() {
             </Badge>
           </div>
 
-          {/* Certificate Credential Card */}
-          <Card className="p-6 sm:p-10 shadow-2xl bg-[#F4F7F4] border-4 border-[#315B36]/30 space-y-6 sm:space-y-8 text-center rounded-3xl">
-            {/* Top Seal */}
-            <div className="flex justify-center">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center shadow-md">
-                <Award className="h-8 w-8 sm:h-10 sm:w-10 text-amber-600" />
-              </div>
-            </div>
+          {/* Certificate Credential Card — Navy/Gold design */}
+          <div className="rounded-2xl overflow-hidden shadow-2xl">
+            {/* Landscape certificate */}
+            <div
+              className="relative w-full bg-white overflow-hidden"
+              style={{ aspectRatio: '1.414 / 1', fontFamily: 'Georgia, serif' }}
+            >
+              {/* Navy + Gold decorative swoosh */}
+              <svg
+                className="absolute top-0 right-0 h-full"
+                viewBox="0 0 420 300"
+                preserveAspectRatio="xMaxYMin meet"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M420 0 L420 300 L260 300 Q360 200 300 80 Q370 40 420 0Z" fill="#E8B94F" opacity="0.9" />
+                <path d="M420 0 L420 300 L300 300 Q380 180 330 60 Q390 30 420 0Z" fill="#1A2D6E" />
+              </svg>
 
-            {/* Certificate Body */}
-            <div className="space-y-3">
-              <span className="text-xs font-black uppercase tracking-widest text-[#315B36]">
-                LinguaChris Academy International
-              </span>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-black text-[#2E3339]">
-                Certificate of CEFR English Proficiency
-              </h1>
-              <p className="text-xs text-slate-500">This official accreditation confirms that</p>
-              <h2 className="text-2xl font-black text-primary-700 dark:text-primary-300">
-                {cert.studentName}
-              </h2>
-              <p className="text-xs text-slate-500">has successfully completed the curriculum requirements for</p>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                {cert.courseTitle}
-              </h3>
-            </div>
+              {/* Corner brackets */}
+              <div className="absolute top-6 left-6 w-10 h-10 border-t-2 border-l-2 border-[#1A2D6E]" />
+              <div className="absolute bottom-6 left-6 w-10 h-10 border-b-2 border-l-2 border-[#1A2D6E]" />
 
-            {/* Credential Data Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs">
-              <div>
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">CEFR Level</span>
-                <span className="font-black text-primary-600 text-sm">{cert.levelCompleted}</span>
+              {/* Content */}
+              <div className="absolute inset-0 flex flex-col justify-between p-10 pr-[38%]">
+                <div>
+                  <p className="text-[11px] font-bold tracking-[0.25em] text-[#1A2D6E] uppercase mb-0.5" style={{ fontFamily: 'sans-serif' }}>LinguaChris Academy</p>
+                  <h1 className="text-3xl font-black tracking-[0.15em] text-[#1A2D6E] uppercase leading-none">Certificate</h1>
+                  <p className="text-[11px] tracking-[0.3em] text-[#1A2D6E] uppercase font-bold mt-1" style={{ fontFamily: 'sans-serif' }}>of Achievement</p>
+                </div>
+                <div className="-mt-2">
+                  <p className="text-3xl text-slate-800" style={{ fontFamily: "'Brush Script MT', cursive, Georgia, serif" }}>{cert.studentName}</p>
+                  <div className="h-px w-3/4 bg-slate-300 mt-1" />
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed max-w-[85%]" style={{ fontFamily: 'sans-serif' }}>
+                  This is to certify that the above named has successfully completed all required modules and assessments for{' '}
+                  <strong className="text-slate-700">{cert.courseTitle}</strong> at LinguaChris Academy.
+                </p>
+                <div className="flex gap-10 items-end">
+                  <div>
+                    <p className="text-[9px] font-black tracking-[0.2em] text-[#1A2D6E] uppercase mb-1" style={{ fontFamily: 'sans-serif' }}>Date</p>
+                    <p className="text-[11px] text-slate-700 font-medium" style={{ fontFamily: 'sans-serif' }}>
+                      {new Date(cert.issueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black tracking-[0.2em] text-[#1A2D6E] uppercase mb-1" style={{ fontFamily: 'sans-serif' }}>Instructor</p>
+                    <p className="text-[18px] text-slate-800" style={{ fontFamily: "'Brush Script MT', cursive" }}>{cert.instructorName}</p>
+                    <div className="h-px w-24 bg-slate-400 mt-0.5" />
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Final Grade</span>
-                <span className="font-bold text-slate-900 dark:text-white text-sm">{cert.finalGrade}%</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Issue Date</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">
-                  {new Date(cert.issueDate).toLocaleDateString()}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Instructor</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">{cert.instructorName}</span>
-              </div>
-            </div>
 
-            {/* Verification Footer Seal */}
-            <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
-              <span className="font-mono">Unique Verification Code: {cert.certificateCode}</span>
-              <span>Issued by {cert.issuedBy}</span>
+              {/* Gold seal */}
+              <div className="absolute bottom-8 right-[6%]">
+                <svg viewBox="0 0 64 64" className="w-16 h-16">
+                  <defs><path id="vcircle" d="M 32,32 m -22,0 a 22,22 0 1,1 44,0 a 22,22 0 1,1 -44,0" /></defs>
+                  <circle cx="32" cy="32" r="30" fill="#C8A02A" stroke="#A07820" strokeWidth="1.5" />
+                  <circle cx="32" cy="32" r="22" fill="#E8B94F" stroke="#C8A02A" strokeWidth="1" />
+                  <circle cx="32" cy="32" r="14" fill="#D4A835" />
+                  <circle cx="32" cy="32" r="9" fill="#B8922A" />
+                  <circle cx="32" cy="32" r="5" fill="#C8A02A" />
+                  <text fontSize="5" fill="#7A5C10" fontWeight="bold" letterSpacing="1.5" style={{ fontFamily: 'sans-serif' }}>
+                    <textPath href="#vcircle">certificate of achievement • • •</textPath>
+                  </text>
+                </svg>
+              </div>
+
+              {/* Code */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                <p className="text-[8px] text-slate-400 font-mono tracking-wider">{cert.certificateCode}</p>
+              </div>
             </div>
-          </Card>
+          </div>
 
           {/* Social Share & Action Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">

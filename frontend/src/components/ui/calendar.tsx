@@ -233,9 +233,9 @@ export function Calendar({
 
       {/* Optional Available Time Slots Booking Grid */}
       {timeSlots && timeSlots.length > 0 && (
-        <div className="pt-4 border-t border-[#e2ebe2] space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#2e3339]">
-            <Clock className="h-3.5 w-3.5 text-[#315b36]" />
+        <div className="pt-4 border-t border-[#E2E8F0] space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#172033]">
+            <Clock className="h-3.5 w-3.5 text-[#006EF3]" />
             <span>Available Lesson Slots</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -252,13 +252,13 @@ export function Calendar({
                   className={cn(
                     'flex items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium transition-all text-left',
                     isSlotSelected
-                      ? 'border-[#315b36] bg-[#eff4ec] text-[#315b36] font-bold shadow-sm'
-                      : 'border-[#e2ebe2] bg-white text-[#2e3339] hover:border-[#315b36]/40 hover:bg-[#eff4ec]/30',
+                      ? 'border-[#006EF3] bg-[#F3F7FC] text-[#006EF3] font-bold shadow-sm'
+                      : 'border-[#E2E8F0] bg-white text-[#172033] hover:border-[#006EF3]/40 hover:bg-[#F3F7FC]/70',
                     !isAvailable && 'opacity-40 cursor-not-allowed line-through'
                   )}
                 >
                   <span>{slot.time}</span>
-                  {isSlotSelected && <Check className="h-3 w-3 text-[#315b36]" />}
+                  {isSlotSelected && <Check className="h-3 w-3 text-[#006EF3]" />}
                 </button>
               );
             })}

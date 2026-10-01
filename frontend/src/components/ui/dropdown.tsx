@@ -60,26 +60,26 @@ export function Dropdown({
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex h-11 w-full items-center justify-between rounded-xl border border-[#e2ebe2] bg-white px-3.5 py-2 text-sm text-[#2e3339] shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#315b36]',
-          isOpen && 'border-[#315b36] ring-2 ring-[#315b36]/20',
+          'flex h-11 w-full items-center justify-between rounded-xl border border-[#E2E8F0] bg-white px-3.5 py-2 text-sm text-[#172033] shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#006EF3]',
+          isOpen && 'border-[#006EF3] ring-2 ring-[#006EF3]/20',
           disabled && 'opacity-50 cursor-not-allowed bg-slate-50'
         )}
       >
-        <span className={cn('flex items-center gap-2 truncate', !selectedOption && 'text-[#5a5e63]')}>
+        <span className={cn('flex items-center gap-2 truncate', !selectedOption && 'text-[#667085]')}>
           {selectedOption?.icon}
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
           className={cn(
-            'h-4 w-4 text-[#5a5e63] transition-transform duration-200 shrink-0 ml-2',
-            isOpen && 'transform rotate-180 text-[#315b36]'
+            'h-4 w-4 text-[#667085] transition-transform duration-200 shrink-0 ml-2',
+            isOpen && 'transform rotate-180 text-[#006EF3]'
           )}
         />
       </button>
 
       {/* Popover Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-[#e2ebe2] bg-white p-1.5 shadow-xl animate-in fade-in-50 zoom-in-95 duration-150">
+        <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-[#E2E8F0] bg-white p-1.5 shadow-xl animate-in fade-in-50 zoom-in-95 duration-150">
           {options.map((option) => {
             const isSelected = option.value === value;
             return (
@@ -93,8 +93,8 @@ export function Dropdown({
                 className={cn(
                   'flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors text-left',
                   isSelected
-                    ? 'bg-[#eff4ec] text-[#315b36] font-bold'
-                    : 'text-[#2e3339] hover:bg-[#eff4ec]/50 hover:text-[#315b36]'
+                    ? 'bg-[#F3F7FC] text-[#006EF3] font-bold'
+                    : 'text-[#172033] hover:bg-[#F3F7FC]/70 hover:text-[#006EF3]'
                 )}
               >
                 <div className="flex items-center gap-2 truncate">
@@ -102,13 +102,13 @@ export function Dropdown({
                   <div>
                     <p className="truncate leading-tight">{option.label}</p>
                     {option.description && (
-                      <p className="text-[10px] text-[#5a5e63] font-normal leading-tight">
+                      <p className="text-[10px] text-[#667085] font-normal leading-tight">
                         {option.description}
                       </p>
                     )}
                   </div>
                 </div>
-                {isSelected && <Check className="h-3.5 w-3.5 text-[#315b36] shrink-0 ml-2" />}
+                {isSelected && <Check className="h-3.5 w-3.5 text-[#006EF3] shrink-0 ml-2" />}
               </button>
             );
           })}

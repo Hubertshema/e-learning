@@ -29,22 +29,22 @@ export function Progress({
   };
 
   const variantFills = {
-    primary: 'bg-[#315b36]',
-    sage: 'bg-[#7ba27a]',
-    subtle: 'bg-[#558757]',
+    primary: 'bg-[#006EF3]',
+    sage: 'bg-[#006EF3]',
+    subtle: 'bg-[#012970]',
   };
 
   return (
     <div className={cn('w-full space-y-1.5', className)} {...props}>
       {showLabel && (
-        <div className="flex items-center justify-between text-xs font-semibold text-[#2e3339]">
+        <div className="flex items-center justify-between text-xs font-semibold text-[#172033]">
           <span>Progress</span>
-          <span className="font-mono text-[#315b36]">{Math.round(percentage)}%</span>
+          <span className="font-mono text-[#006EF3]">{Math.round(percentage)}%</span>
         </div>
       )}
       <div
         className={cn(
-          'w-full overflow-hidden rounded-full bg-[#eff4ec] border border-[#e2ebe2]',
+          'w-full overflow-hidden rounded-full bg-[#F3F7FC] border border-[#E2E8F0]',
           sizeClasses[size]
         )}
       >

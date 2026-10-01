@@ -63,22 +63,22 @@ export function Modal({
       {/* Modal Dialog Card */}
       <div
         className={cn(
-          'relative w-full rounded-2xl border border-[#e2ebe2] bg-white p-6 shadow-2xl transition-all animate-in zoom-in-95 duration-200 z-10',
+          'relative w-full rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-2xl transition-all animate-in zoom-in-95 duration-200 z-10',
           sizeClasses[size],
           className
         )}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#e2ebe2]">
+          <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
             <div className="space-y-1">
               {title && (
-                <h3 className="text-lg font-bold leading-none tracking-tight text-[#2e3339]">
+                <h3 className="text-lg font-bold leading-none tracking-tight text-[#172033]">
                   {title}
                 </h3>
               )}
               {description && (
-                <p className="text-xs text-[#5a5e63] leading-relaxed">
+                <p className="text-xs text-[#667085] leading-relaxed">
                   {description}
                 </p>
               )}
@@ -88,7 +88,7 @@ export function Modal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e2ebe2] text-[#5a5e63] hover:bg-[#eff4ec] hover:text-[#315b36] transition-colors"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#E2E8F0] text-[#667085] hover:bg-[#F3F7FC] hover:text-[#006EF3] transition-colors"
                 aria-label="Close modal"
               >
                 <X className="h-4 w-4" />
@@ -98,11 +98,11 @@ export function Modal({
         )}
 
         {/* Body Content */}
-        <div className="py-4 text-[#2e3339] text-sm leading-relaxed">{children}</div>
+        <div className="py-4 text-[#172033] text-sm leading-relaxed">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#e2ebe2]">
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#E2E8F0]">
             {footer}
           </div>
         )}

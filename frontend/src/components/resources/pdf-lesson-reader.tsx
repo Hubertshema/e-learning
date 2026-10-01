@@ -264,8 +264,8 @@ function PdfMainCanvas({
   }, [pdfDoc, activePage, zoomLevel]);
 
   return (
-    <div className="relative bg-white rounded-lg shadow-2xl border border-slate-200/80 overflow-hidden">
-      <canvas ref={canvasRef} className="block" />
+    <div className="relative bg-white rounded-lg shadow-2xl border border-slate-200/80 overflow-hidden w-full">
+      <canvas ref={canvasRef} className="block max-w-full h-auto" />
 
       {rendering && (
         <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
@@ -302,10 +302,11 @@ export function PdfLessonReader({
 
   const [activePage, setActivePage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false); // closed by default on mobile
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [securityNotice, setSecurityNotice] = useState<string | null>(null);
 
   // PDF.js State
@@ -596,9 +597,16 @@ export function PdfLessonReader({
 
       {/* ─── Reader Workspace (Sidebar + Main View) ─────────────────────────── */}
       <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-20 bg-black/40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         {/* ─── Left Sidebar: Actual Page Thumbnails ───────────────────────── */}
         {sidebarOpen && (
-          <aside className="w-56 sm:w-64 bg-slate-50/90 dark:bg-slate-900/90 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 select-none relative z-10 transition-all duration-200">
+          <aside className="fixed md:static inset-y-0 left-0 w-56 sm:w-64 bg-slate-50/90 dark:bg-slate-900/90 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 select-none z-30 md:z-10 transition-all duration-200 shadow-xl md:shadow-none">
             {/* Scroll Up Button */}
             <button
               onClick={() => scrollThumbnails('up')}
@@ -652,19 +660,19 @@ export function PdfLessonReader({
         )}
 
         {/* ─── Main Reader Canvas: Actual PDF Page ─────────────────────────── */}
-        <main className="flex-1 overflow-auto p-4 sm:p-8 flex items-start justify-center bg-[#eaeff5] dark:bg-slate-950">
+        <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-8 flex flex-col items-center bg-[#eaeff5] dark:bg-slate-950">
           <div
             style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
-            className="transition-transform duration-150 ease-out"
+            className="transition-transform duration-150 ease-out w-full max-w-[620px]"
           >
             {loading ? (
-              <div className="w-[620px] h-[880px] bg-white rounded-lg shadow-xl flex flex-col items-center justify-center gap-3 border border-slate-200/80">
+              <div className="w-full aspect-[8.5/11] bg-white rounded-lg shadow-xl flex flex-col items-center justify-center gap-3 border border-slate-200/80">
                 <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
                 <p className="text-xs font-semibold text-slate-500">Loading PDF document...</p>
                 <p className="text-[11px] text-slate-400 truncate max-w-xs">{title}</p>
               </div>
             ) : errorMessage ? (
-              <div className="w-[620px] min-h-[400px] bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center justify-center text-center gap-4 border border-rose-200">
+              <div className="w-full min-h-[300px] bg-white rounded-2xl shadow-xl p-6 flex flex-col items-center justify-center text-center gap-4 border border-rose-200">
                 <div className="p-3 rounded-2xl bg-rose-50 text-rose-600">
                   <AlertTriangle className="h-8 w-8" />
                 </div>
@@ -672,7 +680,7 @@ export function PdfLessonReader({
                   <h3 className="text-base font-bold text-slate-900">Failed to load PDF</h3>
                   <p className="text-xs text-slate-500 mt-1 max-w-sm">{errorMessage}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 justify-center">
                   <Button size="sm" variant="outline" onClick={loadActualPdf} className="text-xs gap-1.5">
                     <RefreshCw className="h-3.5 w-3.5" /> Retry
                   </Button>
@@ -695,6 +703,27 @@ export function PdfLessonReader({
                 canDownload={canDownload}
               />
             ) : null}
+          </div>
+
+          {/* Mobile Bottom Page Navigation */}
+          <div className="md:hidden sticky bottom-2 mt-4 flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 shadow-lg">
+            <button
+              onClick={() => setActivePage((p) => Math.max(1, p - 1))}
+              disabled={activePage <= 1 || loading}
+              className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-30 transition-all"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">
+              {loading ? '...' : `${activePage} / ${totalPages}`}
+            </span>
+            <button
+              onClick={() => setActivePage((p) => Math.min(totalPages, p + 1))}
+              disabled={activePage >= totalPages || loading}
+              className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-30 transition-all"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </main>
       </div>

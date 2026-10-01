@@ -10,18 +10,18 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'default', size = 'default', isLoading, children, disabled, ...props }, ref) => {
     const baseStyles =
-      'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#315b36] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]';
+      'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#006EF3] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]';
 
     const variants = {
-      default: 'bg-[#315b36] text-white shadow hover:bg-[#254629] active:bg-[#1b351e]',
-      primary: 'bg-[#315b36] text-white shadow hover:bg-[#254629] active:bg-[#1b351e]',
-      sage: 'bg-[#7ba27a] text-white shadow hover:bg-[#688e67] active:bg-[#577a56]',
+      default: 'bg-[#012970] text-white shadow hover:bg-[#001f54] active:bg-[#00173d]',
+      primary: 'bg-[#006EF3] text-white shadow hover:bg-[#005ed1] active:bg-[#0050b5]',
+      sage: 'bg-[#006EF3] text-white shadow hover:bg-[#005ed1] active:bg-[#0050b5]',
       destructive: 'bg-red-600 text-white shadow-sm hover:bg-red-700',
-      outline: 'border border-[#e2ebe2] bg-transparent text-current shadow-sm hover:bg-[#eff4ec] hover:text-[#315b36] hover:border-[#315b36]/40',
-      secondary: 'bg-[#eff4ec] text-[#315b36] border border-[#e2ebe2] shadow-sm hover:bg-[#d5e4d4]',
-      ghost: 'bg-transparent text-current hover:bg-[#eff4ec] hover:text-[#315b36]',
-      link: 'text-[#315b36] underline-offset-4 hover:underline p-0 h-auto',
-      gradient: 'bg-[#315b36] text-white shadow-md hover:bg-[#254629] active:bg-[#1b351e]',
+      outline: 'border border-[#E2E8F0] bg-transparent text-current shadow-sm hover:bg-[#F3F7FC] hover:text-[#012970] hover:border-[#006EF3]/40',
+      secondary: 'bg-[#F3F7FC] text-[#012970] border border-[#E2E8F0] shadow-sm hover:bg-[#e4edfa]',
+      ghost: 'bg-transparent text-current hover:bg-[#F3F7FC] hover:text-[#012970]',
+      link: 'text-[#006EF3] underline-offset-4 hover:underline p-0 h-auto',
+      gradient: 'bg-gradient-to-r from-[#012970] to-[#006EF3] text-white shadow-md hover:opacity-95',
     };
 
     const sizes = {

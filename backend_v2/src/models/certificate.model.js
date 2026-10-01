@@ -11,33 +11,45 @@ export class CertificateModel {
       `SELECT DISTINCT ON (cert."courseId")
          cert.id, cert."certificateCode", cert."levelCompleted", cert."finalGrade", cert."issueDate",
          c.title as "courseTitle", c.level as "courseLevel",
-         u."firstName" as "teacherFirstName", u."lastName" as "teacherLastName"
+         tu."firstName" as "teacherFirstName", tu."lastName" as "teacherLastName",
+         su."firstName" as "studentFirstName", su."lastName" as "studentLastName"
        FROM "public"."certificates" cert
        JOIN "public"."courses" c ON c.id = cert."courseId"
-       LEFT JOIN "public"."users" u ON u.id = c."teacherId"
+       LEFT JOIN "public"."teacher_profiles" tp ON tp.id = c."teacherId"
+       LEFT JOIN "public"."users" tu ON (tu.id = c."teacherId" OR tu.id = tp."userId")
+       LEFT JOIN "public"."student_profiles" sp ON sp.id = cert."studentId"
+       LEFT JOIN "public"."users" su ON (su.id = sp."userId" OR su.id = cert."studentId")
        WHERE cert."studentId" = $1
           OR cert."studentId" = (SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1)
        ORDER BY cert."courseId", cert."issueDate" DESC`,
       [studentId]
     );
 
-    return res.rows.map(row => ({
-      id: row.id,
-      certificateCode: row.certificateCode,
-      levelCompleted: row.levelCompleted,
-      finalGrade: Number(row.finalGrade),
-      issueDate: row.issueDate,
-      course: {
-        title: row.courseTitle,
-        level: row.courseLevel,
-        teacher: {
-          user: {
-            firstName: row.teacherFirstName,
-            lastName: row.teacherLastName,
+    return res.rows.map(row => {
+      const studentFullName = [row.studentFirstName, row.studentLastName].filter(Boolean).join(' ') || null;
+      return {
+        id: row.id,
+        certificateCode: row.certificateCode,
+        levelCompleted: row.levelCompleted,
+        finalGrade: Number(row.finalGrade),
+        issueDate: row.issueDate,
+        studentName: studentFullName,
+        user: {
+          firstName: row.studentFirstName || '',
+          lastName: row.studentLastName || '',
+        },
+        course: {
+          title: row.courseTitle,
+          level: row.courseLevel,
+          teacher: {
+            user: {
+              firstName: row.teacherFirstName,
+              lastName: row.teacherLastName,
+            }
           }
         }
-      }
-    }));
+      };
+    });
   }
 
   /**

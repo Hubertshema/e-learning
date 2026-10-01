@@ -96,17 +96,17 @@ export function Footer() {
               />
             </Link>
 
-            <p className="text-[15px] font-bold text-[#315b36]">
+            <p className="text-[15px] font-bold text-[#012970]">
               LinguaChris Academy, Learn today, Speak tomorrow
             </p>
 
-            <p className="text-sm text-[#5a5e63] max-w-sm leading-relaxed">
+            <p className="text-sm text-[#667085] max-w-sm leading-relaxed">
               Empowering learners worldwide with structured CEFR English curriculum, interactive multi-skill practice, and verified certifications.
             </p>
 
             {/* Social Media Links */}
             <div className="pt-1">
-              <p className="text-xs font-bold uppercase tracking-wider text-[#2e3339] mb-2.5">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#172033] mb-2.5">
                 Connect With Us
               </p>
               <div className="flex items-center gap-2.5">
@@ -117,7 +117,7 @@ export function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`Visit LinguaChris on ${social.name}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-white border border-[#e2ebe2] text-[#315b36] shadow-sm hover:bg-[#315b36] hover:text-white transition-all hover:scale-105"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-white border border-[#E2E8F0] text-[#006EF3] shadow-sm hover:bg-[#006EF3] hover:text-white transition-all hover:scale-105"
                   >
                     {social.icon}
                   </a>
@@ -128,27 +128,27 @@ export function Footer() {
 
           {/* Quick Platform Links */}
           <div className="lg:col-span-2">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[#2e3339]">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#172033]">
               Platform
             </h3>
-            <ul className="mt-4 space-y-2.5 text-sm text-[#5a5e63]">
+            <ul className="mt-4 space-y-2.5 text-sm text-[#667085]">
               <li>
-                <Link href="/" className="hover:text-[#315b36] transition-colors">Home</Link>
+                <Link href="/" className="hover:text-[#006EF3] transition-colors">Home</Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-[#315b36] transition-colors">About Us</Link>
+                <Link href="/about" className="hover:text-[#006EF3] transition-colors">About Us</Link>
               </li>
               <li>
-                <Link href="/courses" className="hover:text-[#315b36] transition-colors">Explore Courses</Link>
+                <Link href="/courses" className="hover:text-[#006EF3] transition-colors">Explore Courses</Link>
               </li>
               <li>
-                <Link href="/quiz" className="hover:text-[#315b36] transition-colors">Diagnostic Quiz</Link>
+                <Link href="/quiz" className="hover:text-[#006EF3] transition-colors">Diagnostic Quiz</Link>
               </li>
               <li>
-                <Link href="/levels" className="hover:text-[#315b36] transition-colors">CEFR Levels (Pre-A1 - C2)</Link>
+                <Link href="/levels" className="hover:text-[#006EF3] transition-colors">CEFR Levels (Pre-A1 - C2)</Link>
               </li>
               <li>
-                <Link href="/#verify-certificate" className="hover:text-[#315b36] transition-colors font-medium text-[#315b36]">
+                <Link href="/#verify-certificate" className="hover:text-[#006EF3] transition-colors font-semibold text-[#006EF3]">
                   Verify Certificate
                 </Link>
               </li>
@@ -157,32 +157,32 @@ export function Footer() {
 
           {/* Contact Details */}
           <div className="lg:col-span-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[#2e3339]">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#172033]">
               Contact Us
             </h3>
-            <ul className="mt-4 space-y-3 text-sm text-[#5a5e63]">
+            <ul className="mt-4 space-y-3 text-sm text-[#667085]">
               <li className="flex items-start gap-2.5">
-                <Phone className="h-4 w-4 text-[#315b36] shrink-0 mt-0.5" />
+                <Phone className="h-4 w-4 text-[#006EF3] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-[#2e3339]">Phone / WhatsApp</p>
-                  <a href="tel:0782572028" className="hover:text-[#315b36] font-mono font-medium">
+                  <p className="text-xs font-semibold text-[#172033]">Phone / WhatsApp</p>
+                  <a href="tel:0782572028" className="hover:text-[#006EF3] font-mono font-medium">
                     0782572028
                   </a>
                 </div>
               </li>
               <li className="flex items-start gap-2.5">
-                <Mail className="h-4 w-4 text-[#315b36] shrink-0 mt-0.5" />
+                <Mail className="h-4 w-4 text-[#006EF3] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-[#2e3339]">Email Address</p>
-                  <a href="mailto:linguachrisltd@gmail.com" className="hover:text-[#315b36] break-all">
+                  <p className="text-xs font-semibold text-[#172033]">Email Address</p>
+                  <a href="mailto:linguachrisltd@gmail.com" className="hover:text-[#006EF3] break-all">
                     linguachrisltd@gmail.com
                   </a>
                 </div>
               </li>
               <li className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-[#315b36] shrink-0 mt-0.5" />
+                <MapPin className="h-4 w-4 text-[#006EF3] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-[#2e3339]">Location</p>
+                  <p className="text-xs font-semibold text-[#172033]">Location</p>
                   <p>Kigali, Rwanda</p>
                 </div>
               </li>
@@ -191,10 +191,10 @@ export function Footer() {
 
           {/* Replaced Portals with Newsletter Subscription */}
           <div className="lg:col-span-3 space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[#2e3339]">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#172033]">
               Subscribe to Newsletter
             </h3>
-            <p className="text-xs text-[#5a5e63] leading-relaxed">
+            <p className="text-xs text-[#667085] leading-relaxed">
               Get weekly vocabulary tips, CEFR level insights, and scholarship updates delivered to your inbox.
             </p>
 
@@ -206,14 +206,14 @@ export function Footer() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full rounded-xl border border-[#e2ebe2] bg-white px-3.5 py-2.5 text-xs text-[#2e3339] placeholder:text-[#5a5e63]/70 focus:outline-none focus:ring-2 focus:ring-[#315b36]"
+                  className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3.5 py-2.5 text-xs text-[#172033] placeholder:text-[#667085]/70 focus:outline-none focus:ring-2 focus:ring-[#006EF3]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={status === 'loading'}
-                className="w-full rounded-xl bg-[#315b36] text-white hover:bg-[#254629] py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                className="w-full rounded-xl bg-[#006EF3] text-white hover:bg-[#005ed1] py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
               >
                 {status === 'loading' ? (
                   <span>Subscribing...</span>
@@ -226,7 +226,7 @@ export function Footer() {
               </button>
 
               {status === 'success' && (
-                <div className="flex items-center gap-1.5 text-xs text-[#315b36] font-medium pt-1">
+                <div className="flex items-center gap-1.5 text-xs text-[#006EF3] font-medium pt-1">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                   <span>{message}</span>
                 </div>
@@ -237,7 +237,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 border-t border-[#e2ebe2] pt-8 flex flex-col lg:flex-row items-center justify-between text-xs sm:text-sm text-[#5a5e63] gap-4 text-center lg:text-left">
+        <div className="mt-12 border-t border-[#E2E8F0] pt-8 flex flex-col lg:flex-row items-center justify-between text-xs sm:text-sm text-[#667085] gap-4 text-center lg:text-left">
           <p className="order-2 lg:order-1 text-xs">
             © {new Date().getFullYear()} LinguaChris Academy Ltd. All rights reserved.
           </p>
@@ -248,22 +248,22 @@ export function Footer() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Visit Nexa Stack Ltd"
-            className="order-1 lg:order-2 inline-flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#e2ebe2] shadow-sm hover:border-[#315b36] hover:shadow-md active:scale-95 transition-all group cursor-pointer"
+            className="order-1 lg:order-2 inline-flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E2E8F0] shadow-sm hover:border-[#006EF3] hover:shadow-md active:scale-95 transition-all group cursor-pointer"
           >
             <img
               src="/nexaLogo.png"
               alt="Nexa Stack Ltd Logo"
               className="h-5 w-auto object-contain shrink-0 group-hover:scale-105 transition-transform"
             />
-            <span className="text-xs font-medium text-[#2e3339]">
-              A product of <strong className="font-bold text-[#315b36] group-hover:underline">Nexa Stack Ltd</strong>
+            <span className="text-xs font-medium text-[#172033]">
+              A product of <strong className="font-bold text-[#006EF3] group-hover:underline">Nexa Stack Ltd</strong>
             </span>
           </a>
 
           <div className="order-3 flex flex-wrap justify-center gap-5 text-xs">
-            <Link href="/privacy" className="hover:text-[#315b36] transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-[#315b36] transition-colors">Terms of Service</Link>
-            <Link href="/security" className="hover:text-[#315b36] transition-colors">Verification Standards</Link>
+            <Link href="/privacy" className="hover:text-[#006EF3] transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-[#006EF3] transition-colors">Terms of Service</Link>
+            <Link href="/security" className="hover:text-[#006EF3] transition-colors">Verification Standards</Link>
           </div>
         </div>
       </div>
