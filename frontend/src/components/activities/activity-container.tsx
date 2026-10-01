@@ -209,9 +209,9 @@ export function ActivityContainer({ activity, onFinished, onComplete }: Activity
       {completedScore === null ? (
         renderInnerActivity()
       ) : (
-        <Card className="p-8 text-center space-y-4 max-w-lg mx-auto bg-[#F4F7F4] border-2 border-[#3B6748]/30 dark:bg-emerald-950/40 shadow-2xl">
-          <div className="mx-auto h-16 w-16 rounded-2xl bg-emerald-100 flex items-center justify-center dark:bg-emerald-950/60">
-            <Sparkles className="h-8 w-8 text-emerald-600" />
+        <Card className="p-8 text-center space-y-4 max-w-lg mx-auto bg-[#F3F7FC] border-2 border-blue-200/80 shadow-2xl">
+          <div className="mx-auto h-16 w-16 rounded-2xl bg-blue-100 flex items-center justify-center">
+            <Sparkles className="h-8 w-8 text-[#006EF3]" />
           </div>
 
           <div>

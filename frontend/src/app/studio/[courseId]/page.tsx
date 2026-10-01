@@ -341,12 +341,12 @@ export default function StudioCurriculumPage() {
         <div
           className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 text-xs font-semibold shadow-xl animate-in slide-in-from-bottom-4 duration-300 ${
             toast.type === 'success'
-              ? 'bg-white border-emerald-200 text-emerald-800 dark:bg-slate-900 dark:border-emerald-800 dark:text-emerald-300'
+              ? 'bg-[#F3F7FC] border-blue-200 text-[#012970] dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200'
               : 'bg-white border-rose-200 text-rose-700 dark:bg-slate-900 dark:border-rose-800 dark:text-rose-300'
           }`}
         >
           {toast.type === 'success' ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-[#006EF3] shrink-0" />
           ) : (
             <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
           )}
@@ -358,19 +358,19 @@ export default function StudioCurriculumPage() {
       )}
 
       {/* ── HERO STATS BANNER ────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-[#142617] to-slate-900 text-white p-6 md:p-8 shadow-xl border border-emerald-900/30">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-12 h-48 w-48 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#012970] via-[#0b388b] to-[#012970] text-white p-6 md:p-8 shadow-xl border border-blue-900/40">
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 h-64 w-64 rounded-full bg-[#006EF3]/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-12 h-48 w-48 rounded-full bg-[#F5B400]/10 blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 max-w-xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-300">
-                <Sparkles className="h-3.5 w-3.5" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 border border-white/25 px-3 py-1 text-xs font-bold text-white">
+                <Sparkles className="h-3.5 w-3.5 text-[#F5B400]" />
                 {course.level || 'Standard Level'}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-300 backdrop-blur-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#F5B400] animate-pulse" />
                 Curriculum Studio
               </span>
             </div>
@@ -386,20 +386,20 @@ export default function StudioCurriculumPage() {
 
             {/* Quick Metrics Bar */}
             <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-slate-300">
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-sm">
-                <Layers className="h-4 w-4 text-emerald-400" />
+              <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-xl px-3 py-1.5 backdrop-blur-sm">
+                <Layers className="h-4 w-4 text-[#F5B400]" />
                 <span>
                   <strong className="text-white font-bold">{stats.totalUnits}</strong> Units
                 </span>
               </div>
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-sm">
-                <Video className="h-4 w-4 text-emerald-400" />
+              <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-xl px-3 py-1.5 backdrop-blur-sm">
+                <Video className="h-4 w-4 text-[#F5B400]" />
                 <span>
                   <strong className="text-white font-bold">{stats.totalLessons}</strong> Lessons
                 </span>
               </div>
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-sm">
-                <Clock className="h-4 w-4 text-emerald-400" />
+              <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-xl px-3 py-1.5 backdrop-blur-sm">
+                <Clock className="h-4 w-4 text-[#F5B400]" />
                 <span>
                   <strong className="text-white font-bold">
                     {Math.floor(stats.totalMinutes / 60)}h {stats.totalMinutes % 60}m
@@ -414,7 +414,7 @@ export default function StudioCurriculumPage() {
           <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0 self-start md:self-center w-full sm:w-auto">
             <Button
               onClick={openAddUnit}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-950/40 text-xs px-5 py-2.5 rounded-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+              className="bg-[#006EF3] hover:bg-[#005ac6] text-white font-bold shadow-lg shadow-blue-950/40 text-xs px-5 py-2.5 rounded-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
               <span>Create New Unit</span>
@@ -433,7 +433,7 @@ export default function StudioCurriculumPage() {
             placeholder="Search lessons by title..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 outline-none focus:border-emerald-500 text-slate-800 dark:text-white placeholder:text-slate-400 transition-colors"
+            className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 outline-none focus:border-[#006EF3] text-slate-800 dark:text-white placeholder:text-slate-400 transition-colors"
           />
           {searchQuery && (
             <button
@@ -451,7 +451,7 @@ export default function StudioCurriculumPage() {
             onClick={() => setSelectedSkill('ALL')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
               selectedSkill === 'ALL'
-                ? 'bg-[#1f4325] text-white shadow-xs'
+                ? 'bg-[#012970] text-white shadow-xs'
                 : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
@@ -466,7 +466,7 @@ export default function StudioCurriculumPage() {
                 onClick={() => setSelectedSkill(isSelected ? 'ALL' : sk)}
                 className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
                   isSelected
-                    ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                    ? 'bg-[#006EF3] text-white shadow-xs font-bold'
                     : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
@@ -502,7 +502,7 @@ export default function StudioCurriculumPage() {
       {/* ── UNITS LIST ────────────────────────────────────────────────── */}
       {filteredUnits.length === 0 ? (
         <Card className="p-16 text-center border-dashed border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 rounded-3xl">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F7FC] text-[#006EF3] border border-blue-200 dark:bg-blue-950/60 dark:text-blue-400">
             <Layers className="h-8 w-8" />
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
@@ -530,7 +530,7 @@ export default function StudioCurriculumPage() {
           ) : (
             <Button
               onClick={openAddUnit}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs px-5 shadow-sm"
+              className="bg-[#006EF3] hover:bg-[#005ac6] text-white font-bold rounded-xl text-xs px-5 shadow-sm"
             >
               <Plus className="h-4 w-4 mr-1.5" /> Create First Unit
             </Button>
@@ -546,7 +546,7 @@ export default function StudioCurriculumPage() {
             return (
               <div
                 key={unit.id}
-                className="overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-emerald-200 dark:hover:border-emerald-800"
+                className="overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-blue-200 dark:hover:border-blue-800"
               >
                 {/* Unit Header Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 border-b border-slate-200/70 dark:border-slate-800 px-5 py-4">
@@ -554,7 +554,7 @@ export default function StudioCurriculumPage() {
                     className="flex items-start sm:items-center gap-3 min-w-0 cursor-pointer flex-1"
                     onClick={() => toggleUnitCollapse(unit.id)}
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#1f4325] text-white text-xs font-black shadow-xs">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#012970] text-white text-xs font-black shadow-xs">
                       {uIdx + 1}
                     </span>
 
@@ -580,10 +580,10 @@ export default function StudioCurriculumPage() {
                     <Link href={`/studio/${courseId}/lessons/video/create?unitId=${unit.id}`}>
                       <Button
                         size="sm"
-                        className="h-8 px-3 text-xs font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-600 dark:hover:text-white rounded-xl transition-all"
+                        className="h-8 px-3 text-xs font-bold bg-[#F3F7FC] text-[#006EF3] border border-blue-200 hover:bg-[#006EF3] hover:text-white dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-[#006EF3] dark:hover:text-white rounded-xl transition-all"
                         title="Add Video Lesson into this unit"
                       >
-                        <Plus className="h-3.5 w-3.5 mr-1 text-emerald-600 group-hover:text-white" />
+                        <Plus className="h-3.5 w-3.5 mr-1 text-[#006EF3] group-hover:text-white" />
                         <span>Add Lesson</span>
                       </Button>
                     </Link>
@@ -642,11 +642,11 @@ export default function StudioCurriculumPage() {
                         return (
                           <div
                             key={lesson.id}
-                            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-3.5 hover:border-emerald-300 dark:hover:border-emerald-700/60 hover:shadow-md transition-all duration-200"
+                            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-3.5 hover:border-blue-300 dark:hover:border-blue-700/60 hover:shadow-md transition-all duration-200"
                           >
                             {/* Left: Icon & Meta */}
                             <div className="flex items-center gap-3.5 min-w-0">
-                              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/60 text-[#1f4325] dark:from-slate-800 dark:to-slate-800/60 dark:text-emerald-400 font-black text-xs border border-emerald-200/50 dark:border-slate-700">
+                              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#012970] dark:from-slate-800 dark:to-slate-800/60 dark:text-blue-300 font-black text-xs border border-blue-200 dark:border-slate-700">
                                 <span>{lIdx + 1}</span>
                               </div>
 
@@ -699,10 +699,10 @@ export default function StudioCurriculumPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 px-2.5 text-xs font-semibold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-slate-800 dark:hover:text-emerald-400 rounded-xl"
+                                  className="h-8 px-2.5 text-xs font-semibold text-slate-500 hover:text-[#006EF3] hover:bg-[#F3F7FC] dark:hover:bg-slate-800 dark:hover:text-blue-400 rounded-xl"
                                   title="Preview as enrolled student"
                                 >
-                                  <Eye className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                                  <Eye className="h-3.5 w-3.5 mr-1 text-[#006EF3]" />
                                   <span>Preview</span>
                                 </Button>
                               </Link>
@@ -711,7 +711,7 @@ export default function StudioCurriculumPage() {
                               <Link href={`/studio/${courseId}/lessons/video/${lesson.id}/editor`}>
                                 <Button
                                   size="sm"
-                                  className="h-8 px-3 text-xs font-bold bg-[#1f4325] hover:bg-[#285730] text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                                  className="h-8 px-3 text-xs font-bold bg-[#012970] hover:bg-[#006EF3] text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                                   title="Open Interactive Video Editor"
                                 >
                                   <Edit2 className="h-3 w-3" />
@@ -748,7 +748,7 @@ export default function StudioCurriculumPage() {
           <Card className="max-w-md w-full p-6 space-y-5 shadow-2xl border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#006EF3] border border-blue-200 dark:bg-blue-950/60 dark:text-blue-400">
                   <Layers className="h-4 w-4" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -786,7 +786,7 @@ export default function StudioCurriculumPage() {
                   placeholder="Summarize the core topics or competencies students will acquire in this unit…"
                   value={unitDesc}
                   onChange={(e) => setUnitDesc(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 resize-none transition-colors"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-xs text-slate-900 dark:text-white outline-none focus:border-[#006EF3] resize-none transition-colors"
                 />
               </div>
 
@@ -804,7 +804,7 @@ export default function StudioCurriculumPage() {
                   type="submit"
                   size="sm"
                   disabled={saving}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs px-4"
+                  className="bg-[#006EF3] hover:bg-[#005ac6] text-white font-bold rounded-xl text-xs px-4"
                 >
                   {saving ? 'Saving…' : editingUnit ? 'Update Unit' : 'Create Unit'}
                 </Button>

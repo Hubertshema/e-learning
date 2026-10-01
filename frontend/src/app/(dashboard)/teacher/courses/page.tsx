@@ -241,7 +241,9 @@ export default function TeacherCoursesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* <div>
           <div className="flex items-center gap-2">
-            <Badge variant="indigo">Curriculum Studio</Badge>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#012970] border border-blue-200">
+              Curriculum Studio
+            </span>
             <span className="text-xs font-semibold text-slate-500">Learning Levels</span>
           </div>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
@@ -264,10 +266,8 @@ export default function TeacherCoursesPage() {
           </Button>
 
           <Button
-            variant="gradient"
-            size="sm"
             onClick={handleOpenCreateModal}
-            className="h-9 px-4 font-bold text-xs shadow-md"
+            className="h-9 px-4 font-bold text-xs shadow-md bg-[#006EF3] hover:bg-[#0058c4] text-white rounded-xl"
           >
             <Plus className="mr-1.5 h-4 w-4" />
             Create New Course
@@ -278,7 +278,7 @@ export default function TeacherCoursesPage() {
       {/* 2. KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 border-slate-200/80 dark:border-slate-800 flex items-center gap-3.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-400">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#012970] dark:bg-blue-950/60 dark:text-blue-300">
             <BookOpen className="h-5 w-5" />
           </div>
           <div>
@@ -288,7 +288,7 @@ export default function TeacherCoursesPage() {
         </Card>
 
         <Card className="p-4 border-slate-200/80 dark:border-slate-800 flex items-center gap-3.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#006EF3] dark:bg-blue-950/60 dark:text-blue-400">
             <Globe className="h-5 w-5" />
           </div>
           <div>
@@ -298,7 +298,7 @@ export default function TeacherCoursesPage() {
         </Card>
 
         <Card className="p-4 border-slate-200/80 dark:border-slate-800 flex items-center gap-3.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#012970] dark:bg-slate-800 dark:text-slate-300">
             <Layers className="h-5 w-5" />
           </div>
           <div>
@@ -323,15 +323,15 @@ export default function TeacherCoursesPage() {
         <div
           className={`flex items-center justify-between rounded-xl p-4 text-xs font-medium border animate-in fade-in ${
             feedback.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+              ? 'bg-[#F3F7FC] text-[#012970] border-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800'
               : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
           }`}
         >
           <div className="flex items-center gap-2">
-            {feedback.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" /> : <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />}
-            <span>{feedback.message}</span>
+            {feedback.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-[#006EF3] shrink-0" /> : <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />}
+            <span className="font-semibold">{feedback.message}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="underline text-[11px] hover:text-slate-900 dark:hover:text-white">
+          <button onClick={() => setFeedback(null)} className="underline text-[11px] text-[#006EF3] hover:text-[#012970] font-semibold dark:hover:text-white">
             Dismiss
           </button>
         </div>
@@ -571,7 +571,7 @@ export default function TeacherCoursesPage() {
                       disabled={isPublishLoading}
                       className={`h-8 w-8 p-0 ${
                         isPub
-                          ? 'text-emerald-600 hover:text-emerald-700 border-emerald-200 bg-emerald-50/70 dark:bg-emerald-950/30 dark:border-emerald-800'
+                          ? 'text-[#006EF3] hover:text-[#012970] border-blue-200 bg-[#F3F7FC] dark:bg-blue-950/30 dark:border-blue-800'
                           : 'text-slate-500 hover:text-slate-700'
                       }`}
                       title={isPub ? 'Published (click to unpublish)' : 'Draft (click to publish)'}

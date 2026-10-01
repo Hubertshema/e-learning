@@ -201,11 +201,11 @@ export default function SuperadminSettingsPage() {
         <div
           className={`flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-semibold shadow-md ${
             message.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
+              ? 'border-blue-200 bg-[#F3F7FC] text-[#012970] dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200'
               : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300'
           }`}
         >
-          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#006EF3]" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
           <span>{message.text}</span>
         </div>
       )}

@@ -383,7 +383,7 @@ ${plan.homeworkAssignment}
                 <Button
                   type="submit"
                   disabled={generating}
-                  className="w-full bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-semibold text-xs py-5 shadow-lg"
+                  className="w-full bg-[#006EF3] hover:bg-[#0058c4] text-white font-semibold text-xs py-5 shadow-lg"
                 >
                   {generating ? (
                     <>
@@ -449,7 +449,7 @@ ${plan.homeworkAssignment}
                     size="sm"
                     onClick={handleSaveDraft}
                     disabled={saving}
-                    className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="h-8 text-xs gap-1.5 bg-[#006EF3] hover:bg-[#0058c4] text-white font-medium"
                   >
                     <Save className="h-3.5 w-3.5" />
                     {saving ? 'Saving...' : saveSuccess ? 'Draft Saved!' : 'Save Draft'}

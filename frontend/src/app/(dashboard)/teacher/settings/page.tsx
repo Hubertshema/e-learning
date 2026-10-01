@@ -168,13 +168,14 @@ export default function TeacherSettingsPage() {
 
       {feedback && (
         <div
-          className={`flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-semibold shadow-md ${feedback.type === 'success'
-              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+          className={`flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-semibold shadow-md ${
+            feedback.type === 'success'
+              ? 'border-blue-200 bg-[#F3F7FC] text-[#012970] dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800'
               : 'border-destructive/20 bg-destructive/10 text-destructive'
-            }`}
+          }`}
         >
           {feedback.type === 'success' ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#006EF3]" />
           ) : (
             <AlertCircle className="h-4 w-4 shrink-0" />
           )}
@@ -212,14 +213,14 @@ export default function TeacherSettingsPage() {
           <div className="lg:col-span-4 space-y-6">
             <Card className="p-6 text-center space-y-4 shadow-lg border-slate-200 dark:border-slate-800">
               <div className="relative mx-auto w-24 h-24">
-                <Avatar className="w-24 h-24 text-2xl border-4 border-emerald-100 dark:border-emerald-950 shadow-xl">
+                <Avatar className="w-24 h-24 text-2xl border-4 border-blue-100 dark:border-blue-950 shadow-xl">
                   <AvatarImage src={formData.avatarUrl || ''} />
-                  <AvatarFallback className="bg-[#3B6748] text-white font-black text-2xl">
+                  <AvatarFallback className="bg-[#012970] text-white font-black text-2xl">
                     {formData.firstName?.[0] || 'T'}{formData.lastName?.[0] || ''}
                   </AvatarFallback>
                 </Avatar>
                 <div
-                  className="absolute bottom-0 right-0 bg-emerald-500 text-white p-1 rounded-full border-2 border-white dark:border-slate-900 shadow"
+                  className="absolute bottom-0 right-0 bg-[#006EF3] text-white p-1 rounded-full border-2 border-white dark:border-slate-900 shadow"
                   title="Approved &amp; Verified Faculty"
                 >
                   <ShieldCheck className="h-4 w-4" />
@@ -230,7 +231,7 @@ export default function TeacherSettingsPage() {
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {formData.firstName || 'Sarah'} {formData.lastName || 'Jenkins'}
                 </h3>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+                <p className="text-xs text-[#006EF3] font-semibold mt-0.5">
                   {formData.headline || 'Accredited English Language Instructor'}
                 </p>
               </div>

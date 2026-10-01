@@ -94,13 +94,13 @@ export default function SuperadminProfilePage() {
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl pb-16">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-[#132519] p-6 sm:p-8 text-white shadow-xl border border-[#3B6748]/40">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#011538] via-[#012970] to-[#006EF3] p-6 sm:p-8 text-white shadow-xl border border-blue-400/25">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Badge variant="indigo" className="bg-indigo-500/20 text-indigo-300 border-indigo-500/40 font-mono text-[11px] px-3 py-1">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-200 border border-blue-400/30 font-mono text-[11px]">
                 🛡️ Root Executive Account
-              </Badge>
+              </span>
               <Badge variant="success" className="text-[11px] font-bold">
                 ✓ Verified Administrator
               </Badge>
@@ -124,8 +124,8 @@ export default function SuperadminProfilePage() {
       </div>
 
       {successMsg && (
-        <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <div className="flex items-center gap-2.5 rounded-2xl border border-blue-200 bg-[#F3F7FC] p-4 text-xs font-semibold text-[#012970] dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-[#006EF3]" />
           <span>{successMsg}</span>
         </div>
       )}
@@ -142,13 +142,13 @@ export default function SuperadminProfilePage() {
         <div className="lg:col-span-4 space-y-6">
           <Card className="p-6 text-center space-y-4 shadow-lg border-slate-200 dark:border-slate-800">
             <div className="relative mx-auto w-24 h-24">
-              <Avatar className="w-24 h-24 text-2xl border-4 border-indigo-100 dark:border-indigo-950 shadow-xl">
+              <Avatar className="w-24 h-24 text-2xl border-4 border-blue-100 dark:border-blue-950 shadow-xl">
                 <AvatarImage src={formData.avatarUrl || ''} />
-                <AvatarFallback className="bg-[#3B6748] text-white font-black text-2xl">
+                <AvatarFallback className="bg-[#012970] text-white font-black text-2xl">
                   {formData.firstName?.[0]}{formData.lastName?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute bottom-0 right-0 bg-emerald-500 text-white p-1 rounded-full border-2 border-white dark:border-slate-900 shadow">
+              <div className="absolute bottom-0 right-0 bg-[#006EF3] text-white p-1 rounded-full border-2 border-white dark:border-slate-900 shadow">
                 <ShieldCheck className="h-4 w-4" />
               </div>
             </div>
@@ -157,7 +157,7 @@ export default function SuperadminProfilePage() {
               <h2 className="text-lg font-black text-slate-900 dark:text-white">
                 {formData.firstName} {formData.lastName}
               </h2>
-              <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{formData.email}</p>
+              <p className="text-xs text-[#006EF3] font-semibold">{formData.email}</p>
             </div>
 
             <div className="flex justify-center gap-2">

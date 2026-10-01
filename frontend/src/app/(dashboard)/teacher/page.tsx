@@ -33,9 +33,11 @@ import {
   ArrowUpRight,
   AlertTriangle,
   PlayCircle,
+  Video,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useCachedData, clientCache } from '@/lib/cache';
+import { StartLiveSessionModal } from '@/components/live-session/start-live-session-modal';
 
 interface TeacherStats {
   totalCourses: number;
@@ -128,7 +130,21 @@ export default function TeacherDashboardPage() {
     }
   );
 
+  const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
+
   const teacherMetrics = [
+    {
+      label: 'Live Classrooms',
+      value: 'Instant',
+      sub: '1-to-1 & cohort live video',
+      badge: 'Live Studio',
+      icon: Video,
+      gradient: 'from-emerald-500/15 via-emerald-500/5 to-transparent',
+      iconBg: 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25',
+      borderColor: 'border-emerald-200/80 dark:border-emerald-900/60',
+      badgeBg: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold',
+      href: '/teacher/live-sessions',
+    },
     {
       label: 'Students Directory',
       value: stats?.totalStudents ?? 0,
@@ -137,12 +153,12 @@ export default function TeacherDashboardPage() {
         : 'Active learners enrolled',
       badge: (stats?.pendingApplicationsCount ?? 0) > 0 ? `${stats?.pendingApplicationsCount} New Apps` : 'Manage All',
       icon: Users,
-      gradient: 'from-emerald-500/15 via-emerald-500/5 to-transparent',
-      iconBg: 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25',
-      borderColor: 'border-emerald-200/80 dark:border-emerald-900/60',
+      gradient: 'from-blue-500/15 via-blue-500/5 to-transparent',
+      iconBg: 'bg-[#006EF3] text-white shadow-lg shadow-blue-600/25',
+      borderColor: 'border-blue-200/80 dark:border-blue-900/60',
       badgeBg: (stats?.pendingApplicationsCount ?? 0) > 0
         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 font-bold'
-        : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
+        : 'bg-blue-50 text-[#012970] dark:bg-blue-950/60 dark:text-blue-300',
       href: '/teacher/students',
     },
     {
@@ -187,22 +203,22 @@ export default function TeacherDashboardPage() {
   return (
     <div className="p-4 sm:p-6 space-y-4 animate-in fade-in duration-300">
       {/* ─── 1. Instructor Executive Command Hero ────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#112314] via-[#1a3820] to-[#0e1d11] p-4 sm:p-5 text-white shadow-lg border border-emerald-500/25">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#011538] via-[#012970] to-[#006EF3] p-4 sm:p-5 text-white shadow-lg border border-blue-500/25">
         {/* Subtle Ambient Glowing Mesh Orbs */}
-        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5 max-w-2xl">
             {/* Faculty Status Badge */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 backdrop-blur-md">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-white border border-white/20 backdrop-blur-md">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#F5B400] animate-pulse" />
                 CEFR Faculty Command Center
               </span>
 
               {user?.teacherProfile?.isApproved ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-400/20 text-blue-200 border border-blue-400/30">
                   <ShieldCheck className="h-3 w-3" /> Verified Faculty
                 </span>
               ) : (
@@ -212,12 +228,11 @@ export default function TeacherDashboardPage() {
               )}
             </div>
 
-
             {/* Time-aware Greeting */}
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
               {getGreeting()}{user?.firstName ? `, ${user.firstName}` : ''}!
             </h1>
-            <p className="text-[11px] sm:text-xs text-emerald-100/90 leading-tight font-normal">
+            <p className="text-[11px] sm:text-xs text-blue-100/90 leading-tight font-normal">
               Manage your cohort enrollments, grade assignments, verify student payment receipts, and organize your CEFR curriculum.
             </p>
           </div>
@@ -230,15 +245,24 @@ export default function TeacherDashboardPage() {
               onClick={() => refresh()}
               disabled={isValidating}
               title="Refresh live dashboard"
-              className="border-emerald-500/40 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/60 backdrop-blur-md h-8 px-2.5"
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md h-8 px-2.5"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isValidating ? 'animate-spin' : ''}`} />
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => setIsLiveModalOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs h-8 px-3 shadow-md shadow-emerald-900/30 gap-1.5"
+            >
+              <Video className="h-3.5 w-3.5 animate-pulse" />
+              Start Live Session
             </Button>
 
             <Link href="/teacher/students">
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-8 px-3 shadow-md shadow-emerald-700/30 gap-1.5"
+                className="bg-[#F5B400] hover:bg-[#d99f00] text-[#012970] font-black text-xs h-8 px-3 shadow-md shadow-black/20 gap-1.5"
               >
                 <Users className="h-3.5 w-3.5" />
                 Students Directory
@@ -249,7 +273,7 @@ export default function TeacherDashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-emerald-500/40 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/60 backdrop-blur-md text-xs h-8 px-3 gap-1.5"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md text-xs h-8 px-3 gap-1.5 font-bold"
               >
                 <BookOpen className="h-3.5 w-3.5" />
                 Courses
@@ -260,7 +284,7 @@ export default function TeacherDashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-emerald-500/40 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/60 backdrop-blur-md text-xs h-8 px-3 gap-1.5"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md text-xs h-8 px-3 gap-1.5 font-bold"
               >
                 <Library className="h-3.5 w-3.5" />
                 Resources
@@ -270,23 +294,23 @@ export default function TeacherDashboardPage() {
         </div>
 
         {/* Live Teaching Summary Strip */}
-        <div className="mt-3.5 pt-3 border-t border-emerald-800/40 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
+        <div className="mt-3.5 pt-3 border-t border-blue-400/20 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
           {loading && !stats ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-4 w-full bg-emerald-950/60" />
+              <Skeleton key={i} className="h-4 w-full bg-blue-950/60" />
             ))
           ) : (
             <>
-              <div className="flex items-center gap-2 text-emerald-200">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="flex items-center gap-2 text-blue-100">
+                <div className="h-1.5 w-1.5 rounded-full bg-[#006EF3] animate-pulse" />
                 <span>Learners: <strong>{stats?.totalStudents ?? 0} Enrolled</strong></span>
               </div>
-              <div className="flex items-center gap-2 text-emerald-200">
+              <div className="flex items-center gap-2 text-blue-100">
                 <div className={`h-1.5 w-1.5 rounded-full ${(stats?.pendingPaymentsCount ?? 0) > 0 ? 'bg-amber-400 animate-pulse' : 'bg-slate-400'}`} />
                 <span>Receipts: <strong>{stats?.pendingPaymentsCount ?? 0} Proofs</strong></span>
               </div>
-              <div className="flex items-center gap-2 text-emerald-200">
-                <div className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+              <div className="flex items-center gap-2 text-blue-100">
+                <div className="h-1.5 w-1.5 rounded-full bg-[#F5B400]" />
                 <span>Courses: <strong>{stats?.totalCourses ?? 0} Published</strong></span>
               </div>
             </>
@@ -358,6 +382,13 @@ export default function TeacherDashboardPage() {
           })
         )}
       </div>
+
+      {/* Start Live Session Modal */}
+      <StartLiveSessionModal
+        isOpen={isLiveModalOpen}
+        onClose={() => setIsLiveModalOpen(false)}
+        onSessionCreated={() => refresh()}
+      />
     </div>
   );
 }

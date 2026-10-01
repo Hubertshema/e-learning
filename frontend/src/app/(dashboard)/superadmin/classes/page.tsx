@@ -271,19 +271,19 @@ export default function SuperadminClassesPage() {
         <div
           className={`flex items-center justify-between rounded-2xl p-4 text-xs font-semibold shadow-md ${
             message.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+              ? 'bg-[#F3F7FC] text-[#012970] border border-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800'
               : 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
           }`}
         >
           <div className="flex items-center gap-2">
             {message.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#006EF3]" />
             ) : (
               <AlertCircle className="h-4 w-4 shrink-0" />
             )}
             <span>{message.text}</span>
           </div>
-          <button onClick={() => setMessage(null)} className="underline text-[11px]">
+          <button onClick={() => setMessage(null)} className="underline text-[11px] text-[#006EF3] hover:text-[#012970] font-semibold">
             Dismiss
           </button>
         </div>
@@ -744,7 +744,7 @@ export default function SuperadminClassesPage() {
                   {rosterCohort.enrollments.map((enr) => (
                     <div key={enr.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-600 to-primary-600 text-white flex items-center justify-center font-bold text-xs">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] text-white flex items-center justify-center font-bold text-xs">
                           {enr.student?.user?.firstName?.[0]}{enr.student?.user?.lastName?.[0]}
                         </div>
                         <div>

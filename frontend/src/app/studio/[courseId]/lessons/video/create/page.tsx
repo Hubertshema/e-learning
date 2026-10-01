@@ -268,8 +268,8 @@ export default function CreateVideoLessonPage() {
               </div>
 
               {uploadedVideoName && (
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#F3F7FC] border border-blue-200 text-[#012970] text-xs">
+                  <CheckCircle2 className="h-4 w-4 text-[#006EF3] shrink-0" />
                   <span className="font-semibold truncate">Uploaded Local Video: {uploadedVideoName}</span>
                 </div>
               )}

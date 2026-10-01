@@ -767,8 +767,8 @@ export function InteractiveVideoPlayer({
             {showLessonCompletedPrompt && (
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                 <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl shadow-2xl max-w-sm text-center border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
-                  <div className="mx-auto w-14 h-14 bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-5">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                  <div className="mx-auto w-14 h-14 bg-[#F3F7FC] border border-blue-200 dark:bg-blue-950/40 rounded-full flex items-center justify-center mb-5">
+                    <CheckCircle2 className="w-8 h-8 text-[#006EF3]" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Lesson Completed!</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
@@ -777,7 +777,7 @@ export function InteractiveVideoPlayer({
                   <div className="flex flex-col gap-3">
                     <Button 
                       onClick={() => { setShowLessonCompletedPrompt(false); handleResetLesson(); }} 
-                      className="w-full bg-[#315b36] hover:bg-[#25462a] text-white font-bold h-11"
+                      className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-11 transition-colors"
                     >
                       Yes
                     </Button>
@@ -1171,7 +1171,7 @@ export function InteractiveVideoPlayer({
                     {(feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
                       <Button
                         onClick={continueVideo}
-                        className="bg-[#315b36] hover:bg-[#254629] text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md flex items-center gap-1.5 w-full sm:w-auto"
+                        className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md flex items-center gap-1.5 w-full sm:w-auto transition-colors"
                       >
                         <Play className="h-3.5 w-3.5 fill-white" />
                         Continue Video
@@ -1186,7 +1186,7 @@ export function InteractiveVideoPlayer({
 
         {/* RIGHT COLUMN: Question & Interaction Panel */}
         <div id="interactive-panel" className={`lg:col-span-4 relative flex flex-col min-h-[420px] lg:h-[calc(100vh-8rem)] lg:sticky lg:top-8 scroll-mt-[350px] lg:scroll-mt-0`}>
-          <div className={`flex-1 flex flex-col lg:overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#e2ebe2]/80 dark:border-slate-800 shadow-xs p-4 sm:p-6 animate-in fade-in slide-in-from-right-4 duration-500`}>
+          <div className={`flex-1 flex flex-col lg:overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs p-4 sm:p-6 animate-in fade-in slide-in-from-right-4 duration-500`}>
               {active ? (
               <div className="flex flex-col lg:h-full lg:overflow-hidden">
                 <div className="flex-1 lg:overflow-y-auto pr-2 custom-scrollbar pb-4">
@@ -1291,8 +1291,8 @@ export function InteractiveVideoPlayer({
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-4 flex flex-col justify-between py-2">
                   <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-[#006EF3] animate-ping" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#006EF3] dark:text-blue-400">
                     {playing ? 'Video Playing' : 'Ready to Play'}
                   </span>
                 </div>
@@ -1445,7 +1445,7 @@ function ActivityAnswer({
             key={value}
             className={`flex-1 flex items-center justify-center gap-2 cursor-pointer rounded-xl border p-3.5 transition-all text-xs font-bold uppercase tracking-wider ${
               String(answer) === value
-                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 ring-2 ring-emerald-400'
+                ? 'border-[#006EF3] bg-[#F3F7FC] dark:bg-blue-950/60 text-[#012970] dark:text-blue-300 ring-2 ring-blue-400'
                 : 'border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 hover:bg-white text-slate-700 dark:text-slate-300'
             }`}
           >
@@ -1458,7 +1458,7 @@ function ActivityAnswer({
                 setAnswer(value);
                 onSubmit?.(value);
               }}
-              className="accent-emerald-600"
+              className="accent-[#006EF3]"
             />
             {value === 'true' ? 'True' : 'False'}
           </label>
@@ -1723,7 +1723,7 @@ function ActivityAnswer({
                     : showError
                     ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-400 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/40 font-bold shadow-xs'
                     : isSelected
-                    ? 'bg-[#eff4ec] dark:bg-slate-800 border-[#315b36] text-[#315b36] dark:text-emerald-300 font-bold ring-2 ring-[#315b36]/30 shadow-xs'
+                    ? 'bg-[#F3F7FC] dark:bg-slate-800 border-[#006EF3] text-[#012970] dark:text-blue-300 font-bold ring-2 ring-[#006EF3]/30 shadow-xs'
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-850'
                 }`}
               >
@@ -1735,7 +1735,7 @@ function ActivityAnswer({
                         : showError
                         ? 'bg-rose-500 text-white'
                         : isSelected
-                        ? 'bg-[#315b36] text-white'
+                        ? 'bg-[#012970] text-white'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                     }`}
                   >
@@ -1912,10 +1912,10 @@ function DragDropSentenceBuilder({
         onDrop={handleDropOnZone}
         className={`min-h-16 p-3.5 rounded-2xl border-2 border-dashed transition-all flex flex-wrap gap-2 items-center ${
           isOverDropZone
-            ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 ring-2 ring-emerald-400'
+            ? 'border-[#006EF3] bg-[#F3F7FC] dark:bg-blue-950/40 ring-2 ring-blue-400'
             : selectedWords.length === 0
             ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60'
-            : 'border-emerald-300 dark:border-emerald-900 bg-white dark:bg-slate-900'
+            : 'border-blue-300 dark:border-blue-900 bg-white dark:bg-slate-900'
         }`}
       >
         {selectedWords.length === 0 ? (
@@ -1938,7 +1938,7 @@ function DragDropSentenceBuilder({
               }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleDropOnToken(e, i)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm cursor-grab active:cursor-grabbing hover:bg-emerald-700 transition-all select-none animate-in zoom-in-95 duration-100"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#012970] text-white font-bold text-xs shadow-sm cursor-grab active:cursor-grabbing hover:bg-[#006EF3] transition-all select-none animate-in zoom-in-95 duration-100"
               title="Drag to reorder, or click × to remove"
             >
               <span>{word}</span>
@@ -1948,7 +1948,7 @@ function DragDropSentenceBuilder({
                   e.stopPropagation();
                   removeToken(i);
                 }}
-                className="h-4 w-4 rounded-full bg-emerald-800/80 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] leading-none transition-colors"
+                className="h-4 w-4 rounded-full bg-[#006EF3] hover:bg-rose-600 text-white flex items-center justify-center text-[10px] leading-none transition-colors"
                 title="Remove"
               >
                 ×
@@ -1988,7 +1988,7 @@ function DragDropSentenceBuilder({
                 className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all select-none ${
                   isExhausted
                     ? 'opacity-30 border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 cursor-not-allowed line-through'
-                    : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-slate-700 cursor-grab active:cursor-grabbing hover:-translate-y-0.5'
+                    : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm hover:border-[#006EF3] hover:bg-[#F3F7FC] dark:hover:bg-slate-700 cursor-grab active:cursor-grabbing hover:-translate-y-0.5'
                 }`}
                 title={isExhausted ? 'Already used' : 'Drag or click to add'}
               >
@@ -2058,10 +2058,10 @@ function OrderingActivity({
             onDragStart={(e) => handleDragStart(e, idx)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => handleDrop(e, idx)}
-            className="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm cursor-grab active:cursor-grabbing hover:border-emerald-400 transition-all text-xs font-medium"
+            className="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm cursor-grab active:cursor-grabbing hover:border-blue-400 transition-all text-xs font-medium"
           >
             <div className="flex items-center gap-2.5">
-              <span className="h-6 w-6 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center font-mono font-bold text-xs shrink-0">
+              <span className="h-6 w-6 rounded-lg bg-[#F3F7FC] text-[#012970] border border-blue-200 dark:bg-blue-950 dark:text-blue-300 flex items-center justify-center font-mono font-bold text-xs shrink-0">
                 {idx + 1}
               </span>
               <span className="text-slate-800 dark:text-slate-200">{item}</span>

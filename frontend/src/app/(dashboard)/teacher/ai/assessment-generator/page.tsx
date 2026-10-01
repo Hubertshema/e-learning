@@ -384,7 +384,7 @@ export default function AIAssessmentGeneratorPage() {
                     size="sm"
                     onClick={handleSaveDraft}
                     disabled={saving}
-                    className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="h-8 text-xs gap-1.5 bg-[#006EF3] hover:bg-[#0058c4] text-white font-medium"
                   >
                     <Save className="h-3.5 w-3.5" />
                     {saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Draft'}

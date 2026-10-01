@@ -34,6 +34,7 @@ import {
   PanelLeftOpen,
   ChevronRight,
   ShieldCheck,
+  Video,
 } from 'lucide-react';
 
 interface NavItem {
@@ -110,6 +111,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       title: 'Main Hub',
       items: [
         { name: 'Dashboard', href: '/teacher', icon: LayoutDashboard },
+        { name: 'Live Sessions', href: '/teacher/live-sessions', icon: Video, badge: 'Live' },
         { name: 'Students Directory', href: '/teacher/students', icon: Users, badge: 'Unified' },
       ],
     },
@@ -129,6 +131,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       title: 'My Learning Space',
       items: [
         { name: 'Dashboard', href: '/student', icon: LayoutDashboard },
+        { name: 'Live Sessions', href: '/student/live-sessions', icon: Video, badge: 'Live' },
         { name: 'My Learning', href: '/student/my-courses', icon: GraduationCap },
         { name: 'Certificates', href: '/student/certificates', icon: FileCheck },
       ],
@@ -155,12 +158,12 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   const sidebarContent = (
     <div
       className={cn(
-        'flex h-full flex-col justify-between border-r border-[#e2ebe2]/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-all duration-300 ease-in-out select-none shadow-xs',
+        'flex h-full flex-col justify-between border-r border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-all duration-300 ease-in-out select-none shadow-xs',
         collapsed ? 'w-20' : 'w-64'
       )}
     >
       {/* ─── Top Brand Header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col border-b border-[#e2ebe2]/60 dark:border-slate-800/80 px-4 py-4 shrink-0">
+      <div className="flex flex-col border-b border-slate-200/60 dark:border-slate-800/80 px-4 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <Link
             href={
@@ -195,8 +198,8 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                   <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white leading-none">
                     LinguaChris
                   </span>
-                  <span className="text-[10px] font-bold text-[#315b36] dark:text-emerald-400 tracking-tight mt-1 flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-[#012970] dark:text-blue-400 tracking-tight mt-1 flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#006EF3] animate-pulse" />
                     {userRoleLabel} Hub
                   </span>
                 </div>
@@ -207,7 +210,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           {!collapsed && (
             <button
               onClick={toggleCollapsed}
-              className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-[#eff4ec] dark:hover:bg-slate-800 hover:text-[#315b36] dark:hover:text-emerald-400 transition-colors"
+              className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-[#F3F7FC] dark:hover:bg-slate-800 hover:text-[#006EF3] dark:hover:text-blue-400 transition-colors"
               title="Collapse sidebar"
               aria-label="Collapse sidebar"
             >
@@ -221,7 +224,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           <div className="hidden md:flex justify-center pt-3">
             <button
               onClick={toggleCollapsed}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-[#eff4ec] dark:hover:bg-slate-800 hover:text-[#315b36] dark:hover:text-emerald-400 transition-colors"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-[#F3F7FC] dark:hover:bg-slate-800 hover:text-[#006EF3] dark:hover:text-blue-400 transition-colors"
               title="Expand sidebar"
               aria-label="Expand sidebar"
             >
@@ -261,13 +264,13 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                       'group relative flex items-center rounded-xl text-xs font-bold transition-all duration-150',
                       collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2.5',
                       isActive
-                        ? 'bg-gradient-to-r from-[#315b36] to-[#254629] text-white shadow-md shadow-[#315b36]/25 font-bold'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-[#eff4ec] dark:hover:bg-slate-800/70 hover:text-[#315b36] dark:hover:text-emerald-400'
+                        ? 'bg-gradient-to-r from-[#012970] to-[#006EF3] text-white shadow-md shadow-[#012970]/25 font-bold'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-[#F3F7FC] dark:hover:bg-slate-800/70 hover:text-[#006EF3] dark:hover:text-blue-400'
                     )}
                   >
                     {/* Left Active Accent Pill */}
                     {isActive && !collapsed && (
-                      <span className="absolute left-1 top-2 bottom-2 w-1 rounded-full bg-emerald-400 shadow-xs" />
+                      <span className="absolute left-1 top-2 bottom-2 w-1 rounded-full bg-[#F5B400] shadow-xs" />
                     )}
 
                     <Icon
@@ -276,7 +279,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                         collapsed ? 'h-5 w-5' : 'h-4 w-4',
                         isActive
                           ? 'text-white'
-                          : 'text-slate-400 dark:text-slate-500 group-hover:text-[#315b36] dark:group-hover:text-emerald-400'
+                          : 'text-slate-400 dark:text-slate-500 group-hover:text-[#006EF3] dark:group-hover:text-blue-400'
                       )}
                     />
 
@@ -289,8 +292,8 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                         className={cn(
                           'text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full',
                           isActive
-                            ? 'bg-emerald-400/20 text-emerald-200 border border-emerald-400/30'
-                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-[#315b36] dark:text-emerald-400'
+                            ? 'bg-blue-400/20 text-blue-200 border border-blue-400/30'
+                            : 'bg-[#F3F7FC] dark:bg-blue-950/60 text-[#006EF3] dark:text-blue-300'
                         )}
                       >
                         {item.badge}
@@ -305,11 +308,11 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       </div>
 
       {/* ─── Bottom User Profile & Session Card ───────────────────────────── */}
-      <div className="border-t border-[#e2ebe2]/80 dark:border-slate-800 p-3 bg-slate-50/50 dark:bg-slate-900/60 shrink-0">
+      <div className="border-t border-[#E2E8F0] dark:border-slate-800 p-3 bg-slate-50/50 dark:bg-slate-900/60 shrink-0">
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#315b36] to-[#1e3c23] text-white font-black text-xs shadow-xs"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#012970] to-[#006EF3] text-white font-black text-xs shadow-xs"
               title={`${user?.firstName || 'User'} (${userRoleLabel})`}
             >
               {userInitials}
@@ -327,10 +330,10 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
           <div className="flex items-center justify-between gap-2.5 p-1">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div className="relative shrink-0">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#315b36] to-[#1e3c23] text-white font-black text-xs shadow-sm">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#012970] to-[#006EF3] text-white font-black text-xs shadow-sm">
                   {userInitials}
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#006EF3] border-2 border-white dark:border-slate-900" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-black text-slate-900 dark:text-white truncate leading-tight">
@@ -385,13 +388,13 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                 className={cn(
                   'relative flex items-center justify-center flex-1 py-3 transition-colors',
                   isActive
-                    ? 'text-[#315b36] dark:text-emerald-400'
+                    ? 'text-[#012970] dark:text-[#006EF3]'
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                 )}
               >
                 <Icon className={cn('h-[22px] w-[22px]', isActive && 'stroke-[2.5px]')} />
                 {isActive && (
-                  <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#315b36] dark:bg-emerald-400" />
+                  <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#006EF3]" />
                 )}
               </Link>
             );

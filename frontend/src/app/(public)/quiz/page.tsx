@@ -277,18 +277,18 @@ export default function DiagnosticQuizPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff4ec]/30 py-10 sm:py-16">
+    <div className="min-h-screen bg-[#F3F7FC] py-10 sm:py-16">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         {/* Header Title Section */}
         <div className="text-center space-y-3 mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#7ba27a]/40 bg-white px-3.5 py-1 text-xs font-bold text-[#315b36] shadow-sm">
-            <Sparkles className="h-3.5 w-3.5 text-[#315b36]" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#006EF3]/30 bg-white px-3.5 py-1 text-xs font-bold text-[#006EF3] shadow-sm">
+            <Sparkles className="h-3.5 w-3.5 text-[#006EF3]" />
             <span>Database-Driven Adaptive Placement</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-[#2e3339]">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-[#172033]">
             English Placement & Diagnostic Assessment
           </h1>
-          <p className="mx-auto max-w-2xl text-sm text-slate-600 font-medium">
+          <p className="mx-auto max-w-2xl text-sm text-[#667085] font-medium">
             Take this interactive placement assessment powered by live database evaluation to discover your official CEFR English benchmark and personalized curriculum path.
           </p>
         </div>
@@ -297,33 +297,33 @@ export default function DiagnosticQuizPage() {
         {loading && (
           <div className="space-y-6 animate-pulse">
             {/* Header / Meta Skeleton Card */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#e2ebe2] bg-white p-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#e2ebe2]" />
+                <div className="h-10 w-10 rounded-xl bg-[#E2E8F0]" />
                 <div className="space-y-1.5">
-                  <div className="h-4 w-36 rounded bg-[#e2ebe2]" />
-                  <div className="h-3 w-28 rounded bg-[#eff4ec]" />
+                  <div className="h-4 w-36 rounded bg-[#E2E8F0]" />
+                  <div className="h-3 w-28 rounded bg-[#F3F7FC]" />
                 </div>
               </div>
               <div className="w-full sm:w-48 space-y-1.5">
                 <div className="flex justify-between">
-                  <div className="h-3 w-12 rounded bg-[#eff4ec]" />
-                  <div className="h-3 w-8 rounded bg-[#eff4ec]" />
+                  <div className="h-3 w-12 rounded bg-[#F3F7FC]" />
+                  <div className="h-3 w-8 rounded bg-[#F3F7FC]" />
                 </div>
-                <div className="h-2 w-full rounded-full bg-[#e2ebe2]" />
+                <div className="h-2 w-full rounded-full bg-[#E2E8F0]" />
               </div>
             </div>
 
             {/* Question Card Skeleton */}
-            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-6 sm:p-8 shadow-xl space-y-6">
+            <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-xl space-y-6">
               <div className="flex items-center justify-between">
-                <div className="h-5 w-28 rounded-full bg-[#eff4ec]" />
-                <div className="h-6 w-32 rounded-full bg-[#eff4ec]" />
+                <div className="h-5 w-28 rounded-full bg-[#F3F7FC]" />
+                <div className="h-6 w-32 rounded-full bg-[#F3F7FC]" />
               </div>
 
               <div className="space-y-2">
-                <div className="h-6 w-11/12 rounded-lg bg-[#e2ebe2]" />
-                <div className="h-6 w-3/4 rounded-lg bg-[#e2ebe2]" />
+                <div className="h-6 w-11/12 rounded-lg bg-[#E2E8F0]" />
+                <div className="h-6 w-3/4 rounded-lg bg-[#E2E8F0]" />
               </div>
 
               {/* Multiple Choice Option Skeletons */}
@@ -331,17 +331,17 @@ export default function DiagnosticQuizPage() {
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 rounded-2xl border border-[#e2ebe2] bg-[#eff4ec]/30 p-4"
+                    className="flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-[#F3F7FC] p-4"
                   >
-                    <div className="h-7 w-7 rounded-lg bg-[#e2ebe2]" />
-                    <div className="h-4 w-2/3 rounded bg-[#e2ebe2]" />
+                    <div className="h-7 w-7 rounded-lg bg-[#E2E8F0]" />
+                    <div className="h-4 w-2/3 rounded bg-[#E2E8F0]" />
                   </div>
                 ))}
               </div>
 
               {/* Action Button Skeleton */}
-              <div className="flex justify-end pt-4 border-t border-[#e2ebe2]">
-                <div className="h-10 w-40 rounded-xl bg-[#e2ebe2]" />
+              <div className="flex justify-end pt-4 border-t border-[#E2E8F0]">
+                <div className="h-10 w-40 rounded-xl bg-[#E2E8F0]" />
               </div>
             </div>
           </div>
@@ -354,7 +354,7 @@ export default function DiagnosticQuizPage() {
             <p className="text-sm font-bold text-rose-900">{error}</p>
             <Button
               onClick={fetchQuestions}
-              className="bg-[#315b36] hover:bg-[#254629] text-white text-xs font-bold rounded-xl"
+              className="bg-[#012970] hover:bg-[#001f54] text-white text-xs font-bold rounded-xl"
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               Retry Loading
@@ -366,28 +366,28 @@ export default function DiagnosticQuizPage() {
         {!loading && !error && !result && !isVerifying && questions.length > 0 && (
           <div className="space-y-6">
             {/* Progress & Meta Info Card */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#e2ebe2] bg-white p-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#315b36] text-white font-bold text-sm shadow-sm">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#012970] text-white font-bold text-sm shadow-sm">
                   {currentQIndex + 1}/{questions.length}
                 </span>
                 <div>
-                  <p className="text-xs font-bold text-[#2e3339]">{currentQ.category}</p>
-                  <p className="text-[11px] text-slate-500">
-                    Skill: <span className="font-semibold text-[#315b36]">{currentQ.skill}</span> • Target Level: <span className="font-bold text-[#315b36]">{currentQ.difficulty}</span>
+                  <p className="text-xs font-bold text-[#172033]">{currentQ.category}</p>
+                  <p className="text-[11px] text-[#667085]">
+                    Skill: <span className="font-semibold text-[#006EF3]">{currentQ.skill}</span> • Target Level: <span className="font-bold text-[#006EF3]">{currentQ.difficulty}</span>
                   </p>
                 </div>
               </div>
 
               {/* Progress Bar */}
               <div className="w-full sm:w-48">
-                <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                <div className="flex justify-between text-[10px] font-bold text-[#667085] mb-1">
                   <span>Progress</span>
                   <span>{Math.round(((currentQIndex + 1) / questions.length) * 100)}%</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-[#e2ebe2]">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
                   <div
-                    className="h-full bg-[#315b36] transition-all duration-300 rounded-full"
+                    className="h-full bg-[#006EF3] transition-all duration-300 rounded-full"
                     style={{
                       width: `${((currentQIndex + 1) / questions.length) * 100}%`,
                     }}
@@ -397,16 +397,16 @@ export default function DiagnosticQuizPage() {
             </div>
 
             {/* Question Card */}
-            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-6 sm:p-8 shadow-xl">
+            <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-xl">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs border-[#7ba27a]/40 text-[#315b36] font-bold">
+                  <Badge variant="outline" className="text-xs border-[#006EF3]/30 text-[#006EF3] font-bold">
                     Question {currentQIndex + 1} of {questions.length}
                   </Badge>
                   {currentQ.audioText && (
                     <button
                       onClick={() => playTts(currentQ.audioText!)}
-                      className="flex items-center gap-1.5 rounded-full border border-[#7ba27a]/40 bg-[#eff4ec] px-3 py-1 text-xs font-bold text-[#315b36] transition hover:bg-[#e2ebe2]"
+                      className="flex items-center gap-1.5 rounded-full border border-[#006EF3]/30 bg-[#F3F7FC] px-3 py-1 text-xs font-bold text-[#006EF3] transition hover:bg-[#E2E8F0]"
                     >
                       <Volume2 className="h-4 w-4" />
                       <span>Play Audio Dialogue</span>
@@ -414,13 +414,13 @@ export default function DiagnosticQuizPage() {
                   )}
                 </div>
 
-                <h2 className="text-lg sm:text-xl font-bold text-[#2e3339] leading-relaxed">
+                <h2 className="text-lg sm:text-xl font-bold text-[#172033] leading-relaxed">
                   {currentQ.prompt}
                 </h2>
 
                 {currentQ.audioText && (
-                  <div className="rounded-2xl border border-[#7ba27a]/30 bg-[#eff4ec]/50 p-3.5">
-                    <p className="text-xs italic text-[#2e3339]">
+                  <div className="rounded-2xl border border-[#006EF3]/20 bg-[#F3F7FC] p-3.5">
+                    <p className="text-xs italic text-[#172033]">
                       🎧 Spoken prompt: "{currentQ.audioText}"
                     </p>
                   </div>
@@ -437,16 +437,16 @@ export default function DiagnosticQuizPage() {
                         onClick={() => handleOptionSelect(idx)}
                         className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left text-sm font-medium transition-all duration-150 ${
                           isSelected
-                            ? 'border-[#315b36] bg-[#eff4ec] text-[#2e3339] shadow-sm ring-1 ring-[#315b36]'
-                            : 'border-[#e2ebe2] bg-white hover:border-[#7ba27a]/60 hover:bg-[#eff4ec]/30 text-[#2e3339]'
+                            ? 'border-[#006EF3] bg-[#F3F7FC] text-[#172033] shadow-sm ring-1 ring-[#006EF3]'
+                            : 'border-[#E2E8F0] bg-white hover:border-[#006EF3]/60 hover:bg-[#F3F7FC]/50 text-[#172033]'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <span
                             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition ${
                               isSelected
-                                ? 'bg-[#315b36] text-white'
-                                : 'bg-[#e2ebe2] text-[#2e3339]'
+                                ? 'bg-[#006EF3] text-white'
+                                : 'bg-[#E2E8F0] text-[#172033]'
                             }`}
                           >
                             {String.fromCharCode(65 + idx)}
@@ -455,7 +455,7 @@ export default function DiagnosticQuizPage() {
                         </div>
 
                         {isSelected && (
-                          <CheckCircle2 className="h-5 w-5 text-[#315b36]" />
+                          <CheckCircle2 className="h-5 w-5 text-[#006EF3]" />
                         )}
                       </button>
                     );
@@ -463,12 +463,12 @@ export default function DiagnosticQuizPage() {
                 </div>
 
                 {/* Navigation Buttons */}
-                <div className="mt-8 flex items-center justify-between pt-4 border-t border-[#e2ebe2]">
+                <div className="mt-8 flex items-center justify-between pt-4 border-t border-[#E2E8F0]">
                   <Button
                     variant="outline"
                     disabled={currentQIndex === 0}
                     onClick={handlePrevQuestion}
-                    className="rounded-xl border-[#e2ebe2] text-[#2e3339] text-xs font-bold hover:bg-[#eff4ec] disabled:opacity-40"
+                    className="rounded-xl border-[#E2E8F0] text-[#172033] text-xs font-bold hover:bg-[#F3F7FC] disabled:opacity-40"
                   >
                     <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
                     Previous
@@ -477,7 +477,7 @@ export default function DiagnosticQuizPage() {
                   <Button
                     disabled={selectedOption === null}
                     onClick={handleNextOrProceedToCaptcha}
-                    className="rounded-xl bg-[#315b36] hover:bg-[#254629] text-white px-7 py-2.5 text-xs font-bold shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    className="rounded-xl bg-[#012970] hover:bg-[#001f54] text-white px-7 py-2.5 text-xs font-bold shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <span className="flex items-center gap-1.5">
                       {currentQIndex + 1 < questions.length
@@ -495,52 +495,52 @@ export default function DiagnosticQuizPage() {
         {/* Anti-Bot Security & CAPTCHA Verification Step */}
         {!loading && !result && isVerifying && (
           <div className="space-y-6 animate-in fade-in-50 zoom-in-95">
-            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-6 sm:p-10 shadow-xl space-y-6">
+            <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 sm:p-10 shadow-xl space-y-6">
               <div className="text-center space-y-3">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#eff4ec] text-[#315b36] border border-[#7ba27a]/40 shadow-sm">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F7FC] text-[#006EF3] border border-[#006EF3]/30 shadow-sm">
                   <ShieldCheck className="h-8 w-8" />
                 </div>
-                <h2 className="text-2xl font-black text-[#2e3339]">
+                <h2 className="text-2xl font-black text-[#172033]">
                   Anti-Bot Security & Human Verification
                 </h2>
-                <p className="mx-auto max-w-lg text-xs text-slate-600 font-medium">
+                <p className="mx-auto max-w-lg text-xs text-[#667085] font-medium">
                   All {questions.length} questions completed! Please solve the security check below to verify your submission. Your evaluation will be graded and registered permanently in the database.
                 </p>
               </div>
 
               {/* Security Audit Note Card */}
-              <div className="rounded-2xl border border-[#7ba27a]/30 bg-[#eff4ec]/50 p-4 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#315b36]">
+              <div className="rounded-2xl border border-[#006EF3]/20 bg-[#F3F7FC] p-4 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#006EF3]">
                   <Globe className="h-4 w-4" />
                   <span>Candidate Integrity & Audit Trail</span>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
+                <p className="text-[11px] text-[#667085] leading-relaxed">
                   To prevent automated spam and preserve benchmark validity, your candidate IP address, device verification status, and completed answer review are securely logged in the system records.
                 </p>
               </div>
 
               {/* Challenge Box */}
               <form onSubmit={handleFinalSubmit} className="space-y-4 max-w-md mx-auto">
-                <div className="rounded-2xl border border-[#e2ebe2] bg-[#eff4ec]/30 p-5 space-y-3 text-center">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                <div className="rounded-2xl border border-[#E2E8F0] bg-[#F3F7FC] p-5 space-y-3 text-center">
+                  <span className="text-[11px] font-bold text-[#667085] uppercase tracking-wider block">
                     Security Challenge
                   </span>
                   
                   {captchaLoading ? (
-                    <div className="flex items-center justify-center gap-2 py-3 text-xs text-slate-500 font-medium">
-                      <RefreshCw className="h-4 w-4 animate-spin text-[#315b36]" />
+                    <div className="flex items-center justify-center gap-2 py-3 text-xs text-[#667085] font-medium">
+                      <RefreshCw className="h-4 w-4 animate-spin text-[#006EF3]" />
                       Generating challenge...
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-3">
-                      <p className="text-lg font-black text-[#2e3339] tracking-wide">
+                      <p className="text-lg font-black text-[#172033] tracking-wide">
                         {captcha?.challenge || 'Security Check: What is 5 + 3?'}
                       </p>
                       <button
                         type="button"
                         onClick={fetchCaptcha}
                         title="Get a new challenge"
-                        className="rounded-lg p-1.5 text-slate-400 hover:text-[#315b36] hover:bg-[#e2ebe2] transition"
+                        className="rounded-lg p-1.5 text-slate-400 hover:text-[#006EF3] hover:bg-[#E2E8F0] transition"
                       >
                         <RefreshCw className="h-4 w-4" />
                       </button>
@@ -555,7 +555,7 @@ export default function DiagnosticQuizPage() {
                       value={captchaAnswer}
                       onChange={(e) => setCaptchaAnswer(e.target.value)}
                       placeholder="Enter number here..."
-                      className="w-full text-center text-lg font-bold tracking-widest rounded-xl border border-[#e2ebe2] bg-white py-3 px-4 text-[#2e3339] shadow-inner focus:border-[#315b36] focus:outline-none focus:ring-2 focus:ring-[#315b36]/20 transition"
+                      className="w-full text-center text-lg font-bold tracking-widest rounded-xl border border-[#E2E8F0] bg-white py-3 px-4 text-[#172033] shadow-inner focus:border-[#006EF3] focus:outline-none focus:ring-2 focus:ring-[#006EF3]/20 transition"
                       autoFocus
                     />
                   </div>
@@ -572,7 +572,7 @@ export default function DiagnosticQuizPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setIsVerifying(false)}
-                    className="w-full sm:w-auto rounded-xl border-[#e2ebe2] text-[#2e3339] text-xs font-bold hover:bg-[#eff4ec]"
+                    className="w-full sm:w-auto rounded-xl border-[#E2E8F0] text-[#172033] text-xs font-bold hover:bg-[#F3F7FC]"
                   >
                     <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
                     Review Answers
@@ -581,7 +581,7 @@ export default function DiagnosticQuizPage() {
                   <Button
                     type="submit"
                     disabled={isSubmitting || !captchaAnswer.trim()}
-                    className="flex-1 rounded-xl bg-[#315b36] hover:bg-[#254629] text-white py-3 text-xs font-bold shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    className="flex-1 rounded-xl bg-[#012970] hover:bg-[#001f54] text-white py-3 text-xs font-bold shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {isSubmitting ? (
                       <span className="flex items-center justify-center gap-2">
@@ -606,28 +606,28 @@ export default function DiagnosticQuizPage() {
         {result && (
           <div className="space-y-8 animate-in zoom-in-95">
             {/* Primary Placement Card */}
-            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-8 sm:p-10 shadow-2xl text-center space-y-6">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#eff4ec] text-[#315b36] border border-[#7ba27a]/40 shadow-sm">
+            <div className="rounded-3xl border border-[#E2E8F0] bg-white p-8 sm:p-10 shadow-2xl text-center space-y-6">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#F3F7FC] text-[#F5B400] border border-[#F5B400]/40 shadow-sm">
                 <Award className="h-10 w-10" />
               </div>
 
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-[#eff4ec] px-3.5 py-1 text-xs font-bold text-[#315b36] mb-2 border border-[#7ba27a]/40">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#F3F7FC] px-3.5 py-1 text-xs font-bold text-[#006EF3] mb-2 border border-[#006EF3]/30">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   <span>Verified Database Attempt • Try #{result.attemptNumber}</span>
                 </div>
-                <h2 className="text-3xl sm:text-4xl font-black text-[#2e3339]">
+                <h2 className="text-3xl sm:text-4xl font-black text-[#172033]">
                   Your CEFR Benchmark:{' '}
-                  <span className="text-[#315b36]">{result.recommendedLevel}</span>
+                  <span className="text-[#006EF3]">{result.recommendedLevel}</span>
                 </h2>
-                <p className="text-sm font-bold text-slate-600 mt-1">
+                <p className="text-sm font-bold text-[#667085] mt-1">
                   {getTierDetails(result.recommendedLevel).title}
                 </p>
               </div>
 
               {/* Security Audit Badge */}
-              <div className="inline-flex items-center gap-3 rounded-xl border border-[#e2ebe2] bg-[#eff4ec]/30 px-4 py-2 text-xs text-slate-600">
-                <span className="flex items-center gap-1 font-semibold text-[#315b36]">
+              <div className="inline-flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-[#F3F7FC] px-4 py-2 text-xs text-[#667085]">
+                <span className="flex items-center gap-1 font-semibold text-[#006EF3]">
                   <Globe className="h-3.5 w-3.5" /> IP: {result.ipAddress}
                 </span>
                 <span className="text-slate-300">•</span>
@@ -637,56 +637,56 @@ export default function DiagnosticQuizPage() {
               </div>
 
               {/* Score Statistics Box */}
-              <div className="mx-auto max-w-md rounded-2xl border border-[#e2ebe2] bg-[#eff4ec]/40 p-5">
+              <div className="mx-auto max-w-md rounded-2xl border border-[#E2E8F0] bg-[#F3F7FC] p-5">
                 <div className="flex items-center justify-around">
                   <div className="text-center">
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <p className="text-[11px] font-bold text-[#667085] uppercase tracking-wider">
                       Correct Answers
                     </p>
-                    <p className="text-2xl font-black text-[#2e3339] mt-0.5">
+                    <p className="text-2xl font-black text-[#172033] mt-0.5">
                       {result.score} / {result.totalQuestions}
                     </p>
                   </div>
-                  <div className="h-10 w-px bg-[#e2ebe2]" />
+                  <div className="h-10 w-px bg-[#E2E8F0]" />
                   <div className="text-center">
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <p className="text-[11px] font-bold text-[#667085] uppercase tracking-wider">
                       Accuracy Rate
                     </p>
-                    <p className="text-2xl font-black text-[#315b36] mt-0.5">
+                    <p className="text-2xl font-black text-[#006EF3] mt-0.5">
                       {result.percentage}%
                     </p>
                   </div>
                 </div>
-                <p className="text-xs text-slate-600 mt-3 pt-3 border-t border-[#e2ebe2] font-medium">
+                <p className="text-xs text-[#667085] mt-3 pt-3 border-t border-[#E2E8F0] font-medium">
                   {getTierDetails(result.recommendedLevel).description}
                 </p>
               </div>
 
               {/* Recommended Course Box from Database */}
-              <div className="mx-auto max-w-lg rounded-2xl border border-[#7ba27a]/50 bg-[#eff4ec] p-6 text-left shadow-sm">
+              <div className="mx-auto max-w-lg rounded-2xl border border-[#006EF3]/30 bg-[#F3F7FC] p-6 text-left shadow-sm">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#315b36]">
-                    <GraduationCap className="h-4 w-4 text-[#315b36]" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#006EF3]">
+                    <GraduationCap className="h-4 w-4 text-[#006EF3]" />
                     <span>Recommended Curriculum Path</span>
                   </div>
                   {result.recommendedCourse && (
-                    <span className="rounded-lg bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#315b36] border border-[#e2ebe2]">
+                    <span className="rounded-lg bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#006EF3] border border-[#E2E8F0]">
                       {result.recommendedCourse.level || result.recommendedLevel}
                     </span>
                   )}
                 </div>
 
-                <p className="text-base font-bold text-[#2e3339] mt-2">
+                <p className="text-base font-bold text-[#172033] mt-2">
                   {result.recommendedCourse?.title || getTierDetails(result.recommendedLevel).recommendedCourse}
                 </p>
 
-                <p className="text-xs text-slate-600 mt-1">
+                <p className="text-xs text-[#667085] mt-1">
                   {result.recommendedCourse?.description ||
                     'Includes certified teacher coaching, 16 multi-skill activities, and verified CEFR certificate upon completion.'}
                 </p>
 
                 {result.recommendedCourse?.instructorName && (
-                  <p className="text-[11px] font-semibold text-[#315b36] mt-2">
+                  <p className="text-[11px] font-semibold text-[#006EF3] mt-2">
                     Instructor: {result.recommendedCourse.instructorName}
                   </p>
                 )}
@@ -700,7 +700,7 @@ export default function DiagnosticQuizPage() {
                     }
                     className="flex-1"
                   >
-                    <Button className="w-full rounded-xl bg-[#315b36] text-white hover:bg-[#254629] text-xs font-bold shadow-md py-2.5">
+                    <Button className="w-full rounded-xl bg-[#012970] text-white hover:bg-[#001f54] text-xs font-bold shadow-md py-2.5 transition-colors">
                       Enroll with {result.recommendedLevel} Placement
                       <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Button>
@@ -708,7 +708,7 @@ export default function DiagnosticQuizPage() {
                   <Link href="/courses">
                     <Button
                       variant="outline"
-                      className="w-full rounded-xl border-[#e2ebe2] text-[#2e3339] text-xs font-semibold py-2.5 hover:bg-[#e2ebe2]"
+                      className="w-full rounded-xl border-[#E2E8F0] text-[#172033] text-xs font-semibold py-2.5 hover:bg-[#E2E8F0]"
                     >
                       Explore Courses Catalog
                     </Button>
@@ -722,7 +722,7 @@ export default function DiagnosticQuizPage() {
                   onClick={resetQuiz}
                   variant="ghost"
                   size="sm"
-                  className="text-xs text-slate-600 hover:text-[#315b36] hover:bg-[#eff4ec] rounded-xl font-bold"
+                  className="text-xs text-[#667085] hover:text-[#006EF3] hover:bg-[#F3F7FC] rounded-xl font-bold"
                 >
                   <RotateCw className="mr-1.5 h-3.5 w-3.5" />
                   Retake Diagnostic Assessment
@@ -731,7 +731,7 @@ export default function DiagnosticQuizPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs text-slate-600 hover:text-[#315b36] hover:bg-[#eff4ec] rounded-xl font-bold"
+                    className="text-xs text-[#667085] hover:text-[#006EF3] hover:bg-[#F3F7FC] rounded-xl font-bold"
                   >
                     Return to Homepage
                   </Button>
@@ -740,12 +740,12 @@ export default function DiagnosticQuizPage() {
             </div>
 
             {/* Question By Question Academic Feedback Review */}
-            <div className="rounded-3xl border border-[#e2ebe2] bg-white p-6 sm:p-8 shadow-lg space-y-6">
-              <div className="border-b border-[#e2ebe2] pb-4">
-                <h3 className="text-lg font-black text-[#2e3339]">
+            <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 sm:p-8 shadow-lg space-y-6">
+              <div className="border-b border-[#E2E8F0] pb-4">
+                <h3 className="text-lg font-black text-[#172033]">
                   Detailed Academic Question Review
                 </h3>
-                <p className="text-xs text-slate-600 mt-0.5">
+                <p className="text-xs text-[#667085] mt-0.5">
                   Review your answers alongside official academic rationale and grammatical rules.
                 </p>
               </div>
@@ -761,7 +761,7 @@ export default function DiagnosticQuizPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-slate-500">
+                      <span className="text-[11px] font-bold text-[#667085]">
                         Question {idx + 1} • {item.category} ({item.difficulty})
                       </span>
                       {item.isCorrect ? (
@@ -775,11 +775,11 @@ export default function DiagnosticQuizPage() {
                       )}
                     </div>
 
-                    <p className="text-xs font-bold text-[#2e3339]">{item.prompt}</p>
+                    <p className="text-xs font-bold text-[#172033]">{item.prompt}</p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
                       <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                        <span className="text-[10px] font-bold text-slate-500 block">
+                        <span className="text-[10px] font-bold text-[#667085] block">
                           Your Selected Answer:
                         </span>
                         <span
@@ -791,16 +791,16 @@ export default function DiagnosticQuizPage() {
                         </span>
                       </div>
 
-                      <div className="rounded-xl border border-[#7ba27a]/40 bg-[#eff4ec] p-2.5">
-                        <span className="text-[10px] font-bold text-[#315b36] block">
+                      <div className="rounded-xl border border-[#006EF3]/30 bg-[#F3F7FC] p-2.5">
+                        <span className="text-[10px] font-bold text-[#006EF3] block">
                           Official Correct Answer:
                         </span>
-                        <span className="font-bold text-[#315b36]">{item.correctAnswer}</span>
+                        <span className="font-bold text-[#006EF3]">{item.correctAnswer}</span>
                       </div>
                     </div>
 
                     {item.explanation && (
-                      <p className="text-[11px] text-slate-600 italic pt-1 border-t border-slate-200/60">
+                      <p className="text-[11px] text-[#667085] italic pt-1 border-t border-slate-200/60">
                         💡 {item.explanation}
                       </p>
                     )}

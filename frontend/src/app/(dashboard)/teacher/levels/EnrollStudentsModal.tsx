@@ -105,8 +105,8 @@ export function EnrollStudentsModal({ isOpen, onClose, level, onSuccess }: Enrol
         <div className="flex w-full justify-between items-center px-2">
           <div className="text-sm font-medium text-slate-500">
             {selectedIds.size > 0 ? (
-              <span className="text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4" />
+              <span className="text-[#006EF3] font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-[#006EF3]" />
                 {selectedIds.size} student{selectedIds.size !== 1 ? 's' : ''} selected
               </span>
             ) : (
@@ -114,13 +114,13 @@ export function EnrollStudentsModal({ isOpen, onClose, level, onSuccess }: Enrol
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} disabled={enrolling} className="rounded-xl border-slate-200 dark:border-slate-700">
+            <Button variant="outline" onClick={onClose} disabled={enrolling} className="rounded-xl border-slate-200">
               Cancel
             </Button>
             <Button 
               onClick={handleEnroll} 
               disabled={enrolling || selectedIds.size === 0} 
-              className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md transition-all"
+              className="rounded-xl bg-[#006EF3] hover:bg-[#0058c4] text-white shadow-md transition-all font-semibold"
             >
               {enrolling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {enrolling ? 'Enrolling...' : `Enroll ${selectedIds.size} Students`}
@@ -132,41 +132,41 @@ export function EnrollStudentsModal({ isOpen, onClose, level, onSuccess }: Enrol
       <div className="space-y-4 py-2">
         <div className="flex gap-3">
           <div className="relative flex-1 group">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 group-focus-within:text-[#006EF3] transition-colors" />
             <input
               type="text"
               placeholder="Search students by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+              className="w-full bg-[#F3F7FC]/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#006EF3]/30 focus:border-[#006EF3] transition-all"
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800" onClick={selectAllFiltered}>
+            <Button variant="outline" className="rounded-xl border-slate-200 bg-white hover:bg-slate-50" onClick={selectAllFiltered}>
               Select All
             </Button>
-            <Button variant="outline" className="rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800" onClick={clearSelection}>
+            <Button variant="outline" className="rounded-xl border-slate-200 bg-white hover:bg-slate-50" onClick={clearSelection}>
               Clear
             </Button>
           </div>
         </div>
 
-        <div className="max-h-[350px] overflow-y-auto border border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl no-scrollbar">
+        <div className="max-h-[350px] overflow-y-auto border border-slate-200/80 bg-white rounded-2xl no-scrollbar shadow-inner">
           {loading ? (
             <div className="flex flex-col items-center justify-center p-12">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#006EF3]" />
               <p className="text-sm text-slate-500 mt-4">Loading students...</p>
             </div>
           ) : filteredStudents.length === 0 ? (
             <div className="text-center p-12">
-              <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Search className="h-5 w-5 text-slate-400" />
               </div>
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No students found.</p>
+              <p className="text-sm font-medium text-slate-700">No students found.</p>
               <p className="text-xs text-slate-500 mt-1">Try adjusting your search terms.</p>
             </div>
           ) : (
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800/50">
+            <ul className="divide-y divide-slate-100">
               {filteredStudents.map((student, index) => {
                 const isEnrolled = student.levelId === level.id;
                 const isSelected = selectedIds.has(student.id);
@@ -174,7 +174,7 @@ export function EnrollStudentsModal({ isOpen, onClose, level, onSuccess }: Enrol
                 return (
                   <li 
                     key={student.id} 
-                    className={`flex items-center p-4 gap-4 transition-all duration-200 ${isEnrolled ? 'opacity-60 bg-slate-50/50 dark:bg-slate-800/30' : 'hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 cursor-pointer'} ${isSelected ? 'bg-indigo-50/80 dark:bg-indigo-900/20' : ''}`}
+                    className={`flex items-center p-4 gap-4 transition-all duration-200 ${isEnrolled ? 'opacity-60 bg-slate-50/50' : 'hover:bg-blue-50/50 cursor-pointer'} ${isSelected ? 'bg-blue-50/80' : ''}`}
                     onClick={() => !isEnrolled && toggleSelect(student.id)}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
@@ -184,23 +184,23 @@ export function EnrollStudentsModal({ isOpen, onClose, level, onSuccess }: Enrol
                         checked={isEnrolled || isSelected} 
                         disabled={isEnrolled}
                         onChange={() => {}} // handled by onClick on li
-                        className={`h-5 w-5 rounded-md border-slate-300 dark:border-slate-700 ${isEnrolled ? 'text-slate-400' : 'text-indigo-600 focus:ring-indigo-600/50 cursor-pointer'}`}
+                        className={`h-5 w-5 rounded-md border-slate-300 ${isEnrolled ? 'text-slate-400' : 'text-[#006EF3] focus:ring-[#006EF3]/50 cursor-pointer'}`}
                       />
                     </div>
                     
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/50 dark:to-indigo-800/30 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-300 text-xs shadow-sm">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-100 to-[#F3F7FC] flex items-center justify-center font-bold text-[#012970] text-xs shadow-sm">
                       {student.firstName[0]}{student.lastName[0]}
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                      <div className="text-sm font-bold text-slate-900 truncate">
                         {student.firstName} {student.lastName}
                       </div>
                       <div className="text-xs font-medium text-slate-500 truncate">{student.email}</div>
                     </div>
                     
                     {isEnrolled && (
-                      <span className="inline-flex items-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20 dark:ring-emerald-500/20">
+                      <span className="inline-flex items-center rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-[#012970] ring-1 ring-inset ring-blue-200">
                         Enrolled
                       </span>
                     )}

@@ -224,7 +224,7 @@ export default function TeacherStudentDetailPage() {
         <button
           className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
             activeTab === 'overview'
-              ? 'border-[#315b36] text-[#315b36] dark:border-emerald-400 dark:text-emerald-400'
+              ? 'border-[#006EF3] text-[#012970] dark:border-blue-400 dark:text-blue-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
           onClick={() => setActiveTab('overview')}
@@ -235,7 +235,7 @@ export default function TeacherStudentDetailPage() {
         <button
           className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
             activeTab === 'personalization'
-              ? 'border-[#315b36] text-[#315b36] dark:border-emerald-400 dark:text-emerald-400'
+              ? 'border-[#006EF3] text-[#012970] dark:border-blue-400 dark:text-blue-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
           onClick={() => setActiveTab('personalization')}

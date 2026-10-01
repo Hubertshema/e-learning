@@ -575,7 +575,7 @@ export default function InteractiveVideoEditorPage() {
               DRAFT
             </span>
           ) : (
-            <span className="text-[10px] uppercase font-black tracking-wider text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">
+            <span className="text-[10px] uppercase font-black tracking-wider text-[#006EF3] bg-[#F3F7FC] border border-blue-200 px-2 py-0.5 rounded">
               PUBLISHED
             </span>
           )}
@@ -596,8 +596,8 @@ export default function InteractiveVideoEditorPage() {
 
           {/* Student Preview Link */}
           <Link href={`/student/interactive-video/${lessonId}`} target="_blank">
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-slate-600 hover:text-emerald-700 hover:bg-emerald-50">
-              <Eye className="h-3.5 w-3.5 mr-1 text-emerald-600" /> Preview
+            <Button variant="ghost" size="sm" className="h-8 text-xs text-slate-600 hover:text-[#006EF3] hover:bg-[#F3F7FC]">
+              <Eye className="h-3.5 w-3.5 mr-1 text-[#006EF3]" /> Preview
             </Button>
           </Link>
 
@@ -2003,8 +2003,8 @@ export default function InteractiveVideoEditorPage() {
                       </div>
 
                       {uploadedResourceName && (
-                        <div className="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px]">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <div className="flex items-center gap-2 p-2 rounded-xl bg-[#F3F7FC] border border-blue-200 text-[#012970] text-[11px]">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-[#006EF3] shrink-0" />
                           <span className="font-semibold truncate">Uploaded: {uploadedResourceName}</span>
                         </div>
                       )}
@@ -2098,7 +2098,7 @@ export default function InteractiveVideoEditorPage() {
                                 disabled={updatingResourceId === res.id}
                                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
                                   res.canDownload
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                                    ? 'bg-[#F3F7FC] text-[#006EF3] border-blue-200 hover:bg-blue-50 hover:border-blue-300'
                                     : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
                                 }`}
                                 title={
@@ -2111,7 +2111,7 @@ export default function InteractiveVideoEditorPage() {
                                   <span className="text-[10px]">Updating...</span>
                                 ) : res.canDownload ? (
                                   <>
-                                    <Download className="h-3 w-3 text-emerald-600" />
+                                    <Download className="h-3 w-3 text-[#006EF3]" />
                                     <span>Download Allowed</span>
                                   </>
                                 ) : (
@@ -2183,7 +2183,7 @@ export default function InteractiveVideoEditorPage() {
                     </div>
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                       <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Completed</p>
-                      <p className="text-2xl font-black text-emerald-600">{analytics.completed || 0}</p>
+                      <p className="text-2xl font-black text-[#006EF3]">{analytics.completed || 0}</p>
                     </div>
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                       <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Avg Completion</p>
@@ -2419,7 +2419,7 @@ export default function InteractiveVideoEditorPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     {editingResource.canDownload ? (
-                      <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
+                      <div className="p-2 rounded-xl bg-[#F3F7FC] text-[#006EF3] border border-blue-200 dark:bg-blue-950/50 dark:text-blue-400">
                         <Download className="h-4 w-4" />
                       </div>
                     ) : (

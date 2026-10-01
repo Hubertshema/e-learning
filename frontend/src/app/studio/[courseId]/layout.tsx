@@ -77,7 +77,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
             className="flex items-center gap-2.5 group shrink-0"
             title="Course Studio - LinguaChris"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-slate-800 dark:to-slate-900 border border-emerald-200/60 dark:border-emerald-800/40 shadow-xs p-1 transition-transform group-hover:scale-105">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3F7FC] dark:from-slate-800 dark:to-slate-900 border border-blue-200 dark:border-blue-800/40 shadow-xs p-1 transition-transform group-hover:scale-105">
               <img
                 src="/logo.png"
                 alt="LinguaChris Academy"
@@ -89,7 +89,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
                 <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
                   LinguaChris
                 </span>
-                <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-0.5 rounded-md bg-[#006EF3]/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#006EF3] dark:text-blue-400 border border-[#006EF3]/20">
                   <Sparkles className="h-2 w-2" /> Studio
                 </span>
               </div>
@@ -113,7 +113,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
               {course?.title || 'Course'}
             </span>
             <span className="text-slate-300 dark:text-slate-700">/</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/50 px-2.5 py-0.5 text-[11px] font-bold text-[#1f4325] dark:text-emerald-400 capitalize shrink-0">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#F3F7FC] dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/50 px-2.5 py-0.5 text-[11px] font-bold text-[#012970] dark:text-blue-300 capitalize shrink-0">
               <BookOpen className="h-3 w-3" />
               {currentSection}
             </span>
@@ -123,7 +123,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
         <div className="flex items-center gap-3">
           {/* Course Level Indicator */}
           {course?.level && (
-            <span className="hidden md:inline-flex items-center gap-1 rounded-md bg-emerald-100/70 dark:bg-emerald-900/40 px-2 py-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+            <span className="hidden md:inline-flex items-center gap-1 rounded-md bg-[#F3F7FC] dark:bg-blue-900/40 border border-blue-200/80 px-2 py-1 text-[11px] font-bold text-[#012970] dark:text-blue-200">
               {course.level.startsWith('Level') ? course.level : `Level ${course.level}`}
             </span>
           )}

@@ -182,19 +182,19 @@ export function AdmissionStatusView({
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300 py-4">
       {/* Top Banner with Action status */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#122416] via-[#1a3820] to-[#0e1d11] p-6 sm:p-8 text-white shadow-xl border border-emerald-500/25">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#011538] via-[#012970] to-[#006EF3] p-6 sm:p-8 text-white shadow-xl border border-blue-400/25">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
-                <GraduationCap className="h-3.5 w-3.5 text-emerald-300" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-200 border border-blue-400/30">
+                <GraduationCap className="h-3.5 w-3.5 text-[#F5B400]" />
                 Admission &amp; Enrollment Hub
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               Welcome, {studentName}
             </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl font-normal">
+            <p className="text-xs sm:text-sm text-blue-100/90 max-w-xl font-normal">
               Track your application status, complete enrollment requirements, and activate your CEFR learning space.
             </p>
           </div>
@@ -204,7 +204,7 @@ export function AdmissionStatusView({
             disabled={isRefreshing}
             variant="outline"
             size="sm"
-            className="border-emerald-500/40 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/60 backdrop-blur-md text-xs font-bold h-9 gap-1.5 self-start sm:self-center"
+            className="border-blue-400/30 bg-blue-950/40 text-blue-200 hover:bg-blue-900/60 backdrop-blur-md text-xs font-bold h-9 gap-1.5 self-start sm:self-center"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh Status
@@ -304,7 +304,7 @@ export function AdmissionStatusView({
                       {appData.learningGoals.map((g: string) => (
                         <span
                           key={g}
-                          className="px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-[#315b36] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold"
+                          className="px-2.5 py-0.5 rounded-lg bg-[#F3F7FC] dark:bg-slate-800 text-[#012970] dark:text-blue-300 border border-[#E2E8F0] dark:border-slate-700 text-[11px] font-bold"
                         >
                           {g}
                         </span>
@@ -324,12 +324,12 @@ export function AdmissionStatusView({
               </div>
 
               {/* Assistance Box */}
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-xs text-slate-600 dark:text-slate-300">
-                <HelpCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#F3F7FC] dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 text-xs text-slate-600 dark:text-slate-300">
+                <HelpCircle className="h-5 w-5 text-[#006EF3] shrink-0" />
                 <div>
-                  <p className="font-bold text-slate-800 dark:text-slate-200">Have questions regarding your application?</p>
+                  <p className="font-bold text-[#012970] dark:text-slate-200">Have questions regarding your application?</p>
                   <p className="text-slate-500">
-                    Contact the admissions office at <strong className="text-emerald-700 dark:text-emerald-400">admissions@linguachris.com</strong> or via WhatsApp at <strong className="text-emerald-700 dark:text-emerald-400">+250 788 123 456</strong>.
+                    Contact the admissions office at <strong className="text-[#006EF3] dark:text-blue-400">admissions@linguachris.com</strong> or via WhatsApp at <strong className="text-[#006EF3] dark:text-blue-400">+250 788 123 456</strong>.
                   </p>
                 </div>
               </div>
@@ -399,13 +399,13 @@ export function AdmissionStatusView({
       {status.applicationStatus === 'ACCEPTED' && status.learningAccess === 'LOCKED' && (
         <div className="space-y-6">
           {/* Welcome Acceptance Banner */}
-          <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="p-5 rounded-2xl bg-[#F3F7FC] border border-blue-200 dark:bg-blue-950/40 dark:border-blue-800 flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-[#006EF3] shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">
+              <h3 className="text-sm font-bold text-[#012970] dark:text-blue-200">
                 Congratulations! You have been accepted to LinguaChris Academy!
               </h3>
-              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
+              <p className="text-xs text-[#667085] dark:text-blue-300 mt-0.5">
                 Your admission has been approved by the instructor. To activate your courses and learning dashboard, please complete your tuition payment requirement below.
               </p>
             </div>
@@ -461,7 +461,7 @@ export function AdmissionStatusView({
                   <Button
                     onClick={handleManualRefresh}
                     disabled={isRefreshing}
-                    className="bg-[#315b36] hover:bg-[#25462a] text-white text-xs font-bold rounded-xl h-9"
+                    className="bg-[#012970] hover:bg-[#006EF3] text-white text-xs font-bold rounded-xl h-9 transition-colors"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRefreshing ? 'animate-spin' : ''}`} />
                     Check Verification Status
@@ -477,7 +477,7 @@ export function AdmissionStatusView({
                 <Card className="rounded-3xl border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                   <CardHeader className="p-5 pb-3 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
                     <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <CreditCard className="h-4 w-4 text-[#315b36]" />
+                      <CreditCard className="h-4 w-4 text-[#006EF3]" />
                       Payment Instructions
                     </CardTitle>
                     <CardDescription className="text-xs text-slate-500">
@@ -495,7 +495,7 @@ export function AdmissionStatusView({
                         <Badge className="bg-amber-100 text-amber-800 text-[10px]">Instant</Badge>
                       </div>
                       <p className="text-slate-600 dark:text-slate-400">Dial: <strong className="font-mono text-slate-900 dark:text-white">*182*8*1*123456#</strong></p>
-                      <p className="text-slate-600 dark:text-slate-400">Merchant Name: <strong className="text-slate-900 dark:text-white">LinguaChris Academy</strong></p>
+                      <p className="text-slate-600 dark:text-slate-400">Merchant Name: <strong className="text-slate-900 dark:text-white">FluentEdge Academy</strong></p>
                     </div>
 
                     {/* Airtel Money */}
@@ -508,18 +508,18 @@ export function AdmissionStatusView({
                         <Badge className="bg-rose-100 text-rose-800 text-[10px]">Instant</Badge>
                       </div>
                       <p className="text-slate-600 dark:text-slate-400">Merchant Code: <strong className="font-mono text-slate-900 dark:text-white">733123</strong></p>
-                      <p className="text-slate-600 dark:text-slate-400">Recipient: <strong className="text-slate-900 dark:text-white">LinguaChris Academy</strong></p>
+                      <p className="text-slate-600 dark:text-slate-400">Recipient: <strong className="text-slate-900 dark:text-white">FluentEdge Academy</strong></p>
                     </div>
 
                     {/* Bank Wire */}
                     <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 space-y-1">
                       <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <Building className="h-3.5 w-3.5 text-indigo-500" />
+                        <Building className="h-3.5 w-3.5 text-[#006EF3]" />
                         Bank Deposit / Transfer
                       </span>
                       <p className="text-slate-600 dark:text-slate-400">Bank: <strong className="text-slate-900 dark:text-white">Bank of Kigali / Equity Bank</strong></p>
                       <p className="text-slate-600 dark:text-slate-400">Account: <strong className="font-mono text-slate-900 dark:text-white">4002-8812-9923</strong></p>
-                      <p className="text-slate-600 dark:text-slate-400">Beneficiary: <strong className="text-slate-900 dark:text-white">LinguaChris Language Services</strong></p>
+                      <p className="text-slate-600 dark:text-slate-400">Beneficiary: <strong className="text-slate-900 dark:text-white">FluentEdge Language Services</strong></p>
                     </div>
                   </CardContent>
                 </Card>
@@ -528,9 +528,9 @@ export function AdmissionStatusView({
               {/* Submit Payment Proof Form (Right column) */}
               <div className="lg:col-span-7">
                 <Card className="rounded-3xl border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                  <CardHeader className="p-5 pb-3 bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-slate-100 dark:border-slate-800">
+                  <CardHeader className="p-5 pb-3 bg-[#F3F7FC] dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
                     <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Send className="h-4 w-4 text-[#315b36]" />
+                      <Send className="h-4 w-4 text-[#006EF3]" />
                       Submit Payment Proof
                     </CardTitle>
                     <CardDescription className="text-xs text-slate-500">
@@ -553,7 +553,7 @@ export function AdmissionStatusView({
                       )}
 
                       {proofSuccess && (
-                        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium">
+                        <div className="p-3.5 rounded-2xl bg-[#F3F7FC] border border-blue-200 text-[#012970] font-medium">
                           {proofSuccess}
                         </div>
                       )}
@@ -633,15 +633,15 @@ export function AdmissionStatusView({
                       <div className="space-y-1.5">
                         <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                           <span className="flex items-center gap-1.5">
-                            <Upload className="h-3.5 w-3.5 text-[#315b36]" />
+                            <Upload className="h-3.5 w-3.5 text-[#006EF3]" />
                             Upload Receipt Picture / Screenshot (Recommended)
                           </span>
                           <span className="text-[10px] text-slate-400 font-normal">PNG, JPG, WEBP, PDF up to 10MB</span>
                         </label>
 
                         {!proofImageFile ? (
-                          <label className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-[#315b36] dark:hover:border-emerald-500/50 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-slate-50/50 dark:bg-slate-900/50 group">
-                            <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 shadow-xs border flex items-center justify-center text-slate-400 group-hover:text-[#315b36] group-hover:scale-110 transition-all">
+                          <label className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-[#006EF3] dark:hover:border-blue-500/50 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-[#F3F7FC]/50 dark:bg-slate-900/50 group">
+                            <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 shadow-xs border flex items-center justify-center text-slate-400 group-hover:text-[#006EF3] group-hover:scale-110 transition-all">
                               <Upload className="h-5 w-5" />
                             </div>
                             <div className="text-center">
@@ -660,7 +660,7 @@ export function AdmissionStatusView({
                             />
                           </label>
                         ) : (
-                          <div className="p-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 flex items-center justify-between gap-3">
+                          <div className="p-3 rounded-2xl border border-blue-200 bg-[#F3F7FC] dark:bg-slate-900/50 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5 min-w-0">
                               {proofImagePreview ? (
                                 <img
@@ -669,8 +669,8 @@ export function AdmissionStatusView({
                                   className="h-12 w-12 rounded-xl object-cover border shrink-0 shadow-xs"
                                 />
                               ) : (
-                                <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                                  <FileCheck className="h-6 w-6 text-emerald-700" />
+                                <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                                  <FileCheck className="h-6 w-6 text-[#006EF3]" />
                                 </div>
                               )}
                               <div className="min-w-0">
@@ -706,14 +706,14 @@ export function AdmissionStatusView({
                           placeholder="Sender phone number, account name, or receipt remarks..."
                           value={proofNotes}
                           onChange={(e) => setProofNotes(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-[#315b36]"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-[#006EF3]"
                         />
                       </div>
 
                       <Button
                         type="submit"
                         disabled={isSubmittingProof}
-                        className="w-full bg-[#315b36] hover:bg-[#25462a] text-white font-bold h-10 rounded-xl shadow-md text-xs"
+                        className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-10 rounded-xl shadow-md text-xs transition-colors"
                       >
                         {isSubmittingProof ? (
                           <span className="flex items-center gap-2">

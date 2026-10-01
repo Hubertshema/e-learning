@@ -49,9 +49,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ? 'Certified Instructor'
       : 'Enrolled Student';
 
-  // Full-screen standalone mode for preview simulators & student classroom learning studio
-  if (pathname.includes('/preview') || pathname.startsWith('/student/learn')) {
-    return <div className="min-h-screen w-full bg-[#f8faf8] dark:bg-slate-950 overflow-y-auto">{children}</div>;
+  // Full-screen standalone mode for preview simulators, live session video rooms & student classroom studio
+  if (pathname.includes('/preview') || pathname.startsWith('/student/learn') || pathname.startsWith('/live')) {
+    return <div className="min-h-screen w-full bg-slate-950 overflow-hidden">{children}</div>;
   }
 
   return (
@@ -68,10 +68,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
               <Link
                 href={user?.role ? `/${user.role.toLowerCase()}` : '/'}
-                className="hidden sm:inline hover:text-[#315B36] dark:hover:text-emerald-400 font-bold transition-colors cursor-pointer"
+                className="hidden sm:inline hover:text-[#006EF3] dark:hover:text-blue-400 font-bold transition-colors cursor-pointer"
                 title="Go to Dashboard Home"
               >
-                LinguaChris LMS
+                FluentEdge LMS
               </Link>
               <span className="hidden sm:inline text-slate-300 dark:text-slate-700">/</span>
               <Link
@@ -88,8 +88,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     href={`/${pathname.split('/')[1]}/${pathname.split('/')[2]}`}
                     className={`capitalize transition-colors cursor-pointer ${
                       !pathname.split('/')[3]
-                        ? 'text-[#315B36] dark:text-emerald-400 font-bold hover:underline'
-                        : 'hover:text-[#315B36] dark:hover:text-emerald-400'
+                        ? 'text-[#012970] dark:text-blue-400 font-bold hover:underline'
+                        : 'hover:text-[#006EF3] dark:hover:text-blue-400'
                     }`}
                     title={`Go to ${pathname.split('/')[2].replace(/-/g, ' ')}`}
                   >
@@ -102,7 +102,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <span className="text-slate-300 dark:text-slate-700">/</span>
                   <Link
                     href={`/${pathname.split('/')[1]}/${pathname.split('/')[2]}/${pathname.split('/')[3]}`}
-                    className="text-[#315B36] dark:text-emerald-400 font-bold capitalize hover:underline transition-colors cursor-pointer"
+                    className="text-[#012970] dark:text-blue-400 font-bold capitalize hover:underline transition-colors cursor-pointer"
                     title={`Go to ${pathname.split('/')[3].replace(/-/g, ' ')}`}
                   >
                     {pathname.split('/')[3].replace(/-/g, ' ')}
@@ -114,7 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="flex items-center gap-3.5">
             <div className="hidden md:flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+              <ShieldCheck className="h-3.5 w-3.5 text-[#006EF3]" />
               <span>{roleLabel}</span>
             </div>
 

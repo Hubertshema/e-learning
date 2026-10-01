@@ -182,7 +182,9 @@ export default function SuperadminTeachersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <Badge variant="indigo">Teacher Management</Badge>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#012970] border border-blue-200">
+            Teacher Management
+          </span>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             Instructor Verification & Directory
           </h1>
@@ -196,12 +198,12 @@ export default function SuperadminTeachersPage() {
         <div
           className={`flex items-center gap-2.5 rounded-xl border p-3.5 text-xs font-medium ${
             message.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
+              ? 'border-blue-200 bg-[#F3F7FC] text-[#012970] dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200'
               : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300'
           }`}
         >
-          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          <span>{message.text}</span>
+          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-[#006EF3]" /> : <AlertCircle className="h-4 w-4" />}
+          <span className="font-semibold">{message.text}</span>
         </div>
       )}
 
@@ -357,7 +359,7 @@ export default function SuperadminTeachersPage() {
                         size="sm"
                         onClick={() => handleToggleStatus(teacher, 'ACTIVE')}
                         disabled={actionLoading}
-                        className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                        className="h-8 text-xs bg-[#006EF3] hover:bg-[#0058c4] text-white"
                       >
                         Reactivate
                       </Button>
@@ -441,7 +443,7 @@ export default function SuperadminTeachersPage() {
               <Button
                 variant="default"
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-[#006EF3] hover:bg-[#0058c4] text-white font-medium"
                 onClick={() => handleApprove(selectedTeacher)}
                 disabled={actionLoading}
               >

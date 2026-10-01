@@ -115,16 +115,16 @@ export default function TeacherClassDetailPage() {
       </div>
 
       {/* Cohort Invite Card */}
-      <Card className="p-6 bg-[#132519] border border-[#3B6748]/30 text-white space-y-3 shadow-xl">
+      <Card className="p-6 bg-gradient-to-r from-[#011538] via-[#012970] to-[#006EF3] border border-blue-400/30 text-white space-y-3 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-primary-200 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-amber-400" /> Official Cohort Enrollment Code
+            <p className="text-xs font-semibold text-[#F5B400] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-[#F5B400]" /> Official Cohort Enrollment Code
             </p>
             <h2 className="text-2xl font-black font-mono tracking-widest text-white">
               {cls.code}
             </h2>
-            <p className="text-xs text-primary-200">
+            <p className="text-xs text-blue-100">
               Share this invitation code with students for automatic assignment to this cohort upon payment verification.
             </p>
           </div>

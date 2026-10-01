@@ -105,7 +105,7 @@ export default function SuperadminContactMessagesPage() {
             onClick={fetchMessages}
             variant="outline"
             size="sm"
-            className="rounded-xl border-[#e2ebe2] text-[#2e3339]"
+            className="rounded-xl border-slate-200 text-[#172033]"
           >
             <RefreshCw className="h-4 w-4 mr-1.5" /> Refresh
           </Button>
@@ -114,26 +114,26 @@ export default function SuperadminContactMessagesPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="rounded-2xl border border-[#e2ebe2] bg-white p-5 shadow-sm">
+        <Card className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#eff4ec] text-[#315b36]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#006EF3]">
               <MessageSquare className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-[#5a5e63]">Total Messages</p>
-              <p className="text-2xl font-bold text-[#2e3339]">{total}</p>
+              <p className="text-xs font-semibold text-[#667085]">Total Messages</p>
+              <p className="text-2xl font-bold text-[#172033]">{total}</p>
             </div>
           </div>
         </Card>
 
-        <Card className="rounded-2xl border border-[#e2ebe2] bg-white p-5 shadow-sm">
+        <Card className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#eff4ec] text-[#7ba27a]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#006EF3]">
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-[#5a5e63]">Unread Inquiries</p>
-              <p className="text-2xl font-bold text-[#315b36]">{unreadCount}</p>
+              <p className="text-xs font-semibold text-[#667085]">Unread Inquiries</p>
+              <p className="text-2xl font-bold text-[#012970]">{unreadCount}</p>
             </div>
           </div>
         </Card>
@@ -141,13 +141,13 @@ export default function SuperadminContactMessagesPage() {
         {/* Search */}
         <div className="flex items-center">
           <div className="relative w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5a5e63]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#667085]" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email, keyword..."
-              className="h-11 w-full rounded-xl border border-[#e2ebe2] bg-white pl-10 pr-4 text-sm text-[#2e3339] focus:outline-none focus:ring-2 focus:ring-[#315b36]"
+              className="h-11 w-full rounded-xl border border-[#E2E8F0] bg-white pl-10 pr-4 text-sm text-[#172033] focus:outline-none focus:ring-2 focus:ring-[#006EF3]"
             />
           </div>
         </div>
@@ -161,8 +161,8 @@ export default function SuperadminContactMessagesPage() {
             onClick={() => setStatusFilter(st)}
             className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
               statusFilter === st
-                ? 'bg-[#315b36] text-white shadow-sm'
-                : 'bg-white text-[#2e3339] border border-[#e2ebe2] hover:bg-[#eff4ec]'
+                ? 'bg-[#012970] text-white shadow-sm'
+                : 'bg-white text-[#172033] border border-[#E2E8F0] hover:bg-[#F3F7FC]'
             }`}
           >
             {st}
@@ -175,7 +175,7 @@ export default function SuperadminContactMessagesPage() {
         {/* Messages List Column */}
         <div className="lg:col-span-6 space-y-3">
           {loading ? (
-            <Card className="p-8 text-center text-[#5a5e63]">Loading inquiries...</Card>
+            <Card className="p-8 text-center text-[#667085]">Loading inquiries...</Card>
           ) : messages.length > 0 ? (
             messages.map((msg) => {
               const isSelected = selectedMessage?.id === msg.id;
@@ -185,33 +185,33 @@ export default function SuperadminContactMessagesPage() {
                   onClick={() => handleSelectMessage(msg)}
                   className={`cursor-pointer rounded-2xl border p-4 transition-all ${
                     isSelected
-                      ? 'border-[#315b36] bg-[#eff4ec]/40 shadow-sm'
-                      : 'border-[#e2ebe2] bg-white hover:border-[#315b36]/40'
+                      ? 'border-[#006EF3] bg-[#F3F7FC]/80 shadow-sm'
+                      : 'border-[#E2E8F0] bg-white hover:border-[#006EF3]/40'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-[#2e3339]">{msg.name}</span>
+                      <span className="font-bold text-sm text-[#172033]">{msg.name}</span>
                       {msg.status === 'UNREAD' && (
-                        <span className="h-2 w-2 rounded-full bg-[#315b36]" />
+                        <span className="h-2 w-2 rounded-full bg-[#006EF3]" />
                       )}
                     </div>
-                    <span className="text-[11px] text-[#5a5e63]">
+                    <span className="text-[11px] text-[#667085]">
                       {new Date(msg.createdAt).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <p className="text-xs font-semibold text-[#315b36] truncate mb-1">
+                  <p className="text-xs font-semibold text-[#012970] truncate mb-1">
                     {msg.subject || 'General Inquiry'}
                   </p>
-                  <p className="text-xs text-[#5a5e63] line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-[#667085] line-clamp-2 leading-relaxed">
                     {msg.message}
                   </p>
                 </div>
               );
             })
           ) : (
-            <Card className="p-10 text-center text-[#5a5e63] rounded-2xl border border-[#e2ebe2]">
+            <Card className="p-10 text-center text-[#667085] rounded-2xl border border-[#E2E8F0]">
               No contact messages found matching this filter.
             </Card>
           )}
@@ -220,26 +220,26 @@ export default function SuperadminContactMessagesPage() {
         {/* Selected Message Detail Column */}
         <div className="lg:col-span-6">
           {selectedMessage ? (
-            <Card className="rounded-2xl border border-[#e2ebe2] bg-white p-6 shadow-sm space-y-5">
-              <div className="flex items-start justify-between border-b border-[#e2ebe2] pb-4">
+            <Card className="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm space-y-5">
+              <div className="flex items-start justify-between border-b border-[#E2E8F0] pb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-[#2e3339]">
+                  <h3 className="text-lg font-bold text-[#172033]">
                     {selectedMessage.subject || 'General Inquiry'}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-[#5a5e63] mt-1.5">
-                    <span className="flex items-center gap-1 font-semibold text-[#2e3339]">
-                      <User className="h-3.5 w-3.5 text-[#315b36]" /> {selectedMessage.name}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-[#667085] mt-1.5">
+                    <span className="flex items-center gap-1 font-semibold text-[#172033]">
+                      <User className="h-3.5 w-3.5 text-[#006EF3]" /> {selectedMessage.name}
                     </span>
                     <a
                       href={`mailto:${selectedMessage.email}`}
-                      className="flex items-center gap-1 text-[#315b36] hover:underline"
+                      className="flex items-center gap-1 text-[#006EF3] hover:underline"
                     >
                       <Mail className="h-3.5 w-3.5" /> {selectedMessage.email}
                     </a>
                     {selectedMessage.phone && (
                       <a
                         href={`tel:${selectedMessage.phone}`}
-                        className="flex items-center gap-1 text-[#315b36] hover:underline"
+                        className="flex items-center gap-1 text-[#006EF3] hover:underline"
                       >
                         <Phone className="h-3.5 w-3.5" /> {selectedMessage.phone}
                       </a>
@@ -247,28 +247,28 @@ export default function SuperadminContactMessagesPage() {
                   </div>
                 </div>
 
-                <span className="rounded-lg bg-[#eff4ec] border border-[#e2ebe2] px-2.5 py-1 text-xs font-bold text-[#315b36]">
+                <span className="rounded-lg bg-[#F3F7FC] border border-[#E2E8F0] px-2.5 py-1 text-xs font-bold text-[#012970]">
                   {selectedMessage.status}
                 </span>
               </div>
 
               {/* Message Body */}
               <div className="space-y-2">
-                <p className="text-xs font-bold uppercase text-[#5a5e63]">Inquiry Message:</p>
-                <div className="rounded-xl border border-[#e2ebe2] bg-[#eff4ec]/20 p-4 text-sm text-[#2e3339] leading-relaxed whitespace-pre-wrap">
+                <p className="text-xs font-bold uppercase text-[#667085]">Inquiry Message:</p>
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F3F7FC]/50 p-4 text-sm text-[#172033] leading-relaxed whitespace-pre-wrap">
                   {selectedMessage.message}
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#e2ebe2]">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#E2E8F0]">
                 <a
                   href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(selectedMessage.subject || 'Inquiry')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => updateMessageStatus(selectedMessage.id, 'REPLIED')}
                 >
-                  <Button size="sm" className="rounded-xl bg-[#315b36] text-white hover:bg-[#254629]">
+                  <Button size="sm" className="rounded-xl bg-[#012970] text-white hover:bg-[#006EF3] transition-colors">
                     <Mail className="h-4 w-4 mr-1.5" /> Reply via Email
                   </Button>
                 </a>
@@ -277,26 +277,26 @@ export default function SuperadminContactMessagesPage() {
                   onClick={() => updateMessageStatus(selectedMessage.id, 'REPLIED')}
                   variant="outline"
                   size="sm"
-                  className="rounded-xl border-[#e2ebe2] text-[#2e3339]"
+                  className="rounded-xl border-[#E2E8F0] text-[#172033] hover:bg-[#F3F7FC]"
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-1.5 text-[#315b36]" /> Mark Replied
+                  <CheckCircle2 className="h-4 w-4 mr-1.5 text-[#006EF3]" /> Mark Replied
                 </Button>
 
                 <Button
                   onClick={() => updateMessageStatus(selectedMessage.id, 'ARCHIVED')}
                   variant="outline"
                   size="sm"
-                  className="rounded-xl border-[#e2ebe2] text-[#5a5e63]"
+                  className="rounded-xl border-[#E2E8F0] text-[#667085] hover:bg-[#F3F7FC]"
                 >
                   <Archive className="h-4 w-4 mr-1.5" /> Archive
                 </Button>
               </div>
             </Card>
           ) : (
-            <Card className="rounded-2xl border border-dashed border-[#e2ebe2] bg-[#eff4ec]/20 p-12 text-center text-[#5a5e63]">
-              <MessageSquare className="h-8 w-8 mx-auto text-[#7ba27a] mb-2" />
-              <p className="text-sm font-semibold text-[#2e3339]">Select an inquiry</p>
-              <p className="text-xs text-[#5a5e63]">Click any message from the left to read and respond.</p>
+            <Card className="rounded-2xl border border-dashed border-[#E2E8F0] bg-[#F3F7FC]/50 p-12 text-center text-[#667085]">
+              <MessageSquare className="h-8 w-8 mx-auto text-[#006EF3] mb-2" />
+              <p className="text-sm font-semibold text-[#172033]">Select an inquiry</p>
+              <p className="text-xs text-[#667085]">Click any message from the left to read and respond.</p>
             </Card>
           )}
         </div>

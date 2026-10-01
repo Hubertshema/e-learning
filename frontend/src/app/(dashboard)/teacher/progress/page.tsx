@@ -205,7 +205,7 @@ export default function TeacherProgressPage() {
       ) : studentData ? (
         <>
           {/* Student Profile Card */}
-          <Card className="p-6 bg-[#132519] border border-[#3B6748]/30 text-white shadow-xl">
+          <Card className="p-6 bg-gradient-to-r from-[#011538] via-[#012970] to-[#006EF3] border border-blue-400/30 text-white shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-xl font-black text-white border border-white/20">
@@ -214,7 +214,7 @@ export default function TeacherProgressPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-bold">{studentData.firstName} {studentData.lastName}</h2>
-                    <Badge variant="indigo" className="bg-primary-500/30 text-primary-200 border-primary-400/30">
+                    <Badge variant="indigo" className="bg-blue-500/30 text-blue-200 border-blue-400/30">
                       Level {studentData.studentProfile?.currentLevel || 'A2'}
                     </Badge>
                   </div>
@@ -224,8 +224,8 @@ export default function TeacherProgressPage() {
 
               <div className="flex items-center gap-4 border-t sm:border-t-0 sm:border-l border-white/10 pt-3 sm:pt-0 sm:pl-6">
                 <div>
-                  <span className="text-[11px] text-slate-400 block uppercase font-bold tracking-wider">Target Level</span>
-                  <span className="text-sm font-bold text-emerald-400">
+                  <span className="text-[11px] text-blue-200/80 block uppercase font-bold tracking-wider">Target Level</span>
+                  <span className="text-sm font-bold text-[#F5B400]">
                     {studentData.studentProfile?.targetLevel || 'B2 Fluent'}
                   </span>
                 </div>

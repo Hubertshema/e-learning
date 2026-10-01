@@ -129,10 +129,10 @@ export default function CoursesPage() {
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 space-y-10 pb-20">
       {/* Header Banner */}
       <div className="space-y-4 text-left max-w-3xl">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#2e3339]">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#172033]">
           Structured CEFR English Courses
         </h1>
-        <p className="text-base text-[#5a5e63] leading-relaxed">
+        <p className="text-base text-[#667085] leading-relaxed">
           Master unhesitating English with standardized curricula designed to meet international CEFR benchmarks, complete with certified educator reviews and verifiable diplomas.
         </p>
       </div>
@@ -141,13 +141,13 @@ export default function CoursesPage() {
       <div className="space-y-4">
         {/* Search Input */}
         <div className="relative max-w-md">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-[#5a5e63]" />
+          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-[#667085]" />
           <input
             type="text"
             placeholder="Search course title or topics..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-[#e2ebe2] bg-white py-2.5 pl-10 pr-4 text-sm text-[#2e3339] placeholder-[#5a5e63] shadow-sm transition focus:border-[#315b36] focus:outline-none focus:ring-1 focus:ring-[#315b36]"
+            className="w-full rounded-xl border border-[#E2E8F0] bg-white py-2.5 pl-10 pr-4 text-sm text-[#172033] placeholder-[#667085]/60 shadow-sm transition focus:border-[#006EF3] focus:outline-none focus:ring-1 focus:ring-[#006EF3]"
           />
         </div>
 
@@ -161,8 +161,8 @@ export default function CoursesPage() {
                 onClick={() => setSelectedLevel(lvl.code)}
                 className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                   isSelected
-                    ? 'bg-[#315b36] text-white shadow-sm'
-                    : 'border border-[#e2ebe2] bg-white text-[#2e3339] hover:bg-[#eff4ec]'
+                    ? 'bg-[#012970] text-white shadow-sm'
+                    : 'border border-[#E2E8F0] bg-white text-[#172033] hover:bg-[#F3F7FC]'
                 }`}
               >
                 {lvl.label}
@@ -178,37 +178,37 @@ export default function CoursesPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="flex flex-col justify-between overflow-hidden rounded-2xl border border-[#e2ebe2] bg-white p-6 shadow-sm animate-pulse space-y-5"
+              className="flex flex-col justify-between overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-sm animate-pulse space-y-5"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="h-6 w-20 rounded-lg bg-[#eff4ec]" />
-                  <div className="h-4 w-28 rounded-md bg-[#eff4ec]" />
+                  <div className="h-6 w-20 rounded-lg bg-[#F3F7FC]" />
+                  <div className="h-4 w-28 rounded-md bg-[#F3F7FC]" />
                 </div>
-                <div className="h-6 w-4/5 rounded-lg bg-[#e2ebe2]" />
+                <div className="h-6 w-4/5 rounded-lg bg-[#E2E8F0]" />
                 <div className="space-y-1.5 pt-1">
-                  <div className="h-3.5 w-full rounded bg-[#eff4ec]" />
-                  <div className="h-3.5 w-5/6 rounded bg-[#eff4ec]" />
-                  <div className="h-3.5 w-2/3 rounded bg-[#eff4ec]" />
+                  <div className="h-3.5 w-full rounded bg-[#F3F7FC]" />
+                  <div className="h-3.5 w-5/6 rounded bg-[#F3F7FC]" />
+                  <div className="h-3.5 w-2/3 rounded bg-[#F3F7FC]" />
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-[#e2ebe2]">
+              <div className="space-y-4 pt-4 border-t border-[#E2E8F0]">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="h-4 w-24 rounded bg-[#eff4ec]" />
-                  <div className="h-4 w-20 rounded bg-[#eff4ec]" />
+                  <div className="h-4 w-24 rounded bg-[#F3F7FC]" />
+                  <div className="h-4 w-20 rounded bg-[#F3F7FC]" />
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <div className="space-y-1">
-                    <div className="h-3 w-14 rounded bg-[#eff4ec]" />
-                    <div className="h-4 w-28 rounded bg-[#e2ebe2]" />
+                    <div className="h-3 w-14 rounded bg-[#F3F7FC]" />
+                    <div className="h-4 w-28 rounded bg-[#E2E8F0]" />
                   </div>
                   <div className="space-y-1 text-right">
-                    <div className="h-3 w-14 rounded bg-[#eff4ec] ml-auto" />
-                    <div className="h-6 w-20 rounded bg-[#e2ebe2] ml-auto" />
+                    <div className="h-3 w-14 rounded bg-[#F3F7FC] ml-auto" />
+                    <div className="h-6 w-20 rounded bg-[#E2E8F0] ml-auto" />
                   </div>
                 </div>
-                <div className="h-10 w-full rounded-xl bg-[#e2ebe2]" />
+                <div className="h-10 w-full rounded-xl bg-[#E2E8F0]" />
               </div>
             </div>
           ))}
@@ -218,40 +218,40 @@ export default function CoursesPage() {
           {courses.map((course) => (
             <Card
               key={course.id}
-              className="flex flex-col justify-between overflow-hidden border border-[#e2ebe2] bg-white transition-all hover:border-[#315b36] hover:shadow-md rounded-2xl p-0"
+              className="flex flex-col justify-between overflow-hidden border border-[#E2E8F0] bg-white transition-all hover:border-[#006EF3] hover:shadow-md rounded-2xl p-0"
             >
               <CardContent className="p-6 space-y-4 flex flex-col justify-between h-full">
                 <div className="space-y-3">
                   {/* Top Level and Category */}
                   <div className="flex items-center justify-between">
-                    <span className="inline-block rounded-lg bg-[#eff4ec] text-[#315b36] border border-[#e2ebe2] px-3 py-1 text-xs font-bold">
+                    <span className="inline-block rounded-lg bg-[#F3F7FC] text-[#006EF3] border border-[#E2E8F0] px-3 py-1 text-xs font-bold">
                       {course.level.replace('_', ' ')}
                     </span>
-                    <span className="text-xs font-semibold text-[#5a5e63]">
+                    <span className="text-xs font-semibold text-[#667085]">
                       {course.category}
                     </span>
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-lg font-bold leading-snug text-[#2e3339] line-clamp-2">
+                  <h3 className="text-lg font-bold leading-snug text-[#172033] line-clamp-2">
                     {course.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-xs text-[#5a5e63] leading-relaxed line-clamp-3">
+                  <p className="text-xs text-[#667085] leading-relaxed line-clamp-3">
                     {course.description}
                   </p>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t border-[#e2ebe2]">
+                <div className="space-y-4 pt-4 border-t border-[#E2E8F0]">
                   {/* Stats Strip */}
-                  <div className="grid grid-cols-2 gap-2 text-xs text-[#5a5e63]">
+                  <div className="grid grid-cols-2 gap-2 text-xs text-[#667085]">
                     <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 text-[#315b36]" />
+                      <Clock className="h-3.5 w-3.5 text-[#006EF3]" />
                       <span>{course.durationDays} Days Access</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <BookOpen className="h-3.5 w-3.5 text-[#315b36]" />
+                      <BookOpen className="h-3.5 w-3.5 text-[#006EF3]" />
                       <span>{course.lessonsCount || 16} Lessons</span>
                     </div>
                   </div>
@@ -259,19 +259,19 @@ export default function CoursesPage() {
                   {/* Teacher Row */}
                   <div className="flex items-center justify-between pt-1">
                     <div>
-                      <span className="text-[11px] text-[#5a5e63] block font-medium">Instructor</span>
-                      <span className="text-xs font-bold text-[#2e3339] truncate block">
+                      <span className="text-[11px] text-[#667085] block font-medium">Instructor</span>
+                      <span className="text-xs font-bold text-[#172033] truncate block">
                         {course.instructor?.name || 'LinguaChris Faculty'}
                       </span>
                     </div>
-                    <span className="rounded-full bg-[#eff4ec] px-2.5 py-0.5 text-[11px] font-semibold text-[#315b36]">
+                    <span className="rounded-full bg-[#F3F7FC] px-2.5 py-0.5 text-[11px] font-semibold text-[#006EF3]">
                       {course.level}
                     </span>
                   </div>
 
                   {/* Action Button */}
                   <Link href={`/register?role=student&course=${course.id}`} className="block w-full">
-                    <Button className="w-full rounded-xl bg-[#315b36] text-white hover:bg-[#254629] text-xs font-bold py-2.5">
+                    <Button className="w-full rounded-xl bg-[#012970] text-white hover:bg-[#001f54] text-xs font-bold py-2.5 transition-colors">
                       <span>Enroll in Syllabus</span>
                       <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Button>
@@ -283,14 +283,14 @@ export default function CoursesPage() {
         </div>
       ) : (
         /* Empty State */
-        <div className="text-center py-16 px-4 rounded-3xl border border-[#e2ebe2] bg-[#eff4ec]/30 space-y-4">
-          <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-white border border-[#e2ebe2] text-[#315b36] shadow-sm">
+        <div className="text-center py-16 px-4 rounded-3xl border border-[#E2E8F0] bg-[#F3F7FC]/50 space-y-4">
+          <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-white border border-[#E2E8F0] text-[#006EF3] shadow-sm">
             <Layers className="h-7 w-7" />
           </div>
-          <h3 className="text-xl font-bold text-[#2e3339]">
+          <h3 className="text-xl font-bold text-[#172033]">
             No Courses Found
           </h3>
-          <p className="text-sm text-[#5a5e63] max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-[#667085] max-w-md mx-auto leading-relaxed">
             There are currently no courses matching the selected level or search filter. Try selecting "All Levels" or clearing your search.
           </p>
           <div className="pt-2">
@@ -300,7 +300,7 @@ export default function CoursesPage() {
                 setSearchQuery('');
               }}
               variant="outline"
-              className="rounded-xl border-[#e2ebe2] text-[#315b36] hover:bg-[#eff4ec] text-xs font-bold px-5"
+              className="rounded-xl border-[#E2E8F0] text-[#012970] hover:bg-[#F3F7FC] text-xs font-bold px-5"
             >
               Reset Filters
             </Button>

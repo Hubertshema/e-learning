@@ -174,7 +174,7 @@ function PdfThumbnail({
       <div
         className={`flex-1 aspect-[8.5/11] rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center transition-all duration-150 relative overflow-hidden ${
           isActive
-            ? 'border-2 border-[#0091ff] ring-2 ring-[#0091ff]/20 shadow-md'
+            ? 'border-2 border-[#006EF3] ring-2 ring-[#006EF3]/20 shadow-md'
             : 'border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
         }`}
       >
@@ -556,7 +556,7 @@ export function PdfLessonReader({
               variant="outline"
               onClick={handleDownload}
               disabled={isDownloading}
-              className="h-7 px-2.5 text-xs font-bold gap-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300"
+              className="h-7 px-2.5 text-xs font-bold gap-1 border-blue-200 text-[#012970] hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300"
               title="Download PDF"
             >
               <Download className="h-3 w-3" />

@@ -122,12 +122,12 @@ export function DirectAdmissionModal({
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-1">
-        <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900/40 text-xs text-slate-700 dark:text-slate-300">
-          <p className="font-bold text-[#315b36] dark:text-emerald-400 flex items-center gap-1.5">
-            <UserPlus className="h-4 w-4" />
+        <div className="p-3 rounded-2xl bg-[#F3F7FC] border border-[#E2E8F0] dark:bg-slate-900/60 dark:border-slate-800 text-xs text-[#172033] dark:text-slate-300">
+          <p className="font-bold text-[#012970] dark:text-blue-400 flex items-center gap-1.5">
+            <UserPlus className="h-4 w-4 text-[#006EF3]" />
             Admit Student Without Prior Application
           </p>
-          <p className="text-[11px] mt-0.5 text-slate-500 dark:text-slate-400">
+          <p className="text-[11px] mt-0.5 text-[#667085] dark:text-slate-400">
             Instantly provision a verified student account, assign an initial CEFR level, and configure tuition payment requirements.
           </p>
         </div>
@@ -204,7 +204,7 @@ export function DirectAdmissionModal({
             <button
               type="button"
               onClick={generatePassword}
-              className="text-[10px] font-bold text-[#315b36] hover:underline flex items-center gap-1"
+              className="text-[10px] font-bold text-[#006EF3] hover:underline flex items-center gap-1"
             >
               <Key className="h-3 w-3" />
               Generate random
@@ -240,7 +240,7 @@ export function DirectAdmissionModal({
         {/* Payment Requirement Decision */}
         <div className="space-y-1.5 pt-1">
           <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <CreditCard className="h-3.5 w-3.5 text-[#315b36]" />
+            <CreditCard className="h-3.5 w-3.5 text-[#006EF3]" />
             Tuition Payment Decision *
           </label>
 
@@ -259,7 +259,7 @@ export function DirectAdmissionModal({
                   name="paymentReq"
                   checked={paymentRequirement === 'PAYMENT_REQUIRED'}
                   onChange={() => setPaymentRequirement('PAYMENT_REQUIRED')}
-                  className="accent-[#315b36]"
+                  className="accent-[#006EF3]"
                 />
                 <span>Payment Required</span>
               </div>
@@ -272,7 +272,7 @@ export function DirectAdmissionModal({
             <label
               className={`p-3 rounded-xl border cursor-pointer transition-all ${
                 paymentRequirement === 'PAYMENT_ALREADY_HANDLED'
-                  ? 'border-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 font-bold'
+                  ? 'border-[#006EF3] bg-[#F3F7FC] dark:bg-slate-800 text-[#012970] dark:text-blue-300 font-bold'
                   : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'
               }`}
             >
@@ -282,7 +282,7 @@ export function DirectAdmissionModal({
                   name="paymentReq"
                   checked={paymentRequirement === 'PAYMENT_ALREADY_HANDLED'}
                   onChange={() => setPaymentRequirement('PAYMENT_ALREADY_HANDLED')}
-                  className="accent-[#315b36]"
+                  className="accent-[#006EF3]"
                 />
                 <span>Already Handled</span>
               </div>
@@ -305,7 +305,7 @@ export function DirectAdmissionModal({
                   name="paymentReq"
                   checked={paymentRequirement === 'PAYMENT_WAIVED'}
                   onChange={() => setPaymentRequirement('PAYMENT_WAIVED')}
-                  className="accent-[#315b36]"
+                  className="accent-[#006EF3]"
                 />
                 <span>Payment Waived</span>
               </div>
@@ -328,7 +328,7 @@ export function DirectAdmissionModal({
                   name="paymentReq"
                   checked={paymentRequirement === 'PAYMENT_NOT_REQUIRED'}
                   onChange={() => setPaymentRequirement('PAYMENT_NOT_REQUIRED')}
-                  className="accent-[#315b36]"
+                  className="accent-[#006EF3]"
                 />
                 <span>Not Required</span>
               </div>
@@ -353,7 +353,7 @@ export function DirectAdmissionModal({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="bg-[#315b36] hover:bg-[#25462a] text-white font-bold text-xs h-9 rounded-xl shadow-md gap-1.5"
+            className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold text-xs h-9 rounded-xl shadow-md gap-1.5 transition-colors"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-1.5">

@@ -98,26 +98,26 @@ export function ApplyForm() {
   };
 
   return (
-    <Card className="w-full max-w-xl border border-[#E2EBE2] bg-white shadow-xl rounded-3xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <Card className="w-full max-w-xl border border-[#E2E8F0] bg-white shadow-xl rounded-3xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
       {/* Mobile-only Logo Header */}
       <div className="lg:hidden text-center pt-3 pb-0">
         <Link href="/" className="inline-block">
           <img
             src="/real-logo.png"
-            alt="LinguaChris Academy"
+            alt="FluentEdge Academy"
             className="h-8 w-auto object-contain mx-auto"
           />
         </Link>
       </div>
 
       <CardHeader className="space-y-1 text-center px-5 sm:px-6 pt-3 pb-2 shrink-0">
-        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-[#315b36] border border-emerald-100">
+        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-[#F3F7FC] text-[#006EF3] border border-[#E2E8F0]">
           <GraduationCap className="h-5 w-5" />
         </div>
-        <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-[#2E3339]">
+        <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-[#172033]">
           Student Admission Application
         </CardTitle>
-        <CardDescription className="text-xs text-slate-500 max-w-md mx-auto">
+        <CardDescription className="text-xs text-[#667085] max-w-md mx-auto">
           Submit your profile details and create your student account. Our academic instructors will review your admission request.
         </CardDescription>
       </CardHeader>
@@ -211,7 +211,7 @@ export function ApplyForm() {
           <select
             value={formData.targetLevel}
             onChange={(e) => setFormData({ ...formData, targetLevel: e.target.value })}
-            className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#315b36]"
+            className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#006EF3]"
           >
             {CEFR_LEVELS.map((lvl) => (
               <option key={lvl.value} value={lvl.value}>
@@ -236,7 +236,7 @@ export function ApplyForm() {
                   onClick={() => handleGoalToggle(goal)}
                   className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all ${
                     selected
-                      ? 'bg-emerald-50 text-[#315b36] border-emerald-300 font-bold'
+                      ? 'bg-[#F3F7FC] text-[#012970] border-[#006EF3] font-bold'
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -251,14 +251,14 @@ export function ApplyForm() {
         {/* Motivation / Background */}
         <div className="space-y-1">
           <label className="text-[11px] font-bold text-slate-700">
-            Why do you want to learn with LinguaChris? (Motivation)
+            Why do you want to learn with FluentEdge? (Motivation)
           </label>
           <textarea
             rows={2}
             placeholder="Tell us a little about yourself and your English learning goals..."
             value={formData.motivation}
             onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
-            className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#315b36]"
+            className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#006EF3]"
           />
         </div>
 
@@ -266,7 +266,7 @@ export function ApplyForm() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-[#315b36] hover:bg-[#25462a] text-white font-bold h-10 rounded-xl shadow-md text-xs transition-all active:scale-[0.99]"
+            className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-10 rounded-xl shadow-md text-xs transition-all active:scale-[0.99]"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -286,7 +286,7 @@ export function ApplyForm() {
       <CardFooter className="flex flex-col gap-1.5 border-t border-slate-100 bg-slate-50/70 p-3 text-center shrink-0">
         <p className="text-[11px] text-slate-500">
           Already have an account?{' '}
-          <Link href="/login" className="font-bold text-[#315b36] hover:underline">
+          <Link href="/login" className="font-bold text-[#012970] hover:text-[#006EF3] hover:underline">
             Sign in
           </Link>
         </p>

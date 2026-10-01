@@ -12,6 +12,7 @@ import studentRoutes from './student.routes.js';
 import superadminRoutes from './superadmin.routes.js';
 import uploadRoutes from './upload.routes.js';
 import { teacherInteractiveVideoRoutes, studentInteractiveVideoRoutes } from './interactive-video.routes.js';
+import liveSessionRoutes from './live-session.routes.js';
 import { HealthController } from '../controllers/health.controller.js';
 import { StudentController } from '../controllers/student.controller.js';
 import { UserController } from '../controllers/user.controller.js';
@@ -48,6 +49,7 @@ router.use('/student', studentRoutes);
 router.use('/superadmin', superadminRoutes);
 router.use('/levels', levelRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/live-sessions', liveSessionRoutes);
 router.use('/teacher/interactive-videos', teacherInteractiveVideoRoutes);
 router.use('/student/interactive-videos', studentInteractiveVideoRoutes);
 

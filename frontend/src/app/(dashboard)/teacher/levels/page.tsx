@@ -67,7 +67,7 @@ function ExpandableCourseCard({ course }: { course: any }) {
                       </div>
                     </div>
                     {lesson.skill && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#315b36] border border-emerald-200 shrink-0">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#F3F7FC] text-[#012970] border border-[#E2E8F0] shrink-0">
                         {lesson.skill}
                       </span>
                     )}

@@ -17,7 +17,7 @@ function Badge({ className, variant = 'default', children, ...props }: BadgeProp
     tint: 'bg-[#F3F7FC] text-[#006EF3] border-[#E2E8F0]',
     outline: 'bg-white text-[#172033] border-[#E2E8F0]',
     destructive: 'bg-red-50 text-red-700 border-red-200',
-    success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    success: 'bg-[#F3F7FC] text-[#006EF3] border-blue-200',
     warning: 'bg-amber-50 text-[#F5B400] border-amber-200',
     indigo: 'bg-[#F3F7FC] text-[#012970] border-[#E2E8F0]',
     info: 'bg-[#F3F7FC] text-[#006EF3] border-[#E2E8F0]',

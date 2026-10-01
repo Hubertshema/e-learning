@@ -193,11 +193,11 @@ function TestEmailForm({ defaultEmail }: { defaultEmail: string }) {
         <div
           className={`flex items-center gap-2.5 rounded-xl border p-4 text-xs font-semibold ${
             testResult.success
-              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+              ? 'border-blue-200 bg-[#F3F7FC] text-[#012970] dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800'
               : 'border-destructive/20 bg-destructive/10 text-destructive'
           }`}
         >
-          {testResult.success ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+          {testResult.success ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#006EF3]" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
           <span>{testResult.message}</span>
         </div>
       )}

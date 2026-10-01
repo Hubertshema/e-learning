@@ -68,7 +68,7 @@ export default function StudentInteractiveVideoPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#006EF3] border-t-transparent" />
         <p className="text-xs font-semibold text-slate-500">Loading interactive lesson…</p>
       </div>
     );
@@ -206,7 +206,7 @@ export default function StudentInteractiveVideoPage() {
             <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-3.5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-200 dark:border-emerald-800">
+                  <div className="p-2 rounded-xl bg-[#F3F7FC] dark:bg-blue-950/50 text-[#006EF3] border border-blue-200 dark:border-blue-800">
                     <FileText className="h-4 w-4" />
                   </div>
                   <div>
@@ -241,7 +241,7 @@ export default function StudentInteractiveVideoPage() {
                     return (
                       <div
                         key={res.id}
-                        className="group p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-900 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all flex flex-col justify-between gap-3"
+                        className="group p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-900 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm transition-all flex flex-col justify-between gap-3"
                       >
                         <div className="space-y-2">
                           <div className="flex items-center justify-between gap-2">
@@ -255,7 +255,7 @@ export default function StudentInteractiveVideoPage() {
                             {/* Download Permission Status */}
                             {canDownload ? (
                               <span
-                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#006EF3] dark:text-blue-400"
                                 title="Downloads allowed"
                               >
                                 <CheckCircle2 className="h-3 w-3" /> Downloadable
@@ -272,7 +272,7 @@ export default function StudentInteractiveVideoPage() {
 
                           <div>
                             <h4
-                              className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                              className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-[#006EF3] dark:hover:text-blue-400 transition-colors"
                               onClick={() => setPreviewResource(res)}
                               title={res.title}
                             >
@@ -291,7 +291,7 @@ export default function StudentInteractiveVideoPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 h-7 text-xs font-semibold gap-1 hover:border-emerald-300 hover:text-emerald-700 dark:hover:text-emerald-400"
+                            className="flex-1 h-7 text-xs font-semibold gap-1 hover:border-blue-300 hover:text-[#006EF3] dark:hover:text-blue-400"
                             onClick={() => setPreviewResource(res)}
                           >
                             <Eye className="h-3.5 w-3.5" />
@@ -302,7 +302,7 @@ export default function StudentInteractiveVideoPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 px-2.5 text-xs font-semibold gap-1 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
+                              className="h-7 px-2.5 text-xs font-semibold gap-1 text-[#006EF3] hover:bg-[#F3F7FC] dark:text-blue-400 dark:hover:bg-blue-950/50"
                               onClick={() => {
                                 const a = document.createElement('a');
                                 a.href = res.url;

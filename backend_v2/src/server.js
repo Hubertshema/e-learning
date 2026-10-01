@@ -8,6 +8,9 @@ import { setupSockets } from './sockets/index.js';
 import { runComprehensiveSeed } from './seeds/comprehensive_seeder.js';
 import { ensureInteractiveVideoSchema } from './config/interactive-video-schema.js';
 import { initAdmissionSchema } from './config/init-admission-schema.js';
+import { ensureLiveSessionSchema } from './config/live-session-schema.js';
+
+// Live session schema and routes active
 
 function getLocalIpAddress() {
   const interfaces = os.networkInterfaces();
@@ -26,6 +29,7 @@ async function startServer() {
   await connectDatabase();
   await ensureInteractiveVideoSchema();
   await initAdmissionSchema();
+  await ensureLiveSessionSchema();
 
   // 1.1 Run Comprehensive Super Admin Seeder in background (non-blocking)
   runComprehensiveSeed().catch((seedErr) => {

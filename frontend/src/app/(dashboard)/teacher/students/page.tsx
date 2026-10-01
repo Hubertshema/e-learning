@@ -256,7 +256,7 @@ function matchesLearningLevel(item: any, lvl: string): boolean {
 
 function AvatarCircle({ first, last, size = 'md' }: { first: string; last: string; size?: 'sm' | 'md' | 'lg' }) {
   const gradients = [
-    'from-[#315b36] to-[#1e3c23]',
+    'from-[#012970] to-[#006EF3]',
     'from-indigo-600 to-violet-700',
     'from-sky-600 to-blue-700',
     'from-amber-600 to-orange-700',
@@ -321,12 +321,12 @@ function Toast({ msg }: { msg: { type: 'success' | 'error'; text: string } }) {
     <div
       className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-xs font-bold shadow-2xl border animate-in slide-in-from-bottom-4 duration-300 ${
         msg.type === 'success'
-          ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-300 dark:border-emerald-800'
+          ? 'bg-[#F3F7FC] text-[#012970] border-blue-200 dark:bg-blue-950/90 dark:text-blue-200 dark:border-blue-800'
           : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/90 dark:text-rose-300 dark:border-rose-800'
       }`}
     >
       {msg.type === 'success' ? (
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-[#006EF3]" />
       ) : (
         <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
       )}
@@ -424,7 +424,7 @@ function CoachingNoteModal({ student, onClose, onSuccess, prefillTitle, prefillC
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write constructive, actionable remarks..."
-            className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs resize-none focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+            className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs resize-none focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
             required
           />
         </div>
@@ -457,7 +457,7 @@ function CoachingNoteModal({ student, onClose, onSuccess, prefillTitle, prefillC
             type="submit"
             size="sm"
             disabled={sending}
-            className="text-xs bg-[#315b36] hover:bg-[#254629] text-white font-bold gap-1.5"
+            className="text-xs bg-[#012970] hover:bg-[#006EF3] text-white font-bold gap-1.5"
           >
             {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             <span>{sending ? 'Sending...' : 'Send Coaching Note'}</span>
@@ -550,7 +550,7 @@ function ExtensionModal({ enrollmentId, studentName, currentExpiresAt, onClose, 
                 onClick={() => handlePreset(p)}
                 className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all border ${
                   selectedDays === p && customDays === String(p)
-                    ? 'bg-[#315b36] text-white border-[#315b36] shadow-xs'
+                    ? 'bg-[#012970] text-white border-[#012970] shadow-xs'
                     : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400'
                 }`}
               >
@@ -591,7 +591,7 @@ function ExtensionModal({ enrollmentId, studentName, currentExpiresAt, onClose, 
             type="submit"
             size="sm"
             disabled={extending}
-            className="text-xs bg-[#315b36] hover:bg-[#254629] text-white font-bold gap-1.5"
+            className="text-xs bg-[#012970] hover:bg-[#006EF3] text-white font-bold gap-1.5"
           >
             {extending ? (
               <>
@@ -659,7 +659,7 @@ function BulkCohortModal({ selectedIds, teacherClasses, onClose, onSuccess }: Bu
           <select
             value={classId}
             onChange={(e) => setClassId(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-3 text-xs font-semibold focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-3 text-xs font-semibold focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
           >
             <option value="">None (Self-paced study)</option>
             {teacherClasses.map((c) => (
@@ -678,7 +678,7 @@ function BulkCohortModal({ selectedIds, teacherClasses, onClose, onSuccess }: Bu
             type="submit"
             size="sm"
             disabled={saving}
-            className="text-xs bg-[#315b36] hover:bg-[#254629] text-white font-bold gap-1.5"
+            className="text-xs bg-[#012970] hover:bg-[#006EF3] text-white font-bold gap-1.5"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Layers className="h-3.5 w-3.5" />}
             <span>Apply to {selectedIds.length} Learners</span>
@@ -1016,7 +1016,7 @@ function DirectoryTab() {
             placeholder="Search students by name or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200/80 bg-slate-50/70 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#315b36] focus:bg-white focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            className="w-full rounded-xl border border-slate-200/80 bg-slate-50/70 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#006EF3] focus:bg-white focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
@@ -1028,7 +1028,7 @@ function DirectoryTab() {
               onClick={() => setStatusFilter(st)}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                 statusFilter === st
-                  ? 'bg-white dark:bg-slate-900 text-[#315b36] dark:text-emerald-400 shadow-xs'
+                  ? 'bg-white dark:bg-slate-900 text-[#012970] dark:text-blue-400 shadow-xs'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
@@ -1036,7 +1036,7 @@ function DirectoryTab() {
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   statusFilter === st
-                    ? 'bg-emerald-100 text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300'
+                    ? 'bg-blue-100 text-[#012970] dark:bg-blue-950 dark:text-blue-300'
                     : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                 }`}
               >
@@ -1051,7 +1051,7 @@ function DirectoryTab() {
           <select
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
-            className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+            className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
           >
             <option value="ALL">All Courses</option>
             {teacherCourses.map((c) => (
@@ -1066,7 +1066,7 @@ function DirectoryTab() {
         <select
           value={levelFilter}
           onChange={(e) => setLevelFilter(e.target.value)}
-          className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+          className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
         >
           <option value="ALL">All Levels</option>
           <optgroup label="Program Tracks">
@@ -1090,7 +1090,7 @@ function DirectoryTab() {
           <select
             value={classFilter}
             onChange={(e) => setClassFilter(e.target.value)}
-            className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+            className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
           >
             <option value="ALL">All Cohorts &amp; Classes</option>
             <option value="SELF_PACED">Self-paced (No Cohort)</option>
@@ -1115,12 +1115,12 @@ function DirectoryTab() {
 
       {/* ─── Bulk Action Bar ─────────────────────────────────────────────── */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950 via-[#1b351e] to-emerald-950 text-white shadow-lg border border-emerald-500/30 animate-in slide-in-from-top-2 duration-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-[#011538] via-[#012970] to-[#006EF3] text-white shadow-lg border border-blue-500/30 animate-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-6 min-w-[24px] px-2 items-center justify-center rounded-full bg-emerald-500 text-white text-xs font-black">
+            <span className="flex h-6 min-w-[24px] px-2 items-center justify-center rounded-full bg-[#006EF3] text-white text-xs font-black">
               {selectedIds.size}
             </span>
-            <span className="text-xs font-bold text-emerald-100">
+            <span className="text-xs font-bold text-blue-100">
               {selectedIds.size === 1 ? '1 learner selected' : `${selectedIds.size} learners selected`}
             </span>
           </div>
@@ -1130,7 +1130,7 @@ function DirectoryTab() {
               size="sm"
               onClick={handleBulkExtend30}
               disabled={bulkLoading}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold h-8 gap-1.5 shadow-xs"
+              className="bg-[#006EF3] hover:bg-[#0058c4] text-white text-xs font-bold h-8 gap-1.5 shadow-xs"
             >
               {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarPlus className="h-3.5 w-3.5" />}
               <span>Bulk +30 Days</span>
@@ -1141,9 +1141,9 @@ function DirectoryTab() {
               variant="outline"
               onClick={() => setBulkCohortOpen(true)}
               disabled={bulkLoading}
-              className="border-emerald-400/40 bg-emerald-900/40 text-emerald-100 hover:bg-emerald-800/60 text-xs font-bold h-8 gap-1.5"
+              className="border-blue-400/40 bg-blue-950/40 text-blue-100 hover:bg-blue-900/60 text-xs font-bold h-8 gap-1.5"
             >
-              <Layers className="h-3.5 w-3.5 text-emerald-300" />
+              <Layers className="h-3.5 w-3.5 text-blue-300" />
               <span>Assign Cohort</span>
             </Button>
 
@@ -1152,9 +1152,9 @@ function DirectoryTab() {
               variant="outline"
               onClick={() => handleBulkToggleStatus('ACTIVE')}
               disabled={bulkLoading}
-              className="border-emerald-400/40 bg-emerald-900/40 text-emerald-100 hover:bg-emerald-800/60 text-xs font-bold h-8 gap-1.5"
+              className="border-blue-400/40 bg-blue-950/40 text-blue-100 hover:bg-blue-900/60 text-xs font-bold h-8 gap-1.5"
             >
-              <PlayCircle className="h-3.5 w-3.5 text-emerald-300" />
+              <PlayCircle className="h-3.5 w-3.5 text-blue-300" />
               <span>Activate</span>
             </Button>
 
@@ -1171,7 +1171,7 @@ function DirectoryTab() {
 
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="p-1.5 rounded-lg text-emerald-300 hover:text-white hover:bg-emerald-800/50 transition-colors"
+              className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800/50 transition-colors"
               title="Clear selection"
             >
               <X className="h-4 w-4" />
@@ -1203,9 +1203,9 @@ function DirectoryTab() {
                     title={isAllSelected ? 'Deselect all' : 'Select all'}
                   >
                     {isAllSelected ? (
-                      <CheckSquare className="h-4 w-4 text-[#315b36]" />
+                      <CheckSquare className="h-4 w-4 text-[#006EF3]" />
                     ) : isPartiallySelected ? (
-                      <MinusSquare className="h-4 w-4 text-[#315b36]" />
+                      <MinusSquare className="h-4 w-4 text-[#006EF3]" />
                     ) : (
                       <Square className="h-4 w-4" />
                     )}
@@ -1228,7 +1228,7 @@ function DirectoryTab() {
                   <tr
                     key={st.id}
                     className={`hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors ${
-                      isSelected ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : ''
+                      isSelected ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
                     }`}
                   >
                     {/* Checkbox column */}
@@ -1238,7 +1238,7 @@ function DirectoryTab() {
                         className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       >
                         {isSelected ? (
-                          <CheckSquare className="h-4 w-4 text-[#315b36]" />
+                          <CheckSquare className="h-4 w-4 text-[#006EF3]" />
                         ) : (
                           <Square className="h-4 w-4" />
                         )}
@@ -1255,13 +1255,13 @@ function DirectoryTab() {
                           <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
                             <Link
                               href={`/teacher/students/${st.studentId || st.user.id}`}
-                              className="font-bold text-slate-900 dark:text-white leading-tight truncate hover:text-[#315b36] hover:underline flex items-center gap-1 group"
+                              className="font-bold text-slate-900 dark:text-white leading-tight truncate hover:text-[#006EF3] hover:underline flex items-center gap-1 group"
                             >
                               <span>{st.user.firstName} {st.user.lastName}</span>
                             </Link>
                             {st.user.isVerified && (
                               <span
-                                className="inline-flex items-center text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded-md border border-emerald-200 dark:border-emerald-800"
+                                className="inline-flex items-center text-[9px] sm:text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.2 rounded-md border border-blue-200 dark:border-blue-800"
                                 title="Verified User Account"
                               >
                                 ✓ Verified
@@ -1288,7 +1288,7 @@ function DirectoryTab() {
                         {st.course?.title || 'Course'}
                       </p>
                       <div className="flex flex-wrap items-center gap-1 mt-1">
-                        <span className="inline-block text-[9px] sm:text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
+                        <span className="inline-block text-[9px] sm:text-[10px] font-black px-2 py-0.5 bg-blue-50 text-[#012970] dark:bg-blue-950/60 dark:text-blue-300 rounded-md border border-blue-200/80 dark:border-blue-800">
                           {formatCourseLevel(st.course?.level) || st.levelName || 'Level 1 (Beginner)'}
                         </span>
                         {Array.isArray((st as any).courses) && (st as any).courses.length > 1 && (
@@ -1338,10 +1338,10 @@ function DirectoryTab() {
                           </span>
                         ) : (
                           <span
-                            className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9px] font-black bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                            className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[8.5px] sm:text-[9px] font-black bg-blue-50 text-[#012970] dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
                             title="Active Learning Access Unlocked & Paid"
                           >
-                            <Unlock className="h-2.5 w-2.5 text-emerald-600 shrink-0" />
+                            <Unlock className="h-2.5 w-2.5 text-[#006EF3] shrink-0" />
                             <span className="hidden sm:inline">Active Access</span>
                             <span className="sm:hidden">Access</span>
                           </span>
@@ -1362,7 +1362,7 @@ function DirectoryTab() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg text-slate-600 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg text-slate-600 hover:text-[#006EF3] hover:bg-blue-50 dark:hover:bg-blue-950/40"
                             title="View student portfolio & assessment record"
                           >
                             <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -1373,7 +1373,7 @@ function DirectoryTab() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg text-slate-600 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                          className="h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg text-slate-600 hover:text-[#006EF3] hover:bg-blue-50 dark:hover:bg-blue-950/40"
                           onClick={() =>
                             setCoachingStudent({
                               id: st.studentId || st.user.id,
@@ -1402,7 +1402,7 @@ function DirectoryTab() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 sm:h-8 px-1.5 sm:px-2 rounded-lg text-[9.5px] sm:text-[11px] font-bold text-emerald-700 border-emerald-200/80 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40 gap-1 hidden md:flex"
+                          className="h-7 sm:h-8 px-1.5 sm:px-2 rounded-lg text-[9.5px] sm:text-[11px] font-bold text-blue-700 border-blue-200/80 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/40 gap-1 hidden md:flex"
                           onClick={() => quickExtendSingle(st)}
                           disabled={isItemLoading}
                           title="Grant 30 extra days of access"
@@ -1433,7 +1433,7 @@ function DirectoryTab() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                            className="h-8 w-8 p-0 rounded-lg text-[#006EF3] hover:bg-blue-50 dark:hover:bg-blue-950/30"
                             onClick={() => quickToggle(st, 'ACTIVE')}
                             disabled={isItemLoading}
                             title="Reactivate student access"
@@ -1472,7 +1472,7 @@ function DirectoryTab() {
                               }}
                               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                             >
-                              <CalendarPlus className="h-3.5 w-3.5 text-emerald-600" />
+                              <CalendarPlus className="h-3.5 w-3.5 text-[#006EF3]" />
                               <span>Custom Extension...</span>
                             </button>
 
@@ -1542,7 +1542,7 @@ function DirectoryTab() {
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">{editingStudent.user.email}</p>
               <div className="pt-2 flex items-center gap-2">
-                <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] border border-emerald-200 rounded-md">
+                <span className="text-[10px] font-black px-2 py-0.5 bg-blue-50 text-[#012970] border border-blue-200 rounded-md">
                   {formatCourseLevel(editingStudent.course.level) || 'Level 1'}
                 </span>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -1556,7 +1556,7 @@ function DirectoryTab() {
               <select
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
               >
                 {['ACTIVE', 'SUSPENDED', 'EXPIRED', 'COMPLETED'].map((s) => (
                   <option key={s} value={s}>
@@ -1571,7 +1571,7 @@ function DirectoryTab() {
               <select
                 value={editProgramLevelId}
                 onChange={(e) => setEditProgramLevelId(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
               >
                 <option value="1">Level 1 (Beginner Track)</option>
                 <option value="2">Level 2 (Intermediate Track)</option>
@@ -1585,7 +1585,7 @@ function DirectoryTab() {
               <select
                 value={editClassId}
                 onChange={(e) => setEditClassId(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
               >
                 <option value="">None (Self-paced)</option>
                 {teacherClasses.map((c) => (
@@ -1613,7 +1613,7 @@ function DirectoryTab() {
                 <select
                   value={editCurrentLevel}
                   onChange={(e) => setEditCurrentLevel(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                 >
                   {LEVELS.map((l) => (
                     <option key={l} value={l}>
@@ -1628,7 +1628,7 @@ function DirectoryTab() {
                 <select
                   value={editTargetLevel}
                   onChange={(e) => setEditTargetLevel(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                 >
                   {LEVELS.filter((l) => l !== 'PRE_A1').map((l) => (
                     <option key={l} value={l}>
@@ -1654,7 +1654,7 @@ function DirectoryTab() {
                 type="submit"
                 size="sm"
                 disabled={savingEdit}
-                className="text-xs bg-[#315b36] hover:bg-[#254629] text-white font-bold"
+                className="text-xs bg-[#012970] hover:bg-[#006EF3] text-white font-bold"
               >
                 {savingEdit ? (
                   <>
@@ -1930,7 +1930,7 @@ function EnrollmentsTab() {
               onClick={() => setFilterStatus(st)}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                 filterStatus === st
-                  ? 'bg-white dark:bg-slate-900 text-[#315b36] dark:text-emerald-400 shadow-xs'
+                  ? 'bg-white dark:bg-slate-900 text-[#012970] dark:text-blue-400 shadow-xs'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
@@ -1938,7 +1938,7 @@ function EnrollmentsTab() {
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   filterStatus === st
-                    ? 'bg-emerald-100 text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300'
+                    ? 'bg-blue-100 text-[#012970] dark:bg-blue-950 dark:text-blue-300'
                     : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                 }`}
               >
@@ -1953,7 +1953,7 @@ function EnrollmentsTab() {
           <select
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
-            className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+            className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
           >
             <option value="ALL">All Courses</option>
             {teacherCourses.map((c) => (
@@ -1968,7 +1968,7 @@ function EnrollmentsTab() {
         <select
           value={levelFilter}
           onChange={(e) => setLevelFilter(e.target.value)}
-          className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
+          className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 shrink-0"
         >
           <option value="ALL">All Levels</option>
           <optgroup label="Program Tracks">
@@ -1994,7 +1994,7 @@ function EnrollmentsTab() {
             placeholder="Search student or course..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200/80 bg-slate-50/70 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#315b36] focus:bg-white focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            className="w-full rounded-xl border border-slate-200/80 bg-slate-50/70 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-[#006EF3] focus:bg-white focus:outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
@@ -2041,13 +2041,13 @@ function EnrollmentsTab() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Link
                             href={`/teacher/students/${item.student.id}`}
-                            className="font-bold text-slate-900 dark:text-white truncate hover:text-[#315b36] hover:underline"
+                            className="font-bold text-slate-900 dark:text-white truncate hover:text-[#006EF3] hover:underline"
                           >
                             {item.student.user.firstName} {item.student.user.lastName}
                           </Link>
                           {(item.student.user as any)?.isVerified && (
                             <span
-                              className="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded-md border border-emerald-200 dark:border-emerald-800"
+                              className="inline-flex items-center text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.2 rounded-md border border-blue-200 dark:border-blue-800"
                               title="Verified User Account"
                             >
                               ✓ Verified
@@ -2069,7 +2069,7 @@ function EnrollmentsTab() {
 
                   <td className="px-5 py-3.5">
                     <p className="font-bold text-slate-800 dark:text-slate-200">{item.course.title}</p>
-                    <span className="inline-block mt-0.5 text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
+                    <span className="inline-block mt-0.5 text-[10px] font-black px-2 py-0.5 bg-blue-50 text-[#012970] dark:bg-blue-950/60 dark:text-blue-300 rounded-md border border-blue-200/80 dark:border-blue-800">
                       {formatCourseLevel(item.course.level) || item.levelName || 'Level 1'}
                     </span>
                   </td>
@@ -2101,10 +2101,10 @@ function EnrollmentsTab() {
                         </span>
                       ) : (
                         <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-[#012970] dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
                           title="Active Learning Access Unlocked"
                         >
-                          <Unlock className="h-2.5 w-2.5 text-emerald-600" />
+                          <Unlock className="h-2.5 w-2.5 text-[#006EF3]" />
                           Active Access
                         </span>
                       )}
@@ -2118,7 +2118,7 @@ function EnrollmentsTab() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs h-8 w-8 p-0 text-slate-500 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                          className="text-xs h-8 w-8 p-0 text-slate-500 hover:text-[#006EF3] hover:bg-blue-50 dark:hover:bg-blue-950/40"
                           title="View portfolio"
                         >
                           <Eye className="h-3.5 w-3.5" />
@@ -2128,7 +2128,7 @@ function EnrollmentsTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs h-8 w-8 p-0 text-slate-500 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                        className="text-xs h-8 w-8 p-0 text-slate-500 hover:text-[#006EF3] hover:bg-blue-50 dark:hover:bg-blue-950/40"
                         onClick={() =>
                           setCoachingStudent({
                             id: item.student.id,
@@ -2146,7 +2146,7 @@ function EnrollmentsTab() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-xs h-8 px-2 gap-1 font-bold text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300"
+                        className="text-xs h-8 px-2 gap-1 font-bold text-blue-700 border-blue-200 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300"
                         onClick={() => doExtend(item.id)}
                         disabled={extendingId === item.id}
                         title="Quick extend access by 30 days"
@@ -2196,7 +2196,7 @@ function EnrollmentsTab() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-bold"
+                          className="text-xs h-8 w-8 p-0 text-[#006EF3] hover:bg-blue-50 dark:hover:bg-blue-950/30 font-bold"
                           onClick={() =>
                             doReactivate(item.id, `${item.student.user.firstName} ${item.student.user.lastName}`)
                           }
@@ -2363,8 +2363,8 @@ function ExpiringTab() {
         <TableSkeleton rows={5} columns={6} />
       ) : students.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40">
-            <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/40">
+            <CheckCircle2 className="h-7 w-7 text-[#006EF3]" />
           </div>
           <p className="text-sm font-bold text-slate-800 dark:text-white">Watchlist Clear!</p>
           <p className="text-xs text-slate-400 mt-1">
@@ -2400,7 +2400,7 @@ function ExpiringTab() {
                         <div className="min-w-0">
                           <Link
                             href={`/teacher/students/${item.student.id}`}
-                            className="font-bold text-slate-900 dark:text-white truncate hover:text-[#315b36] hover:underline"
+                            className="font-bold text-slate-900 dark:text-white truncate hover:text-[#006EF3] hover:underline"
                           >
                             {item.student.user.firstName} {item.student.user.lastName}
                           </Link>
@@ -2421,7 +2421,7 @@ function ExpiringTab() {
 
                     <td className="px-5 py-3.5">
                       <p className="font-bold text-slate-800 dark:text-slate-200">{item.course.title}</p>
-                      <span className="inline-block mt-0.5 text-[10px] font-black px-2 py-0.5 bg-emerald-50 text-[#315b36] dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md border border-emerald-200/80 dark:border-emerald-800">
+                      <span className="inline-block mt-0.5 text-[10px] font-black px-2 py-0.5 bg-blue-50 text-[#012970] dark:bg-blue-950/60 dark:text-blue-300 rounded-md border border-blue-200/80 dark:border-blue-800">
                         {formatCourseLevel(item.course.level) || item.levelName || 'Level 1'}
                       </span>
                     </td>
@@ -2449,7 +2449,7 @@ function ExpiringTab() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs h-8 w-8 p-0 text-slate-500 hover:text-[#315b36] hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                            className="text-xs h-8 w-8 p-0 text-slate-500 hover:text-[#006EF3] hover:bg-blue-50 dark:hover:bg-blue-950/40"
                             title="View portfolio"
                           >
                             <Eye className="h-3.5 w-3.5" />
@@ -2643,9 +2643,9 @@ export default function StudentsDirectoryPage() {
       value: activeCount,
       sub: 'Currently learning',
       icon: CheckCircle2,
-      color: 'text-[#315b36] dark:text-emerald-400',
-      bg: 'bg-emerald-50 dark:bg-emerald-950/50',
-      border: 'border-emerald-100 dark:border-emerald-900/50',
+      color: 'text-[#012970] dark:text-blue-400',
+      bg: 'bg-blue-50 dark:bg-blue-950/50',
+      border: 'border-blue-100 dark:border-blue-900/50',
     },
     {
       label: 'Pending Apps',
@@ -2679,19 +2679,19 @@ export default function StudentsDirectoryPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-16">
       {/* ─── 1. Header Banner ─────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#122416] via-[#1a3820] to-[#0e1d11] p-6 sm:p-8 text-white shadow-xl border border-emerald-500/25">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#011538] via-[#012970] to-[#006EF3] p-6 sm:p-8 text-white shadow-xl border border-blue-500/25">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
-                <GraduationCap className="h-3.5 w-3.5 text-emerald-300" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-white border border-white/20">
+                <GraduationCap className="h-3.5 w-3.5 text-blue-200" />
                 Unified Students &amp; Access Hub
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               Students Directory
             </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl font-normal">
+            <p className="text-xs sm:text-sm text-blue-100/90 max-w-xl font-normal">
               Supervise all student profiles, review admission applications, configure payment decisions, and manage CEFR course access.
             </p>
           </div>
@@ -2700,7 +2700,7 @@ export default function StudentsDirectoryPage() {
             <Button
               onClick={() => setIsDirectModalOpen(true)}
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 shadow-lg shadow-emerald-700/30 gap-1.5"
+              className="bg-[#F5B400] hover:bg-[#d99f00] text-[#012970] font-black text-xs h-9 shadow-lg shadow-black/20 gap-1.5"
             >
               <UserPlus className="h-3.5 w-3.5" />
               Direct Admission
@@ -2709,7 +2709,7 @@ export default function StudentsDirectoryPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-emerald-500/40 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/60 backdrop-blur-md text-xs font-bold h-9 gap-1.5"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md text-xs font-bold h-9 gap-1.5"
               >
                 <BookOpen className="h-3.5 w-3.5" />
                 View Courses
@@ -2766,7 +2766,7 @@ export default function StudentsDirectoryPage() {
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Icon className={`h-4 w-4 ${isActive ? 'text-[#315b36] dark:text-emerald-400' : 'text-slate-400'}`} />
+              <Icon className={`h-4 w-4 ${isActive ? 'text-[#006EF3] dark:text-blue-400' : 'text-slate-400'}`} />
               <span>{tab.label}</span>
 
               {tab.count !== undefined && (
@@ -2775,7 +2775,7 @@ export default function StudentsDirectoryPage() {
                     tab.isAlert
                       ? 'bg-amber-500 text-white animate-pulse'
                       : isActive
-                      ? 'bg-emerald-100 text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300'
+                      ? 'bg-blue-100 text-[#012970] dark:bg-blue-950 dark:text-blue-300'
                       : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                   }`}
                 >

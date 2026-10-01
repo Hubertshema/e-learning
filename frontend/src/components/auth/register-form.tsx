@@ -61,24 +61,24 @@ export function RegisterForm() {
   };
 
   return (
-    <Card className="w-full max-w-lg border border-[#E2EBE2] bg-white shadow-xl rounded-3xl overflow-hidden my-auto">
+    <Card className="w-full max-w-lg border border-[#E2E8F0] bg-white shadow-xl rounded-3xl overflow-hidden my-auto">
       {/* Mobile-only Logo Header */}
       <div className="lg:hidden text-center pt-4 pb-0">
         <Link href="/" className="inline-block">
           <img
             src="/real-logo.png"
-            alt="LinguaChris Academy"
+            alt="FluentEdge Academy"
             className="h-9 w-auto object-contain mx-auto"
           />
         </Link>
       </div>
 
       <CardHeader className="space-y-1 text-center px-5 sm:px-6 pt-3 lg:pt-5 pb-1">
-        <CardTitle className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#2E3339]">
+        <CardTitle className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#172033]">
           Create Student Account
         </CardTitle>
-        <CardDescription className="text-xs text-slate-500">
-          Join LinguaChris Academy and start your English fluency journey
+        <CardDescription className="text-xs text-[#667085]">
+          Join FluentEdge Academy and start your English fluency journey
         </CardDescription>
       </CardHeader>
 
@@ -201,7 +201,7 @@ export function RegisterForm() {
               <select
                 value={targetLevel}
                 onChange={(e) => setTargetLevel(e.target.value)}
-                className="flex h-8 sm:h-9 w-full rounded-xl border border-input bg-white px-2.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#315B36]"
+                className="flex h-8 sm:h-9 w-full rounded-xl border border-input bg-white px-2.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#006EF3]"
               >
                 <option value="">Not Sure / Optional</option>
                 <option value="A1">A1 — Beginner</option>
@@ -216,7 +216,7 @@ export function RegisterForm() {
 
           <Button
             type="submit"
-            className="w-full h-9 sm:h-10 bg-[#315B36] text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-[#254629] transition-colors mt-1"
+            className="w-full h-9 sm:h-10 bg-[#012970] text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-[#006EF3] transition-colors mt-1"
             isLoading={isLoading}
           >
             Create Account
@@ -225,15 +225,15 @@ export function RegisterForm() {
       </CardContent>
 
       <CardFooter className="flex flex-col space-y-1.5 px-5 sm:px-6 pb-3 pt-0 border-t border-slate-100 bg-slate-50/40">
-        <p className="text-center text-xs text-slate-600 pt-2">
+        <p className="text-center text-xs text-[#667085] pt-2">
           Already have an account?{' '}
-          <Link href="/login" className="font-bold text-[#315B36] hover:underline">
+          <Link href="/login" className="font-bold text-[#012970] hover:text-[#006EF3] hover:underline">
             Sign In
           </Link>
         </p>
         <Link
           href="/"
-          className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#315B36] transition-colors pt-0.5"
+          className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-[#667085] hover:text-[#006EF3] transition-colors pt-0.5"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span>Back to Home</span>

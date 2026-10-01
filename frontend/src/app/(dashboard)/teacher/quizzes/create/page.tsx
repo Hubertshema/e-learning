@@ -871,12 +871,12 @@ function CreateQuizForm() {
       </div>
 
       {feedback && (
-        <div className="flex items-center justify-between rounded-2xl p-4 text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 shadow-xs">
+        <div className="flex items-center justify-between rounded-2xl p-4 text-xs font-semibold bg-[#F3F7FC] text-[#012970] border border-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800 shadow-xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4 w-4 text-[#006EF3]" />
             <span>{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="underline text-[11px]">
+          <button onClick={() => setFeedback(null)} className="underline text-[11px] text-[#006EF3] hover:text-[#012970] font-semibold">
             Dismiss
           </button>
         </div>

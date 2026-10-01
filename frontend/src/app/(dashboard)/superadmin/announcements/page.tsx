@@ -69,26 +69,26 @@ export default function SuperadminAnnouncementsPage() {
       </div>
 
       {successResult && (
-        <Card className="p-6 bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800 animate-fade-in">
+        <Card className="p-6 bg-[#F3F7FC] border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 animate-fade-in">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <CheckCircle2 className="h-6 w-6 text-[#006EF3] shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">
+              <h3 className="text-sm font-bold text-[#012970] dark:text-blue-200">
                 Broadcast Dispatched Successfully!
               </h3>
-              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
+              <p className="text-xs text-[#667085] dark:text-blue-300 mt-1">
                 {successResult.message || `Queued for ${successResult.recipientsCount} active accounts.`}
               </p>
               <div className="mt-3 flex gap-2">
                 <Link href="/superadmin/email-logs">
-                  <Button variant="outline" size="sm" className="text-xs">
+                  <Button variant="outline" size="sm" className="text-xs border-blue-200 text-[#006EF3] hover:bg-blue-50">
                     View Delivery Logs
                   </Button>
                 </Link>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-xs"
+                  className="text-xs text-[#667085] hover:text-[#012970]"
                   onClick={() => setSuccessResult(null)}
                 >
                   Dismiss
@@ -179,9 +179,9 @@ export default function SuperadminAnnouncementsPage() {
           </h2>
 
           <Card className="overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="bg-[#3B6748] p-4 text-white text-center">
+            <div className="bg-gradient-to-r from-[#011538] via-[#012970] to-[#006EF3] p-4 text-white text-center">
               <p className="text-sm font-black">FluentEdge Academy</p>
-              <p className="text-[10px] opacity-80">Official Announcement</p>
+              <p className="text-[10px] text-blue-200">Official Announcement</p>
             </div>
 
             <div className="p-4 space-y-3 bg-white dark:bg-slate-900 text-xs text-slate-700 dark:text-slate-300">

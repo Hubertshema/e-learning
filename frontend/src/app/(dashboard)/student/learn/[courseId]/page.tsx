@@ -604,9 +604,9 @@ export default function StudentLearnPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#f8faf8] dark:bg-slate-950">
+      <div className="flex h-screen w-full items-center justify-center bg-[#F3F7FC]/50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#315b36] border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#006EF3] border-t-transparent" />
           <p className="text-xs font-semibold text-slate-500">Loading interactive classroom studio...</p>
         </div>
       </div>
@@ -615,7 +615,7 @@ export default function StudentLearnPage() {
 
   if (!data || !data.course) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8faf8] p-4 dark:bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-[#F3F7FC]/50 p-4 dark:bg-slate-950">
         <Card className="max-w-md p-8 text-center shadow-lg">
           <AlertCircle className="mx-auto mb-3 h-10 w-10 text-rose-500" />
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Course Not Found</h3>
@@ -633,7 +633,7 @@ export default function StudentLearnPage() {
   // If not enrolled or access inactive
   if (!data.access?.isAccessActive) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8faf8] p-4 dark:bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-[#F3F7FC]/50 p-4 dark:bg-slate-950">
         <Card className="max-w-xl p-8 text-center shadow-2xl border-rose-200 dark:border-rose-900">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-950/40">
             <Lock className="h-7 w-7" />
@@ -666,7 +666,7 @@ export default function StudentLearnPage() {
   const sidebarWidthClass = sidebarWidth === 'wide' ? 'w-80 lg:w-[320px]' : 'w-64 lg:w-72';
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-[#f8faf8] text-slate-900 dark:bg-slate-950 dark:text-slate-100 relative overflow-hidden">
+    <div className="flex h-[100dvh] flex-col bg-[#F3F7FC]/50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 relative overflow-hidden">
       {/* 1. Full-Screen Classroom Top Navigation Bar */}
       <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
         {/* Left: Back & Course Title */}
@@ -675,7 +675,7 @@ export default function StudentLearnPage() {
             <Button
               size="sm"
               variant="outline"
-              className="flex h-9 items-center gap-1.5 rounded-xl border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-[#eff4ec] hover:text-[#315b36] dark:border-slate-700 dark:text-slate-300"
+              className="flex h-9 items-center gap-1.5 rounded-xl border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] dark:border-slate-700 dark:text-slate-300"
             >
               <ChevronLeft className="h-4 w-4" />
               <span className="hidden sm:inline">My Courses</span>
@@ -714,7 +714,7 @@ export default function StudentLearnPage() {
               size="sm"
               variant="outline"
               onClick={() => setSidebarOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border-slate-200 text-slate-700 hover:bg-[#eff4ec] hover:text-[#315b36] transition-all dark:border-slate-700 dark:text-slate-300"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border-slate-200 text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] transition-all dark:border-slate-700 dark:text-slate-300"
               title="Show Curriculum"
             >
               <PanelLeftOpen className="h-4 w-4" />
@@ -736,13 +736,13 @@ export default function StudentLearnPage() {
         {/* Left Column: Flexible & Collapsible Curriculum Syllabus Sidebar */}
         {sidebarOpen && (
           <aside
-            className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-20 ${sidebarWidthClass} shrink-0 border-r border-[#e2ebe2]/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-all duration-300 ease-in-out select-none flex flex-col shadow-xs animate-in slide-in-from-left duration-200`}
+            className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-20 ${sidebarWidthClass} shrink-0 border-r border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-all duration-300 ease-in-out select-none flex flex-col shadow-xs animate-in slide-in-from-left duration-200`}
           >
             <div className="flex h-full flex-col">
               {/* Sidebar Header with Width Resizer & Close Button */}
               <div className="flex items-center justify-between border-b border-slate-100 p-3.5 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-[#315b36]" />
+                  <Layers className="h-4 w-4 text-[#012970]" />
                   <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
                     Curriculum ({data.course.units?.length || 0} Units)
                   </span>
@@ -759,7 +759,7 @@ export default function StudentLearnPage() {
 
                   <button
                     onClick={() => setSidebarOpen(false)}
-                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eff4ec] text-[#315b36] border border-[#315b36]/30 dark:bg-emerald-950/40 dark:text-emerald-300 hover:opacity-80 transition-opacity"
+                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#012970] border border-[#012970]/20 dark:bg-slate-800 dark:text-blue-300 hover:opacity-80 transition-opacity"
                     title="Hide Curriculum"
                   >
                     <PanelLeftClose className="h-4 w-4" />
@@ -818,11 +818,11 @@ export default function StudentLearnPage() {
                                 onClick={() => handleLessonClick(lesson)}
                                 className={`flex w-full items-center justify-between rounded-xl p-2.5 text-left text-xs transition-all ${
                                   isSelected
-                                    ? 'bg-[#315b36] font-bold text-white shadow-md'
+                                    ? 'bg-[#012970] font-bold text-white shadow-md'
                                     : isCompleted
-                                    ? 'text-slate-800 hover:bg-[#eff4ec] hover:text-[#315b36] dark:text-slate-200 dark:hover:bg-slate-800'
+                                    ? 'text-slate-800 hover:bg-[#F3F7FC] hover:text-[#006EF3] dark:text-slate-200 dark:hover:bg-slate-800'
                                     : unlocked
-                                    ? 'text-slate-700 hover:bg-[#eff4ec] hover:text-[#315b36] dark:text-slate-300 dark:hover:bg-slate-800'
+                                    ? 'text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] dark:text-slate-300 dark:hover:bg-slate-800'
                                     : 'text-slate-400 bg-slate-50/50 hover:bg-slate-100/60 dark:bg-slate-900/40 dark:text-slate-600'
                                 }`}
                                 title={
@@ -837,7 +837,7 @@ export default function StudentLearnPage() {
                                   {isCompleted ? (
                                     <div
                                       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                                        isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60'
+                                        isSelected ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#006EF3] dark:bg-blue-950/60'
                                       }`}
                                     >
                                       <Check className="h-3.5 w-3.5 stroke-[3]" />
@@ -894,7 +894,7 @@ export default function StudentLearnPage() {
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
                       {selectedLesson.skill && (
-                        <Badge variant="indigo" className="text-[9px] font-bold uppercase tracking-wider bg-[#eff4ec] text-[#315b36] border-[#315b36]/30 dark:bg-emerald-950/40 dark:text-emerald-300">
+                        <Badge variant="indigo" className="text-[9px] font-bold uppercase tracking-wider bg-[#F3F7FC] text-[#012970] border-[#012970]/30 dark:bg-slate-800 dark:text-blue-300">
                           {selectedLesson.skill}
                         </Badge>
                       )}
@@ -903,7 +903,7 @@ export default function StudentLearnPage() {
                         {selectedLesson.estimatedMinutes || 30} mins
                       </Badge>
                       {isCurrentLessonCompleted && (
-                        <span className="flex items-center gap-1 rounded-full bg-[#dff0d8] px-2 py-0.5 text-[10px] font-bold text-[#2d4a22] dark:bg-emerald-950 dark:text-emerald-300">
+                        <span className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#012970] dark:bg-blue-950 dark:text-blue-300">
                           <CheckCircle2 className="h-3 w-3" />
                           Completed
                         </span>
@@ -913,11 +913,11 @@ export default function StudentLearnPage() {
                       <div className="space-y-1.5">
                         <div className="flex justify-between items-center text-xs font-bold text-slate-500">
                           <span>Video Progress</span>
-                          <span className="text-[#315b36] dark:text-[#7ba27a]">{Math.round(interactiveVideoData.progress?.completionPercent || 0)}%</span>
+                          <span className="text-[#012970] dark:text-[#006EF3]">{Math.round(interactiveVideoData.progress?.completionPercent || 0)}%</span>
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
                           <div
-                            className="h-full bg-gradient-to-r from-[#7ba27a] to-[#315b36] transition-all duration-300"
+                            className="h-full bg-gradient-to-r from-[#006EF3] to-[#012970] transition-all duration-300"
                             style={{ width: `${interactiveVideoData.progress?.completionPercent || 0}%` }}
                           />
                         </div>
@@ -931,7 +931,7 @@ export default function StudentLearnPage() {
                     size="sm"
                     variant="outline"
                     onClick={toggleFullscreen}
-                    className="w-full flex h-8 items-center justify-center rounded-xl border-slate-200 text-xs text-slate-700 hover:bg-[#eff4ec] hover:text-[#315b36] dark:border-slate-700 dark:text-slate-300"
+                    className="w-full flex h-8 items-center justify-center rounded-xl border-slate-200 text-xs text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] dark:border-slate-700 dark:text-slate-300"
                   >
                     {isFullscreen ? <Minimize2 className="mr-1.5 h-3.5 w-3.5" /> : <Maximize2 className="mr-1.5 h-3.5 w-3.5" />}
                     {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
@@ -949,12 +949,12 @@ export default function StudentLearnPage() {
             {/* The congratulations overlay is now rendered over the lesson content below */}
             {/* General feedback banner */}
             {feedback && (
-              <div className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 shadow-sm animate-in fade-in dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-[#F3F7FC] p-4 text-xs font-semibold text-[#012970] shadow-sm animate-in fade-in dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <CheckCircle2 className="h-4 w-4 text-[#006EF3]" />
                   <span>{feedback}</span>
                 </div>
-                <button onClick={() => setFeedback(null)} className="text-[11px] underline">
+                <button onClick={() => setFeedback(null)} className="text-[11px] underline text-[#006EF3] hover:text-[#012970] font-semibold">
                   Dismiss
                 </button>
               </div>
@@ -995,7 +995,7 @@ export default function StudentLearnPage() {
                 {selectedLesson.type === 'INTERACTIVE_VIDEO' ? (
                   loadingInteractive ? (
                     <Card className="p-16 text-center text-slate-500">
-                      <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#315b36] border-t-transparent" />
+                      <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#006EF3] border-t-transparent" />
                       <p className="text-xs font-semibold">Loading interactive video studio...</p>
                     </Card>
                   ) : interactiveVideoData ? (
@@ -1024,7 +1024,7 @@ export default function StudentLearnPage() {
                         <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm space-y-3.5">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                             <div className="flex items-center gap-2.5">
-                              <div className="p-2 rounded-xl bg-[#eff4ec] dark:bg-[#132519] text-[#315b36] border border-[#7ba27a]/30 dark:border-[#315b36]">
+                              <div className="p-2 rounded-xl bg-[#F3F7FC] dark:bg-slate-800 text-[#012970] dark:text-blue-400 border border-[#006EF3]/30 dark:border-blue-900">
                                 <FileText className="h-4 w-4" />
                               </div>
                               <div>
@@ -1054,7 +1054,7 @@ export default function StudentLearnPage() {
                               return (
                                 <div
                                   key={res.id}
-                                  className="group p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-900 hover:border-[#7ba27a] dark:hover:border-[#315b36] hover:shadow-sm transition-all flex flex-col justify-between gap-3"
+                                  className="group p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-900 hover:border-[#006EF3] dark:hover:border-blue-500 hover:shadow-sm transition-all flex flex-col justify-between gap-3"
                                 >
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-2">
@@ -1065,7 +1065,7 @@ export default function StudentLearnPage() {
                                       />
                                       {canDownload ? (
                                         <span
-                                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#315b36] dark:text-[#7ba27a]"
+                                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#006EF3] dark:text-blue-400"
                                           title="Downloads allowed"
                                         >
                                           <CheckCircle2 className="h-3 w-3" /> Downloadable
@@ -1081,7 +1081,7 @@ export default function StudentLearnPage() {
                                     </div>
                                     <div>
                                       <h4
-                                        className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-[#315b36] dark:hover:text-[#7ba27a] transition-colors"
+                                        className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-[#006EF3] dark:hover:text-blue-400 transition-colors"
                                         onClick={() => setPreviewResource(res)}
                                         title={res.title}
                                       >
@@ -1099,7 +1099,7 @@ export default function StudentLearnPage() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="flex-1 h-7 text-xs font-semibold gap-1 hover:border-[#7ba27a] hover:text-[#315b36] dark:hover:text-[#7ba27a]"
+                                      className="flex-1 h-7 text-xs font-semibold gap-1 hover:border-[#006EF3] hover:text-[#006EF3] dark:hover:text-blue-400"
                                       onClick={() => setPreviewResource(res)}
                                     >
                                       <Eye className="h-3.5 w-3.5" />
@@ -1109,7 +1109,7 @@ export default function StudentLearnPage() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 px-2.5 text-xs font-semibold gap-1 text-[#315b36] hover:bg-[#eff4ec] dark:text-[#7ba27a] dark:hover:bg-[#132519]"
+                                        className="h-7 px-2.5 text-xs font-semibold gap-1 text-[#012970] hover:bg-[#F3F7FC] dark:text-blue-400 dark:hover:bg-slate-800"
                                         onClick={() => {
                                           const a = document.createElement('a');
                                           a.href = res.url;
@@ -1147,7 +1147,7 @@ export default function StudentLearnPage() {
                         onClick={() => setActiveTab('CONTENT')}
                         className={`flex items-center gap-2 border-b-2 px-5 py-3 text-xs font-black transition-all ${
                           activeTab === 'CONTENT'
-                            ? 'border-[#315b36] text-[#315b36] dark:text-emerald-400'
+                            ? 'border-[#006EF3] text-[#012970] dark:text-[#006EF3]'
                             : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
                         }`}
                       >
@@ -1158,7 +1158,7 @@ export default function StudentLearnPage() {
                         onClick={() => setActiveTab('PRACTICE')}
                         className={`flex items-center gap-2 border-b-2 px-5 py-3 text-xs font-black transition-all ${
                           activeTab === 'PRACTICE'
-                            ? 'border-[#315b36] text-[#315b36] dark:text-emerald-400'
+                            ? 'border-[#006EF3] text-[#012970] dark:text-[#006EF3]'
                             : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
                         }`}
                       >
@@ -1180,7 +1180,7 @@ export default function StudentLearnPage() {
                                   ) : sec.contentType === 'AUDIO' ? (
                                     <Headphones className="h-4 w-4 text-emerald-500" />
                                   ) : (
-                                    <FileText className="h-4 w-4 text-[#315b36]" />
+                                    <FileText className="h-4 w-4 text-[#012970]" />
                                   )}
                                   {sec.title}
                                 </h3>
@@ -1320,8 +1320,8 @@ export default function StudentLearnPage() {
       >
         <div className="text-center">
           {/* Confetti / Trophy Icon */}
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-[#eff4ec] text-[#315b36] shadow-md dark:bg-emerald-950/60 dark:text-emerald-400">
-            <Trophy className="h-8 w-8 animate-bounce" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-[#F3F7FC] text-[#012970] shadow-md dark:bg-slate-800 dark:text-blue-400">
+            <Trophy className="h-8 w-8 animate-bounce text-[#F5B400]" />
           </div>
 
           <Badge variant="indigo" className="mb-2 font-black uppercase tracking-wider">
@@ -1337,16 +1337,16 @@ export default function StudentLearnPage() {
             have been recorded. The next lesson is now unlocked!
           </p>
 
-          <div className="my-5 rounded-2xl border border-[#e2ebe2] bg-[#f8faf8] p-4 dark:border-slate-800 dark:bg-slate-900">
+          <div className="my-5 rounded-2xl border border-slate-200 bg-[#F3F7FC]/50 p-4 dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="text-slate-600 dark:text-slate-300">Course Progress</span>
-              <span className="text-[#315b36] dark:text-emerald-400">
+              <span className="text-[#012970] dark:text-[#006EF3]">
                 {completedCount} / {totalLessonsCount} Lessons ({progressPercent}%)
               </span>
             </div>
             <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
               <div
-                className="h-full bg-[#315b36] transition-all duration-500 ease-out"
+                className="h-full bg-[#006EF3] transition-all duration-500 ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>

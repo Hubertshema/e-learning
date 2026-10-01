@@ -2,6 +2,7 @@ import { socketAuthMiddleware } from './auth.socket.js';
 import { registerChatHandlers } from './chat.socket.js';
 import { registerNotificationHandlers } from './notification.socket.js';
 import { registerLessonHandlers } from './lesson.socket.js';
+import { registerLiveSessionHandlers } from './live.socket.js';
 
 /**
  * Configure all Socket.IO event handlers and middleware
@@ -22,6 +23,7 @@ export function setupSockets(io) {
     registerChatHandlers(io, socket);
     registerNotificationHandlers(io, socket);
     registerLessonHandlers(io, socket);
+    registerLiveSessionHandlers(io, socket);
 
     // Disconnect handling
     socket.on('disconnect', (reason) => {

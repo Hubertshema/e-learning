@@ -141,12 +141,12 @@ export default function SuperadminCoursesPage() {
         <div
           className={`flex items-center gap-2.5 rounded-xl border p-3.5 text-xs font-medium ${
             message.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
+              ? 'border-blue-200 bg-[#F3F7FC] text-[#012970] dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200'
               : 'border-destructive/20 bg-destructive/10 text-destructive'
           }`}
         >
-          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          <span>{message.text}</span>
+          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-[#006EF3]" /> : <AlertCircle className="h-4 w-4" />}
+          <span className="font-semibold">{message.text}</span>
         </div>
       )}
 

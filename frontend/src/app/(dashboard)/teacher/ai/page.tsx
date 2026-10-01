@@ -148,7 +148,7 @@ export default function AITeachingAssistantHubPage() {
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
               <div
-                className="h-full bg-gradient-to-r from-primary-500 to-emerald-400 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-[#012970] to-[#006EF3] transition-all duration-500"
                 style={{
                   width: `${stats ? Math.min(100, (stats.dailyUsed / stats.dailyLimit) * 100) : 0}%`,
                 }}
@@ -166,10 +166,10 @@ export default function AITeachingAssistantHubPage() {
       </div>
 
       {/* Safety & Academic Guarantee Notice */}
-      <div className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-4 text-emerald-300 text-xs md:text-sm">
-        <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-400 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-950/20 p-4 text-blue-200 text-xs md:text-sm">
+        <ShieldCheck className="h-5 w-5 shrink-0 text-[#006EF3] mt-0.5" />
         <div>
-          <span className="font-semibold text-emerald-200">Teacher-in-the-Loop Mandate:</span> All AI-generated content is created as private draft material for your review. Content is never automatically published to students without explicit teacher approval and customization.
+          <span className="font-semibold text-white">Teacher-in-the-Loop Mandate:</span> All AI-generated content is created as private draft material for your review. Content is never automatically published to students without explicit teacher approval and customization.
         </div>
       </div>
 

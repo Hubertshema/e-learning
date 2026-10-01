@@ -142,7 +142,9 @@ export default function SuperadminEnrollmentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <Badge variant="indigo">Enrollment Registry</Badge>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#012970] border border-blue-200">
+            Enrollment Registry
+          </span>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             Global Course Access & Enrollments
           </h1>
@@ -166,17 +168,17 @@ export default function SuperadminEnrollmentsPage() {
         <Card className="p-4 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">Total Enrollments</span>
-            <UserCheck className="h-4 w-4 text-primary-500" />
+            <UserCheck className="h-4 w-4 text-[#006EF3]" />
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{enrollments.length}</p>
         </Card>
 
-        <Card className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
+        <Card className="p-4 bg-[#F3F7FC] border-blue-200/80">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Active Access</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <span className="text-xs font-semibold text-[#012970]">Active Access</span>
+            <CheckCircle2 className="h-4 w-4 text-[#006EF3]" />
           </div>
-          <p className="mt-2 text-2xl font-black text-emerald-800 dark:text-emerald-200">{totalActive}</p>
+          <p className="mt-2 text-2xl font-black text-[#012970]">{totalActive}</p>
         </Card>
 
         <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
@@ -201,12 +203,12 @@ export default function SuperadminEnrollmentsPage() {
         <div
           className={`flex items-center gap-2.5 rounded-xl border p-3.5 text-xs font-medium ${
             message.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
+              ? 'border-blue-200 bg-[#F3F7FC] text-[#012970] dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200'
               : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300'
           }`}
         >
-          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          <span>{message.text}</span>
+          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-[#006EF3]" /> : <AlertCircle className="h-4 w-4" />}
+          <span className="font-semibold">{message.text}</span>
         </div>
       )}
 
@@ -367,7 +369,7 @@ export default function SuperadminEnrollmentsPage() {
                           <Button
                             variant="default"
                             size="sm"
-                            className="h-7 text-[11px] px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="h-7 text-[11px] px-2.5 bg-[#006EF3] hover:bg-[#0058c4] text-white"
                             disabled={actionLoading}
                             onClick={() => handleUpdateStatus(item.id, 'ACTIVE')}
                           >

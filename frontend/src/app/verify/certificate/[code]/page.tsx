@@ -78,18 +78,18 @@ export default function PublicCertificateVerificationPage() {
       {/* Brand Header */}
       <div className="mb-8 text-center space-y-2">
         <Link href="/" className="inline-flex items-center gap-2.5">
-          <img src="/logo.png" alt="LinguaChris Academy" className="h-10 w-auto object-contain" />
-          <span className="text-xl font-bold text-[#2E3339]">LinguaChris Academy</span>
+          <img src="/logo.png" alt="FluentEdge Academy" className="h-10 w-auto object-contain" />
+          <span className="text-xl font-bold text-[#172033]">FluentEdge Academy</span>
         </Link>
-        <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">
+        <p className="text-xs text-[#667085] uppercase tracking-widest font-semibold">
           Official Public Credential Verification Portal
         </p>
       </div>
 
       {loading ? (
-        <Card className="w-full max-w-lg p-12 text-center shadow-xl">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#315B36] border-t-transparent mx-auto mb-3" />
-          <p className="text-xs font-semibold text-slate-600">
+        <Card className="w-full max-w-lg p-12 text-center shadow-xl border-[#E2E8F0]">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#006EF3] border-t-transparent mx-auto mb-3" />
+          <p className="text-xs font-semibold text-[#667085]">
             Verifying credential authenticity against registry...
           </p>
         </Card>
@@ -100,10 +100,10 @@ export default function PublicCertificateVerificationPage() {
           </div>
           <div>
             <Badge variant="destructive">Verification Failed</Badge>
-            <h2 className="text-lg font-bold text-slate-900 mt-2">
+            <h2 className="text-lg font-bold text-[#172033] mt-2">
               Invalid or Unregistered Certificate
             </h2>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            <p className="text-xs text-[#667085] mt-1 max-w-sm mx-auto">
               {error || `No valid certificate found with code "${code}".`}
             </p>
           </div>
@@ -117,17 +117,17 @@ export default function PublicCertificateVerificationPage() {
         /* Verified Certificate Display */
         <div className="w-full max-w-2xl space-y-6">
           {/* Status Alert Banner */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 shadow-sm">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#F3F7FC] border border-[#E2E8F0] text-[#012970] shadow-sm">
             <div className="flex items-center gap-2.5">
-              <ShieldCheck className="h-6 w-6 text-emerald-600 shrink-0" />
+              <ShieldCheck className="h-6 w-6 text-[#006EF3] shrink-0" />
               <div>
-                <span className="text-xs font-bold block">Official Authenticated Credential</span>
-                <span className="text-[11px] text-emerald-700">
-                  Verified by LinguaChris Academy Registry • Code: <strong>{cert.certificateCode}</strong>
+                <span className="text-xs font-bold block text-[#012970]">Official Authenticated Credential</span>
+                <span className="text-[11px] text-[#667085]">
+                  Verified by FluentEdge Academy Registry • Code: <strong className="text-[#012970]">{cert.certificateCode}</strong>
                 </span>
               </div>
             </div>
-            <Badge variant="success" className="px-3 py-1 font-bold">
+            <Badge variant="primary" className="px-3 py-1 font-bold bg-[#012970] text-white">
               Active & Valid
             </Badge>
           </div>
@@ -147,39 +147,39 @@ export default function PublicCertificateVerificationPage() {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <path d="M420 0 L420 300 L260 300 Q360 200 300 80 Q370 40 420 0Z" fill="#E8B94F" opacity="0.9" />
-                <path d="M420 0 L420 300 L300 300 Q380 180 330 60 Q390 30 420 0Z" fill="#1A2D6E" />
+                <path d="M420 0 L420 300 L260 300 Q360 200 300 80 Q370 40 420 0Z" fill="#F5B400" opacity="0.9" />
+                <path d="M420 0 L420 300 L300 300 Q380 180 330 60 Q390 30 420 0Z" fill="#012970" />
               </svg>
 
               {/* Corner brackets */}
-              <div className="absolute top-6 left-6 w-10 h-10 border-t-2 border-l-2 border-[#1A2D6E]" />
-              <div className="absolute bottom-6 left-6 w-10 h-10 border-b-2 border-l-2 border-[#1A2D6E]" />
+              <div className="absolute top-6 left-6 w-10 h-10 border-t-2 border-l-2 border-[#012970]" />
+              <div className="absolute bottom-6 left-6 w-10 h-10 border-b-2 border-l-2 border-[#012970]" />
 
               {/* Content */}
               <div className="absolute inset-0 flex flex-col justify-between p-10 pr-[38%]">
                 <div>
-                  <p className="text-[11px] font-bold tracking-[0.25em] text-[#1A2D6E] uppercase mb-0.5" style={{ fontFamily: 'sans-serif' }}>LinguaChris Academy</p>
-                  <h1 className="text-3xl font-black tracking-[0.15em] text-[#1A2D6E] uppercase leading-none">Certificate</h1>
-                  <p className="text-[11px] tracking-[0.3em] text-[#1A2D6E] uppercase font-bold mt-1" style={{ fontFamily: 'sans-serif' }}>of Achievement</p>
+                  <p className="text-[11px] font-bold tracking-[0.25em] text-[#012970] uppercase mb-0.5" style={{ fontFamily: 'sans-serif' }}>FluentEdge Academy</p>
+                  <h1 className="text-3xl font-black tracking-[0.15em] text-[#012970] uppercase leading-none">Certificate</h1>
+                  <p className="text-[11px] tracking-[0.3em] text-[#006EF3] uppercase font-bold mt-1" style={{ fontFamily: 'sans-serif' }}>of Achievement</p>
                 </div>
                 <div className="-mt-2">
-                  <p className="text-3xl text-slate-800" style={{ fontFamily: "'Brush Script MT', cursive, Georgia, serif" }}>{cert.studentName}</p>
+                  <p className="text-3xl text-[#172033]" style={{ fontFamily: "'Brush Script MT', cursive, Georgia, serif" }}>{cert.studentName}</p>
                   <div className="h-px w-3/4 bg-slate-300 mt-1" />
                 </div>
-                <p className="text-[10px] text-slate-500 leading-relaxed max-w-[85%]" style={{ fontFamily: 'sans-serif' }}>
+                <p className="text-[10px] text-[#667085] leading-relaxed max-w-[85%]" style={{ fontFamily: 'sans-serif' }}>
                   This is to certify that the above named has successfully completed all required modules and assessments for{' '}
-                  <strong className="text-slate-700">{cert.courseTitle}</strong> at LinguaChris Academy.
+                  <strong className="text-[#172033]">{cert.courseTitle}</strong> at FluentEdge Academy.
                 </p>
                 <div className="flex gap-10 items-end">
                   <div>
-                    <p className="text-[9px] font-black tracking-[0.2em] text-[#1A2D6E] uppercase mb-1" style={{ fontFamily: 'sans-serif' }}>Date</p>
-                    <p className="text-[11px] text-slate-700 font-medium" style={{ fontFamily: 'sans-serif' }}>
+                    <p className="text-[9px] font-black tracking-[0.2em] text-[#012970] uppercase mb-1" style={{ fontFamily: 'sans-serif' }}>Date</p>
+                    <p className="text-[11px] text-[#172033] font-medium" style={{ fontFamily: 'sans-serif' }}>
                       {new Date(cert.issueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black tracking-[0.2em] text-[#1A2D6E] uppercase mb-1" style={{ fontFamily: 'sans-serif' }}>Instructor</p>
-                    <p className="text-[18px] text-slate-800" style={{ fontFamily: "'Brush Script MT', cursive" }}>{cert.instructorName}</p>
+                    <p className="text-[9px] font-black tracking-[0.2em] text-[#012970] uppercase mb-1" style={{ fontFamily: 'sans-serif' }}>Instructor</p>
+                    <p className="text-[18px] text-[#172033]" style={{ fontFamily: "'Brush Script MT', cursive" }}>{cert.instructorName}</p>
                     <div className="h-px w-24 bg-slate-400 mt-0.5" />
                   </div>
                 </div>
@@ -189,12 +189,12 @@ export default function PublicCertificateVerificationPage() {
               <div className="absolute bottom-8 right-[6%]">
                 <svg viewBox="0 0 64 64" className="w-16 h-16">
                   <defs><path id="vcircle" d="M 32,32 m -22,0 a 22,22 0 1,1 44,0 a 22,22 0 1,1 -44,0" /></defs>
-                  <circle cx="32" cy="32" r="30" fill="#C8A02A" stroke="#A07820" strokeWidth="1.5" />
-                  <circle cx="32" cy="32" r="22" fill="#E8B94F" stroke="#C8A02A" strokeWidth="1" />
-                  <circle cx="32" cy="32" r="14" fill="#D4A835" />
-                  <circle cx="32" cy="32" r="9" fill="#B8922A" />
-                  <circle cx="32" cy="32" r="5" fill="#C8A02A" />
-                  <text fontSize="5" fill="#7A5C10" fontWeight="bold" letterSpacing="1.5" style={{ fontFamily: 'sans-serif' }}>
+                  <circle cx="32" cy="32" r="30" fill="#F5B400" stroke="#dba100" strokeWidth="1.5" />
+                  <circle cx="32" cy="32" r="22" fill="#ffc83b" stroke="#F5B400" strokeWidth="1" />
+                  <circle cx="32" cy="32" r="14" fill="#F5B400" />
+                  <circle cx="32" cy="32" r="9" fill="#dba100" />
+                  <circle cx="32" cy="32" r="5" fill="#F5B400" />
+                  <text fontSize="5" fill="#012970" fontWeight="bold" letterSpacing="1.5" style={{ fontFamily: 'sans-serif' }}>
                     <textPath href="#vcircle">certificate of achievement • • •</textPath>
                   </text>
                 </svg>

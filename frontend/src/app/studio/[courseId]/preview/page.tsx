@@ -197,7 +197,7 @@ export default function StudioCoursePreviewPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <div className="h-9 w-9 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
+        <div className="h-9 w-9 animate-spin rounded-full border-4 border-[#006EF3] border-t-transparent" />
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
           Loading Course Preview Simulator…
         </p>
@@ -235,21 +235,21 @@ export default function StudioCoursePreviewPage() {
   return (
     <div className="space-y-6 font-sans">
       {/* ── TOP PREVIEW SIMULATOR BANNER ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-emerald-100/40 to-teal-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-teal-950/30 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-[#F3F7FC] via-white to-[#F3F7FC] dark:from-blue-950/40 dark:via-slate-900 dark:to-blue-950/30 border border-blue-200 dark:border-blue-800/60 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#012970] text-[#F5B400] shadow-sm">
             <Eye className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-black text-emerald-950 dark:text-emerald-200">
+              <h2 className="text-sm font-black text-[#012970] dark:text-blue-200">
                 Course Preview Simulator
               </h2>
-              <span className="rounded-full bg-emerald-200/70 dark:bg-emerald-800/60 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-200">
+              <span className="rounded-full bg-[#006EF3]/15 dark:bg-blue-800/60 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#006EF3] dark:text-blue-200">
                 Sandbox Mode
               </span>
             </div>
-            <p className="text-xs text-emerald-800/80 dark:text-emerald-300/70 mt-0.5">
+            <p className="text-xs text-[#667085] dark:text-blue-300/70 mt-0.5">
               Viewing <strong>{course.title}</strong> as an enrolled student. No student grades or records will be affected.
             </p>
           </div>
@@ -260,7 +260,7 @@ export default function StudioCoursePreviewPage() {
             size="sm"
             variant="outline"
             onClick={toggleFullscreen}
-            className="text-xs h-8 px-2.5 bg-white/80 dark:bg-slate-900 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50"
+            className="text-xs h-8 px-2.5 bg-white/80 dark:bg-slate-900 border-blue-200 dark:border-blue-800 text-[#006EF3] dark:text-blue-300 hover:bg-[#F3F7FC]"
             title="Toggle Fullscreen"
           >
             {isFullscreen ? <Minimize2 className="h-3.5 w-3.5 mr-1" /> : <Maximize2 className="h-3.5 w-3.5 mr-1" />}
@@ -288,7 +288,7 @@ export default function StudioCoursePreviewPage() {
           <Card className="p-4 rounded-3xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-emerald-600" />
+                <BookOpen className="h-4 w-4 text-[#006EF3]" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Curriculum Syllabus
                 </h3>
@@ -351,8 +351,8 @@ export default function StudioCoursePreviewPage() {
                                   onClick={() => setSelectedLesson(lesson)}
                                   className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left text-xs transition-all ${
                                     isSelected
-                                      ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                                      : 'text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800/80 hover:text-emerald-700'
+                                      ? 'bg-[#006EF3] text-white font-bold shadow-xs'
+                                      : 'text-slate-700 dark:text-slate-300 hover:bg-[#F3F7FC] dark:hover:bg-slate-800/80 hover:text-[#006EF3]'
                                   }`}
                                 >
                                   <div className="flex items-center gap-2 truncate min-w-0">
@@ -440,7 +440,7 @@ export default function StudioCoursePreviewPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-xs h-8 px-2.5 font-bold hover:text-emerald-700 hover:border-emerald-300"
+                        className="text-xs h-8 px-2.5 font-bold hover:text-[#006EF3] hover:border-blue-300"
                         title="Open interactive video editor in a new tab"
                       >
                         <Edit2 className="h-3.5 w-3.5 mr-1.5" />
@@ -469,7 +469,7 @@ export default function StudioCoursePreviewPage() {
               {/* Main Player Component */}
               {loadingVideo ? (
                 <Card className="p-16 text-center rounded-3xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                  <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
+                  <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-[#006EF3] border-t-transparent" />
                   <p className="text-xs font-semibold text-slate-500">
                     Loading lesson video & checkpoint questions…
                   </p>
@@ -492,7 +492,7 @@ export default function StudioCoursePreviewPage() {
                   {interactiveVideoData.resources && interactiveVideoData.resources.length > 0 && (
                     <Card className="p-5 rounded-3xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-3">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-emerald-600" />
+                        <FileText className="h-4 w-4 text-[#006EF3]" />
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                           Handouts & Learning Resources ({interactiveVideoData.resources.length})
                         </h4>
@@ -502,10 +502,10 @@ export default function StudioCoursePreviewPage() {
                         {interactiveVideoData.resources.map((res: LessonResource) => (
                           <div
                             key={res.id}
-                            className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 hover:border-emerald-300 transition-all"
+                            className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 hover:border-blue-300 transition-all"
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 font-bold text-xs">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#006EF3] border border-blue-200 dark:bg-blue-950 dark:text-blue-400 font-bold text-xs">
                                 <FileText className="h-4 w-4" />
                               </div>
                               <div className="min-w-0">
@@ -522,7 +522,7 @@ export default function StudioCoursePreviewPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => setPreviewResource(res)}
-                              className="h-7 px-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50"
+                              className="h-7 px-2 text-xs font-semibold text-[#006EF3] dark:text-blue-400 hover:bg-[#F3F7FC]"
                               title="Preview Document"
                             >
                               <Eye className="h-3.5 w-3.5 mr-1" />

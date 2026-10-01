@@ -93,8 +93,8 @@ export function FlashcardActivity({ cards, onComplete }: FlashcardActivityProps)
         <Card
           className={`w-full p-8 text-center transition-all duration-500 transform shadow-xl border-2 flex flex-col justify-between min-h-[280px] ${
             isFlipped
-              ? 'bg-[#132519] text-white border-[#3B6748]'
-              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-primary-300'
+              ? 'bg-gradient-to-br from-[#011538] via-[#012970] to-[#006EF3] text-white border-blue-400/40 shadow-2xl'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-[#006EF3]/50'
           }`}
         >
           {!isFlipped ? (

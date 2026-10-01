@@ -380,9 +380,9 @@ export function LessonFormStudio({
 
       {/* 2. SUCCESS & ERROR ALERTS */}
       {successBanner && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 animate-in fade-in">
+        <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-[#F3F7FC] p-4 text-xs font-semibold text-[#012970] dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200 animate-in fade-in">
           <div className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+            <Check className="h-4 w-4 text-[#006EF3] shrink-0" />
             <span>{successBanner}</span>
           </div>
           <button onClick={() => setSuccessBanner(null)} className="text-slate-400 hover:text-slate-600">

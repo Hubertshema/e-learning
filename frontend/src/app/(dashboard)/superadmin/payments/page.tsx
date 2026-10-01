@@ -143,7 +143,9 @@ export default function SuperadminPaymentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <Badge variant="indigo">Financial Oversight</Badge>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-[#012970] border border-blue-200">
+            Financial Oversight
+          </span>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             Global Payment & Transaction Ledger
           </h1>
@@ -159,9 +161,9 @@ export default function SuperadminPaymentsPage() {
           <Button variant="outline" size="sm" onClick={fetchPayments} disabled={loading}>
             Refresh Ledger
           </Button>
-          <Card className="p-3 px-4 bg-[#132519] border border-[#3B6748]/30 text-white">
-            <span className="text-[10px] uppercase font-bold text-emerald-200">Verified Platform Volume</span>
-            <p className="text-xl font-black">{formatPrice(totalVolume)}</p>
+          <Card className="p-3 px-4 bg-gradient-to-r from-[#011538] via-[#012970] to-[#006EF3] border border-blue-400/30 text-white shadow-md">
+            <span className="text-[10px] uppercase font-bold text-blue-200">Verified Platform Volume</span>
+            <p className="text-xl font-black text-[#F5B400]">{formatPrice(totalVolume)}</p>
           </Card>
         </div>
       </div>
@@ -171,12 +173,12 @@ export default function SuperadminPaymentsPage() {
         <div
           className={`flex items-center gap-2.5 rounded-xl border p-3.5 text-xs font-medium ${
             message.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
+              ? 'border-blue-200 bg-[#F3F7FC] text-[#012970] dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200'
               : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300'
           }`}
         >
-          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          <span>{message.text}</span>
+          {message.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-[#006EF3]" /> : <AlertCircle className="h-4 w-4" />}
+          <span className="font-semibold">{message.text}</span>
         </div>
       )}
 
@@ -297,7 +299,7 @@ export default function SuperadminPaymentsPage() {
                           <Button
                             variant="default"
                             size="sm"
-                            className="h-7 text-[11px] px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="h-7 text-[11px] px-2.5 bg-[#006EF3] hover:bg-[#0058c4] text-white"
                             disabled={actionLoading}
                             onClick={() => handleVerify(p)}
                           >
@@ -426,7 +428,7 @@ export default function SuperadminPaymentsPage() {
                 <Button
                   variant="default"
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-[#006EF3] hover:bg-[#0058c4] text-white font-medium"
                   onClick={() => {
                     handleVerify(selectedPayment);
                     setShowReceiptModal(false);

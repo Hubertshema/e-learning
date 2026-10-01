@@ -308,19 +308,19 @@ export default function StudentSettingsPage() {
         <div
           className={`flex items-center justify-between rounded-2xl p-4 text-xs font-semibold shadow-md transition-all ${
             feedback.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+              ? 'bg-[#F3F7FC] text-[#012970] border border-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800'
               : 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
           }`}
         >
           <div className="flex items-center gap-2">
             {feedback.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#006EF3]" />
             ) : (
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
             )}
-            <span>{feedback.message}</span>
+            <span className="font-semibold">{feedback.message}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="underline text-[11px] hover:opacity-80">
+          <button onClick={() => setFeedback(null)} className="underline text-[11px] text-[#006EF3] hover:text-[#012970] font-semibold">
             Dismiss
           </button>
         </div>
@@ -362,9 +362,9 @@ export default function StudentSettingsPage() {
           <div className="lg:col-span-4 space-y-6">
             <Card className="p-6 text-center border-slate-200 dark:border-slate-800 shadow-lg space-y-4">
               <div className="relative mx-auto w-24 h-24">
-                <Avatar className="w-24 h-24 text-2xl border-4 border-indigo-100 dark:border-indigo-950 shadow-xl">
+                <Avatar className="w-24 h-24 text-2xl border-4 border-blue-100 dark:border-blue-950 shadow-xl">
                   <AvatarImage src={profileForm.avatarUrl || ''} />
-                  <AvatarFallback className="bg-[#3B6748] text-white font-black text-2xl">
+                  <AvatarFallback className="bg-[#012970] text-white font-black text-2xl">
                     {profileForm.firstName?.[0] || 'S'}
                     {profileForm.lastName?.[0] || ''}
                   </AvatarFallback>
@@ -738,15 +738,15 @@ export default function StudentSettingsPage() {
 
               {/* Verified Result Card */}
               {verifiedResult && (
-                <div className="rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-50/50 to-white dark:from-emerald-950/20 dark:to-slate-900 p-6 shadow-xl space-y-6 animate-fade-in">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-200 dark:border-emerald-800/60 pb-4">
+                <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-[#F3F7FC] to-white dark:from-blue-950/20 dark:to-slate-900 p-6 shadow-xl space-y-6 animate-fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-blue-200 dark:border-blue-800/60 pb-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30">
+                      <div className="h-12 w-12 rounded-2xl bg-[#012970] text-[#F5B400] flex items-center justify-center shadow-lg shadow-blue-900/20">
                         <Award className="h-6 w-6" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-black text-slate-900 dark:text-white tracking-wider">
+                          <span className="font-mono text-sm font-black text-[#012970] dark:text-white tracking-wider">
                             {verifiedResult.certificateCode}
                           </span>
                           <Badge variant="success" className="text-[10px] py-0 font-bold">

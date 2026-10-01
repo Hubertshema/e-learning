@@ -292,7 +292,7 @@ export default function AIActivityGeneratorPage() {
                 <Button
                   type="submit"
                   disabled={generating}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-xs py-5 shadow-lg"
+                  className="w-full bg-[#006EF3] hover:bg-[#0058c4] text-white font-semibold text-xs py-5 shadow-lg"
                 >
                   {generating ? (
                     <>
@@ -342,7 +342,7 @@ export default function AIActivityGeneratorPage() {
               {/* Toolbar */}
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-emerald-600 text-white text-xs">{activities.cefrLevel}</Badge>
+                  <Badge className="bg-[#012970] text-white text-xs">{activities.cefrLevel}</Badge>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     {activities.skill} • {activities.items.length} Items ({activities.estimatedMinutes} mins)
                   </span>
@@ -368,7 +368,7 @@ export default function AIActivityGeneratorPage() {
                     size="sm"
                     onClick={handleSaveDraft}
                     disabled={saving}
-                    className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="h-8 text-xs gap-1.5 bg-[#006EF3] hover:bg-[#0058c4] text-white font-medium"
                   >
                     <Save className="h-3.5 w-3.5" />
                     {saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Draft'}

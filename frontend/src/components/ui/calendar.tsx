@@ -129,7 +129,7 @@ export function Calendar({
       className={cn(
         compact
           ? 'w-full max-w-xs rounded-xl border border-slate-200 bg-white p-3 shadow-md space-y-2 dark:border-slate-800 dark:bg-slate-900'
-          : 'w-full max-w-md rounded-2xl border border-[#e2ebe2] bg-white p-5 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900',
+          : 'w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900',
         className
       )}
     >

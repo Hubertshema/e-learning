@@ -427,7 +427,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
               onClick={() => setStatusFilter(item.id as any)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                 statusFilter === item.id
-                  ? 'bg-white dark:bg-slate-900 text-[#315b36] dark:text-emerald-400 shadow-xs'
+                  ? 'bg-white dark:bg-slate-900 text-[#012970] dark:text-blue-400 shadow-xs'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
@@ -435,7 +435,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   statusFilter === item.id
-                    ? 'bg-emerald-100 text-[#315b36] dark:bg-emerald-950 dark:text-emerald-300'
+                    ? 'bg-[#F3F7FC] text-[#012970] dark:bg-slate-800 dark:text-blue-300'
                     : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                 }`}
               >
@@ -476,7 +476,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
               {isLoading ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
-                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#315b36]" />
+                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#006EF3]" />
                     Loading applications...
                   </td>
                 </tr>
@@ -492,7 +492,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                     {/* Applicant details */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#315b36] to-[#1a3820] text-white font-black text-xs flex items-center justify-center shrink-0">
+                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#012970] to-[#006EF3] text-white font-black text-xs flex items-center justify-center shrink-0">
                           {app.firstName?.[0]}
                           {app.lastName?.[0]}
                         </div>
@@ -650,7 +650,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                             setEnrollLevelStudent(app);
                             setSelectedEnrollLevelId(app.levelId || '');
                           }}
-                          className="font-bold text-[#315b36] hover:underline"
+                          className="font-bold text-[#006EF3] hover:underline"
                         >
                           {app.levelName}
                         </button>
@@ -689,7 +689,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                               setReviewLevelId(app.levelId || (levels[0]?.id ?? ''));
                             }}
                             size="sm"
-                            className="bg-[#315b36] hover:bg-[#25462a] text-white text-[11px] font-bold h-7 px-2.5 rounded-lg shadow-xs"
+                            className="bg-[#012970] hover:bg-[#006EF3] text-white text-[11px] font-bold h-7 px-2.5 rounded-lg shadow-xs transition-colors"
                           >
                             Review
                           </Button>
@@ -842,8 +842,8 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
               <Button
                 type="submit"
                 disabled={isActionLoading}
-                className={`text-xs h-9 font-bold rounded-xl text-white ${
-                  reviewDecision === 'ACCEPT' ? 'bg-[#315b36] hover:bg-[#25462a]' : 'bg-rose-600 hover:bg-rose-700'
+                className={`text-xs h-9 font-bold rounded-xl text-white transition-colors ${
+                  reviewDecision === 'ACCEPT' ? 'bg-[#012970] hover:bg-[#006EF3]' : 'bg-rose-600 hover:bg-rose-700'
                 }`}
               >
                 {isActionLoading ? 'Saving Decision...' : `Confirm ${reviewDecision === 'ACCEPT' ? 'Acceptance' : 'Rejection'}`}
@@ -1025,7 +1025,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
               <Button type="button" variant="ghost" onClick={() => setReqModalStudent(null)} className="text-xs h-9">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isActionLoading} className="text-xs h-9 bg-[#315b36] hover:bg-[#25462a] text-white font-bold rounded-xl">
+              <Button type="submit" disabled={isActionLoading} className="text-xs h-9 bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl transition-colors">
                 {isActionLoading ? 'Saving...' : 'Update Policy'}
               </Button>
             </div>
@@ -1071,7 +1071,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
               <Button type="button" variant="ghost" onClick={() => setEnrollLevelStudent(null)} className="text-xs h-9">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isActionLoading || !selectedEnrollLevelId} className="text-xs h-9 bg-[#315b36] hover:bg-[#25462a] text-white font-bold rounded-xl">
+              <Button type="submit" disabled={isActionLoading || !selectedEnrollLevelId} className="text-xs h-9 bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl transition-colors">
                 {isActionLoading ? 'Enrolling...' : 'Enroll in Level Courses'}
               </Button>
             </div>

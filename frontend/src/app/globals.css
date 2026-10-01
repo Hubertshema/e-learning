@@ -7,86 +7,96 @@
     --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-display: 'Poppins', var(--font-main);
     
-    /* LinguaChris Exact Logo Brand Palette */
-    --primary-green: #315b36;
-    --primary-green-dark: #254629;
-    --primary-green-deep: #1b351e;
-    --primary-green-light: #3e7144;
-    --accent-sage: #7ba27a;
-    --accent-sage-light: #a1c2a0;
-    --accent-sage-tint: #eff4ec;
-    --accent-sage-soft: #f6f9f5;
+    /* FluentEdge Exact Brand Palette */
+    --brand-navy: #012970;
+    --brand-blue: #006EF3;
+    --brand-gold: #F5B400;
+    --brand-light-blue: #F3F7FC;
+    --brand-white: #FFFFFF;
+    --brand-text: #172033;
+    --brand-gray: #667085;
+    --brand-border: #E2E8F0;
+
+    /* Legacy compatibility mapped to brand */
+    --primary-green: #012970;
+    --primary-green-dark: #011b4a;
+    --primary-green-deep: #011538;
+    --primary-green-light: #006EF3;
+    --accent-sage: #006EF3;
+    --accent-sage-light: #3b8ff7;
+    --accent-sage-tint: #F3F7FC;
+    --accent-sage-soft: #F3F7FC;
     
-    --bg-gradient-start: #fbfdfb;
-    --bg-gradient-mid: #eff4ec;
-    --bg-gradient-end: #e2ebe2;
+    --bg-gradient-start: #FFFFFF;
+    --bg-gradient-mid: #F3F7FC;
+    --bg-gradient-end: #E2E8F0;
     
-    --text-dark: #2e3339;
-    --text-body: #3d4247;
-    --text-muted: #5a5e63;
+    --text-dark: #172033;
+    --text-body: #172033;
+    --text-muted: #667085;
     
     color-scheme: light;
 
     /* Shadcn UI Variable Mappings */
-    --background: 128 20% 99%;
-    --foreground: 216 11% 20%;
+    --background: 213 64% 99%;
+    --foreground: 221 38% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 216 11% 20%;
+    --card-foreground: 221 38% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 216 11% 20%;
+    --popover-foreground: 221 38% 15%;
 
-    --primary: 128 30% 27%;
+    --primary: 218 98% 22%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 128 28% 94%;
-    --secondary-foreground: 216 11% 20%;
+    --secondary: 213 64% 97%;
+    --secondary-foreground: 221 38% 15%;
 
-    --muted: 128 15% 94%;
-    --muted-foreground: 215 5% 37%;
+    --muted: 213 64% 97%;
+    --muted-foreground: 221 13% 46%;
 
-    --accent: 128 28% 94%;
-    --accent-foreground: 128 30% 27%;
+    --accent: 213 64% 97%;
+    --accent-foreground: 213 100% 48%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 128 14% 90%;
-    --input: 128 14% 90%;
-    --ring: 128 30% 27%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 213 100% 48%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 135 20% 6%;
-    --foreground: 120 10% 95%;
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
 
-    --card: 135 20% 9%;
-    --card-foreground: 120 10% 95%;
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 135 20% 9%;
-    --popover-foreground: 120 10% 95%;
+    --popover: 222 47% 13%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 136 26% 42%;
+    --primary: 213 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 135 15% 16%;
-    --secondary-foreground: 120 10% 95%;
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 135 15% 16%;
-    --muted-foreground: 135 10% 65%;
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 135 15% 16%;
-    --accent-foreground: 120 10% 95%;
+    --accent: 217 33% 18%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 135 15% 16%;
-    --input: 135 15% 16%;
-    --ring: 136 26% 42%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 213 100% 50%;
   }
 }
 
@@ -116,11 +126,11 @@
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(49, 91, 54, 0.15);
+  border: 1px solid rgba(1, 41, 112, 0.12);
 }
 
 .dark .glass-panel {
-  background: rgba(19, 37, 25, 0.92);
+  background: rgba(15, 23, 42, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -128,17 +138,17 @@
 
 /* Solid Brand Utilities (NO GRADIENTS) */
 .brand-solid-primary {
-  background-color: #315b36;
+  background-color: #012970;
   color: #ffffff;
 }
 
 .brand-solid-subtle {
-  background-color: #eff4ec;
-  color: #2e3339;
+  background-color: #F3F7FC;
+  color: #172033;
 }
 
 .brand-text-solid {
-  color: #315b36;
+  color: #012970;
   font-weight: 700;
 }
 

@@ -78,15 +78,15 @@ export function ListeningQuizActivity({
       </div>
 
       {/* Audio Track Player Box */}
-      <Card className="p-6 bg-[#132519] border border-[#3B6748]/30 text-white shadow-xl space-y-4">
+      <Card className="p-6 bg-gradient-to-r from-[#011538] via-[#012970] to-[#006EF3] border border-blue-400/30 text-white shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-primary-300">
+            <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-[#F5B400]">
               <Headphones className="h-5 w-5" />
             </div>
             <div>
               <p className="text-xs font-bold text-white">Audio Track & Dialogue</p>
-              <p className="text-[11px] text-primary-200/80">Listen attentively before answering</p>
+              <p className="text-[11px] text-blue-200/80">Listen attentively before answering</p>
             </div>
           </div>
 
@@ -98,7 +98,7 @@ export function ListeningQuizActivity({
                 onClick={() => setPlaybackSpeed(speed)}
                 className={`px-2 py-0.5 rounded transition-all ${
                   playbackSpeed === speed
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-[#006EF3] text-white'
                     : 'text-white/70 hover:text-white'
                 }`}
               >

@@ -455,7 +455,7 @@ export default function TeacherClassesPage() {
             if (availableStudents.length === 0) loadAvailableStudents();
             setShowModal(true);
           }}
-          className="bg-[#315b36] hover:bg-[#27492b] text-white gap-2 shadow-sm"
+          className="bg-[#012970] hover:bg-[#006EF3] text-white gap-2 shadow-sm font-bold"
         >
           <Plus className="h-4 w-4" />
           Create New Cohort
@@ -463,12 +463,12 @@ export default function TeacherClassesPage() {
       </div>
 
       {feedback && (
-        <div className={`flex items-center justify-between rounded-xl p-4 text-xs font-medium ${feedback.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+        <div className={`flex items-center justify-between rounded-xl p-4 text-xs font-medium border ${feedback.type === 'success' ? 'bg-[#F3F7FC] text-[#012970] border-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>
           <div className="flex items-center gap-2">
-            {feedback.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-            <span>{feedback.message}</span>
+            {feedback.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-[#006EF3] shrink-0" /> : <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />}
+            <span className="font-semibold">{feedback.message}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="underline text-[11px]">Dismiss</button>
+          <button onClick={() => setFeedback(null)} className="underline text-[11px] text-[#006EF3] hover:text-[#012970] font-semibold">Dismiss</button>
         </div>
       )}
 
@@ -497,7 +497,7 @@ export default function TeacherClassesPage() {
                   <Card
                     key={cls.id}
                     onClick={() => setSelectedClass(cls)}
-                    className={`cursor-pointer p-4 transition-all ${isSelected ? 'border-[#315b36] ring-2 ring-[#315b36]/20 shadow-md' : 'hover:border-slate-300 dark:hover:border-slate-700'}`}
+                    className={`cursor-pointer p-4 transition-all ${isSelected ? 'border-[#006EF3] ring-2 ring-[#006EF3]/20 shadow-md' : 'hover:border-slate-300 dark:hover:border-slate-700'}`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -560,7 +560,7 @@ export default function TeacherClassesPage() {
               <FolderTree className="mx-auto h-8 w-8 text-slate-300 mb-2" />
               <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No cohorts yet</p>
               <p className="text-[11px] text-slate-500 mb-3">Create your first cohort with multiple courses.</p>
-              <Button size="sm" className="bg-[#315b36] hover:bg-[#27492b] text-white" onClick={() => setShowModal(true)}>
+              <Button size="sm" className="bg-[#012970] hover:bg-[#006EF3] text-white" onClick={() => setShowModal(true)}>
                 <Plus className="mr-1 h-3.5 w-3.5" />Create Cohort
               </Button>
             </Card>
@@ -571,7 +571,7 @@ export default function TeacherClassesPage() {
         <div className="lg:col-span-2 space-y-6">
           {selectedClass ? (
             <>
-              <Card className="p-5 border-l-4 border-l-[#315b36]">
+              <Card className="p-5 border-l-4 border-l-[#012970]">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div>
                     <div className="flex flex-wrap gap-1.5 mb-1">
@@ -666,7 +666,7 @@ export default function TeacherClassesPage() {
                 <CardHeader className="flex flex-row items-center justify-between pb-3">
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Users className="h-4 w-4 text-[#315b36]" />
+                      <Users className="h-4 w-4 text-[#012970]" />
                       Student Roster
                     </CardTitle>
                     <CardDescription className="text-xs">
@@ -675,7 +675,7 @@ export default function TeacherClassesPage() {
                   </div>
                   <Button
                     size="sm"
-                    className="bg-[#315b36] hover:bg-[#27492b] text-white gap-1.5 text-xs"
+                    className="bg-[#012970] hover:bg-[#006EF3] text-white gap-1.5 text-xs font-bold"
                     onClick={() => {
                       setEnrollError(null);
                       setSelectedStudentIds([]);
@@ -698,9 +698,9 @@ export default function TeacherClassesPage() {
                         const lastName: string = s?.lastName || s?.user?.lastName || '';
                         const email: string = s?.email || s?.user?.email || '';
                         return (
-                          <div key={enr.id || i} className="py-3 flex items-center justify-between">
+                           <div key={enr.id || i} className="py-3 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#315b36]/10 font-bold text-xs text-[#315b36] dark:bg-emerald-950 dark:text-emerald-400">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#012970]/10 font-bold text-xs text-[#012970] dark:bg-slate-800 dark:text-blue-300">
                                 {firstName[0]}{lastName[0]}
                               </div>
                               <div>
@@ -734,7 +734,7 @@ export default function TeacherClassesPage() {
                       <p>No students enrolled yet.</p>
                       <Button
                         size="sm"
-                        className="bg-[#315b36] hover:bg-[#27492b] text-white gap-1.5 text-xs"
+                        className="bg-[#012970] hover:bg-[#006EF3] text-white gap-1.5 text-xs font-bold"
                         onClick={() => {
                           setEnrollError(null);
                           setSelectedStudentIds([]);
@@ -795,7 +795,7 @@ export default function TeacherClassesPage() {
                     placeholder="e.g. Evening Fast-Track Batch 04"
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                   />
                 </div>
 
@@ -812,18 +812,18 @@ export default function TeacherClassesPage() {
                     ) : courses.map(c => {
                       const isChecked = selectedCourseIds.includes(c.id);
                       return (
-                        <label key={c.id} className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-emerald-50/70 dark:bg-emerald-950/30' : ''}`}>
+                        <label key={c.id} className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-blue-50/70 dark:bg-blue-950/30' : ''}`}>
                           <input
                             type="checkbox"
-                            className="h-4 w-4 rounded accent-[#315b36]"
+                            className="h-4 w-4 rounded accent-[#006EF3]"
                             checked={isChecked}
                             onChange={() => setSelectedCourseIds(prev => isChecked ? prev.filter(id => id !== c.id) : [...prev, c.id])}
                           />
                           <div className="flex items-center gap-2 flex-1">
-                            <span className="inline-flex items-center rounded-md bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">{c.level}</span>
+                            <span className="inline-flex items-center rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-[#012970] dark:bg-blue-950/60 dark:text-blue-300">{c.level}</span>
                             <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{c.title}</span>
                           </div>
-                          {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                          {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-[#006EF3] shrink-0" />}
                         </label>
                       );
                     })}
@@ -834,14 +834,14 @@ export default function TeacherClassesPage() {
                 <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 dark:border-slate-800 dark:bg-slate-900/50">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Weekly Schedule & Live Days</label>
-                    <span className="text-[11px] font-bold text-[#315b36] dark:text-emerald-400">{selectedDays.length} day{selectedDays.length !== 1 ? 's' : ''} selected</span>
+                    <span className="text-[11px] font-bold text-[#012970] dark:text-[#006EF3]">{selectedDays.length} day{selectedDays.length !== 1 ? 's' : ''} selected</span>
                   </div>
                   <div className="grid grid-cols-7 gap-1">
                     {ALL_DAYS.map(d => {
                       const sel = selectedDays.includes(d);
                       return (
                         <button key={d} type="button" onClick={() => toggleDay(d)}
-                          className={cn('py-1.5 rounded-lg text-xs font-bold transition-all text-center', sel ? 'bg-[#315b36] text-white shadow-sm ring-1 ring-[#315b36]' : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300')}>
+                          className={cn('py-1.5 rounded-lg text-xs font-bold transition-all text-center', sel ? 'bg-[#012970] text-white shadow-sm ring-1 ring-[#012970]' : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300')}>
                           {d}
                         </button>
                       );
@@ -851,14 +851,14 @@ export default function TeacherClassesPage() {
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-500 mb-1">Start Time</label>
                       <select value={startTime} onChange={e => setStartTime(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900">
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900">
                         {TIME_OPTIONS.map(t => <option key={`s-${t}`} value={t}>{t}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-500 mb-1">End Time</label>
                       <select value={endTime} onChange={e => setEndTime(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900">
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900">
                         {TIME_OPTIONS.map(t => <option key={`e-${t}`} value={t}>{t}</option>)}
                       </select>
                     </div>
@@ -867,7 +867,7 @@ export default function TeacherClassesPage() {
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Cohort Start Date</label>
                       <button type="button" onClick={() => setShowCalendarPicker(!showCalendarPicker)}
-                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#315b36] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-emerald-400 transition-colors">
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#012970] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-blue-400 transition-colors">
                         <CalendarIcon className="h-3.5 w-3.5" />
                         {cohortStartDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                         {showCalendarPicker ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
@@ -898,7 +898,7 @@ export default function TeacherClassesPage() {
                           </button>
                         )}
                         <button type="button" onClick={() => setShowEndCalendarPicker(!showEndCalendarPicker)}
-                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#315b36] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-emerald-400 transition-colors">
+                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#012970] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-blue-400 transition-colors">
                           <CalendarIcon className="h-3.5 w-3.5" />
                           {cohortEndDate ? cohortEndDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Set End Date'}
                           {showEndCalendarPicker ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
@@ -923,7 +923,7 @@ export default function TeacherClassesPage() {
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Max Student Capacity</label>
                   <input type="number" required min={1} value={form.capacity}
                     onChange={e => setForm({ ...form, capacity: parseInt(e.target.value) || 20 })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900" />
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900" />
                 </div>
 
                 {/* Pre-enroll Students (Optional) */}
@@ -938,7 +938,7 @@ export default function TeacherClassesPage() {
                     <input type="text" placeholder="Search by name or email..."
                       value={createStudentSearch}
                       onChange={e => setCreateStudentSearch(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 pl-8 pr-3 py-2 text-xs focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900" />
+                      className="w-full rounded-lg border border-slate-200 pl-8 pr-3 py-2 text-xs focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900" />
                   </div>
                   <div className="rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 max-h-44 overflow-y-auto">
                     {loadingStudents ? (
@@ -948,8 +948,8 @@ export default function TeacherClassesPage() {
                     ) : filteredCreateStudents.map(s => {
                       const isChecked = createStudentIds.includes(s.id);
                       return (
-                        <label key={s.id} className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-emerald-50/70 dark:bg-emerald-950/30' : ''}`}>
-                          <input type="checkbox" className="h-4 w-4 rounded accent-[#315b36]" checked={isChecked}
+                        <label key={s.id} className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-blue-50/70 dark:bg-blue-950/30' : ''}`}>
+                          <input type="checkbox" className="h-4 w-4 rounded accent-[#006EF3]" checked={isChecked}
                             onChange={() => toggleStudentSelection(s.id, createStudentIds, setCreateStudentIds)} />
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                             {s.firstName[0]}{s.lastName[0]}
@@ -959,7 +959,7 @@ export default function TeacherClassesPage() {
                             <p className="text-[11px] text-slate-500 truncate">{s.email}</p>
                           </div>
                           <span className="text-[10px] text-slate-400 shrink-0">{s.currentLevel}</span>
-                          {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                          {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-[#006EF3] shrink-0" />}
                         </label>
                       );
                     })}
@@ -975,7 +975,7 @@ export default function TeacherClassesPage() {
                 Cancel
               </Button>
               <Button type="submit" form="create-class-form" size="sm" disabled={saving}
-                className="bg-[#315b36] hover:bg-[#27492b] text-white">
+                className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold">
                 {saving ? 'Creating...' : `Create Cohort${createStudentIds.length > 0 ? ` + Enroll ${createStudentIds.length}` : ''}`}
               </Button>
             </div>
@@ -990,7 +990,7 @@ export default function TeacherClassesPage() {
             <CardHeader className="py-3.5 px-5 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between shrink-0 space-y-0">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-[#315b36]" />
+                  <UserPlus className="h-4 w-4 text-[#012970]" />
                   Add Students to Cohort
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-500 mt-0.5">
@@ -1013,8 +1013,8 @@ export default function TeacherClassesPage() {
                 )}
 
                 {selectedStudentIds.length > 0 && (
-                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-300 flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600" />
+                  <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-xs text-blue-900 dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-300 flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-[#006EF3]" />
                     <p><strong>{selectedStudentIds.length} student(s)</strong> selected. All cohort courses will be unlocked immediately at no cost to them.</p>
                   </div>
                 )}
@@ -1025,7 +1025,7 @@ export default function TeacherClassesPage() {
                   <input type="text" placeholder="Search students by name or email..."
                     value={studentSearch}
                     onChange={e => setStudentSearch(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 pl-8 pr-3 py-2 text-xs focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900" />
+                    className="w-full rounded-lg border border-slate-200 pl-8 pr-3 py-2 text-xs focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900" />
                 </div>
 
                 {/* Student List */}
@@ -1038,8 +1038,8 @@ export default function TeacherClassesPage() {
                     const isChecked = selectedStudentIds.includes(s.id);
                     const isActive = s.subscriptionStatus === 'ACTIVE';
                     return (
-                      <label key={s.id} className={`flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-emerald-50/70 dark:bg-emerald-950/30' : ''}`}>
-                        <input type="checkbox" className="h-4 w-4 rounded accent-[#315b36]" checked={isChecked}
+                      <label key={s.id} className={`flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-blue-50/70 dark:bg-blue-950/30' : ''}`}>
+                        <input type="checkbox" className="h-4 w-4 rounded accent-[#006EF3]" checked={isChecked}
                           onChange={() => toggleStudentSelection(s.id, selectedStudentIds, setSelectedStudentIds)} />
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           {s.firstName[0]}{s.lastName[0]}
@@ -1050,9 +1050,9 @@ export default function TeacherClassesPage() {
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className="text-[10px] text-slate-400">{s.currentLevel}</span>
-                          {isActive && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" title="Active subscription" />}
+                          {isActive && <span className="h-1.5 w-1.5 rounded-full bg-[#006EF3]" title="Active subscription" />}
                         </div>
-                        {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                        {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-[#006EF3] shrink-0" />}
                       </label>
                     );
                   })}
@@ -1061,7 +1061,7 @@ export default function TeacherClassesPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-slate-500">{filteredStudents.length} students available</span>
                   {filteredStudents.length > 0 && (
-                    <button type="button" className="text-[11px] text-[#315b36] font-semibold hover:underline"
+                    <button type="button" className="text-[11px] text-[#012970] font-semibold hover:underline"
                       onClick={() => setSelectedStudentIds(filteredStudents.map(s => s.id))}>
                       Select All
                     </button>
@@ -1075,7 +1075,7 @@ export default function TeacherClassesPage() {
                   Cancel
                 </Button>
                 <Button type="submit" size="sm" disabled={enrolling || selectedStudentIds.length === 0}
-                  className="bg-[#315b36] hover:bg-[#27492b] text-white">
+                  className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold">
                   {enrolling ? 'Enrolling...' : `Enroll ${selectedStudentIds.length} Student${selectedStudentIds.length !== 1 ? 's' : ''}`}
                 </Button>
               </div>
@@ -1123,17 +1123,17 @@ export default function TeacherClassesPage() {
                   ) : courses.map(c => {
                     const isChecked = manageCourseIds.includes(c.id);
                     return (
-                      <label key={c.id} className={`flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-emerald-50/70 dark:bg-emerald-950/30' : ''}`}>
-                        <input type="checkbox" className="h-4 w-4 rounded accent-[#315b36]"
+                      <label key={c.id} className={`flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-blue-50/70 dark:bg-blue-950/30' : ''}`}>
+                        <input type="checkbox" className="h-4 w-4 rounded accent-[#006EF3]"
                           checked={isChecked}
                           onChange={() => setManageCourseIds(prev =>
                             isChecked ? prev.filter(id => id !== c.id) : [...prev, c.id]
                           )} />
                         <div className="flex items-center gap-2 flex-1">
-                          <span className="inline-flex items-center rounded-md bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">{c.level}</span>
+                          <span className="inline-flex items-center rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-[#012970] dark:bg-blue-950/60 dark:text-blue-300">{c.level}</span>
                           <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{c.title}</span>
                         </div>
-                        {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                        {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-[#006EF3] shrink-0" />}
                       </label>
                     );
                   })}
@@ -1150,7 +1150,7 @@ export default function TeacherClassesPage() {
                   Cancel
                 </Button>
                 <Button type="submit" size="sm" disabled={savingCourses}
-                  className="bg-[#315b36] hover:bg-[#27492b] text-white">
+                  className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold">
                   {savingCourses ? 'Saving...' : 'Save Courses'}
                 </Button>
               </div>
@@ -1198,14 +1198,14 @@ export default function TeacherClassesPage() {
                     required
                     value={editForm.name}
                     onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                   />
                 </div>
 
                 {/* Courses Multi-Select */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    <Layers className="inline h-3.5 w-3.5 mr-1 text-[#315b36]" />
+                    <Layers className="inline h-3.5 w-3.5 mr-1 text-[#012970]" />
                     Linked Courses ({editSelectedCourseIds.length} selected)
                   </label>
                   <p className="text-[11px] text-slate-500 mb-2">Select one or more courses taught within this cohort.</p>
@@ -1213,10 +1213,10 @@ export default function TeacherClassesPage() {
                     {courses.map(c => {
                       const isChecked = editSelectedCourseIds.includes(c.id);
                       return (
-                        <label key={c.id} className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-emerald-50/70 dark:bg-emerald-950/30' : ''}`}>
+                        <label key={c.id} className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isChecked ? 'bg-blue-50/70 dark:bg-blue-950/30' : ''}`}>
                           <input
                             type="checkbox"
-                            className="h-4 w-4 rounded accent-[#315b36]"
+                            className="h-4 w-4 rounded accent-[#006EF3]"
                             checked={isChecked}
                             onChange={() => {
                               setEditSelectedCourseIds(prev =>
@@ -1225,10 +1225,10 @@ export default function TeacherClassesPage() {
                             }}
                           />
                           <div className="flex items-center gap-2 flex-1">
-                            <span className="inline-flex items-center rounded-md bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">{c.level}</span>
+                            <span className="inline-flex items-center rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-[#012970] dark:bg-blue-950/60 dark:text-blue-300">{c.level}</span>
                             <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{c.title}</span>
                           </div>
-                          {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                          {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-[#006EF3] shrink-0" />}
                         </label>
                       );
                     })}
@@ -1249,7 +1249,7 @@ export default function TeacherClassesPage() {
                             onClick={() => toggleEditDay(day)}
                             className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
                               active
-                                ? 'bg-[#315b36] text-white shadow-sm'
+                                ? 'bg-[#012970] text-white shadow-sm'
                                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
                             }`}
                           >
@@ -1266,7 +1266,7 @@ export default function TeacherClassesPage() {
                       <select
                         value={editStartTime}
                         onChange={e => setEditStartTime(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                       >
                         {TIME_OPTIONS.map(t => <option key={`est-${t}`} value={t}>{t}</option>)}
                       </select>
@@ -1276,7 +1276,7 @@ export default function TeacherClassesPage() {
                       <select
                         value={editEndTime}
                         onChange={e => setEditEndTime(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                       >
                         {TIME_OPTIONS.map(t => <option key={`eet-${t}`} value={t}>{t}</option>)}
                       </select>
@@ -1290,7 +1290,7 @@ export default function TeacherClassesPage() {
                       <button
                         type="button"
                         onClick={() => setShowEditCalendarPicker(!showEditCalendarPicker)}
-                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#315b36] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-emerald-400 transition-colors"
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#012970] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-blue-400 transition-colors"
                       >
                         <CalendarIcon className="h-3.5 w-3.5" />
                         {editStartDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
@@ -1329,7 +1329,7 @@ export default function TeacherClassesPage() {
                         <button
                           type="button"
                           onClick={() => setShowEditEndCalendarPicker(!showEditEndCalendarPicker)}
-                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#315b36] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-emerald-400 transition-colors"
+                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#012970] hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-blue-400 transition-colors"
                         >
                           <CalendarIcon className="h-3.5 w-3.5" />
                           {editEndDate ? editEndDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Set End Date'}
@@ -1365,7 +1365,7 @@ export default function TeacherClassesPage() {
                     min={1}
                     value={editForm.capacity}
                     onChange={e => setEditForm({ ...editForm, capacity: parseInt(e.target.value) || 20 })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                   />
                 </div>
 
@@ -1377,7 +1377,7 @@ export default function TeacherClassesPage() {
                     placeholder="https://meet.google.com/... or Zoom link"
                     value={editForm.meetingLink}
                     onChange={e => setEditForm({ ...editForm, meetingLink: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#315b36] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900"
                   />
                 </div>
               </form>
@@ -1398,7 +1398,7 @@ export default function TeacherClassesPage() {
                 form="edit-class-form"
                 size="sm"
                 disabled={savingEdit}
-                className="bg-[#315b36] hover:bg-[#27492b] text-white"
+                className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold"
               >
                 {savingEdit ? 'Saving...' : 'Save Changes'}
               </Button>

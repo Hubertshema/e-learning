@@ -64,7 +64,7 @@ export function LoginForm() {
           </label>
           <div className="relative flex items-center">
             <input 
-              className="w-full bg-transparent border-0 border-b-2 border-[#E2EBE2] dark:border-slate-700 focus:border-[#315B36] focus:ring-0 px-0 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-light transition-colors duration-150 outline-none" 
+              className="w-full bg-transparent border-0 border-b-2 border-[#E2E8F0] dark:border-slate-700 focus:border-[#006EF3] focus:ring-0 px-0 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-light transition-colors duration-150 outline-none" 
               id="email" 
               placeholder="Enter your mail" 
               type="email"
@@ -82,14 +82,14 @@ export function LoginForm() {
             </label>
             <Link
               href="/forgot-password"
-              className="text-xs font-semibold text-[#315B36] hover:underline"
+              className="text-xs font-semibold text-[#006EF3] hover:underline"
             >
               Forgot password?
             </Link>
           </div>
           <div className="relative flex items-center">
             <input 
-              className="w-full bg-transparent border-0 border-b-2 border-[#E2EBE2] dark:border-slate-700 focus:border-[#315B36] focus:ring-0 px-0 py-2 pr-9 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-light transition-colors duration-150 outline-none" 
+              className="w-full bg-transparent border-0 border-b-2 border-[#E2E8F0] dark:border-slate-700 focus:border-[#006EF3] focus:ring-0 px-0 py-2 pr-9 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-light transition-colors duration-150 outline-none" 
               id="password" 
               placeholder="Enter your password" 
               type={showPassword ? 'text' : 'password'}
@@ -116,7 +116,7 @@ export function LoginForm() {
         <div className="flex items-center pt-2">
           <label className="flex items-center gap-2 cursor-pointer group">
             <input 
-              className="w-4 h-4 rounded text-[#315B36] focus:ring-[#315B36] border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 transition" 
+              className="w-4 h-4 rounded text-[#006EF3] focus:ring-[#006EF3] border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 transition" 
               type="checkbox"
             />
             <span className="text-xs text-slate-600 dark:text-slate-400 font-normal select-none">
@@ -129,7 +129,7 @@ export function LoginForm() {
           <button 
             type="submit"
             disabled={isLoading}
-            className="px-7 py-2.5 rounded-full bg-[#315B36] text-white font-medium text-sm shadow-[0_6px_20px_rgba(49,91,54,0.35)] hover:bg-[#254629] active:scale-95 transition-all duration-200 disabled:opacity-70 flex items-center gap-2"
+            className="px-7 py-2.5 rounded-full bg-[#012970] text-white font-medium text-sm shadow-[0_6px_20px_rgba(1,41,112,0.3)] hover:bg-[#001f54] active:scale-95 transition-all duration-200 disabled:opacity-70 flex items-center gap-2"
           >
             {isLoading && <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
             Sign In
@@ -137,7 +137,7 @@ export function LoginForm() {
           
           <Link 
             href="/apply"
-            className="px-7 py-2.5 rounded-full border border-[#315B36] text-[#315B36] dark:text-[#7BA27A] font-medium text-sm hover:bg-[#315B36]/10 active:scale-95 transition-all duration-200 text-center"
+            className="px-7 py-2.5 rounded-full border border-[#012970] text-[#012970] dark:text-[#006EF3] font-medium text-sm hover:bg-[#F3F7FC] active:scale-95 transition-all duration-200 text-center"
           >
             Apply Now
           </Link>
@@ -145,29 +145,29 @@ export function LoginForm() {
       </form>
 
       {/* Demo account fast picker */}
-      <div className="mt-5 rounded-2xl border border-dashed border-[#E2EBE2] dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 p-2.5">
-        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#315B36] dark:text-[#7BA27A]">
-          <Sparkles className="h-3.5 w-3.5 text-[#315B36] dark:text-[#7BA27A]" /> Quick Demo Accounts:
+      <div className="mt-5 rounded-2xl border border-dashed border-[#E2E8F0] dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 p-2.5">
+        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#006EF3]">
+          <Sparkles className="h-3.5 w-3.5 text-[#006EF3]" /> Quick Demo Accounts:
         </p>
         <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={() => handleQuickLogin('student@platform.com')}
-            className="rounded-xl border border-[#E2EBE2] dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:border-[#315B36] hover:text-[#315B36] active:scale-95 transition-all text-center"
+            className="rounded-xl border border-[#E2E8F0] dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:border-[#006EF3] hover:text-[#006EF3] active:scale-95 transition-all text-center"
           >
             Student
           </button>
           <button
             type="button"
             onClick={() => handleQuickLogin('teacher@platform.com')}
-            className="rounded-xl border border-[#E2EBE2] dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:border-[#315B36] hover:text-[#315B36] active:scale-95 transition-all text-center"
+            className="rounded-xl border border-[#E2E8F0] dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:border-[#006EF3] hover:text-[#006EF3] active:scale-95 transition-all text-center"
           >
             Teacher
           </button>
           <button
             type="button"
             onClick={() => handleQuickLogin('admin@platform.com')}
-            className="rounded-xl border border-[#E2EBE2] dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:border-[#315B36] hover:text-[#315B36] active:scale-95 transition-all text-center"
+            className="rounded-xl border border-[#E2E8F0] dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:border-[#006EF3] hover:text-[#006EF3] active:scale-95 transition-all text-center"
           >
             Admin
           </button>

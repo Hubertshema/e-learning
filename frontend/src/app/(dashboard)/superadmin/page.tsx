@@ -158,9 +158,9 @@ export default function SuperadminDashboardPage() {
       total: stats?.courses?.total ?? 0,
       sub: `${stats?.courses?.total ?? 0} Catalog Total`,
       icon: BookOpen,
-      gradient: 'from-emerald-600/15 via-emerald-500/5 to-transparent dark:from-emerald-500/20',
-      iconBg: 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30',
-      borderColor: 'border-emerald-200/60 dark:border-emerald-900/60',
+      gradient: 'from-blue-600/15 via-blue-500/5 to-transparent dark:from-blue-500/20',
+      iconBg: 'bg-[#006EF3] text-white shadow-lg shadow-blue-500/30',
+      borderColor: 'border-blue-200/60 dark:border-blue-900/60',
       href: '/superadmin/courses',
     },
     {
@@ -179,18 +179,18 @@ export default function SuperadminDashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       {/* 1. Executive Control Center Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-[#132519] p-6 sm:p-8 text-white shadow-2xl border border-[#3B6748]/40">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#011538] via-[#012970] to-[#006EF3] p-6 sm:p-8 text-white shadow-2xl border border-blue-500/25">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="indigo" className="bg-indigo-500/20 text-indigo-300 border-indigo-500/40 font-mono text-[11px] px-3 py-1">
+              <Badge variant="indigo" className="bg-white/10 text-white border-white/20 font-mono text-[11px] px-3 py-1">
                 🛡️ Platform Superadmin Control Tower
               </Badge>
-              <span className="text-xs text-slate-400 font-medium">
+              <span className="text-xs text-blue-200 font-medium">
                 Authority Level 0 • Root Access
               </span>
               {statsValidating && (
-                <span className="flex items-center gap-1 text-[11px] text-indigo-300">
+                <span className="flex items-center gap-1 text-[11px] text-blue-200">
                   <RefreshCw className="h-3 w-3 animate-spin" /> Syncing...
                 </span>
               )}
@@ -198,7 +198,7 @@ export default function SuperadminDashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
               Platform Governance & Executive Overview
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed">
+            <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed font-normal">
               Real-time monitoring of instructor vetting, verified revenues, CEFR curriculum deployments, and automated SMTP communication gateways.
             </p>
           </div>
@@ -213,7 +213,7 @@ export default function SuperadminDashboardPage() {
                 refreshTeachers();
               }}
               disabled={statsValidating}
-              className="border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 backdrop-blur-md"
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md"
               title="Refresh Live Metrics"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${statsValidating ? 'animate-spin' : ''}`} />
@@ -223,15 +223,15 @@ export default function SuperadminDashboardPage() {
               size="sm"
               onClick={handleSeedData}
               disabled={actionLoading === 'seed'}
-              className="border-emerald-700/60 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 backdrop-blur-md"
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md font-bold"
               title="Seed Comprehensive Test Data"
             >
               <Database className={`mr-1.5 h-3.5 w-3.5 ${actionLoading === 'seed' ? 'animate-pulse' : ''}`} />
               {actionLoading === 'seed' ? 'Seeding...' : 'Seed Demo Data'}
             </Button>
             <Link href="/superadmin/announcements">
-              <Button variant="outline" size="sm" className="border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 backdrop-blur-md">
-                <Megaphone className="mr-1.5 h-3.5 w-3.5 text-amber-400" />
+              <Button variant="outline" size="sm" className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md font-bold">
+                <Megaphone className="mr-1.5 h-3.5 w-3.5 text-[#F5B400]" />
                 Announcements
               </Button>
             </Link>
@@ -280,15 +280,15 @@ export default function SuperadminDashboardPage() {
         <div
           className={`flex items-center justify-between rounded-2xl p-4 text-xs font-semibold shadow-md ${
             actionMessage.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+              ? 'bg-[#F3F7FC] text-[#012970] border border-blue-200 dark:bg-blue-950/50 dark:text-blue-200 dark:border-blue-800'
               : 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800'
           }`}
         >
           <div className="flex items-center gap-2">
-            {actionMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-            <span>{actionMessage.text}</span>
+            {actionMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-[#006EF3] shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+            <span className="font-semibold">{actionMessage.text}</span>
           </div>
-          <button onClick={() => setActionMessage(null)} className="underline text-[11px]">Dismiss</button>
+          <button onClick={() => setActionMessage(null)} className="underline text-[11px] text-[#006EF3] hover:text-[#012970] font-semibold">Dismiss</button>
         </div>
       )}
 
@@ -393,7 +393,7 @@ export default function SuperadminDashboardPage() {
                       size="sm"
                       disabled={actionLoading === t.id}
                       onClick={() => handleApproveTeacher(t.id)}
-                      className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shrink-0"
+                      className="h-8 bg-[#006EF3] hover:bg-[#0058c4] text-white text-xs font-bold shrink-0"
                     >
                       {actionLoading === t.id ? (
                         <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -407,7 +407,7 @@ export default function SuperadminDashboardPage() {
                 ))
               ) : (
                 <div className="py-10 text-center">
-                  <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-500 mb-2" />
+                  <CheckCircle2 className="mx-auto h-9 w-9 text-[#006EF3] mb-2" />
                   <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Teacher Approvals Clear</p>
                   <p className="text-[11px] text-slate-400">All registered instructors have been vetted.</p>
                 </div>
