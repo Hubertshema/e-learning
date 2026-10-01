@@ -60,16 +60,19 @@ export function StartLiveSessionModal({
   useEffect(() => {
     if (!isOpen) return;
 
-    async function fetchStudents() {
+    let isMounted = true;
+
+    async function fetchStudents(search: string = '') {
       try {
         setIsLoadingStudents(true);
         setErrorMessage(null);
 
         let list: any[] = [];
+        const queryParam = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
 
-        // 1. Try dedicated live-session students endpoint
+        // 1. Dedicated live-session students endpoint
         try {
-          const res = await apiClient.get<any>('/live-sessions/students');
+          const res = await apiClient.get<any>(`/live-sessions/students${queryParam}`);
           if (Array.isArray(res)) {
             list = res;
           } else if (Array.isArray((res as any)?.data)) {
@@ -84,7 +87,7 @@ export function StartLiveSessionModal({
         // 2. Fallback to /teacher/students if list is still empty
         if (!list || list.length === 0) {
           try {
-            const fallbackRes = await apiClient.get<any>('/teacher/students');
+            const fallbackRes = await apiClient.get<any>(`/teacher/students${queryParam}`);
             if (Array.isArray(fallbackRes)) {
               list = fallbackRes;
             } else if (Array.isArray((fallbackRes as any)?.students)) {
@@ -99,41 +102,64 @@ export function StartLiveSessionModal({
           }
         }
 
+        if (!isMounted) return;
+
         if (Array.isArray(list)) {
           const normalized: Student[] = list
-            .map((s: any) => ({
-              userId: s.userId || s.studentId || s.id || '',
-              studentId: s.studentId || s.userId || s.id || '',
-              firstName: s.firstName || 'Student',
-              lastName: s.lastName || '',
-              email: s.email || '',
-              levelName: s.levelName || s.currentLevel || s.levelCode || 'CEFR Track',
-              levelCode: s.levelCode || s.currentLevel || '',
-              avatarUrl: s.avatarUrl,
-              courseName: s.courseName || s.courseTitle || '',
-            }))
+            .map((s: any) => {
+              const uid = s.userId || s.id || s.studentId || '';
+              return {
+                userId: uid,
+                studentId: s.studentId || uid,
+                firstName: s.firstName || 'Student',
+                lastName: s.lastName || '',
+                email: s.email || '',
+                levelName: s.levelName || s.currentLevel || s.levelCode || 'CEFR Track',
+                levelCode: s.levelCode || s.currentLevel || '',
+                avatarUrl: s.avatarUrl,
+                courseName: s.courseName || s.courseTitle || '',
+              };
+            })
             .filter((s) => Boolean(s.userId));
 
-          const unique = Array.from(
-            new Map(normalized.map((s) => [s.userId, s])).values()
-          );
-
-          setStudents(unique);
+          setStudents((prev) => {
+            // Merge existing and new students by userId
+            const map = new Map<string, Student>();
+            normalized.forEach((s) => map.set(s.userId, s));
+            prev.forEach((s) => {
+              if (!map.has(s.userId)) {
+                map.set(s.userId, s);
+              }
+            });
+            return Array.from(map.values());
+          });
         }
       } catch (err: any) {
-        console.error('Failed to load students for live session:', err);
+        if (isMounted) {
+          console.error('Failed to load students for live session:', err);
+        }
       } finally {
-        setIsLoadingStudents(false);
+        if (isMounted) {
+          setIsLoadingStudents(false);
+        }
       }
     }
 
-    fetchStudents();
-  }, [isOpen]);
+    const timer = setTimeout(() => {
+      fetchStudents(searchQuery);
+    }, searchQuery ? 300 : 0);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [isOpen, searchQuery]);
 
   if (!isOpen) return null;
 
   const filteredStudents = students.filter((s) => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
     const fullName = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase();
     const email = (s.email || '').toLowerCase();
     const level = (s.levelName || s.levelCode || '').toLowerCase();
@@ -363,15 +389,17 @@ export function StartLiveSessionModal({
             </div>
 
             {/* Students List Container */}
-            <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50">
-              {isLoadingStudents ? (
+            <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50">
+              {isLoadingStudents && students.length === 0 ? (
                 <div className="p-6 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-[#006EF3]" />
                   Loading enrolled students...
                 </div>
               ) : filteredStudents.length === 0 ? (
                 <div className="p-6 text-center text-xs text-slate-500">
-                  No enrolled students matching your search.
+                  {isLoadingStudents
+                    ? 'Searching students...'
+                    : 'No enrolled students matching your search.'}
                 </div>
               ) : (
                 filteredStudents.map((student) => {
@@ -384,7 +412,7 @@ export function StartLiveSessionModal({
                       onClick={() => toggleStudent(id)}
                       className={`flex items-center justify-between p-2.5 px-3 cursor-pointer transition-colors ${
                         isSelected
-                          ? 'bg-blue-50 dark:bg-blue-950/50 text-[#012970] dark:text-blue-200'
+                          ? 'bg-blue-50 dark:bg-blue-950/50 text-[#012970] dark:text-blue-200 font-semibold'
                           : 'hover:bg-white dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300'
                       }`}
                     >
@@ -414,7 +442,7 @@ export function StartLiveSessionModal({
                       <div
                         className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
                           isSelected
-                            ? 'bg-[#006EF3] border-[#006EF3] text-white'
+                            ? 'bg-[#006EF3] border-[#006EF3] text-white shadow-sm'
                             : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
                         }`}
                       >
@@ -429,24 +457,30 @@ export function StartLiveSessionModal({
             {/* Selected Students Chips Preview */}
             {selectedStudentIds.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                <span className="text-[11px] font-bold text-slate-500 mr-1">Selected:</span>
-                {students
-                  .filter((s) => selectedStudentIds.includes(s.userId))
-                  .map((s) => (
+                <span className="text-[11px] font-bold text-slate-500 mr-1">
+                  Selected ({selectedStudentIds.length}):
+                </span>
+                {selectedStudentIds.map((id) => {
+                  const s = students.find((st) => st.userId === id || st.studentId === id);
+                  return (
                     <span
-                      key={s.userId}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-[#012970] dark:bg-blue-950 dark:text-blue-200 border border-blue-200 dark:border-blue-800"
+                      key={id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-100 text-[#012970] dark:bg-blue-950 dark:text-blue-200 border border-blue-200 dark:border-blue-800 shadow-sm"
                     >
-                      {s.firstName} {s.lastName}
+                      <span>{s ? `${s.firstName} ${s.lastName}` : id}</span>
                       <button
                         type="button"
-                        onClick={() => toggleStudent(s.userId)}
-                        className="hover:text-red-500 rounded-full p-0.5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStudent(id);
+                        }}
+                        className="hover:text-red-500 rounded-full p-0.5 transition-colors"
                       >
                         <X className="h-3 w-3" />
                       </button>
                     </span>
-                  ))}
+                  );
+                })}
               </div>
             )}
           </div>

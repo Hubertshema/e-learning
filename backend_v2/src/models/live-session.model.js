@@ -1,11 +1,14 @@
 import { query } from '../config/database.js';
+import { TeacherModel } from './teacher.model.js';
 
 export class LiveSessionModel {
   /**
    * Get all eligible students for live session invitation (enrolled with teacher prioritized)
    */
   static async getAvailableStudents(teacherId, search = '') {
-    const searchTerm = `%${search}%`;
+    const teacherIds = await TeacherModel.resolveTeacherIds(teacherId);
+    const hasSearch = Boolean(search && search.trim());
+    const searchTerm = hasSearch ? `%${search.trim()}%` : '';
 
     const res = await query(
       `SELECT DISTINCT ON (u.id)
@@ -22,16 +25,24 @@ export class LiveSessionModel {
           SELECT 1 FROM "enrollments" e
           JOIN "courses" c ON c.id = e."courseId"
           WHERE (e."studentId" = u.id OR e."studentId" = sp.id)
-            AND c."teacherId" = $1
+            AND c."teacherId" = ANY($1)
             AND e.status = 'ACTIVE'
         ) AS "enrolledWithTeacher"
        FROM "users" u
        LEFT JOIN "student_profiles" sp ON sp."userId" = u.id
        LEFT JOIN "levels" l ON l.id = sp."levelId"
        WHERE u.role = 'STUDENT'
-         AND ($2 = '' OR u."firstName" ILIKE $2 OR u."lastName" ILIKE $2 OR u.email ILIKE $2)
+         AND (
+           $2 = ''
+           OR (COALESCE(u."firstName", '') || ' ' || COALESCE(u."lastName", '')) ILIKE $2
+           OR COALESCE(u.email, '') ILIKE $2
+           OR COALESCE(l.name, '') ILIKE $2
+           OR COALESCE(l.code, '') ILIKE $2
+           OR COALESCE(sp."currentLevel", '') ILIKE $2
+           OR COALESCE(sp."targetLevel", '') ILIKE $2
+         )
        ORDER BY u.id, u."firstName" ASC`,
-      [teacherId, searchTerm]
+      [teacherIds, searchTerm]
     );
 
     return res.rows.sort((a, b) => {
