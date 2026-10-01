@@ -21,9 +21,7 @@ import {
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData, clientCache } from '@/lib/cache';
 import { apiClient } from '@/lib/api-client';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
-const ALL_CEFR_LEVELS = ['PRE_A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 
 export default function TeacherSettingsPage() {
   const { user, refreshUser } = useAuth();
@@ -39,10 +37,8 @@ export default function TeacherSettingsPage() {
     timezone: (user as any)?.timezone || 'Africa/Kigali',
     avatarUrl: user?.avatarUrl || '',
     headline: user?.teacherProfile?.headline || 'Accredited English Language Instructor',
-    bio: user?.teacherProfile?.bio || '',
     hourlyRate: user?.teacherProfile?.hourlyRate || 35,
     experienceYears: user?.teacherProfile?.experienceYears || 5,
-    levelsTaught: (user?.teacherProfile as any)?.levelsTaught || ['A1', 'A2', 'B1', 'B2', 'C1'],
     profileVisibility: (user?.teacherProfile as any)?.profileVisibility || 'PUBLIC',
   });
   const [savingProfile, setSavingProfile] = useState(false);
@@ -67,10 +63,8 @@ export default function TeacherSettingsPage() {
         timezone: (user as any).timezone || 'Africa/Kigali',
         avatarUrl: user.avatarUrl || '',
         headline: user.teacherProfile?.headline || 'Accredited English Language Instructor',
-        bio: user.teacherProfile?.bio || '',
         hourlyRate: user.teacherProfile?.hourlyRate || 35,
         experienceYears: user.teacherProfile?.experienceYears || 5,
-        levelsTaught: (user.teacherProfile as any)?.levelsTaught || ['A1', 'A2', 'B1', 'B2', 'C1'],
         profileVisibility: (user.teacherProfile as any)?.profileVisibility || 'PUBLIC',
       });
     }
@@ -88,17 +82,6 @@ export default function TeacherSettingsPage() {
     }
   );
 
-  const toggleLevelTaught = (level: string) => {
-    setFormData((prev) => {
-      const exists = prev.levelsTaught.includes(level);
-      return {
-        ...prev,
-        levelsTaught: exists
-          ? prev.levelsTaught.filter((l: string) => l !== level)
-          : [...prev.levelsTaught, level],
-      };
-    });
-  };
 
   const showFeedback = (type: 'success' | 'error', text: string) => {
     setFeedback({ type, text });
@@ -118,10 +101,8 @@ export default function TeacherSettingsPage() {
         timezone: formData.timezone,
         avatarUrl: formData.avatarUrl,
         headline: formData.headline,
-        bio: formData.bio,
         hourlyRate: Number(formData.hourlyRate),
         experienceYears: Number(formData.experienceYears),
-        levelsTaught: formData.levelsTaught,
         profileVisibility: formData.profileVisibility,
       });
       clientCache.invalidate('teacher_');
@@ -407,39 +388,7 @@ export default function TeacherSettingsPage() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      CEFR Proficiency Levels Taught
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {ALL_CEFR_LEVELS.map((lvl) => {
-                        const isSelected = formData.levelsTaught.includes(lvl);
-                        return (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => toggleLevelTaught(lvl)}
-                            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-                              isSelected
-                                ? 'bg-primary-600 text-white shadow-sm'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                            }`}
-                          >
-                            {lvl}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
 
-                  <RichTextEditor
-                    label="Biography & Teaching Philosophy (Markdown Supported)"
-                    placeholder="Share your pedagogical approach, background in linguistics, certifications, and student achievements..."
-                    value={formData.bio}
-                    onChange={(val) => setFormData({ ...formData, bio: val })}
-                    minRows={5}
-                    category="general"
-                  />
 
                   <Input
                     label="Profile Avatar URL"
