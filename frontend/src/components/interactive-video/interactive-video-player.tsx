@@ -23,17 +23,7 @@ import {
 } from 'lucide-react';
 import { UniversalVideo, UniversalVideoHandle, getYouTubeId } from './universal-video';
 
-// Polyfill for mobile drag and drop
-import { polyfill } from "mobile-drag-drop";
-import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour";
-import "mobile-drag-drop/default.css";
-
-if (typeof window !== "undefined") {
-  polyfill({
-    dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
-  });
-  window.addEventListener('touchmove', function() {}, {passive: false});
-}
+// Mobile drag-and-drop is handled natively by modern browsers
 
 export type VideoActivity = {
   id: string;
