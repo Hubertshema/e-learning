@@ -126,6 +126,12 @@ export default function StudentLearnPage() {
   // Flexible Classroom UI States
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState<'default' | 'wide'>('default');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, []);
   const [collapsedUnits, setCollapsedUnits] = useState<Record<string, boolean>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -138,6 +144,7 @@ export default function StudentLearnPage() {
   const [showCongratsLesson, setShowCongratsLesson] = useState<Lesson | null>(null);
   const autoCompleteTimerRef = useRef<any>(null);
   const autoAdvanceTimerRef = useRef<any>(null);
+  const ivAutoAdvancedRef = useRef<string | null>(null); // tracks lessonId that already triggered IV auto-advance
 
   // Fullscreen toggle handler
   const toggleFullscreen = () => {
@@ -393,8 +400,8 @@ export default function StudentLearnPage() {
           completionPercent: Math.round(percent),
         });
 
-        // When >= 90% completed, update local progressRecords immediately to unlock curriculum
-        if (percent >= 90) {
+        // When 100% completed, update local progressRecords + auto-advance
+        if (percent === 100) {
           setData((prev) => {
             if (!prev) return prev;
             const exists = prev.progressRecords?.some((p) => p.lessonId === lessonId);
@@ -406,11 +413,40 @@ export default function StudentLearnPage() {
                   ...(prev.progressRecords || []),
                   { lessonId, isCompleted: true, timeSpentSec: Math.round(watched) },
                 ];
-            return {
-              ...prev,
-              progressRecords: updated,
-            };
+            return { ...prev, progressRecords: updated };
           });
+
+          // Auto-advance to next lesson (only once per lesson)
+          if (ivAutoAdvancedRef.current !== lessonId) {
+            ivAutoAdvancedRef.current = lessonId;
+            try {
+              const res: any = await apiClient.post(`/student/lessons/${lessonId}/complete`, {
+                timeSpentSec: Math.round(watched),
+              });
+              const lessons = (data?.course?.units || []).flatMap((u) => u.lessons || []);
+              const lesson = lessons.find((l) => l.id === lessonId);
+              if (res?.courseCompleted) {
+                setEarnedCertificate(res.certificate);
+                setShowCourseCompletionModal(true);
+              } else if (lesson) {
+                setJustCompletedLesson(lesson);
+                setShowCongratsLesson(lesson);
+                if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+                autoAdvanceTimerRef.current = setTimeout(() => {
+                  setShowCongratsLesson(null);
+                  const idx = lessons.findIndex((l) => l.id === lessonId);
+                  const next = idx < lessons.length - 1 ? lessons[idx + 1] : null;
+                  if (next) {
+                    setSelectedLesson(next);
+                    setActiveTab('CONTENT');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }, 3000);
+              }
+            } catch (e) {
+              console.error('IV lesson complete failed', e);
+            }
+          }
         }
       } catch (err) {
         console.error('Failed to sync video progress', err);
@@ -691,7 +727,7 @@ export default function StudentLearnPage() {
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-35 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity animate-in fade-in"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity animate-in fade-in"
         />
       )}
 
@@ -700,7 +736,7 @@ export default function StudentLearnPage() {
         {/* Left Column: Flexible & Collapsible Curriculum Syllabus Sidebar */}
         {sidebarOpen && (
           <aside
-            className={`fixed inset-y-0 left-0 z-40 lg:static lg:z-20 ${sidebarWidthClass} shrink-0 border-r border-[#e2ebe2]/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-all duration-300 ease-in-out select-none flex flex-col shadow-xs animate-in slide-in-from-left duration-200`}
+            className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-20 ${sidebarWidthClass} shrink-0 border-r border-[#e2ebe2]/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-all duration-300 ease-in-out select-none flex flex-col shadow-xs animate-in slide-in-from-left duration-200`}
           >
             <div className="flex h-full flex-col">
               {/* Sidebar Header with Width Resizer & Close Button */}
@@ -908,34 +944,9 @@ export default function StudentLearnPage() {
         )}
 
         {/* Right Main Content Area - Expands to 100% when sidebar is closed */}
-        <main className="flex-1 overflow-hidden p-4 sm:p-6 lg:p-8 min-w-0 transition-all duration-300">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 min-w-0 transition-all duration-300">
           <div className="mx-auto w-full max-w-[1600px] space-y-6">
-            {/* Congratulations auto-complete banner */}
-            {showCongratsLesson && (
-              <div className="flex items-center justify-between rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 dark:border-emerald-700 p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center shrink-0">
-                    <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-emerald-900 dark:text-emerald-200">🎉 Lesson Completed!</p>
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                      <strong>&quot;{showCongratsLesson.title}&quot;</strong> — Moving to next lesson in 3 seconds...
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
-                    setShowCongratsLesson(null);
-                  }}
-                  className="text-[11px] font-semibold underline text-emerald-700 dark:text-emerald-400 shrink-0"
-                >
-                  Stay here
-                </button>
-              </div>
-            )}
-
+            {/* The congratulations overlay is now rendered over the lesson content below */}
             {/* General feedback banner */}
             {feedback && (
               <div className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 shadow-sm animate-in fade-in dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -950,7 +961,36 @@ export default function StudentLearnPage() {
             )}
 
             {selectedLesson ? (
-              <>
+              <div className="relative">
+                {showCongratsLesson && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm rounded-2xl animate-in fade-in duration-500 m-1">
+                    <div className="bg-white dark:bg-slate-900 border-2 border-emerald-500/30 dark:border-emerald-500/20 p-8 rounded-3xl shadow-2xl max-w-md w-full text-center transform scale-100 animate-in zoom-in-95">
+                      <div className="mx-auto w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center mb-5 ring-8 ring-emerald-50 dark:ring-emerald-900/20">
+                        <Trophy className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white mb-2">Lesson Completed!</h2>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-8">
+                        Great job! You've finished <strong>&quot;{showCongratsLesson.title}&quot;</strong>.
+                      </p>
+                      
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center justify-center gap-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-5 py-2.5 rounded-full">
+                          <div className="w-4 h-4 rounded-full border-2 border-emerald-600 dark:border-emerald-400 border-t-transparent animate-spin" />
+                          Moving to next lesson in 3 seconds...
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+                            setShowCongratsLesson(null);
+                          }}
+                          className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline underline-offset-2 transition-colors mt-2"
+                        >
+                          Stay on this lesson
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Lesson Body: Interactive Video OR Theory + Drills */}
                 {selectedLesson.type === 'INTERACTIVE_VIDEO' ? (
                   loadingInteractive ? (
@@ -1261,7 +1301,7 @@ export default function StudentLearnPage() {
                     )}
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
               <Card className="p-12 text-center text-slate-400">
                 Select a lesson from the syllabus to begin studying.

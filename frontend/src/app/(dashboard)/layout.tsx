@@ -65,14 +65,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Top Navbar Header with high z-index to overlay main content */}
         <header className="relative z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 md:px-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
           <div className="flex items-center gap-3">
-            {/* Mobile Hamburger Drawer Trigger */}
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="flex md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-              aria-label="Open Navigation Menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
               <Link
                 href={user?.role ? `/${user.role.toLowerCase()}` : '/'}
@@ -137,7 +129,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Scrollable Dashboard Body */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">{children}</main>
       </div>
     </div>
   );

@@ -24,6 +24,7 @@ import { clientCache } from './cache';
 export interface ApiOptions extends RequestInit {
   requiresAuth?: boolean;
   skipCache?: boolean;
+  useCache?: boolean;
   ttl?: number;
 }
 
@@ -336,8 +337,8 @@ function invalidateRelatedCache(endpoint: string) {
 
 // Convenience REST methods with Stale-While-Revalidate caching
 apiClient.get = async <T = unknown>(endpoint: string, options?: ApiOptions): Promise<T> => {
-  // If skipCache is false/undefined, we check clientCache
-  if (options?.skipCache !== true) {
+  // If useCache is explicitly true, we check clientCache
+  if (options?.useCache === true) {
     const cacheKey = `api_${endpoint}`;
     const cached = clientCache.get<T>(cacheKey, true); // true = allowStale for instant 0ms viewing
 
