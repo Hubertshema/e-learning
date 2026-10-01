@@ -383,13 +383,13 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                 href={item.href}
                 title={item.name}
                 className={cn(
-                  'relative flex items-center justify-center flex-1 py-2 transition-colors',
+                  'relative flex items-center justify-center flex-1 py-3 transition-colors',
                   isActive
                     ? 'text-[#315b36] dark:text-emerald-400'
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                 )}
               >
-                <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5px]')} />
+                <Icon className={cn('h-[22px] w-[22px]', isActive && 'stroke-[2.5px]')} />
                 {isActive && (
                   <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#315b36] dark:bg-emerald-400" />
                 )}

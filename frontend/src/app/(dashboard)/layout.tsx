@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Navbar Header with high z-index to overlay main content */}
-        <header className="relative z-40 flex h-11 md:h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-3 md:px-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
+        <header className="relative z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white/80 px-4 md:px-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
               <Link
@@ -114,7 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="flex items-center gap-3.5">
             <div className="hidden md:flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300">
-              <ShieldCheck className="h-3 w-3 text-emerald-500" />
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
               <span>{roleLabel}</span>
             </div>
 
