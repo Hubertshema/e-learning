@@ -23,6 +23,18 @@ import {
 } from 'lucide-react';
 import { UniversalVideo, UniversalVideoHandle, getYouTubeId } from './universal-video';
 
+// Polyfill for mobile drag and drop
+import { polyfill } from "mobile-drag-drop";
+import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour";
+import "mobile-drag-drop/default.css";
+
+if (typeof window !== "undefined") {
+  polyfill({
+    dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
+  });
+  window.addEventListener('touchmove', function() {}, {passive: false});
+}
+
 export type VideoActivity = {
   id: string;
   timestampSeconds: number;
@@ -101,6 +113,7 @@ export function InteractiveVideoPlayer({
   completedActivityIds = [],
   isLessonCompleted = false,
   onProgress,
+  onEnded,
 }: {
   lessonId: string;
   videoUrl: string;
@@ -116,6 +129,7 @@ export function InteractiveVideoPlayer({
   completedActivityIds?: string[];
   isLessonCompleted?: boolean;
   onProgress?: (position: number, watched: number, percent: number) => void;
+  onEnded?: () => void;
 }) {
   // Check localStorage for saved position if initialPosition is 0
   const savedLocalPos = useMemo(() => {
@@ -423,6 +437,12 @@ export function InteractiveVideoPlayer({
       setAnswer(item.type === 'MULTIPLE_SELECT' ? [] : '');
     }
 
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        document.getElementById('interactive-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    }
+
     setTimeout(() => {
       isTriggeringCheckpointRef.current = false;
     }, 400);
@@ -513,10 +533,13 @@ export function InteractiveVideoPlayer({
       ? Math.min(100, Math.round(checkPct + watchPct))
       : (totalDuration > 0 ? Math.min(100, Math.round((current / totalDuration) * 100)) : 0);
 
+    // Prevent auto-advance (reaching >= 90%) if there is an active checkpoint blocking the user
+    const finalPercent = activeRef.current ? Math.min(89, progressPercent) : progressPercent;
+
     onProgress?.(
       current,
       Math.max(watchedRef.current, current),
-      progressPercent
+      finalPercent
     );
   };
 
@@ -635,7 +658,9 @@ export function InteractiveVideoPlayer({
         const checkPct = totalActs > 0 ? (nowCompletedActs / totalActs) * 50 : 0;
         const watchPct = totalDuration > 0 ? Math.min(50, (watchedRef.current / totalDuration) * 50) : 0;
         const calculatedPercent = Math.min(100, Math.round(checkPct + watchPct));
-        onProgress?.(position, Math.max(watchedRef.current, position), calculatedPercent);
+        // Prevent auto-advance if somehow another checkpoint is instantly active
+        const finalPercent = activeRef.current ? Math.min(89, calculatedPercent) : calculatedPercent;
+        onProgress?.(position, Math.max(watchedRef.current, position), finalPercent);
 
         // Gentle auto-resume timer giving student time to review response
         clearAutoResume();
@@ -684,7 +709,32 @@ export function InteractiveVideoPlayer({
   const handleResetLesson = async () => {
     try {
       await apiClient.post(`/student/interactive-videos/lessons/${lessonId}/reset`);
-      window.location.reload();
+      
+      // Reset local state without refreshing the page
+      setCompleted({});
+      completedRef.current = {};
+      setWatched(0);
+      watchedRef.current = 0;
+      setPosition(0);
+      lastTimeRef.current = 0;
+      setActive(null);
+      activeRef.current = null;
+      setAnswer('');
+      setFeedback(null);
+      recentlyTriggeredCheckpointRef.current = {};
+      
+      try {
+        localStorage.removeItem(`iv_pos_${lessonId}`);
+      } catch {}
+
+      // Reset the video player
+      videoRef.current?.seekTo(0);
+      videoRef.current?.pause();
+      setPlaying(false);
+
+      // Notify parent of reset
+      onProgress?.(0, 0, 0);
+
     } catch (error) {
       console.error('Failed to reset lesson', error);
       alert('Failed to reset lesson. Please try again.');
@@ -720,7 +770,7 @@ export function InteractiveVideoPlayer({
       {/* Main Split Screen Stage: Left Video, Right Questions */}
       <div className={`grid grid-cols-1 gap-6 items-stretch lg:grid-cols-12 transition-all duration-500`}>
         {/* LEFT COLUMN: Video Player */}
-        <div className={`${(!playing || active) ? 'lg:col-span-8' : 'lg:col-span-10 lg:col-start-2'} flex flex-col justify-start transition-all duration-500`}>
+        <div className={`lg:col-span-8 flex flex-col justify-start transition-all duration-500 sticky top-0 z-40 bg-white dark:bg-slate-950 pt-2 pb-4 lg:p-0 lg:static lg:bg-transparent -mx-4 px-4 sm:mx-0 sm:px-0`}>
           <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl border border-slate-800 select-none">
             
             {/* Completion Reset Prompt Overlay */}
@@ -795,6 +845,35 @@ export function InteractiveVideoPlayer({
                 onPause={() => setPlaying(false)}
                 onDurationChange={(dur) => setDetectedDuration(dur)}
                 onTimeUpdate={handleTimeUpdate}
+                onEnded={() => {
+                  setPlaying(false);
+                  
+                  // YouTube API sometimes fires 'ended' before the final second's timeupdate.
+                  // Visually sync the timer to the exact total duration so it doesn't say 3:19 / 3:20.
+                  if (totalDuration > 0) {
+                    setPosition(totalDuration);
+                    lastTimeRef.current = totalDuration;
+                    watchedRef.current = Math.max(watchedRef.current, totalDuration);
+                    setWatched(watchedRef.current);
+                  }
+                  
+                  const totalActs = (activitiesRef.current || []).length;
+                  const nowCompletedActs = Object.keys(completedRef.current).filter(
+                    (k) => completedRef.current[k]
+                  ).length;
+                  const checkPct = totalActs > 0 ? (nowCompletedActs / totalActs) * 50 : 0;
+                  // Force watchPct to 50 since video ended (bypassing YT 1s polling gap)
+                  const progressPercent = totalActs > 0
+                    ? Math.min(100, Math.round(checkPct + 50))
+                    : 100;
+                  
+                  // Crucial: If a checkpoint is active at the very end of the video,
+                  // do NOT send >= 90%, otherwise the parent will auto-advance and skip it.
+                  const finalPercent = activeRef.current ? Math.min(89, progressPercent) : progressPercent;
+
+                  onProgress?.(totalDuration, totalDuration, finalPercent);
+                  onEnded?.();
+                }}
               />
 
               {/* Interaction Shield & Centered Circular Play Overlay */}
@@ -1116,12 +1195,11 @@ export function InteractiveVideoPlayer({
         </div>
 
         {/* RIGHT COLUMN: Question & Interaction Panel */}
-        {(!playing || active) && (
-          <div className="lg:col-span-4 relative flex flex-col min-h-[420px] lg:h-[calc(100vh-8rem)] lg:sticky lg:top-8">
-            <div className={`flex-1 flex flex-col overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#e2ebe2]/80 dark:border-slate-800 shadow-xs p-4 sm:p-6 animate-in fade-in slide-in-from-right-4 duration-500`}>
+        <div id="interactive-panel" className={`lg:col-span-4 relative flex flex-col min-h-[420px] lg:h-[calc(100vh-8rem)] lg:sticky lg:top-8 scroll-mt-[350px] lg:scroll-mt-0`}>
+          <div className={`flex-1 flex flex-col lg:overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#e2ebe2]/80 dark:border-slate-800 shadow-xs p-4 sm:p-6 animate-in fade-in slide-in-from-right-4 duration-500`}>
               {active ? (
-              <div className="flex flex-col h-full overflow-hidden">
-                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-4">
+              <div className="flex flex-col lg:h-full lg:overflow-hidden">
+                <div className="flex-1 lg:overflow-y-auto pr-2 custom-scrollbar pb-4">
                   {/* Question Header */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
@@ -1325,7 +1403,6 @@ export function InteractiveVideoPlayer({
           )}
           </div>
         </div>
-        )}
       </div>
 
       {/* Transcript Card below if transcript exists */}

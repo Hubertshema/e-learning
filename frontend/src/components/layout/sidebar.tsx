@@ -359,22 +359,53 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop static sidebar */}
-      <aside className="hidden md:flex h-screen shrink-0 relative z-30">
+      <aside className="hidden lg:flex h-screen shrink-0 relative z-30">
         {sidebarContent}
       </aside>
 
-      {/* Mobile drawer backdrop and slide-over */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
-          <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
-            onClick={onClose}
-          />
-          <div className="relative z-10 flex h-full max-w-xs flex-1 animate-in slide-in-from-left duration-200 shadow-2xl">
-            {sidebarContent}
-          </div>
-        </div>
-      )}
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+        {sections
+          .flatMap((s) => s.items)
+          .slice(0, 5) // Limit to 5 items to fit nicely
+          .map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/teacher' &&
+                item.href !== '/student' &&
+                item.href !== '/superadmin' &&
+                pathname.startsWith(item.href));
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'flex flex-col items-center justify-center flex-1 py-3 px-1 gap-1 transition-colors',
+                  isActive
+                    ? 'text-[#315b36] dark:text-emerald-400'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                )}
+              >
+                <div className="relative">
+                  <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5px]')} />
+                  {isActive && (
+                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#315b36] dark:bg-emerald-400" />
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    'text-[10px] font-semibold text-center w-full truncate',
+                    isActive ? 'font-bold' : 'font-medium'
+                  )}
+                >
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
+      </nav>
     </>
   );
 }
