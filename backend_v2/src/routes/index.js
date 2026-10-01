@@ -14,6 +14,7 @@ import uploadRoutes from './upload.routes.js';
 import { teacherInteractiveVideoRoutes, studentInteractiveVideoRoutes } from './interactive-video.routes.js';
 import { HealthController } from '../controllers/health.controller.js';
 import { StudentController } from '../controllers/student.controller.js';
+import { UserController } from '../controllers/user.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { sendSuccess } from '../utils/response.util.js';
 
@@ -52,5 +53,9 @@ router.use('/student/interactive-videos', studentInteractiveVideoRoutes);
 
 // Direct alias for lesson interactive activities drill
 router.get('/activities/lesson/:lessonId', authenticate, StudentController.getLessonActivities);
+
+// Direct compatibility aliases for student profile
+router.get('/students/me', authenticate, UserController.getProfile);
+router.patch('/students/me', authenticate, UserController.updateProfile);
 
 export default router;

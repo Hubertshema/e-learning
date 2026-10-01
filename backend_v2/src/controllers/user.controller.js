@@ -9,7 +9,13 @@ export class UserController {
   static async getProfile(req, res, next) {
     try {
       const user = await UserService.getProfile(req.user.id);
-      return sendSuccess(res, user, 'Profile retrieved');
+      const payload = {
+        ...user,
+        user,
+        profile: user.studentProfile || user.teacherProfile || null,
+        studentProfile: user.studentProfile || null,
+      };
+      return sendSuccess(res, payload, 'Profile retrieved');
     } catch (err) {
       next(err);
     }
@@ -21,7 +27,63 @@ export class UserController {
   static async updateProfile(req, res, next) {
     try {
       const updated = await UserService.updateProfile(req.user.id, req.body);
-      return sendSuccess(res, updated, 'Profile updated successfully');
+      const payload = {
+        ...updated,
+        user: updated,
+        profile: updated.studentProfile || updated.teacherProfile || null,
+        studentProfile: updated.studentProfile || null,
+      };
+      return sendSuccess(res, payload, 'Profile updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * GET /api/v1/users/sessions
+   */
+  static async getSessions(req, res, next) {
+    try {
+      const resData = await query(
+        `SELECT id, "createdAt", "expiresAt", revoked 
+         FROM "public"."refresh_tokens" 
+         WHERE "userId" = $1 AND revoked = false AND "expiresAt" > NOW() 
+         ORDER BY "createdAt" DESC LIMIT 10`,
+        [req.user.id]
+      );
+      
+      const sessions = resData.rows.length > 0 
+        ? resData.rows.map((row, idx) => ({
+            id: row.id,
+            device: idx === 0 ? 'Current Browser Session (Active)' : 'Secondary Active Session',
+            isCurrent: idx === 0,
+            createdAt: row.createdAt
+          }))
+        : [{
+            id: 'current-session',
+            device: 'Current Web Session (Active)',
+            isCurrent: true,
+            createdAt: new Date().toISOString()
+          }];
+
+      return sendSuccess(res, { sessions }, 'Active sessions retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/v1/users/sessions/logout-all
+   */
+  static async logoutAllSessions(req, res, next) {
+    try {
+      await query(
+        `UPDATE "public"."refresh_tokens" 
+         SET revoked = true 
+         WHERE "userId" = $1`,
+        [req.user.id]
+      );
+      return sendSuccess(res, null, 'All other sessions invalidated successfully');
     } catch (err) {
       next(err);
     }

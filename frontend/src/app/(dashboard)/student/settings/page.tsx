@@ -1,38 +1,75 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Settings,
+  User,
+  Shield,
+  ShieldCheck,
+  KeyRound,
   Lock,
-  Bell,
+  Smartphone,
+  LogOut,
+  Award,
+  Sparkles,
+  Save,
   CheckCircle2,
   AlertCircle,
-  Shield,
-  Save,
-  Moon,
-  Smartphone,
-  BookOpen,
-  KeyRound,
-  Eye,
-  ShieldAlert,
-  Clock,
-  Calendar,
-  LogOut,
-  Target
+  Search,
+  ExternalLink,
+  Copy,
+  Check,
+  GraduationCap
 } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { clientCache } from '@/lib/cache';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const CEFR_LEVELS = ['PRE_A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+
+interface VerifiedCertificate {
+  id: string;
+  certificateCode: string;
+  studentName: string;
+  courseTitle: string;
+  levelCompleted: string;
+  finalGrade: number;
+  issueDate: string;
+  instructorName: string;
+  status: 'VALID' | 'REVOKED';
+  isValid: boolean;
+  issuedBy: string;
+}
 
 export default function StudentSettingsPage() {
-  const [activeTab, setActiveTab] = useState<'SECURITY' | 'STUDY' | 'NOTIFICATIONS' | 'PRIVACY' | 'DANGER'>('SECURITY');
+  const { user, refreshUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<'PROFILE' | 'SECURITY' | 'VERIFICATION'>('PROFILE');
 
-  // Password State
+  // --- Profile State ---
+  const [profileForm, setProfileForm] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: (user as any)?.phone || '',
+    country: (user as any)?.country || 'Rwanda',
+    city: (user as any)?.city || 'Kigali',
+    timezone: (user as any)?.timezone || 'Africa/Kigali',
+    preferredLanguage: (user as any)?.preferredLanguage || 'en',
+    avatarUrl: user?.avatarUrl || '',
+    nativeLanguage: (user?.studentProfile as any)?.nativeLanguage || '',
+    currentLevel: (user?.studentProfile as any)?.currentLevel || 'B1',
+    targetLevel: (user?.studentProfile as any)?.targetLevel || 'B2',
+  });
+
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // --- Security & Password State ---
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -40,99 +77,144 @@ export default function StudentSettingsPage() {
   });
   const [savingPassword, setSavingPassword] = useState(false);
 
-  // Active Sessions
+  // --- Active Sessions State ---
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
-  // Study Preferences
-  const [dailyTarget, setDailyTarget] = useState('30');
-  const [selectedDays, setSelectedDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
-  const [preferredTimeSlot, setPreferredTimeSlot] = useState('18:00 - 20:00');
-  const [savingStudy, setSavingStudy] = useState(false);
+  // --- Certificate Verification State ---
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifiedResult, setVerifiedResult] = useState<VerifiedCertificate | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [myCertificates, setMyCertificates] = useState<any[]>([]);
+  const [loadingMyCerts, setLoadingMyCerts] = useState(false);
 
-  // Privacy
-  const [profileVisibility, setProfileVisibility] = useState<'PRIVATE' | 'TEACHER_ONLY'>('TEACHER_ONLY');
-  const [savingPrivacy, setSavingPrivacy] = useState(false);
-
-  // Deletion Request
-  const [deletionReason, setDeletionReason] = useState('');
-  const [deletionPassword, setDeletionPassword] = useState('');
-  const [submittingDeletion, setSubmittingDeletion] = useState(false);
-  const [deletionSuccess, setDeletionSuccess] = useState(false);
-
-  // Notifications
-  const [prefs, setPrefs] = useState({
-    emailEnabled: true,
-    enrollmentEmails: true,
-    paymentEmails: true,
-    assignmentEmails: true,
-    quizEmails: true,
-    feedbackEmails: true,
-    courseExpirationEmails: true,
-    courseCompletionEmails: true,
-    announcementEmails: true,
-    inAppEnabled: true,
-  });
-  const [savingPrefs, setSavingPrefs] = useState(false);
-  const [loadingPrefs, setLoadingPrefs] = useState(true);
-
+  // --- General Feedback Alert ---
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const loadStudentSettings = async () => {
-    try {
-      setLoadingPrefs(true);
-      setLoadingSessions(true);
+  // Synchronize form when user context becomes available or updates
+  useEffect(() => {
+    if (user) {
+      setProfileForm((prev) => ({
+        ...prev,
+        firstName: user.firstName || prev.firstName,
+        lastName: user.lastName || prev.lastName,
+        email: user.email || prev.email,
+        phone: (user as any).phone || prev.phone,
+        country: (user as any).country || prev.country,
+        city: (user as any).city || prev.city,
+        timezone: (user as any).timezone || prev.timezone,
+        preferredLanguage: (user as any).preferredLanguage || prev.preferredLanguage,
+        avatarUrl: user.avatarUrl || prev.avatarUrl,
+        nativeLanguage: (user.studentProfile as any)?.nativeLanguage ?? prev.nativeLanguage,
+        currentLevel: (user.studentProfile as any)?.currentLevel ?? prev.currentLevel,
+        targetLevel: (user.studentProfile as any)?.targetLevel ?? prev.targetLevel,
+      }));
+    }
+  }, [user]);
 
-      const [prefRes, meRes, sessRes]: any = await Promise.allSettled([
-        apiClient.get('/notifications/preferences'),
-        apiClient.get('/students/me'),
+  // Load fresh student profile and active sessions in the background
+  const loadFreshData = async () => {
+    try {
+      setLoadingSessions(true);
+      const [profileRes, sessionsRes]: any = await Promise.allSettled([
+        apiClient.get('/users/profile'),
         apiClient.get('/users/sessions'),
       ]);
 
-      if (prefRes.status === 'fulfilled' && (prefRes.value.data || prefRes.value)) {
-        const d = prefRes.value.data || prefRes.value;
-        setPrefs({
-          emailEnabled: d.emailEnabled ?? true,
-          enrollmentEmails: d.enrollmentEmails ?? true,
-          paymentEmails: d.paymentEmails ?? true,
-          assignmentEmails: d.assignmentEmails ?? true,
-          quizEmails: d.quizEmails ?? true,
-          feedbackEmails: d.feedbackEmails ?? true,
-          courseExpirationEmails: d.courseExpirationEmails ?? true,
-          courseCompletionEmails: d.courseCompletionEmails ?? true,
-          announcementEmails: d.announcementEmails ?? true,
-          inAppEnabled: d.inAppEnabled ?? true,
-        });
+      if (profileRes.status === 'fulfilled' && profileRes.value) {
+        const d = profileRes.value?.data || profileRes.value;
+        const u = d.user || d;
+        const sp = d.studentProfile || d.profile || u.studentProfile || {};
+
+        setProfileForm((prev) => ({
+          ...prev,
+          firstName: u.firstName || prev.firstName,
+          lastName: u.lastName || prev.lastName,
+          email: u.email || prev.email,
+          phone: u.phone || prev.phone,
+          country: u.country || prev.country,
+          city: u.city || prev.city,
+          timezone: u.timezone || prev.timezone,
+          preferredLanguage: u.preferredLanguage || prev.preferredLanguage,
+          avatarUrl: u.avatarUrl || prev.avatarUrl,
+          nativeLanguage: sp.nativeLanguage || prev.nativeLanguage,
+          currentLevel: sp.currentLevel || prev.currentLevel,
+          targetLevel: sp.targetLevel || prev.targetLevel,
+        }));
       }
 
-      if (meRes.status === 'fulfilled') {
-        const d = meRes.value.data || meRes.value;
-        if (d?.profile?.learningPreferences?.dailyTarget) setDailyTarget(String(d.profile.learningPreferences.dailyTarget));
-        if (d?.profile?.learningPreferences?.studyDays) setSelectedDays(d.profile.learningPreferences.studyDays);
-        if (d?.profile?.learningPreferences?.preferredTimeSlot) setPreferredTimeSlot(d.profile.learningPreferences.preferredTimeSlot);
-        if (d?.profile?.profileVisibility) setProfileVisibility(d.profile.profileVisibility);
-      }
-
-      if (sessRes.status === 'fulfilled' && sessRes.value?.sessions) {
-        setActiveSessions(sessRes.value.sessions);
+      if (sessionsRes.status === 'fulfilled' && sessionsRes.value?.sessions) {
+        setActiveSessions(sessionsRes.value.sessions);
       }
     } catch (err) {
-      console.warn('Could not load student settings:', err);
+      console.warn('Background sync student settings notice:', err);
     } finally {
-      setLoadingPrefs(false);
       setLoadingSessions(false);
     }
   };
 
+  // Load earned certificates for quick verification
+  const loadMyCertificates = async () => {
+    try {
+      setLoadingMyCerts(true);
+      const res: any = await apiClient.get('/student/certificates');
+      const data = res?.data || res;
+      if (Array.isArray(data)) {
+        setMyCertificates(data);
+      }
+    } catch {
+      // Non-critical, ignore
+    } finally {
+      setLoadingMyCerts(false);
+    }
+  };
+
   useEffect(() => {
-    loadStudentSettings();
+    loadFreshData();
+    loadMyCertificates();
   }, []);
 
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+    try {
+      setSavingProfile(true);
+      await apiClient.patch('/users/profile', profileForm);
+
+      clientCache.invalidate('student_');
+      if (refreshUser) {
+        await refreshUser();
+      }
+
+      setFeedback({
+        type: 'success',
+        message: 'Student profile & CEFR targets updated successfully!',
+      });
+      setTimeout(() => setFeedback(null), 4500);
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to update student profile. Please try again.',
+      });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  // --- Security & Password Actions ---
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setFeedback({ type: 'error', message: 'New passwords do not match' });
+      setFeedback({ type: 'error', message: 'New password and confirmation do not match.' });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      setFeedback({ type: 'error', message: 'New password must be at least 8 characters long.' });
       return;
     }
 
@@ -142,148 +224,124 @@ export default function StudentSettingsPage() {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       });
+
       setFeedback({ type: 'success', message: 'Security password changed successfully!' });
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setTimeout(() => setFeedback(null), 4000);
+      setTimeout(() => setFeedback(null), 4500);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Failed to change password. Verify current password.' });
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to update password. Please check your current password.',
+      });
     } finally {
       setSavingPassword(false);
     }
   };
 
-  const handleSaveStudyPrefs = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedback(null);
-    try {
-      setSavingStudy(true);
-      await apiClient.patch('/students/me', {
-        learningPreferences: {
-          dailyTarget: parseInt(dailyTarget, 10) || 30,
-          studyDays: selectedDays,
-          preferredTimeSlot,
-        },
-      });
-      setFeedback({ type: 'success', message: 'Study target and weekly schedule preferences saved!' });
-      setTimeout(() => setFeedback(null), 4000);
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Failed to save study preferences' });
-    } finally {
-      setSavingStudy(false);
-    }
-  };
-
-  const handleSavePrivacy = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedback(null);
-    try {
-      setSavingPrivacy(true);
-      await apiClient.patch('/students/me', {
-        profileVisibility,
-      });
-      setFeedback({ type: 'success', message: 'Profile privacy setting updated!' });
-      setTimeout(() => setFeedback(null), 4000);
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Failed to update privacy setting' });
-    } finally {
-      setSavingPrivacy(false);
-    }
-  };
-
-  const handleSavePreferences = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedback(null);
-    try {
-      setSavingPrefs(true);
-      await apiClient.patch('/notifications/preferences', prefs);
-      setFeedback({ type: 'success', message: 'Notification preferences saved in database!' });
-      setTimeout(() => setFeedback(null), 4000);
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Failed to update preferences' });
-    } finally {
-      setSavingPrefs(false);
-    }
-  };
-
   const handleLogoutAllDevices = async () => {
-    if (!confirm('Are you sure you want to log out all other active sessions?')) return;
+    if (!confirm('Are you sure you want to log out all other active browser sessions?')) return;
     try {
       await apiClient.post('/users/sessions/logout-all');
       setFeedback({ type: 'success', message: 'All other active sessions have been invalidated.' });
-      loadStudentSettings();
+      loadFreshData();
+      setTimeout(() => setFeedback(null), 4500);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Failed to revoke sessions' });
+      setFeedback({ type: 'error', message: err.message || 'Failed to revoke other sessions.' });
     }
   };
 
-  const handleRequestDeletion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!confirm('Are you sure you want to submit a request to delete your student account? This request will be processed by platform administrators.')) return;
+  // --- Certificate Verification Actions ---
+  const handleVerifyCertificate = async (codeToVerify?: string) => {
+    const targetCode = (codeToVerify || verifyCode).trim().toUpperCase();
+    if (!targetCode) {
+      setVerifyError('Please enter a valid certificate verification code.');
+      return;
+    }
+
+    setVerifying(true);
+    setVerifyError(null);
+    setVerifiedResult(null);
+    if (codeToVerify) {
+      setVerifyCode(codeToVerify);
+    }
+
     try {
-      setSubmittingDeletion(true);
-      await apiClient.post('/student/danger/request-deletion', {
-        reason: deletionReason || 'Student requested account closure',
-      });
-      setDeletionSuccess(true);
-      setFeedback({ type: 'success', message: 'Account closure request submitted. Platform staff will process according to retention policy.' });
+      const res = await apiClient.get<VerifiedCertificate>(`/public/certificates/${encodeURIComponent(targetCode)}`);
+      const payload: any = (res as any)?.data || res;
+      if (payload && (payload.certificateCode || payload.isValid)) {
+        setVerifiedResult(payload);
+      } else {
+        setVerifyError(`Certificate code '${targetCode}' was not found in our official registry.`);
+      }
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Failed to submit account deletion request' });
+      setVerifyError(err?.message || `Certificate code '${targetCode}' was not found in our official registry.`);
     } finally {
-      setSubmittingDeletion(false);
+      setVerifying(false);
     }
   };
 
-  const toggleDay = (day: string) => {
-    setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
+  const handleCopyVerificationLink = () => {
+    if (!verifiedResult) return;
+    const url = typeof window !== 'undefined'
+      ? `${window.location.origin}/verify/certificate/${verifiedResult.certificateCode}`
+      : `/verify/certificate/${verifiedResult.certificateCode}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   return (
     <div className="space-y-8 max-w-5xl animate-fade-in pb-16">
-      {/* Header */}
+      {/* Page Header */}
       <div>
-        <Badge variant="indigo">Student Account & Security</Badge>
+        <Badge variant="indigo">Student Academic Identity & Security</Badge>
         <h1 className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-          Account Settings & Preferences
+          Student Profile, Settings & Credentials
         </h1>
         <p className="text-xs sm:text-sm text-slate-500">
-          Manage your login credentials, study time goals, notification channels, and privacy preferences.
+          Manage your personal identity, target CEFR proficiency, password security, and verify issued academic certificates.
         </p>
       </div>
 
+      {/* Global Feedback Banner */}
       {feedback && (
         <div
-          className={`flex items-center justify-between rounded-2xl p-4 text-xs font-semibold shadow-md ${
+          className={`flex items-center justify-between rounded-2xl p-4 text-xs font-semibold shadow-md transition-all ${
             feedback.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
               : 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
           }`}
         >
           <div className="flex items-center gap-2">
-            {feedback.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+            {feedback.type === 'success' ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+            )}
             <span>{feedback.message}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="underline text-[11px]">Dismiss</button>
+          <button onClick={() => setFeedback(null)} className="underline text-[11px] hover:opacity-80">
+            Dismiss
+          </button>
         </div>
       )}
 
       {/* Navigation Segmented Tab Switcher */}
       <div className="flex flex-wrap gap-1.5 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
         {[
+          { id: 'PROFILE', label: 'Academic Profile', icon: User },
           { id: 'SECURITY', label: 'Security & Password', icon: KeyRound },
-          { id: 'STUDY', label: 'Study & Learning Targets', icon: Target },
-          { id: 'NOTIFICATIONS', label: 'Notification Alerts', icon: Bell },
-          { id: 'PRIVACY', label: 'Privacy & Data', icon: Eye },
-          { id: 'DANGER', label: 'Danger Zone', icon: ShieldAlert },
+          { id: 'VERIFICATION', label: 'Certificate Verification', icon: ShieldCheck },
         ].map((tab) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
+                isActive
                   ? 'bg-white text-indigo-600 shadow-md dark:bg-slate-800 dark:text-white'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
@@ -295,7 +353,213 @@ export default function StudentSettingsPage() {
         })}
       </div>
 
-      {/* TAB 1: SECURITY & PASSWORD */}
+      {/* ========================================================================= */}
+      {/* TAB 1: ACADEMIC PROFILE                                                   */}
+      {/* ========================================================================= */}
+      {activeTab === 'PROFILE' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column (4 cols): Academic ID & Verified Metrics Card */}
+          <div className="lg:col-span-4 space-y-6">
+            <Card className="p-6 text-center border-slate-200 dark:border-slate-800 shadow-lg space-y-4">
+              <div className="relative mx-auto w-24 h-24">
+                <Avatar className="w-24 h-24 text-2xl border-4 border-indigo-100 dark:border-indigo-950 shadow-xl">
+                  <AvatarImage src={profileForm.avatarUrl || ''} />
+                  <AvatarFallback className="bg-[#3B6748] text-white font-black text-2xl">
+                    {profileForm.firstName?.[0] || 'S'}
+                    {profileForm.lastName?.[0] || ''}
+                  </AvatarFallback>
+                </Avatar>
+                <div
+                  className="absolute bottom-0 right-0 bg-emerald-500 text-white p-1 rounded-full border-2 border-white dark:border-slate-900 shadow"
+                  title="Official Enrolled Student"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-black text-slate-900 dark:text-white">
+                  {profileForm.firstName} {profileForm.lastName}
+                </h2>
+                <p className="text-xs text-slate-500">{profileForm.email}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Badge variant="indigo" className="text-xs font-bold">
+                  Current Level: {profileForm.currentLevel}
+                </Badge>
+                <Badge variant="success" className="text-xs font-bold">
+                  Target: {profileForm.targetLevel}
+                </Badge>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2.5 text-left text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Account Role:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">STUDENT</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Native Tongue:</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                    {profileForm.nativeLanguage || 'English'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Timezone:</span>
+                  <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300">
+                    {profileForm.timezone}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Email Status:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Verified
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-5 border-l-4 border-l-primary-600 bg-primary-50/40 dark:bg-primary-950/20 shadow-md">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-2">
+                <Sparkles className="h-4 w-4 text-primary-600" /> Academic Integrity Notice
+              </h3>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                Your assigned CEFR diagnostic level, progress tracking, and issued certificates are verified by accredited instructors and stored in our tamper-evident registry.
+              </p>
+            </Card>
+          </div>
+
+          {/* Right Column (8 cols): Clean Profile Form */}
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="shadow-lg border-slate-200 dark:border-slate-800">
+              <form onSubmit={handleSaveProfile}>
+                <CardHeader className="border-b border-slate-100 p-6 dark:border-slate-800">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <User className="h-4 w-4 text-primary-600" />
+                    Personal Details & Academic Proficiency
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Update your personal contact information, location, native tongue, and target CEFR level
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="p-6 space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="First Name"
+                      required
+                      value={profileForm.firstName}
+                      onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                    />
+                    <Input
+                      label="Last Name"
+                      required
+                      value={profileForm.lastName}
+                      onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        value={profileForm.email}
+                        disabled
+                        className="flex h-10 w-full rounded-lg border border-input bg-slate-100 px-3 py-2 text-xs text-slate-500 cursor-not-allowed dark:bg-slate-800"
+                      />
+                      <p className="text-[10px] text-slate-400">Account login email is managed by administrators.</p>
+                    </div>
+                    <Input
+                      label="Phone Number"
+                      type="tel"
+                      placeholder="+250 788 123 456"
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Input
+                      label="Country"
+                      value={profileForm.country}
+                      onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
+                    />
+                    <Input
+                      label="City / Region"
+                      value={profileForm.city}
+                      onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                    />
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Timezone
+                      </label>
+                      <select
+                        value={profileForm.timezone}
+                        onChange={(e) => setProfileForm({ ...profileForm, timezone: e.target.value })}
+                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
+                      >
+                        <option value="Africa/Kigali">Africa/Kigali (UTC+02:00)</option>
+                        <option value="Africa/Nairobi">Africa/Nairobi (UTC+03:00)</option>
+                        <option value="Europe/London">Europe/London (UTC+00:00)</option>
+                        <option value="Europe/Paris">Europe/Paris (UTC+01:00)</option>
+                        <option value="America/New_York">America/New_York (UTC-05:00)</option>
+                        <option value="UTC">UTC (Universal Time)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Native Language"
+                      placeholder="e.g. Kinyarwanda, French, Swahili"
+                      value={profileForm.nativeLanguage}
+                      onChange={(e) => setProfileForm({ ...profileForm, nativeLanguage: e.target.value })}
+                    />
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Target CEFR Proficiency
+                      </label>
+                      <select
+                        value={profileForm.targetLevel}
+                        onChange={(e) => setProfileForm({ ...profileForm, targetLevel: e.target.value })}
+                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400"
+                      >
+                        {CEFR_LEVELS.map((lvl) => (
+                          <option key={lvl} value={lvl}>
+                            Level {lvl}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <Input
+                    label="Avatar Photo URL"
+                    placeholder="https://images.unsplash.com/..."
+                    value={profileForm.avatarUrl}
+                    onChange={(e) => setProfileForm({ ...profileForm, avatarUrl: e.target.value })}
+                  />
+                </CardContent>
+
+                <CardFooter className="flex justify-end gap-3 border-t border-slate-100 p-6 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+                  <Button type="submit" variant="gradient" disabled={savingProfile}>
+                    <Save className="mr-1.5 h-4 w-4" />
+                    {savingProfile ? 'Saving Changes...' : 'Save Profile Changes'}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: SECURITY & PASSWORD                                                */}
+      {/* ========================================================================= */}
       {activeTab === 'SECURITY' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="shadow-lg border-slate-200 dark:border-slate-800">
@@ -305,7 +569,7 @@ export default function StudentSettingsPage() {
                 Change Password
               </CardTitle>
               <CardDescription className="text-xs">
-                Ensure your student account uses a strong, unique password
+                Ensure your student account uses a secure, strong password
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -347,7 +611,7 @@ export default function StudentSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Active Sessions */}
+          {/* Active Browser Sessions */}
           <Card className="shadow-lg border-slate-200 dark:border-slate-800 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
@@ -377,13 +641,6 @@ export default function StudentSettingsPage() {
                     <div className="space-y-1.5">
                       <Skeleton className="h-4 w-32" />
                       <Skeleton className="h-3 w-24" />
-                    </div>
-                    <Skeleton className="h-4 w-12 rounded-full" />
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl border border-slate-100 p-3.5 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-4 w-28" />
-                      <Skeleton className="h-3 w-20" />
                     </div>
                     <Skeleton className="h-4 w-12 rounded-full" />
                   </div>
@@ -417,7 +674,7 @@ export default function StudentSettingsPage() {
                 ))
               ) : (
                 <div className="py-6 text-center text-xs text-slate-400">
-                  Single active session.
+                  Current session active.
                 </div>
               )}
             </div>
@@ -425,356 +682,181 @@ export default function StudentSettingsPage() {
         </div>
       )}
 
-      {/* TAB 2: STUDY & LEARNING TARGETS */}
-      {activeTab === 'STUDY' && (
-        <form onSubmit={handleSaveStudyPrefs} className="space-y-6">
-          <Card className="p-6 space-y-5 shadow-lg border-slate-200 dark:border-slate-800">
-            <CardHeader className="p-0 pb-3 border-b border-slate-100 dark:border-slate-800">
+      {/* ========================================================================= */}
+      {/* TAB 3: CERTIFICATE VERIFICATION (REAL DATA RETRIEVAL)                     */}
+      {/* ========================================================================= */}
+      {activeTab === 'VERIFICATION' && (
+        <div className="space-y-6">
+          <Card className="shadow-lg border-slate-200 dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 p-6 dark:border-slate-800">
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary-600" /> Daily Fluency Targets & Study Routine
+                <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                Certificate Verification & Registry Search
               </CardTitle>
               <CardDescription className="text-xs">
-                Set daily study duration targets and preferred practice days for automated reminders
+                Enter any official certificate verification code to inspect authentic issuance, grades, and CEFR credentials.
               </CardDescription>
             </CardHeader>
 
-            {loadingPrefs ? (
-              <div className="space-y-4 pt-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-10 w-full rounded-xl" />
+            <CardContent className="p-6 space-y-6">
+              {/* Verification Search Bar */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleVerifyCertificate();
+                      }
+                    }}
+                    placeholder="Enter Certificate Code (e.g. FE-2026-6NEW or FLE-...)"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-xs font-mono font-bold tracking-wider placeholder:font-sans placeholder:font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
+                  />
+                </div>
+                <Button
+                  onClick={() => handleVerifyCertificate()}
+                  variant="gradient"
+                  disabled={verifying || !verifyCode.trim()}
+                  className="shrink-0 text-xs font-bold"
+                >
+                  <Search className="mr-1.5 h-3.5 w-3.5" />
+                  {verifying ? 'Verifying Registry...' : 'Verify Certificate'}
+                </Button>
+              </div>
+
+              {/* Error Notice */}
+              {verifyError && (
+                <div className="p-4 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 text-xs flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+                  <span>{verifyError}</span>
+                </div>
+              )}
+
+              {/* Verified Result Card */}
+              {verifiedResult && (
+                <div className="rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-50/50 to-white dark:from-emerald-950/20 dark:to-slate-900 p-6 shadow-xl space-y-6 animate-fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-200 dark:border-emerald-800/60 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30">
+                        <Award className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-black text-slate-900 dark:text-white tracking-wider">
+                            {verifiedResult.certificateCode}
+                          </span>
+                          <Badge variant="success" className="text-[10px] py-0 font-bold">
+                            ✓ {verifiedResult.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Issued by {verifiedResult.issuedBy}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyVerificationLink}
+                        className="text-xs font-bold"
+                      >
+                        {copiedLink ? <Check className="mr-1 h-3.5 w-3.5 text-emerald-600" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
+                        {copiedLink ? 'Link Copied!' : 'Copy Link'}
+                      </Button>
+                      <Link
+                        href={`/verify/certificate/${verifiedResult.certificateCode}`}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 px-3 py-2 rounded-xl transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" /> Public View
+                      </Link>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-36" />
-                    <Skeleton className="h-10 w-full rounded-xl" />
+
+                  {/* Certificate Credential Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                    <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800 space-y-1">
+                      <span className="text-[11px] text-slate-400 font-medium">Recipient Student</span>
+                      <p className="font-bold text-slate-900 dark:text-white truncate">
+                        {verifiedResult.studentName}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800 space-y-1">
+                      <span className="text-[11px] text-slate-400 font-medium">Course Completed</span>
+                      <p className="font-bold text-slate-900 dark:text-white truncate">
+                        {verifiedResult.courseTitle}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800 space-y-1">
+                      <span className="text-[11px] text-slate-400 font-medium">CEFR Level & Grade</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="indigo" className="text-[10px] py-0 font-bold">
+                          {verifiedResult.levelCompleted}
+                        </Badge>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          {verifiedResult.finalGrade}% Final
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800 space-y-1">
+                      <span className="text-[11px] text-slate-400 font-medium">Issue Date & Faculty</span>
+                      <p className="font-bold text-slate-900 dark:text-white truncate">
+                        {new Date(verifiedResult.issueDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        Instructor: {verifiedResult.instructorName}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-40" />
-                  <div className="flex flex-wrap gap-2">
-                    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                      <Skeleton key={i} className="h-8 w-20 rounded-xl" />
+              )}
+
+              {/* Quick Verify from Student's Own Earned Certificates */}
+              {myCertificates.length > 0 && (
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <GraduationCap className="h-4 w-4 text-primary-600" />
+                    Your Issued Academic Certificates ({myCertificates.length})
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {myCertificates.map((cert) => (
+                      <div
+                        key={cert.id}
+                        className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100/70 transition-colors"
+                      >
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[200px]">
+                            {cert.courseTitle || cert.course?.title || 'Academic English'}
+                          </p>
+                          <p className="text-[10px] font-mono text-slate-500">
+                            {cert.certificateCode} • Level {cert.levelCompleted || 'A1'}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleVerifyCertificate(cert.certificateCode)}
+                          className="text-[11px] font-bold h-7 px-2.5"
+                        >
+                          Verify
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Daily Learning Target
-                    </label>
-                    <select
-                      value={dailyTarget}
-                      onChange={(e) => setDailyTarget(e.target.value)}
-                      className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-xs font-bold"
-                    >
-                      <option value="15">15 minutes / day (Casual)</option>
-                      <option value="30">30 minutes / day (Standard)</option>
-                      <option value="45">45 minutes / day (Intensive)</option>
-                      <option value="60">60 minutes / day (Immersion)</option>
-                    </select>
-                  </div>
-
-                  <Input
-                    label="Preferred Study Hours"
-                    placeholder="e.g. 18:00 – 20:00 (Evening)"
-                    value={preferredTimeSlot}
-                    onChange={(e) => setPreferredTimeSlot(e.target.value)}
-                  />
-                </div>
-
-                {/* Study Days Selector */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Preferred Weekly Study Days
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {WEEKDAYS.map((day) => {
-                      const isSelected = selectedDays.includes(day);
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => toggleDay(day)}
-                          className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
-                            isSelected
-                              ? 'bg-primary-600 text-white shadow-sm'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-                          }`}
-                        >
-                          {day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
+              )}
+            </CardContent>
           </Card>
-
-          <div className="flex justify-end">
-            <Button type="submit" variant="gradient" disabled={savingStudy || loadingPrefs}>
-              <Save className="mr-1.5 h-4 w-4" />
-              {savingStudy ? 'Saving...' : 'Save Study Routine'}
-            </Button>
-          </div>
-        </form>
-      )}
-
-      {/* TAB 3: NOTIFICATIONS */}
-      {activeTab === 'NOTIFICATIONS' && (
-        <form onSubmit={handleSavePreferences} className="space-y-6">
-          <Card className="p-6 space-y-4 shadow-lg border-slate-200 dark:border-slate-800">
-            <CardHeader className="p-0 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Bell className="h-4 w-4 text-primary-600" /> Student Notification Preferences
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Configure reminder notifications and academic alerts
-              </CardDescription>
-            </CardHeader>
-
-            {loadingPrefs ? (
-              <div className="space-y-3 pt-2">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-3 w-64" />
-                    </div>
-                    <Skeleton className="h-5 w-5 rounded-md" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3 pt-2">
-                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">Master Email Notifications</p>
-                    <p className="text-[11px] text-slate-500">Enable or pause non-critical academic emails</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={prefs.emailEnabled}
-                    onChange={(e) => setPrefs({ ...prefs, emailEnabled: e.target.checked })}
-                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">Assignment Reminders & Feedback</p>
-                    <p className="text-[11px] text-slate-500">Alerts when assignments are published or evaluated</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={prefs.assignmentEmails}
-                    onChange={(e) => setPrefs({ ...prefs, assignmentEmails: e.target.checked })}
-                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">Quiz Deadlines & Results</p>
-                    <p className="text-[11px] text-slate-500">Alert when a quiz evaluation is ready</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={prefs.quizEmails}
-                    onChange={(e) => setPrefs({ ...prefs, quizEmails: e.target.checked })}
-                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">Course Expiration Warnings</p>
-                    <p className="text-[11px] text-slate-500">Alerts 7 days, 3 days, and 1 day before course validity ends</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={prefs.courseExpirationEmails}
-                    onChange={(e) => setPrefs({ ...prefs, courseExpirationEmails: e.target.checked })}
-                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer">
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">Instructor Coaching Notes</p>
-                    <p className="text-[11px] text-slate-500">Notifies when your instructor provides personalized coaching feedback</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={prefs.feedbackEmails}
-                    onChange={(e) => setPrefs({ ...prefs, feedbackEmails: e.target.checked })}
-                    className="h-4 w-4 rounded text-primary-600 accent-primary-600"
-                  />
-                </label>
-              </div>
-            )}
-          </Card>
-
-          <div className="flex justify-end">
-            <Button type="submit" variant="gradient" disabled={savingPrefs || loadingPrefs}>
-              <Save className="mr-1.5 h-4 w-4" />
-              {savingPrefs ? 'Saving...' : 'Save Preferences'}
-            </Button>
-          </div>
-        </form>
-      )}
-
-      {/* TAB 4: PRIVACY & DATA */}
-      {activeTab === 'PRIVACY' && (
-        <form onSubmit={handleSavePrivacy} className="space-y-6">
-          <Card className="p-6 space-y-4 shadow-lg border-slate-200 dark:border-slate-800">
-            <CardHeader className="p-0 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Eye className="h-4 w-4 text-primary-600" /> Student Profile Privacy
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Control who can see your learning goals and language level
-              </CardDescription>
-            </CardHeader>
-
-            {loadingPrefs ? (
-              <div className="space-y-3 pt-2">
-                {[1, 2].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-4 w-52" />
-                      <Skeleton className="h-3 w-80" />
-                    </div>
-                    <Skeleton className="h-4 w-4 rounded-full" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3 pt-2">
-                <label
-                  className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs cursor-pointer transition-all ${
-                    profileVisibility === 'TEACHER_ONLY'
-                      ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 font-bold text-primary-900 dark:text-primary-200'
-                      : 'border-slate-100 dark:border-slate-800'
-                  }`}
-                >
-                  <div>
-                    <p className="font-bold">Course Instructors Only (Recommended)</p>
-                    <p className="text-[11px] text-slate-500 font-normal">
-                      Only faculty members whose classes you are enrolled in can inspect your learning profile.
-                    </p>
-                  </div>
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value="TEACHER_ONLY"
-                    checked={profileVisibility === 'TEACHER_ONLY'}
-                    onChange={() => setProfileVisibility('TEACHER_ONLY')}
-                    className="h-4 w-4 text-primary-600 accent-primary-600"
-                  />
-                </label>
-
-                <label
-                  className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs cursor-pointer transition-all ${
-                    profileVisibility === 'PRIVATE'
-                      ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 font-bold text-primary-900 dark:text-primary-200'
-                      : 'border-slate-100 dark:border-slate-800'
-                  }`}
-                >
-                  <div>
-                    <p className="font-bold">Private (Restricted)</p>
-                    <p className="text-[11px] text-slate-500 font-normal">
-                      Hide goals from peer rosters. Instructors can still see quiz and grading progress.
-                    </p>
-                  </div>
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value="PRIVATE"
-                    checked={profileVisibility === 'PRIVATE'}
-                    onChange={() => setProfileVisibility('PRIVATE')}
-                    className="h-4 w-4 text-primary-600 accent-primary-600"
-                  />
-                </label>
-              </div>
-            )}
-          </Card>
-
-          <div className="flex justify-end">
-            <Button type="submit" variant="gradient" disabled={savingPrivacy || loadingPrefs}>
-              <Save className="mr-1.5 h-4 w-4" />
-              {savingPrivacy ? 'Saving...' : 'Save Privacy Setting'}
-            </Button>
-          </div>
-        </form>
-      )}
-
-      {/* TAB 5: DANGER ZONE */}
-      {activeTab === 'DANGER' && (
-        <Card className="p-6 space-y-6 border-rose-200 bg-rose-50/30 dark:border-rose-900/60 dark:bg-rose-950/10 shadow-xl">
-          <CardHeader className="p-0 pb-3 border-b border-rose-200 dark:border-rose-900">
-            <CardTitle className="text-base font-bold text-rose-700 dark:text-rose-400 flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5" /> Account Closure & Danger Zone
-            </CardTitle>
-            <CardDescription className="text-xs text-rose-600/80 dark:text-rose-300/80">
-              Safe account closure request and session management
-            </CardDescription>
-          </CardHeader>
-
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800">
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                  Log Out All Devices
-                </h4>
-                <p className="text-[11px] text-slate-500">
-                  Revoke all other active sessions and tokens. Safe and fully reversible.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogoutAllDevices}
-                className="shrink-0 text-xs font-bold"
-              >
-                Log Out Others
-              </Button>
-            </div>
-
-            {/* Request Account Deletion */}
-            <form onSubmit={handleRequestDeletion} className="p-4 rounded-2xl border border-rose-200 bg-white dark:bg-slate-900 dark:border-rose-900 space-y-3">
-              <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                Request Account Deletion
-              </h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Submitting this request flags your account for closure. According to data retention requirements, financial and certificate records will be archived securely.
-              </p>
-
-              <Input
-                label="Reason for Closure"
-                placeholder="Completed my target CEFR level / No longer need platform..."
-                value={deletionReason}
-                onChange={(e) => setDeletionReason(e.target.value)}
-                required
-              />
-
-              <div className="flex justify-end pt-2">
-                <Button
-                  type="submit"
-                  variant="destructive"
-                  size="sm"
-                  disabled={submittingDeletion || deletionSuccess}
-                >
-                  {submittingDeletion ? 'Submitting Request...' : deletionSuccess ? 'Request Pending Review' : 'Submit Deletion Request'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </Card>
+        </div>
       )}
     </div>
   );

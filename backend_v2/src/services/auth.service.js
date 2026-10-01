@@ -144,4 +144,31 @@ export class AuthService {
       expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
     };
   }
+
+  /**
+   * Change user password
+   */
+  static async changePassword(userId, { currentPassword, newPassword }) {
+    const user = await UserModel.findWithPasswordById(userId);
+    if (!user) {
+      const error = new Error('User account not found');
+      error.statusCode = 404;
+      error.code = 'USER_NOT_FOUND';
+      throw error;
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      const error = new Error('Current password is incorrect');
+      error.statusCode = 400;
+      error.code = 'INVALID_PASSWORD';
+      throw error;
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const newHash = await bcrypt.hash(newPassword, salt);
+
+    await UserModel.update(userId, { passwordHash: newHash });
+    return true;
+  }
 }

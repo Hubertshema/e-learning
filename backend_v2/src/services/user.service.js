@@ -35,6 +35,31 @@ export class UserService {
       }
     }
 
-    return UserModel.update(userId, fields);
+    if (Object.keys(fields).length > 0) {
+      await UserModel.update(userId, fields);
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      const error = new Error('User not found');
+      error.statusCode = 404;
+      error.code = 'USER_NOT_FOUND';
+      throw error;
+    }
+
+    if (user.role === 'STUDENT') {
+      const studentAllowed = ['nativeLanguage', 'targetLevel', 'learningGoals', 'preferredSchedule', 'bio', 'targetSkills'];
+      const studentFields = {};
+      for (const key of studentAllowed) {
+        if (data[key] !== undefined) {
+          studentFields[key] = data[key];
+        }
+      }
+      if (Object.keys(studentFields).length > 0) {
+        await UserModel.updateStudentProfile(userId, studentFields);
+      }
+    }
+
+    return this.getProfile(userId);
   }
 }

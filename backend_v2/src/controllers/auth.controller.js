@@ -1,4 +1,5 @@
 import { AuthService } from '../services/auth.service.js';
+import { UserService } from '../services/user.service.js';
 import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 
@@ -72,11 +73,31 @@ export class AuthController {
    */
   static async me(req, res, next) {
     try {
-      const user = await UserModel.findById(req.user.id);
+      const user = await UserService.getProfile(req.user.id);
       if (!user) {
         return sendError(res, 'User account not found', 401, 'USER_INACTIVE');
       }
       return sendSuccess(res, { user }, 'Current user profile');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/v1/auth/change-password
+   */
+  static async changePassword(req, res, next) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) {
+        return sendError(res, 'Current password and new password are required', 400, 'VALIDATION_ERROR');
+      }
+      if (newPassword.length < 8) {
+        return sendError(res, 'New password must be at least 8 characters long', 400, 'VALIDATION_ERROR');
+      }
+
+      await AuthService.changePassword(req.user.id, { currentPassword, newPassword });
+      return sendSuccess(res, null, 'Password updated successfully');
     } catch (err) {
       next(err);
     }

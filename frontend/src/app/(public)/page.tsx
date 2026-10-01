@@ -26,6 +26,7 @@ import {
   Globe,
   FileCheck,
 } from 'lucide-react';
+import { CertificateVerificationSection } from '@/components/certificate/certificate-verification-section';
 
 export default function HomePage() {
   // 1. Interactive Flashcard Demo State
@@ -449,6 +450,11 @@ export default function HomePage() {
         </div>
       </section>
 
+
+      {/* =========================================================================
+          OFFICIAL CERTIFICATE VERIFICATION SECTION
+      ========================================================================= */}
+      <CertificateVerificationSection />
 
       {/* =========================================================================
           STUDENT TESTIMONIALS & SUCCESS STORIES

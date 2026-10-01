@@ -310,7 +310,8 @@ export class StudentController {
           `SELECT tf.id, tf.title, tf.content, tf.strengths, tf.improvements, tf."createdAt",
                   t."firstName" as "teacherFirstName", t."lastName" as "teacherLastName", t."avatarUrl" as "teacherAvatar"
            FROM "public"."teacher_feedbacks" tf
-           JOIN "public"."users" t ON t.id = tf."teacherId"
+           LEFT JOIN "public"."teacher_profiles" tp ON tp.id = tf."teacherId"
+           LEFT JOIN "public"."users" t ON (t.id = tp."userId" OR t.id = tf."teacherId")
            WHERE tf."studentId" = $1 OR tf."studentId" = $2
            ORDER BY tf."createdAt" DESC
            LIMIT 5`,

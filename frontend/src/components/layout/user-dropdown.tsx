@@ -57,15 +57,6 @@ export function UserDropdown() {
       ? '/teacher'
       : '/student';
 
-  const profileHref = `${rolePath}/profile`;
-  const settingsHref = `${rolePath}/settings`;
-  const notificationsHref =
-    user.role === 'STUDENT'
-      ? '/student/notifications'
-      : user.role === 'TEACHER'
-      ? '/teacher'
-      : '/superadmin/email-logs';
-
   const roleLabel =
     user.role === 'SUPERADMIN'
       ? 'Superadmin'
@@ -179,11 +170,11 @@ export function UserDropdown() {
                   <span>Email Dispatch Logs</span>
                 </Link>
               </>
-            ) : (
+            ) : user.role === 'TEACHER' ? (
               <>
                 {/* Profile Link */}
                 <Link
-                  href={profileHref}
+                  href="/teacher/profile"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
                 >
@@ -193,7 +184,7 @@ export function UserDropdown() {
 
                 {/* Notifications Link */}
                 <Link
-                  href={notificationsHref}
+                  href="/teacher"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
                 >
@@ -203,7 +194,19 @@ export function UserDropdown() {
 
                 {/* Settings Link */}
                 <Link
-                  href={settingsHref}
+                  href="/teacher/settings"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
+                >
+                  <Settings className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                  <span>Account Settings</span>
+                </Link>
+              </>
+            ) : (
+              /* STUDENT */
+              <>
+                <Link
+                  href="/student/settings"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
                 >

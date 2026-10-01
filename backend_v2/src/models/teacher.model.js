@@ -1137,20 +1137,33 @@ export class TeacherModel {
    * Save teacher feedback for a student
    */
   static async addStudentFeedback(teacherId, studentId, { title, content, strengths = [], improvements = [] }) {
+    // 1. Resolve teacher_profiles.id to satisfy foreign key constraint
+    const teacherProfileRes = await query(
+      `SELECT id, "userId" FROM "public"."teacher_profiles" WHERE id = $1 OR "userId" = $1 LIMIT 1`,
+      [teacherId]
+    );
+    const targetTeacherId = teacherProfileRes.rows[0]?.id || teacherId;
+
+    // 2. Resolve student_profiles.id to satisfy foreign key constraint
     const userRes = await query(
-      `SELECT u.id AS "userId", sp.id AS "profileId"
+      `SELECT sp.id AS "profileId", u.id AS "userId"
        FROM "public"."users" u
        LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
-       WHERE u.id = $1 OR sp.id = $1
+       WHERE u.id = $1 OR sp.id = $1 OR sp."userId" = $1
        LIMIT 1`,
       [studentId]
     );
-    const targetStudentId = userRes.rows[0]?.profileId || userRes.rows[0]?.userId || studentId;
+    const targetStudentId = userRes.rows[0]?.profileId || studentId;
+
+    const id = crypto.randomUUID();
+    const cleanStrengths = Array.isArray(strengths) ? strengths : [];
+    const cleanImprovements = Array.isArray(improvements) ? improvements : [];
+
     const res = await query(
-      `INSERT INTO "public"."teacher_feedbacks" ("teacherId", "studentId", title, content, strengths, improvements, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      `INSERT INTO "public"."teacher_feedbacks" (id, "teacherId", "studentId", title, content, strengths, improvements, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
        RETURNING *`,
-      [teacherId, targetStudentId, title, content, strengths, improvements]
+      [id, targetTeacherId, targetStudentId, title || 'Academic Feedback', content, cleanStrengths, cleanImprovements]
     );
     return res.rows[0];
   }

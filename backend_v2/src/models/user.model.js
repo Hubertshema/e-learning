@@ -33,6 +33,21 @@ export class UserModel {
   }
 
   /**
+   * Find user with passwordHash by ID (internal security operations)
+   */
+  static async findWithPasswordById(id) {
+    const res = await query(
+      `SELECT id, email, "passwordHash", "firstName", "lastName", role, status, "isVerified", 
+              "avatarUrl", phone, country, city, timezone, "preferredLanguage", "createdAt"
+       FROM "public"."users" 
+       WHERE id = $1 
+       LIMIT 1`,
+      [id]
+    );
+    return res.rows[0] || null;
+  }
+
+  /**
    * Create a new user
    */
   static async create({ email, passwordHash, firstName, lastName, role = 'STUDENT' }) {
@@ -151,5 +166,62 @@ export class UserModel {
       delete profile.levelCode;
     }
     return profile;
+  }
+
+  /**
+   * Update student profile fields
+   */
+  static async updateStudentProfile(userId, fields = {}) {
+    const allowed = ['nativeLanguage', 'targetLevel', 'learningGoals', 'preferredSchedule', 'bio', 'targetSkills'];
+    const setClauses = [];
+    const values = [];
+    let idx = 1;
+
+    for (const key of allowed) {
+      if (fields[key] !== undefined) {
+        if (key === 'learningGoals' || key === 'targetSkills') {
+          const arr = Array.isArray(fields[key])
+            ? fields[key].filter(item => typeof item === 'string' && item.trim().length > 0)
+            : (typeof fields[key] === 'string' && fields[key] ? [fields[key]] : []);
+          setClauses.push(`"${key}" = $${idx}::text[]`);
+          values.push(arr);
+        } else if (key === 'targetLevel') {
+          const validLevels = ['PRE_A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+          if (validLevels.includes(fields[key])) {
+            setClauses.push(`"${key}" = $${idx}`);
+            values.push(fields[key]);
+          }
+        } else {
+          setClauses.push(`"${key}" = $${idx}`);
+          values.push(fields[key]);
+        }
+        idx++;
+      }
+    }
+
+    // Ensure student_profiles row exists
+    const check = await query(`SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`, [userId]);
+    if (check.rows.length === 0) {
+      const id = crypto.randomUUID();
+      await query(
+        `INSERT INTO "public"."student_profiles" (id, "userId", "currentLevel", "createdAt", "updatedAt")
+         VALUES ($1, $2, 'B1', NOW(), NOW())`,
+        [id, userId]
+      );
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push(`"updatedAt" = NOW()`);
+      values.push(userId);
+
+      await query(
+        `UPDATE "public"."student_profiles"
+         SET ${setClauses.join(', ')}
+         WHERE "userId" = $${values.length}`,
+        values
+      );
+    }
+
+    return this.getStudentProfile(userId);
   }
 }

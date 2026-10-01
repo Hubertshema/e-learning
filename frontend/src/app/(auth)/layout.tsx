@@ -4,11 +4,11 @@ import { CheckCircle, Star } from 'lucide-react';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-[#E2E5E9] dark:bg-[#0F172A] min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 antialiased selection:bg-[#315B36] selection:text-white transition-colors duration-200">
-      <div className="relative w-full max-w-[1020px] min-h-[580px] bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row">
+    <div className="bg-[#E2E5E9] dark:bg-[#0F172A] h-screen max-h-screen overflow-hidden flex items-center justify-center p-3 sm:p-4 md:p-6 antialiased selection:bg-[#315B36] selection:text-white transition-colors duration-200">
+      <div className="relative w-full max-w-[1000px] max-h-[96vh] bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row">
         
         {/* Left Side */}
-        <div className="relative w-full md:w-[46%] bg-[#132519] text-white p-8 md:p-12 flex flex-col justify-between overflow-hidden z-10">
+        <div className="relative w-full md:w-[45%] bg-[#132519] text-white p-6 md:p-8 flex flex-col justify-between overflow-hidden z-10">
           
           <div className="relative z-10">
             <Link
@@ -23,7 +23,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </Link>
           </div>
 
-          <div className="relative z-10 max-w-md space-y-4 my-auto py-8">
+          <div className="relative z-10 max-w-md space-y-3 my-auto py-3">
             <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#7BA27A] bg-[#315B36]/40 rounded-full border border-[#7BA27A]/30">
               Certified CEFR Learning
             </span>
@@ -100,7 +100,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* Right Side */}
-        <div className="flex-1 bg-white dark:bg-slate-900 p-8 sm:p-12 lg:p-14 flex flex-col justify-center relative z-10 transition-colors duration-200">
+        <div className="flex-1 bg-white dark:bg-slate-900 p-6 sm:p-8 lg:p-10 flex flex-col justify-center relative z-10 transition-colors duration-200">
           <div className="max-w-[380px] w-full mx-auto">
             {children}
           </div>

@@ -102,7 +102,7 @@ export default function StudentRegisterPage() {
 
       // Update profile with student-specific fields
       try {
-        await apiClient.patch('/students/me', {
+        await apiClient.patch('/users/profile', {
           nativeLanguage: formData.nativeLanguage,
           targetLevel: formData.targetLevel,
           learningGoals: formData.learningGoals,

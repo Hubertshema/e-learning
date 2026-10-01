@@ -147,6 +147,11 @@ export function Footer() {
               <li>
                 <Link href="/levels" className="hover:text-[#315b36] transition-colors">CEFR Levels (Pre-A1 - C2)</Link>
               </li>
+              <li>
+                <Link href="/#verify-certificate" className="hover:text-[#315b36] transition-colors font-medium text-[#315b36]">
+                  Verify Certificate
+                </Link>
+              </li>
             </ul>
           </div>
 

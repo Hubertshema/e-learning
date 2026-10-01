@@ -145,4 +145,49 @@ export class CertificateModel {
     }
     return null;
   }
+
+  /**
+   * Publicly verify a certificate by its unique code (e.g. FE-2026-6NEW)
+   */
+  static async verifyCertificate(code) {
+    if (!code || typeof code !== 'string') return null;
+    const cleanCode = code.trim().toUpperCase();
+
+    const res = await query(
+      `SELECT
+         cert.id, cert."certificateCode", cert."levelCompleted", cert."finalGrade", cert."issueDate", cert."isRevoked",
+         c.title as "courseTitle", c.level as "courseLevel",
+         tu."firstName" as "teacherFirstName", tu."lastName" as "teacherLastName",
+         su."firstName" as "studentFirstName", su."lastName" as "studentLastName"
+       FROM "public"."certificates" cert
+       JOIN "public"."courses" c ON c.id = cert."courseId"
+       LEFT JOIN "public"."teacher_profiles" tp ON tp.id = c."teacherId"
+       LEFT JOIN "public"."users" tu ON (tu.id = c."teacherId" OR tu.id = tp."userId")
+       LEFT JOIN "public"."student_profiles" sp ON sp.id = cert."studentId"
+       LEFT JOIN "public"."users" su ON (su.id = sp."userId" OR su.id = cert."studentId")
+       WHERE UPPER(TRIM(cert."certificateCode")) = $1
+       LIMIT 1`,
+      [cleanCode]
+    );
+
+    if (res.rows.length === 0) return null;
+
+    const row = res.rows[0];
+    const studentFullName = [row.studentFirstName, row.studentLastName].filter(Boolean).join(' ') || 'Verified Student';
+    const instructorFullName = [row.teacherFirstName, row.teacherLastName].filter(Boolean).join(' ') || 'LinguaChris Faculty';
+
+    return {
+      id: row.id,
+      certificateCode: row.certificateCode,
+      studentName: studentFullName,
+      courseTitle: row.courseTitle,
+      levelCompleted: row.levelCompleted || 'A1',
+      finalGrade: Number(row.finalGrade) || 100,
+      issueDate: row.issueDate,
+      instructorName: instructorFullName,
+      status: row.isRevoked ? 'REVOKED' : 'VALID',
+      isValid: !row.isRevoked,
+      issuedBy: 'LinguaChris Academy Board of Accreditation',
+    };
+  }
 }
