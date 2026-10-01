@@ -174,7 +174,7 @@ export default function CreateVideoLessonPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto pb-20">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 w-full pb-20">
       <div className="mb-6">
         <Link href={`/studio/${courseId}`}>
           <Button variant="ghost" size="sm" className="text-slate-500 mb-2 px-0 hover:bg-transparent hover:text-slate-900">
@@ -182,13 +182,13 @@ export default function CreateVideoLessonPage() {
           </Button>
         </Link>
         <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-          <Video className="h-6 w-6 text-indigo-500" />
-          Create Interactive Video
+          <Video className="h-6 w-6 text-indigo-500 shrink-0" />
+          <span>Create Interactive Video</span>
         </h1>
         <p className="text-slate-500 text-sm mt-1">Start by adding a video and basic lesson details.</p>
       </div>
 
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl">
         {error && (
           <div className="mb-6 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm">
             {error}
@@ -204,14 +204,15 @@ export default function CreateVideoLessonPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
+                className="w-full"
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-900 mb-1">Primary Skill</label>
                 <select 
-                  className="w-full flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={skill}
                   onChange={(e) => setSkill(e.target.value)}
                 >
@@ -224,7 +225,7 @@ export default function CreateVideoLessonPage() {
               <div>
                 <label className="block text-sm font-semibold text-slate-900 mb-1">Level *</label>
                 <select 
-                  className="w-full flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                   value={cefrLevel}
                   onChange={(e) => setCefrLevel(e.target.value)}
                 >
@@ -238,14 +239,14 @@ export default function CreateVideoLessonPage() {
             </div>
             
             <div className="pt-2 border-t border-slate-100 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <label className="block text-sm font-semibold text-slate-900">Video Source *</label>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Upload a video file from your computer (MP4, WebM) or paste a direct video / YouTube link.
                   </p>
                 </div>
-                <div>
+                <div className="shrink-0">
                   <input
                     ref={videoFileInputRef}
                     type="file"
@@ -258,7 +259,7 @@ export default function CreateVideoLessonPage() {
                     variant="outline"
                     size="sm"
                     disabled={isUploadingVideo}
-                    className="h-8 px-3 text-xs font-semibold gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                    className="w-full sm:w-auto h-9 sm:h-8 px-3 text-xs font-semibold gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                     onClick={() => videoFileInputRef.current?.click()}
                   >
                     <Upload className="h-3.5 w-3.5" />
@@ -275,9 +276,9 @@ export default function CreateVideoLessonPage() {
               )}
 
               <div className="relative">
-                <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
                 <Input
-                  className="pl-9 font-mono text-xs"
+                  className="pl-9 font-mono text-xs w-full"
                   placeholder="https://example.com/video.mp4 or YouTube URL or upload above"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
@@ -287,11 +288,11 @@ export default function CreateVideoLessonPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
-            <Link href={`/studio/${courseId}`}>
-              <Button variant="outline" type="button">Cancel</Button>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 border-t border-slate-100">
+            <Link href={`/studio/${courseId}`} className="w-full sm:w-auto">
+              <Button variant="outline" type="button" className="w-full sm:w-auto">Cancel</Button>
             </Link>
-            <Button type="submit" variant="gradient" disabled={isSaving}>
+            <Button type="submit" variant="gradient" disabled={isSaving} className="w-full sm:w-auto">
               {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Save and Continue to Editor
             </Button>

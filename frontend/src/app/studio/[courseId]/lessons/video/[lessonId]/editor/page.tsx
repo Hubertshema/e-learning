@@ -643,7 +643,7 @@ export default function InteractiveVideoEditorPage() {
                     href={lesson.videoUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-mono text-slate-600 hover:text-indigo-600 hover:underline truncate max-w-[280px] flex items-center gap-1"
+                    className="font-mono text-slate-600 hover:text-indigo-600 hover:underline truncate max-w-[140px] sm:max-w-[240px] md:max-w-[320px] flex items-center gap-1"
                     title={lesson.videoUrl}
                   >
                     {lesson.videoUrl}
@@ -1980,26 +1980,28 @@ export default function InteractiveVideoEditorPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1.5">
                         <label className="text-[11px] font-semibold text-slate-600">PDF File or Link</label>
-                        <input
-                          ref={resourceFileInputRef}
-                          type="file"
-                          accept=".pdf,application/pdf"
-                          className="hidden"
-                          onChange={handleResourceFileUpload}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={isUploadingResource}
-                          className="h-7 px-2.5 text-xs gap-1.5 font-semibold border-rose-200 text-rose-700 hover:bg-rose-50"
-                          onClick={() => resourceFileInputRef.current?.click()}
-                        >
-                          <Upload className="h-3.5 w-3.5" />
-                          {isUploadingResource ? 'Uploading PDF...' : 'Upload Local PDF'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={resourceFileInputRef}
+                            type="file"
+                            accept=".pdf,application/pdf"
+                            className="hidden"
+                            onChange={handleResourceFileUpload}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={isUploadingResource}
+                            className="h-7 px-2.5 text-xs gap-1.5 font-semibold border-rose-200 text-rose-700 hover:bg-rose-50"
+                            onClick={() => resourceFileInputRef.current?.click()}
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                            {isUploadingResource ? 'Uploading PDF...' : 'Upload Local PDF'}
+                          </Button>
+                        </div>
                       </div>
 
                       {uploadedResourceName && (
@@ -2010,7 +2012,7 @@ export default function InteractiveVideoEditorPage() {
                       )}
 
                       <Input
-                        className="h-8 text-xs font-mono bg-white"
+                        className="h-8 text-xs font-mono bg-white w-full"
                         placeholder="e.g. https://...file.pdf or click Upload Local PDF above"
                         value={newResource.url}
                         onChange={(e) => setNewResource({ ...newResource, url: e.target.value })}
@@ -2211,11 +2213,11 @@ export default function InteractiveVideoEditorPage() {
 
       {/* ── VIDEO LINK & SETTINGS MODAL ─────────────────────────────── */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                   <Link2 className="h-5 w-5" />
                 </div>
                 <div>
@@ -2225,18 +2227,18 @@ export default function InteractiveVideoEditorPage() {
               </div>
               <button
                 onClick={() => setIsSettingsOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg shrink-0"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveVideoSettings} className="p-5 space-y-4">
+            <form onSubmit={handleSaveVideoSettings} className="p-4 sm:p-5 space-y-4 overflow-y-auto">
               {/* Video URL */}
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
                   <label className="text-xs font-bold text-slate-700">Video Source / Local File *</label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <input
                       ref={videoSettingsFileInputRef}
                       type="file"
@@ -2249,7 +2251,7 @@ export default function InteractiveVideoEditorPage() {
                       variant="outline"
                       size="sm"
                       disabled={isUploadingVideoFile}
-                      className="h-6 px-2 text-[10px] gap-1 font-semibold border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                      className="h-7 sm:h-6 px-2.5 sm:px-2 text-xs sm:text-[10px] gap-1 font-semibold border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                       onClick={() => videoSettingsFileInputRef.current?.click()}
                     >
                       <Upload className="h-3 w-3" />
@@ -2269,7 +2271,7 @@ export default function InteractiveVideoEditorPage() {
                   placeholder="https://youtu.be/... or https://...video.mp4 or upload local file above"
                   value={settingsForm.videoUrl}
                   onChange={(e) => setSettingsForm({ ...settingsForm, videoUrl: e.target.value })}
-                  className="font-mono text-xs"
+                  className="font-mono text-xs w-full"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
                   Supports local video files (MP4/WebM), YouTube URLs, Shorts, or remote hosted video streams.
@@ -2277,7 +2279,7 @@ export default function InteractiveVideoEditorPage() {
               </div>
 
               {/* CEFR Level & Skill */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Level</label>
                   <select
@@ -2341,18 +2343,18 @@ export default function InteractiveVideoEditorPage() {
                   placeholder="https://...thumbnail.jpg"
                   value={settingsForm.thumbnailUrl}
                   onChange={(e) => setSettingsForm({ ...settingsForm, thumbnailUrl: e.target.value })}
-                  className="text-xs font-mono"
+                  className="text-xs font-mono w-full"
                 />
               </div>
 
               {/* Modal Footer */}
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setIsSettingsOpen(false)}
-                  className="text-xs"
+                  className="text-xs w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
@@ -2360,7 +2362,7 @@ export default function InteractiveVideoEditorPage() {
                   type="submit"
                   size="sm"
                   disabled={savingSettings}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs w-full sm:w-auto"
                 >
                   {savingSettings ? 'Saving...' : 'Save & Update Video'}
                 </Button>

@@ -103,16 +103,17 @@ export default function InteractiveVideoEditorPage() {
             required activities before continuing.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             onClick={() => save("DRAFT")}
             isLoading={saving}
+            className="flex-1 sm:flex-initial"
           >
             <Save className="mr-2 h-4 w-4" />
             Save draft
           </Button>
-          <Button onClick={() => save("PUBLISHED")}>
+          <Button onClick={() => save("PUBLISHED")} className="flex-1 sm:flex-initial">
             <Sparkles className="mr-2 h-4 w-4" />
             Publish
           </Button>
