@@ -17,6 +17,14 @@ import {
   Eye,
   Smartphone,
   LogOut,
+  Mail,
+  Globe,
+  Clock,
+  GraduationCap,
+  Camera,
+  Users,
+  Lock,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData, clientCache } from '@/lib/cache';
@@ -148,7 +156,7 @@ export default function TeacherSettingsPage() {
 
   return (
     <div className="space-y-8 max-w-5xl animate-fade-in pb-16">
-      <div>
+      {/* <div>
         <Badge variant="indigo">Teacher Account</Badge>
         <h1 className="mt-1 text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
           Profile &amp; Settings
@@ -156,15 +164,14 @@ export default function TeacherSettingsPage() {
         <p className="text-xs sm:text-sm text-slate-500">
           Manage your public instructor profile and account security credentials.
         </p>
-      </div>
+      </div> */}
 
       {feedback && (
         <div
-          className={`flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-semibold shadow-md ${
-            feedback.type === 'success'
+          className={`flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-semibold shadow-md ${feedback.type === 'success'
               ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
               : 'border-destructive/20 bg-destructive/10 text-destructive'
-          }`}
+            }`}
         >
           {feedback.type === 'success' ? (
             <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -186,11 +193,10 @@ export default function TeacherSettingsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${activeTab === tab.id
                   ? 'bg-white text-indigo-600 shadow-md dark:bg-slate-800 dark:text-white'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
+                }`}
             >
               <Icon className="h-4 w-4" />
               <span>{tab.label}</span>
@@ -202,25 +208,31 @@ export default function TeacherSettingsPage() {
       {/* TAB: PROFILE */}
       {activeTab === 'PROFILE' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column (4 cols): Live Instructor Preview & Status */}
           <div className="lg:col-span-4 space-y-6">
             <Card className="p-6 text-center space-y-4 shadow-lg border-slate-200 dark:border-slate-800">
               <div className="relative mx-auto w-24 h-24">
-                <Avatar className="w-24 h-24 text-2xl border-4 border-indigo-100 dark:border-indigo-950 shadow-xl">
+                <Avatar className="w-24 h-24 text-2xl border-4 border-emerald-100 dark:border-emerald-950 shadow-xl">
                   <AvatarImage src={formData.avatarUrl || ''} />
                   <AvatarFallback className="bg-[#3B6748] text-white font-black text-2xl">
-                    {formData.firstName?.[0]}{formData.lastName?.[0]}
+                    {formData.firstName?.[0] || 'T'}{formData.lastName?.[0] || ''}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute bottom-0 right-0 bg-emerald-500 text-white p-1 rounded-full border-2 border-white dark:border-slate-900 shadow">
+                <div
+                  className="absolute bottom-0 right-0 bg-emerald-500 text-white p-1 rounded-full border-2 border-white dark:border-slate-900 shadow"
+                  title="Approved &amp; Verified Faculty"
+                >
                   <ShieldCheck className="h-4 w-4" />
                 </div>
               </div>
 
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  {formData.firstName} {formData.lastName}
+                  {formData.firstName || 'Sarah'} {formData.lastName || 'Jenkins'}
                 </h3>
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{formData.headline}</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+                  {formData.headline || 'Accredited English Language Instructor'}
+                </p>
               </div>
 
               <div className="flex flex-wrap justify-center gap-1.5">
@@ -232,174 +244,306 @@ export default function TeacherSettingsPage() {
                 </Badge>
               </div>
 
-              <div className="rounded-2xl bg-slate-50 p-4 text-left text-xs dark:bg-slate-900 space-y-2 border border-slate-100 dark:border-slate-800">
+              <div className="rounded-2xl bg-slate-50 p-4 text-left text-xs dark:bg-slate-900 space-y-2.5 border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
                   <span>Account Role:</span>
                   <span className="font-bold text-slate-900 dark:text-white">TEACHER</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
                   <span>Hourly Coaching:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">${formData.hourlyRate} / hr</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    ${formData.hourlyRate || 0} / hr
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
                   <span>Account Status:</span>
-                  <span className="font-bold text-emerald-500">ACTIVE</span>
+                  <span className="font-bold text-emerald-500 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> ACTIVE
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-                  <span>Visibility:</span>
-                  <span className="font-semibold text-primary-600">{formData.profileVisibility}</span>
+                  <span>Directory Visibility:</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {formData.profileVisibility === 'PUBLIC'
+                      ? 'Public'
+                      : formData.profileVisibility === 'STUDENTS_ONLY'
+                      ? 'Students Only'
+                      : 'Private'}
+                  </span>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-5 space-y-3 shadow-md border-slate-200 dark:border-slate-800">
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Eye className="h-4 w-4 text-primary-600" /> Profile Visibility
+            {/* Live Sync Tip Card */}
+            <Card className="p-5 border-l-4 border-l-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/20 shadow-md space-y-2">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-emerald-600" /> Instructor Profile Live Sync
               </h4>
-              <div className="space-y-2">
-                {[
-                  { id: 'PUBLIC', label: 'Public (Visible on course listings)' },
-                  { id: 'STUDENTS_ONLY', label: 'Enrolled Students Only' },
-                  { id: 'PRIVATE', label: 'Private (Staff only)' },
-                ].map((v) => (
-                  <label
-                    key={v.id}
-                    className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
-                      formData.profileVisibility === v.id
-                        ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 text-primary-900 dark:text-primary-200 font-bold'
-                        : 'border-slate-100 dark:border-slate-800 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span>{v.label}</span>
-                    <input
-                      type="radio"
-                      name="profileVisibility"
-                      value={v.id}
-                      checked={formData.profileVisibility === v.id}
-                      onChange={(e) => setFormData({ ...formData, profileVisibility: e.target.value })}
-                      className="h-3.5 w-3.5 text-primary-600 accent-primary-600"
-                    />
-                  </label>
-                ))}
-              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                Changes to your name, headline, avatar, and hourly coaching rate appear in real-time across course descriptions, public syllabi, and 1-on-1 coaching requests.
+              </p>
             </Card>
           </div>
 
+          {/* Right Column (8 cols): Structured Form */}
           <div className="lg:col-span-8">
             <Card className="shadow-lg border-slate-200 dark:border-slate-800">
               <form onSubmit={handleSaveProfile}>
                 <CardHeader className="border-b border-slate-100 p-6 dark:border-slate-800">
-                  <CardTitle className="text-base font-bold flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary-600" />
-                    Personal &amp; Professional Credentials
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Updates reflect across course descriptions, public syllabi, and student coaching records
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base font-bold flex items-center gap-2">
+                        <User className="h-4 w-4 text-emerald-600" />
+                        Personal &amp; Professional Credentials
+                      </CardTitle>
+                      <CardDescription className="text-xs mt-0.5">
+                        Updates reflect across course descriptions, public syllabi, and student coaching records
+                      </CardDescription>
+                    </div>
+                    <Badge variant="outline" className="hidden sm:flex text-[11px] font-semibold text-slate-500">
+                      Instructor ID #{user?.id ? String(user.id).slice(0, 8) : 'Verified'}
+                    </Badge>
+                  </div>
                 </CardHeader>
 
-                <CardContent className="p-6 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      label="First Name"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      required
-                    />
-                    <Input
-                      label="Last Name"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      required
-                    />
-                  </div>
+                <CardContent className="p-6 space-y-6">
+                  {/* Section 1: Personal & Contact Information */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                      <User className="h-3.5 w-3.5 text-emerald-600" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Personal &amp; Contact Information
+                      </h4>
+                    </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        disabled
-                        className="flex h-10 w-full rounded-lg border border-input bg-slate-100 px-3 py-2 text-xs text-slate-500 cursor-not-allowed dark:bg-slate-800"
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="First Name"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        placeholder="e.g. Sarah"
+                        required
+                      />
+                      <Input
+                        label="Last Name"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        placeholder="e.g. Jenkins"
+                        required
                       />
                     </div>
-                    <Input
-                      label="Phone Number"
-                      value={formData.phone}
-                      placeholder="+250 788 123 456"
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Input
-                      label="Country"
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    />
-                    <Input
-                      label="City / Region"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    />
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        Timezone
-                      </label>
-                      <select
-                        value={formData.timezone}
-                        onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
-                      >
-                        <option value="Africa/Kigali">Africa/Kigali (UTC+02:00)</option>
-                        <option value="Africa/Nairobi">Africa/Nairobi (UTC+03:00)</option>
-                        <option value="Europe/London">Europe/London (UTC+00:00)</option>
-                        <option value="America/New_York">America/New_York (UTC-05:00)</option>
-                        <option value="UTC">UTC</option>
-                      </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <Mail className="h-3 w-3 text-slate-400" />
+                          Email Address
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="email"
+                            value={formData.email}
+                            disabled
+                            className="flex h-11 w-full rounded-lg border border-input bg-slate-100 px-3.5 py-2 text-xs text-slate-500 cursor-not-allowed dark:bg-slate-800 pr-20"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900">
+                            <CheckCircle2 className="h-3 w-3" /> Verified
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400">Account login email is managed by institution administrators.</p>
+                      </div>
+
+                      <Input
+                        label="Phone Number"
+                        type="tel"
+                        placeholder="+250 788 123 456"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      />
                     </div>
                   </div>
 
-                  <Input
-                    label="Professional Headline"
-                    value={formData.headline}
-                    onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
-                    placeholder="CELTA Certified English Instructor • IELTS Band 8.5"
-                    required
-                  />
+                  {/* Section 2: Regional Location & Timezone */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                      <Globe className="h-3.5 w-3.5 text-emerald-600" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Regional Location &amp; Timezone
+                      </h4>
+                    </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      label="Years of Experience"
-                      type="number"
-                      min={0}
-                      value={formData.experienceYears}
-                      onChange={(e) => setFormData({ ...formData, experienceYears: parseInt(e.target.value, 10) || 0 })}
-                    />
-                    <Input
-                      label="Hourly Coaching Rate ($/hr)"
-                      type="number"
-                      min={5}
-                      value={formData.hourlyRate}
-                      onChange={(e) => setFormData({ ...formData, hourlyRate: parseInt(e.target.value, 10) || 0 })}
-                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <Input
+                        label="Country"
+                        placeholder="e.g. Rwanda"
+                        value={formData.country}
+                        onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      />
+                      <Input
+                        label="City / Region"
+                        placeholder="e.g. Kigali"
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      />
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-slate-400" />
+                          Timezone
+                        </label>
+                        <select
+                          value={formData.timezone}
+                          onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                          className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 transition-colors"
+                        >
+                          <option value="Africa/Kigali">Africa/Kigali (UTC+02:00)</option>
+                          <option value="Africa/Nairobi">Africa/Nairobi (UTC+03:00)</option>
+                          <option value="Europe/London">Europe/London (UTC+00:00)</option>
+                          <option value="America/New_York">America/New_York (UTC-05:00)</option>
+                          <option value="UTC">UTC (UTC+00:00)</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
+                  {/* Section 3: Professional Credentials & Coaching */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                      <GraduationCap className="h-3.5 w-3.5 text-emerald-600" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Professional Credentials &amp; Coaching
+                      </h4>
+                    </div>
 
+                    <Input
+                      label="Professional Headline"
+                      value={formData.headline}
+                      onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
+                      placeholder="e.g. CELTA Certified English Instructor • IELTS Band 8.5"
+                      required
+                    />
 
-                  <Input
-                    label="Profile Avatar URL"
-                    placeholder="https://images.unsplash.com/..."
-                    value={formData.avatarUrl}
-                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                  />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="Years of Experience"
+                        type="number"
+                        min={0}
+                        value={formData.experienceYears}
+                        onChange={(e) => setFormData({ ...formData, experienceYears: parseInt(e.target.value, 10) || 0 })}
+                      />
+                      <Input
+                        label="Hourly Coaching Rate ($/hr)"
+                        type="number"
+                        min={5}
+                        value={formData.hourlyRate}
+                        onChange={(e) => setFormData({ ...formData, hourlyRate: parseInt(e.target.value, 10) || 0 })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Section 4: Profile Avatar Photo */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                      <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Profile Avatar Image
+                      </h4>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50/70 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                      <Avatar className="w-14 h-14 shrink-0 border-2 border-white dark:border-slate-800 shadow-md">
+                        <AvatarImage src={formData.avatarUrl || ''} />
+                        <AvatarFallback className="bg-[#3B6748] text-white font-bold text-base">
+                          {formData.firstName?.[0] || 'T'}{formData.lastName?.[0] || ''}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 w-full space-y-1">
+                        <Input
+                          label="Avatar Image URL"
+                          placeholder="https://images.unsplash.com/..."
+                          value={formData.avatarUrl}
+                          onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                        />
+                        <p className="text-[10px] text-slate-400">
+                          Provide a direct link to a hosted PNG, JPG, or WebP portrait. Changes preview live in the sidebar.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 5: Profile Directory Visibility */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                      <Eye className="h-3.5 w-3.5 text-emerald-600" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Profile Directory Visibility
+                      </h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        {
+                          id: 'PUBLIC',
+                          label: 'Public',
+                          desc: 'Visible to all students on course listings and public directory.',
+                          icon: Globe,
+                        },
+                        {
+                          id: 'STUDENTS_ONLY',
+                          label: 'Enrolled Students',
+                          desc: 'Visible only to active students currently enrolled in your courses.',
+                          icon: Users,
+                        },
+                        {
+                          id: 'PRIVATE',
+                          label: 'Private (Staff)',
+                          desc: 'Hidden from students. Visible only to platform administrators.',
+                          icon: Lock,
+                        },
+                      ].map((item) => {
+                        const isSelected = formData.profileVisibility === item.id;
+                        const IconComp = item.icon;
+                        return (
+                          <label
+                            key={item.id}
+                            className={`relative flex flex-col justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                              isSelected
+                                ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-sm ring-1 ring-emerald-600'
+                                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/60 dark:hover:bg-slate-900/40'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                                <IconComp className="h-3.5 w-3.5" />
+                              </div>
+                              <input
+                                type="radio"
+                                name="profileVisibility"
+                                value={item.id}
+                                checked={isSelected}
+                                onChange={(e) => setFormData({ ...formData, profileVisibility: e.target.value })}
+                                className="h-4 w-4 text-emerald-600 accent-emerald-600 mt-0.5"
+                              />
+                            </div>
+                            <div>
+                              <p className={`text-xs font-bold ${isSelected ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-800 dark:text-slate-200'}`}>
+                                {item.label}
+                              </p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                {item.desc}
+                              </p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </CardContent>
 
-                <CardFooter className="flex justify-end border-t border-slate-100 p-6 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
-                  <Button type="submit" variant="gradient" disabled={savingProfile}>
+                <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 p-6 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+                  <p className="text-xs text-slate-400 hidden sm:block">
+                    All credentials and visibility preferences are saved securely.
+                  </p>
+                  <Button type="submit" variant="gradient" disabled={savingProfile} className="w-full sm:w-auto font-bold">
                     <Save className="h-4 w-4 mr-1.5" />
                     {savingProfile ? 'Saving...' : 'Save Profile Changes'}
                   </Button>

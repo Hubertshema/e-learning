@@ -239,7 +239,7 @@ export default function TeacherCoursesPage() {
     <div className="space-y-8 pb-16 animate-fade-in">
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+        {/* <div>
           <div className="flex items-center gap-2">
             <Badge variant="indigo">Curriculum Studio</Badge>
             <span className="text-xs font-semibold text-slate-500">Learning Levels</span>
@@ -250,7 +250,7 @@ export default function TeacherCoursesPage() {
           <p className="text-xs text-slate-500">
             Design interactive courses, structured units, and skill-focused exercises tailored for each learning level.
           </p>
-        </div>
+        </div> */}
 
         <div className="flex items-center gap-2.5">
           <Button

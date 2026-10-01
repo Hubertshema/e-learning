@@ -17,7 +17,7 @@ function ExpandableCourseCard({ course }: { course: any }) {
 
   return (
     <div className="border border-slate-200 rounded-md bg-white overflow-hidden shadow-sm">
-      <div 
+      <div
         className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
@@ -36,13 +36,13 @@ function ExpandableCourseCard({ course }: { course: any }) {
           <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </div>
       </div>
-      
+
       {expanded && (
         <div className="border-t border-slate-100 bg-slate-50 p-4">
           <h5 className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-2">
             <LayoutDashboard className="h-3.5 w-3.5" /> Course Curriculum
           </h5>
-          
+
           {course.lessons === 0 || !course.lessons ? (
             <div className="text-sm text-slate-500 text-center py-4 bg-white border border-slate-200 border-dashed rounded-md">
               No lessons available for this course yet.
@@ -116,15 +116,15 @@ export default function TeacherLevelsPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
-      
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+
+      {/* <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Learning Levels</h1>
           <p className="text-slate-500 text-sm mt-1">
             Manage academic levels, configure curriculums, and enroll students.
           </p>
         </div>
-      </div>
+      </div> */}
 
       <div className="flex border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar">
         {loading && safeLevels.length === 0 ? (
@@ -136,11 +136,10 @@ export default function TeacherLevelsPage() {
               <button
                 key={level.id}
                 onClick={() => setSelectedLevelId(level.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                  isSelected 
-                    ? 'border-indigo-600 text-indigo-600' 
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
+                className={`px-6 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${isSelected
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  }`}
               >
                 {level.name}
               </button>
@@ -190,8 +189,8 @@ export default function TeacherLevelsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <LevelStudentsSection 
-              levelId={selectedLevel.id} 
+            <LevelStudentsSection
+              levelId={selectedLevel.id}
               refreshTrigger={refreshTrigger}
               onEnrollClick={() => setIsEnrollModalOpen(true)}
             />
@@ -227,13 +226,13 @@ export default function TeacherLevelsPage() {
         </div>
       )}
 
-      <AssignCoursesModal 
+      <AssignCoursesModal
         isOpen={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
         level={selectedLevel}
         onSuccess={() => refresh()}
       />
-      
+
       <EnrollStudentsModal
         isOpen={isEnrollModalOpen}
         onClose={() => setIsEnrollModalOpen(false)}
