@@ -38,8 +38,8 @@ export class LiveSessionModel {
            OR COALESCE(u.email, '') ILIKE $2
            OR COALESCE(l.name, '') ILIKE $2
            OR COALESCE(l.code, '') ILIKE $2
-           OR COALESCE(sp."currentLevel", '') ILIKE $2
-           OR COALESCE(sp."targetLevel", '') ILIKE $2
+           OR COALESCE(sp."currentLevel"::text, '') ILIKE $2
+           OR COALESCE(sp."targetLevel"::text, '') ILIKE $2
          )
        ORDER BY u.id, u."firstName" ASC`,
       [teacherIds, searchTerm]

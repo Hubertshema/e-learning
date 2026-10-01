@@ -165,7 +165,7 @@ export default function TeacherLiveSessionsPage() {
               className="bg-[#F5B400] hover:bg-[#d99f00] text-[#012970] font-black h-9 px-4 shadow-lg shadow-black/20 gap-2"
             >
               <Video className="h-4 w-4" />
-              <span>Start Live Session</span>
+              <span>Start or Schedule Session</span>
             </Button>
           </div>
         </div>
@@ -274,7 +274,7 @@ export default function TeacherLiveSessionsPage() {
                   </button>
                 </div>
 
-                {/* Title & Topic */}
+                {/* Title & Topic & Scheduled Time */}
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#006EF3] transition-colors line-clamp-1">
                     {session.title}
@@ -282,6 +282,19 @@ export default function TeacherLiveSessionsPage() {
                   {session.topic && (
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2">{session.topic}</p>
                   )}
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-2 font-medium">
+                    <Calendar className="h-3 w-3 text-[#006EF3]" />
+                    <span>
+                      {session.scheduledAt
+                        ? new Date(session.scheduledAt).toLocaleString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Scheduled'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Participants Preview */}
