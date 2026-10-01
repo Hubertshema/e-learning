@@ -81,9 +81,39 @@ export function useLiveSession(sessionId: string) {
   const screenStreamRef = useRef<MediaStream | null>(null);
   const isScreenSharingRef = useRef<boolean>(false);
 
-  // Keep refs synchronized with state
+  // Keep refs synchronized with state and attach tracks to any active PCs
   useEffect(() => {
     localStreamRef.current = localStream;
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      const videoTrack = isScreenSharingRef.current && screenStreamRef.current
+        ? screenStreamRef.current.getVideoTracks()[0]
+        : localStream.getVideoTracks()[0];
+
+      peerConnections.current.forEach((pc, targetSocketId) => {
+        const senders = pc.getSenders();
+        if (audioTrack && !senders.find((s) => s.track && s.track.kind === 'audio')) {
+          try {
+            pc.addTrack(audioTrack, localStream);
+          } catch (e) {
+            console.warn('Track attach warning (audio):', e);
+          }
+        }
+        if (videoTrack) {
+          const videoSender = senders.find((s) => s.track && s.track.kind === 'video');
+          if (videoSender) {
+            videoSender.replaceTrack(videoTrack).catch(() => {});
+          } else {
+            try {
+              const sender = pc.addTrack(videoTrack, localStream);
+              videoSenders.current.set(targetSocketId, sender);
+            } catch (e) {
+              console.warn('Track attach warning (video):', e);
+            }
+          }
+        }
+      });
+    }
   }, [localStream]);
 
   useEffect(() => {
@@ -95,42 +125,45 @@ export function useLiveSession(sessionId: string) {
    */
   const initLocalMedia = useCallback(async () => {
     try {
-      if (typeof window === 'undefined' || !navigator?.mediaDevices) {
+      if (typeof window === 'undefined') {
         return null;
+      }
+
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        throw new Error(
+          'Camera and microphone access is restricted. If accessing from another PC via HTTP IP, browsers require chrome://flags/#unsafely-treat-insecure-origin-as-secure or HTTPS.'
+        );
       }
 
       let stream: MediaStream;
       try {
+        // High-compatibility constraints
         stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: 'user',
-          },
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
+          video: true,
+          audio: true,
         });
       } catch (err: any) {
-        console.warn('Could not get video+audio, trying audio only:', err.message);
+        console.warn('Could not get video+audio, trying audio only:', err.name, err.message);
         try {
           stream = await navigator.mediaDevices.getUserMedia({
             video: false,
             audio: true,
           });
-        } catch {
-          console.warn('No media devices available, creating blank placeholder stream');
-          const canvas = document.createElement('canvas');
-          canvas.width = 640;
-          canvas.height = 360;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#012970';
-            ctx.fillRect(0, 0, 640, 360);
+          setIsVideoOff(true);
+        } catch (audioErr: any) {
+          console.warn('Audio failed, trying video only:', audioErr.message);
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false,
+            });
+            setIsAudioMuted(true);
+          } catch (allErr: any) {
+            console.error('All media devices failed:', allErr.message);
+            throw new Error(
+              `Camera and microphone access was denied or unavailable (${err.message || allErr.message}). Please check browser permissions.`
+            );
           }
-          stream = (canvas as any).captureStream ? (canvas as any).captureStream(10) : new MediaStream();
         }
       }
 
@@ -139,6 +172,7 @@ export function useLiveSession(sessionId: string) {
       return stream;
     } catch (err: any) {
       console.error('Failed to initialize local media:', err);
+      setError(err.message || 'Failed to initialize local media devices');
       return null;
     }
   }, []);
@@ -195,11 +229,6 @@ export function useLiveSession(sessionId: string) {
 
       // Handle incoming remote tracks
       pc.ontrack = (event) => {
-        let remoteStream = event.streams && event.streams[0];
-        if (!remoteStream) {
-          remoteStream = new MediaStream([event.track]);
-        }
-
         setRemotePeers((prev) => {
           const next = new Map(prev);
           const currentPeer = next.get(targetSocketId) || {
@@ -215,17 +244,22 @@ export function useLiveSession(sessionId: string) {
           };
 
           const existingStream = currentPeer.stream;
-          let combinedStream = remoteStream;
-          if (existingStream && existingStream !== remoteStream) {
-            if (!existingStream.getTracks().find((t) => t.id === event.track.id)) {
-              existingStream.addTrack(event.track);
+          let allTracks: MediaStreamTrack[] = [];
+          if (existingStream) {
+            allTracks = [...existingStream.getTracks()];
+            if (!allTracks.find((t) => t.id === event.track.id)) {
+              allTracks.push(event.track);
             }
-            combinedStream = existingStream;
+          } else {
+            allTracks = event.streams?.[0] ? event.streams[0].getTracks() : [event.track];
           }
+
+          // Create brand new MediaStream instance so React state change triggers video/audio attachment
+          const freshStream = new MediaStream(allTracks);
 
           next.set(targetSocketId, {
             ...currentPeer,
-            stream: combinedStream,
+            stream: freshStream,
           });
           return next;
         });

@@ -534,7 +534,25 @@ function RemoteVideoTile({
   onKick: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioBlocked, setAudioBlocked] = useState(false);
 
+  // Dedicated Audio element for remote sound
+  useEffect(() => {
+    const audioEl = audioRef.current;
+    if (audioEl && peer.stream) {
+      if (audioEl.srcObject !== peer.stream) {
+        audioEl.srcObject = peer.stream;
+      }
+      audioEl.play().catch((err) => {
+        if (err.name === 'NotAllowedError') {
+          setAudioBlocked(true);
+        }
+      });
+    }
+  }, [peer.stream]);
+
+  // Video element (muted so browser never blocks video stream autoplay)
   useEffect(() => {
     const videoEl = videoRef.current;
     if (videoEl && peer.stream) {
@@ -542,25 +560,47 @@ function RemoteVideoTile({
         videoEl.srcObject = peer.stream;
       }
       videoEl.play().catch((err) => {
-        console.warn('Playback error / autoplay blocked on remote video:', err);
+        console.warn('Playback error on remote video:', err);
       });
     }
   }, [peer.stream, peer.isVideoOff]);
 
-  const hasVideoStream = Boolean(peer.stream && !peer.isVideoOff);
+  const hasVideoTrack = Boolean(
+    peer.stream &&
+    peer.stream.getVideoTracks().length > 0 &&
+    !peer.isVideoOff
+  );
 
   return (
-    <div className="relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center group min-h-[180px]">
+    <div
+      onClick={() => {
+        if (audioBlocked && audioRef.current) {
+          audioRef.current.play().then(() => setAudioBlocked(false)).catch(() => {});
+        }
+      }}
+      className="relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center group min-h-[180px]"
+    >
+      {/* Dedicated hidden audio playback element */}
+      <audio ref={audioRef} autoPlay playsInline />
+
+      {/* Video element */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
+        muted
         className={`w-full h-full object-cover transition-opacity duration-300 ${
-          hasVideoStream ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
+          hasVideoTrack ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
         }`}
       />
 
-      {!hasVideoStream && (
+      {audioBlocked && (
+        <div className="absolute top-3 left-3 z-20 px-2 py-1 bg-amber-500 text-slate-950 font-bold text-[10px] rounded-lg animate-pulse cursor-pointer shadow-lg">
+          🔊 Click tile to enable sound
+        </div>
+      )}
+
+      {!hasVideoTrack && (
         <div className="flex flex-col items-center justify-center gap-2 p-4 text-center z-10">
           <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-slate-700 to-slate-800 border-2 border-slate-600 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-xl">
             {peer.firstName?.[0] || 'P'}
