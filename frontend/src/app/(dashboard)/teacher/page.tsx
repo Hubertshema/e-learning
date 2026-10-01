@@ -209,103 +209,113 @@ export default function TeacherDashboardPage() {
         <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-2xl">
-            {/* Faculty Status Badge */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-white border border-white/20 backdrop-blur-md">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#F5B400] animate-pulse" />
-                CEFR Faculty Command Center
-              </span>
+        <div className="relative z-10 space-y-4">
+          {/* Top Row: Greeting & Badges + Refresh */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1.5 min-w-0 flex-1">
+              {/* Faculty Status Badge */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-white border border-white/20 backdrop-blur-md">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#F5B400] animate-pulse" />
+                  CEFR Faculty Command Center
+                </span>
 
-              {user?.teacherProfile?.isApproved ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-400/20 text-blue-200 border border-blue-400/30">
-                  <ShieldCheck className="h-3 w-3" /> Verified Faculty
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                  Active Instructor
-                </span>
-              )}
+                {user?.teacherProfile?.isApproved ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-400/20 text-blue-200 border border-blue-400/30">
+                    <ShieldCheck className="h-3 w-3" /> Verified Faculty
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                    Active Instructor
+                  </span>
+                )}
+              </div>
+
+              {/* Time-aware Greeting */}
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white truncate sm:text-clip">
+                {getGreeting()}{user?.firstName ? `, ${user.firstName}` : ''}!
+              </h1>
+              <p className="text-xs sm:text-sm text-blue-100/90 leading-snug font-normal max-w-2xl">
+                Manage your cohort enrollments, grade assignments, verify student payment receipts, and organize your CEFR curriculum.
+              </p>
             </div>
 
-            {/* Time-aware Greeting */}
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              {getGreeting()}{user?.firstName ? `, ${user.firstName}` : ''}!
-            </h1>
-            <p className="text-[11px] sm:text-xs text-blue-100/90 leading-tight font-normal">
-              Manage your cohort enrollments, grade assignments, verify student payment receipts, and organize your CEFR curriculum.
-            </p>
-          </div>
-
-          {/* Quick Action Speed-Dial */}
-          <div className="flex flex-wrap gap-2 shrink-0">
+            {/* Refresh Button in Top-Right */}
             <Button
               variant="outline"
               size="sm"
               onClick={() => refresh()}
               disabled={isValidating}
               title="Refresh live dashboard"
-              className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md h-8 px-2.5"
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md h-8 w-8 p-0 shrink-0 rounded-lg shadow-sm"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isValidating ? 'animate-spin' : ''}`} />
             </Button>
+          </div>
 
-            <Button
-              size="sm"
-              onClick={() => {
-                setLiveModalMode('NOW');
-                setIsLiveModalOpen(true);
-              }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs h-8 px-3 shadow-md shadow-emerald-900/30 gap-1.5"
-            >
-              <Video className="h-3.5 w-3.5 animate-pulse" />
-              Start Live Session
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={() => {
-                setLiveModalMode('SCHEDULED');
-                setIsLiveModalOpen(true);
-              }}
-              className="bg-[#006EF3] hover:bg-[#0057C2] text-white font-black text-xs h-8 px-3 shadow-md shadow-blue-900/30 gap-1.5"
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              Schedule Live Session
-            </Button>
-
-            <Link href="/teacher/students">
+          {/* Dedicated Action Bar: Live Actions & Quick Shortcuts */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-t border-white/15">
+            {/* Primary Live Class Actions */}
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
-                className="bg-[#F5B400] hover:bg-[#d99f00] text-[#012970] font-black text-xs h-8 px-3 shadow-md shadow-black/20 gap-1.5"
+                onClick={() => {
+                  setLiveModalMode('NOW');
+                  setIsLiveModalOpen(true);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8 px-3.5 shadow-md shadow-emerald-950/40 gap-1.5 transition-all hover:scale-[1.02]"
               >
-                <Users className="h-3.5 w-3.5" />
-                Students Directory
+                <Video className="h-3.5 w-3.5 animate-pulse" />
+                Start Live Session
               </Button>
-            </Link>
 
-            <Link href="/teacher/courses">
               <Button
-                variant="outline"
                 size="sm"
-                className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md text-xs h-8 px-3 gap-1.5 font-bold"
+                onClick={() => {
+                  setLiveModalMode('SCHEDULED');
+                  setIsLiveModalOpen(true);
+                }}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs h-8 px-3.5 shadow-md shadow-blue-950/40 gap-1.5 transition-all hover:scale-[1.02]"
               >
-                <BookOpen className="h-3.5 w-3.5" />
-                Courses
+                <Calendar className="h-3.5 w-3.5" />
+                Schedule Live Session
               </Button>
-            </Link>
+            </div>
 
-            <Link href="/teacher/library">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md text-xs h-8 px-3 gap-1.5 font-bold"
-              >
-                <Library className="h-3.5 w-3.5" />
-                Resources
-              </Button>
-            </Link>
+            {/* Secondary Shortcuts Group */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Link href="/teacher/students">
+                <Button
+                  size="sm"
+                  className="bg-[#F5B400] hover:bg-[#d99f00] text-[#012970] font-black text-xs h-8 px-3 gap-1.5 shadow-sm transition-all hover:scale-[1.02]"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  Students Directory
+                </Button>
+              </Link>
+
+              <Link href="/teacher/courses">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md text-xs h-8 px-3 gap-1.5 font-bold transition-all hover:scale-[1.02]"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Courses
+                </Button>
+              </Link>
+
+              <Link href="/teacher/library">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md text-xs h-8 px-3 gap-1.5 font-bold transition-all hover:scale-[1.02]"
+                >
+                  <Library className="h-3.5 w-3.5" />
+                  Resources
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 

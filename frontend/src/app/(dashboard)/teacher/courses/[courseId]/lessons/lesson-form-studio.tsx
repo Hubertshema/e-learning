@@ -306,38 +306,38 @@ export function LessonFormStudio({
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-24 animate-fade-in">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 space-y-5 pb-24 animate-fade-in">
       {/* 1. TOP HEADER & NAVIGATION */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center gap-3 min-w-0">
           <Link href={backHref || `/studio/${courseId}`}>
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="h-9 w-9 p-0 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
               title="Back to Curriculum"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Badge variant="indigo" className="font-bold text-xs">
+              <Badge variant="indigo" className="font-bold text-xs shrink-0">
                 Level {courseLevel}
               </Badge>
-              <span className="text-xs text-slate-500 font-medium truncate max-w-[280px]">
+              <span className="text-xs text-slate-500 font-medium truncate max-w-[180px] sm:max-w-[280px]">
                 {courseTitle}
               </span>
             </div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-white mt-0.5 flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary-600" />
-              {mode === 'edit' ? 'Edit Lesson' : 'Create New Lesson'}
+            <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-0.5 flex items-center gap-2 truncate">
+              <BookOpen className="h-5 w-5 text-primary-600 shrink-0" />
+              <span className="truncate">{mode === 'edit' ? 'Edit Lesson' : 'Create New Lesson'}</span>
             </h1>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
           {mode === 'edit' && lessonId && (
             <Link href={`/teacher/courses/${courseId}/lessons/${lessonId}/interactive-video`}>
               <Button type="button" variant="secondary" size="sm" className="h-9 px-3 text-xs font-semibold">
@@ -352,7 +352,7 @@ export function LessonFormStudio({
             variant="outline"
             size="sm"
             onClick={() => setShowAiModal(true)}
-            className="h-9 px-3.5 text-xs font-bold border-purple-200 bg-purple-50/70 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:border-purple-800 dark:text-purple-300 shadow-xs"
+            className="h-9 px-3 text-xs font-bold border-purple-200 bg-purple-50/70 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:border-purple-800 dark:text-purple-300 shadow-xs"
           >
             <Sparkles className="h-4 w-4 mr-1.5 text-purple-600 animate-pulse" />
             Draft with AI
@@ -370,7 +370,7 @@ export function LessonFormStudio({
             size="sm"
             disabled={submitting}
             onClick={() => handleSubmit()}
-            className="h-9 px-4 text-xs font-bold shadow-md"
+            className="h-9 px-3.5 sm:px-4 text-xs font-bold shadow-md"
           >
             <CheckCircle2 className="h-4 w-4 mr-1.5" />
             {submitting ? 'Saving...' : mode === 'edit' ? 'Save Changes' : 'Publish Lesson'}
@@ -620,22 +620,22 @@ export function LessonFormStudio({
       </Card>
 
       {/* 5. FOOTER SAVE ACTIONS */}
-      <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <Link href={backHref || `/studio/${courseId}`}>
-          <Button variant="outline" size="sm" className="h-9 px-4 text-xs font-semibold">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <Link href={backHref || `/studio/${courseId}`} className="w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="h-9 px-4 text-xs font-semibold w-full sm:w-auto justify-center">
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
             Back to Curriculum
           </Button>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <Button
             type="button"
             variant="outline"
             size="sm"
             disabled={submitting}
             onClick={() => handleSubmit(false)}
-            className="h-9 px-4 text-xs font-semibold"
+            className="h-9 px-4 text-xs font-semibold justify-center"
           >
             <Save className="h-3.5 w-3.5 mr-1.5" />
             Save as Draft
@@ -647,7 +647,7 @@ export function LessonFormStudio({
             size="sm"
             disabled={submitting}
             onClick={() => handleSubmit(true)}
-            className="h-9 px-5 text-xs font-bold shadow-md"
+            className="h-9 px-5 text-xs font-bold shadow-md justify-center"
           >
             <CheckCircle2 className="h-4 w-4 mr-1.5" />
             {submitting ? 'Saving...' : mode === 'edit' ? 'Save & Update in DB' : 'Save & Publish to DB'}

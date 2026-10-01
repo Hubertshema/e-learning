@@ -477,33 +477,33 @@ export default function UniversalTeacherLessonCreatePage() {
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-24">
+    <div className="space-y-6 sm:space-y-8 max-w-5xl mx-auto px-3 sm:px-6 pb-24">
       {/* Top Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Link href={selectedCourseId ? `/studio/${selectedCourseId}` : '/teacher/courses'}>
-            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl">
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <Badge variant="indigo" className="text-[11px] font-bold">
+              <Badge variant="indigo" className="text-[11px] font-bold shrink-0">
                 Teacher Studio
               </Badge>
               <span className="text-slate-400 text-xs">/</span>
-              <span className="text-xs font-semibold text-slate-500">Curriculum Authoring</span>
+              <span className="text-xs font-semibold text-slate-500 truncate">Curriculum Authoring</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight truncate sm:text-clip">
               Create Multi-Skill Lesson
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5 line-clamp-2 sm:line-clamp-none">
               Design rich, CEFR-aligned learning modules with rich text, media resources, Match Questions, and Drag & Drop builders.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
           <Link href="/teacher/courses">
             <Button variant="outline" size="sm">
               <BookOpen className="h-3.5 w-3.5 mr-1.5" /> All Courses
@@ -519,9 +519,9 @@ export default function UniversalTeacherLessonCreatePage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
         {/* Step 1: Course & Unit Placement */}
-        <Card className="p-6 border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
+        <Card className="p-4 sm:p-6 border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5 sm:space-y-6">
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <Layers className="h-4 w-4 text-primary-600" />
             <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -705,7 +705,7 @@ export default function UniversalTeacherLessonCreatePage() {
 
         {/* Step 2: Content Sections Authoring */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary-600" />
@@ -715,17 +715,17 @@ export default function UniversalTeacherLessonCreatePage() {
                 Structure your lesson into modular blocks featuring rich text, grammar rules, vocabulary items, audio tracks, or video lectures.
               </p>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={addSection}>
+            <Button type="button" variant="outline" size="sm" onClick={addSection} className="shrink-0 self-start sm:self-auto">
               <Plus className="h-3.5 w-3.5 mr-1.5 text-primary-600" /> Add Section Block
             </Button>
           </div>
 
           <div className="space-y-4">
             {sections.map((sec, idx) => (
-              <Card key={idx} className="p-6 space-y-4 border-slate-200/80 dark:border-slate-800 shadow-sm relative group">
+              <Card key={idx} className="p-4 sm:p-6 space-y-4 border-slate-200/80 dark:border-slate-800 shadow-sm relative group">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-black text-primary-700 dark:bg-primary-950 dark:text-primary-300">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-black text-primary-700 dark:bg-primary-950 dark:text-primary-300 shrink-0">
                       {idx + 1}
                     </span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -733,11 +733,11 @@ export default function UniversalTeacherLessonCreatePage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <select
                       value={sec.contentType}
                       onChange={(e) => updateSection(idx, 'contentType', e.target.value)}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium dark:border-slate-800 dark:bg-slate-900"
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium dark:border-slate-800 dark:bg-slate-900 max-w-full"
                     >
                       <option value="MARKDOWN">Markdown / Grammar Explanation</option>
                       <option value="VOCABULARY">Vocabulary & Glossary</option>
@@ -924,32 +924,38 @@ export default function UniversalTeacherLessonCreatePage() {
                         </Button>
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         {act.matchingPairs.map((pair, pIdx) => (
-                          <div key={pIdx} className="flex items-center gap-2">
+                          <div
+                            key={pIdx}
+                            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 sm:p-0 bg-white dark:bg-slate-900 sm:bg-transparent rounded-xl border sm:border-0 border-indigo-100 dark:border-indigo-900/40"
+                          >
                             <Input
                               placeholder="Left Term (e.g. Overtime)"
                               value={pair.leftTerm}
                               onChange={(e) => updateMatchingPair(aIdx, pIdx, 'leftTerm', e.target.value)}
-                              className="text-xs bg-white dark:bg-slate-900"
+                              className="text-xs bg-white dark:bg-slate-900 flex-1"
                             />
-                            <span className="text-slate-400 font-bold text-xs shrink-0">⟷</span>
+                            <span className="text-slate-400 font-bold text-xs text-center shrink-0 hidden sm:inline">⟷</span>
                             <Input
                               placeholder="Right Definition (e.g. Extra hours worked)"
                               value={pair.rightMatch}
                               onChange={(e) => updateMatchingPair(aIdx, pIdx, 'rightMatch', e.target.value)}
-                              className="text-xs bg-white dark:bg-slate-900"
+                              className="text-xs bg-white dark:bg-slate-900 flex-1"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive h-8 w-8 p-0 shrink-0"
-                              onClick={() => removeMatchingPair(aIdx, pIdx)}
-                              disabled={act.matchingPairs.length <= 1}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            <div className="flex justify-end sm:justify-start">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive h-8 px-2 sm:px-0 sm:w-8 text-xs shrink-0 hover:bg-destructive/10"
+                                onClick={() => removeMatchingPair(aIdx, pIdx)}
+                                disabled={act.matchingPairs.length <= 1}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 sm:mr-0 mr-1" />
+                                <span className="sm:hidden text-xs">Remove Pair</span>
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1025,18 +1031,18 @@ export default function UniversalTeacherLessonCreatePage() {
         </div>
 
         {/* Action Bottom Bar */}
-        <div className="sticky bottom-4 z-20 flex items-center justify-between rounded-2xl bg-white/95 dark:bg-slate-900/95 p-4 border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-md">
-          <Link href={selectedCourseId ? `/studio/${selectedCourseId}` : '/teacher/courses'}>
-            <Button type="button" variant="outline" size="sm">
+        <div className="sticky bottom-4 z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl bg-white/95 dark:bg-slate-900/95 p-3.5 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-md">
+          <Link href={selectedCourseId ? `/studio/${selectedCourseId}` : '/teacher/courses'} className="w-full sm:w-auto">
+            <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto justify-center">
               Cancel
             </Button>
           </Link>
 
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 hidden sm:inline">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <span className="text-xs text-slate-500 text-center sm:text-left hidden sm:inline">
               {sections.length} Section{sections.length !== 1 ? 's' : ''} &bull; {activities.length} Activit{activities.length !== 1 ? 'ies' : 'y'}
             </span>
-            <Button type="submit" variant="gradient" size="sm" disabled={submitting} className="min-w-[160px]">
+            <Button type="submit" variant="gradient" size="sm" disabled={submitting} className="w-full sm:w-auto sm:min-w-[160px] justify-center">
               <Save className="mr-1.5 h-4 w-4" />
               {submitting ? 'Publishing Lesson...' : 'Save & Publish Lesson'}
             </Button>
