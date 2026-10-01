@@ -5,13 +5,9 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import {
   User,
-  Settings,
   LogOut,
   ChevronDown,
-  ShieldCheck,
-  GraduationCap,
-  Sparkles,
-  Bell,
+  Settings,
   UserCheck,
   ShieldAlert,
   Mail,
@@ -172,34 +168,13 @@ export function UserDropdown() {
               </>
             ) : user.role === 'TEACHER' ? (
               <>
-                {/* Profile Link */}
-                <Link
-                  href="/teacher/profile"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-                >
-                  <User className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                  <span>Profile Details</span>
-                </Link>
-
-                {/* Notifications Link */}
-                <Link
-                  href="/teacher"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-                >
-                  <Bell className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                  <span>Notifications & Alerts</span>
-                </Link>
-
-                {/* Settings Link */}
                 <Link
                   href="/teacher/settings"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
                 >
-                  <Settings className="h-4 w-4 text-slate-400 dark:text-slate-500" />
-                  <span>Account Settings</span>
+                  <User className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+                  <span>Profile &amp; Settings</span>
                 </Link>
               </>
             ) : (
