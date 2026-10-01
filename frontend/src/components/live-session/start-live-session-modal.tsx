@@ -39,19 +39,27 @@ interface StartLiveSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSessionCreated?: (session: any) => void;
+  initialMode?: 'NOW' | 'SCHEDULED';
 }
 
 export function StartLiveSessionModal({
   isOpen,
   onClose,
   onSessionCreated,
+  initialMode = 'NOW',
 }: StartLiveSessionModalProps) {
   const router = useRouter();
 
   const [title, setTitle] = useState('');
   const [topic, setTopic] = useState('');
   const [sessionType, setSessionType] = useState<'ONE_ON_ONE' | 'GROUP'>('ONE_ON_ONE');
-  const [timingMode, setTimingMode] = useState<'NOW' | 'SCHEDULED'>('NOW');
+  const [timingMode, setTimingMode] = useState<'NOW' | 'SCHEDULED'>(initialMode);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimingMode(initialMode || 'NOW');
+    }
+  }, [isOpen, initialMode]);
 
   // Schedule date & time state
   const [scheduledDate, setScheduledDate] = useState(() => {

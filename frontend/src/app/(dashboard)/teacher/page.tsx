@@ -131,6 +131,7 @@ export default function TeacherDashboardPage() {
   );
 
   const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
+  const [liveModalMode, setLiveModalMode] = useState<'NOW' | 'SCHEDULED'>('NOW');
 
   const teacherMetrics = [
     {
@@ -252,11 +253,26 @@ export default function TeacherDashboardPage() {
 
             <Button
               size="sm"
-              onClick={() => setIsLiveModalOpen(true)}
+              onClick={() => {
+                setLiveModalMode('NOW');
+                setIsLiveModalOpen(true);
+              }}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs h-8 px-3 shadow-md shadow-emerald-900/30 gap-1.5"
             >
               <Video className="h-3.5 w-3.5 animate-pulse" />
               Start Live Session
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => {
+                setLiveModalMode('SCHEDULED');
+                setIsLiveModalOpen(true);
+              }}
+              className="bg-[#006EF3] hover:bg-[#0057C2] text-white font-black text-xs h-8 px-3 shadow-md shadow-blue-900/30 gap-1.5"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              Schedule Live Session
             </Button>
 
             <Link href="/teacher/students">
@@ -383,10 +399,11 @@ export default function TeacherDashboardPage() {
         )}
       </div>
 
-      {/* Start Live Session Modal */}
+      {/* Start / Schedule Live Session Modal */}
       <StartLiveSessionModal
         isOpen={isLiveModalOpen}
         onClose={() => setIsLiveModalOpen(false)}
+        initialMode={liveModalMode}
         onSessionCreated={() => refresh()}
       />
     </div>

@@ -55,6 +55,7 @@ export default function TeacherLiveSessionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'ALL' | 'LIVE' | 'UPCOMING' | 'ENDED'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'NOW' | 'SCHEDULED'>('NOW');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchSessions = async () => {
@@ -161,11 +162,25 @@ export default function TeacherLiveSessionsPage() {
             </Button>
 
             <Button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-[#F5B400] hover:bg-[#d99f00] text-[#012970] font-black h-9 px-4 shadow-lg shadow-black/20 gap-2"
+              onClick={() => {
+                setModalMode('NOW');
+                setIsModalOpen(true);
+              }}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white font-black h-9 px-3.5 shadow-lg shadow-black/20 gap-1.5 text-xs"
             >
-              <Video className="h-4 w-4" />
-              <span>Start or Schedule Session</span>
+              <Play className="h-3.5 w-3.5 fill-current" />
+              <span>Start Live Now</span>
+            </Button>
+
+            <Button
+              onClick={() => {
+                setModalMode('SCHEDULED');
+                setIsModalOpen(true);
+              }}
+              className="bg-[#F5B400] hover:bg-[#d99f00] text-[#012970] font-black h-9 px-4 shadow-lg shadow-black/20 gap-1.5 text-xs"
+            >
+              <Calendar className="h-4 w-4" />
+              <span>Schedule Session</span>
             </Button>
           </div>
         </div>
@@ -377,10 +392,11 @@ export default function TeacherLiveSessionsPage() {
         </div>
       )}
 
-      {/* Start Live Session Modal */}
+      {/* Start / Schedule Live Session Modal */}
       <StartLiveSessionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        initialMode={modalMode}
         onSessionCreated={() => fetchSessions()}
       />
     </div>
