@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Award, BookOpen, ShieldCheck, Download } from 'lucide-react';
+import { Award, BookOpen, ShieldCheck, Download, ExternalLink } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useCachedData } from '@/lib/cache';
 import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
@@ -273,7 +273,7 @@ function CertificateDocument({
   );
 }
 
-// ─── Scaled preview wrapper ───────────────────────────────────────────────────
+// ─── Responsive Certificate Preview ──────────────────────────────────────────
 function CertificatePreview({
   cert,
   onDownload,
@@ -285,29 +285,92 @@ function CertificatePreview({
   isDownloading: boolean;
   fallbackStudentName?: string;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState<number>(0.38);
+
+  const measureAndScale = useCallback(() => {
+    if (containerRef.current) {
+      const w = containerRef.current.clientWidth;
+      if (w > 0) {
+        setScale(w / 900);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    measureAndScale();
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        if (w > 0) {
+          setScale(w / 900);
+        }
+      }
+    });
+
+    observer.observe(el);
+    window.addEventListener('resize', measureAndScale);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measureAndScale);
+    };
+  }, [measureAndScale]);
+
   return (
     <div
-      className="group cursor-pointer rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+      className="group cursor-pointer rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col"
       onClick={() => {
         if (!isDownloading) onDownload();
       }}
     >
-      {/* Scaled certificate — rendered at 900×600 then scaled down */}
-      <div style={{ width: '100%', paddingTop: `${(600 / 900) * 100}%`, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, transformOrigin: 'top left' }}>
-          <ScaledCertificate cert={cert} fallbackStudentName={fallbackStudentName} />
+      {/* Scaled certificate wrapper maintaining exact 900×600 aspect ratio on all devices */}
+      <div
+        ref={containerRef}
+        className="w-full relative overflow-hidden bg-[#fffefa]"
+        style={{
+          aspectRatio: '900 / 600',
+          height: scale > 0 ? `${Math.round(600 * scale)}px` : undefined,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: 900,
+            height: 600,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            pointerEvents: 'none',
+          }}
+        >
+          <CertificateDocument cert={cert} fallbackStudentName={fallbackStudentName} />
         </div>
       </div>
-      {/* Bottom bar */}
-      <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between bg-white dark:bg-slate-900">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-          <span className="text-[11px] text-slate-500 font-mono truncate max-w-[140px]">{cert.certificateCode}</span>
-        </div>
+
+      {/* Bottom info & action bar */}
+      <div className="border-t border-slate-100 dark:border-slate-800 px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 bg-white dark:bg-slate-900 mt-auto">
+        <Link
+          href={`/verify/certificate/${cert.certificateCode}`}
+          target="_blank"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1.5 min-w-0 hover:opacity-80 transition-opacity"
+          title="Verify credential online"
+        >
+          <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
+          <span className="text-[11px] sm:text-xs text-slate-500 font-mono truncate max-w-[140px] sm:max-w-[200px]">
+            {cert.certificateCode}
+          </span>
+          <ExternalLink className="h-3 w-3 text-slate-400 shrink-0" />
+        </Link>
+
         <Button
           size="sm"
           disabled={isDownloading}
-          className="text-xs h-8 px-3.5 gap-1.5 bg-[#c79a3b] hover:bg-[#a87521] text-white border-0 shadow-sm transition-all"
+          className="text-xs h-8 px-3 sm:px-3.5 gap-1.5 bg-[#c79a3b] hover:bg-[#a87521] text-white border-0 shadow-sm transition-all ml-auto sm:ml-0 shrink-0 font-medium"
           onClick={(e) => {
             e.stopPropagation();
             if (!isDownloading) onDownload();
@@ -329,30 +392,6 @@ function CertificatePreview({
           )}
         </Button>
       </div>
-    </div>
-  );
-}
-
-
-function ScaledCertificate({ cert, fallbackStudentName }: { cert: Certificate; fallbackStudentName?: string }) {
-  const [containerWidth, setContainerWidth] = React.useState(0);
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (!ref.current) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setContainerWidth(entry.contentRect.width);
-    });
-    observer.observe(ref.current.parentElement!);
-    setContainerWidth(ref.current.parentElement?.clientWidth || 0);
-    return () => observer.disconnect();
-  }, []);
-
-  const scale = containerWidth ? containerWidth / 900 : 1;
-
-  return (
-    <div ref={ref} style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: 900, height: 600 }}>
-      <CertificateDocument cert={cert} fallbackStudentName={fallbackStudentName} />
     </div>
   );
 }
@@ -433,7 +472,7 @@ export default function StudentCertificatesPage() {
         {loading ? (
           <CardGridSkeleton count={2} columns="2" />
         ) : certificates.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             {certificates.map((cert) => (
               <CertificatePreview
                 key={cert.id}
