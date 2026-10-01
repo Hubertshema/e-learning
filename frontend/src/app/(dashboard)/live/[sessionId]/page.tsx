@@ -552,7 +552,7 @@ function RemoteVideoTile({
     }
   }, [peer.stream]);
 
-  // Video element (muted so browser never blocks video stream autoplay)
+  // Video element plays both video and audio
   useEffect(() => {
     const videoEl = videoRef.current;
     if (videoEl && peer.stream) {
@@ -560,7 +560,9 @@ function RemoteVideoTile({
         videoEl.srcObject = peer.stream;
       }
       videoEl.play().catch((err) => {
-        console.warn('Playback error on remote video:', err);
+        if (err.name === 'NotAllowedError') {
+          setAudioBlocked(true);
+        }
       });
     }
   }, [peer.stream, peer.isVideoOff]);
@@ -571,33 +573,41 @@ function RemoteVideoTile({
     !peer.isVideoOff
   );
 
+  const unlockAudio = () => {
+    if (videoRef.current) {
+      videoRef.current.play().then(() => setAudioBlocked(false)).catch(() => {});
+    }
+    if (audioRef.current) {
+      audioRef.current.play().then(() => setAudioBlocked(false)).catch(() => {});
+    }
+  };
+
   return (
     <div
-      onClick={() => {
-        if (audioBlocked && audioRef.current) {
-          audioRef.current.play().then(() => setAudioBlocked(false)).catch(() => {});
-        }
-      }}
+      onClick={unlockAudio}
       className="relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center group min-h-[180px]"
     >
-      {/* Dedicated hidden audio playback element */}
+      {/* Dedicated hidden audio playback fallback */}
       <audio ref={audioRef} autoPlay playsInline />
 
-      {/* Video element */}
+      {/* Video element (unmuted so remote voice plays directly) */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
-        muted
         className={`w-full h-full object-cover transition-opacity duration-300 ${
           hasVideoTrack ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
         }`}
       />
 
       {audioBlocked && (
-        <div className="absolute top-3 left-3 z-20 px-2 py-1 bg-amber-500 text-slate-950 font-bold text-[10px] rounded-lg animate-pulse cursor-pointer shadow-lg">
-          🔊 Click tile to enable sound
-        </div>
+        <button
+          onClick={unlockAudio}
+          className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-2xl animate-bounce flex items-center gap-1.5"
+        >
+          <Volume2 className="h-3.5 w-3.5" />
+          Click to enable voice
+        </button>
       )}
 
       {!hasVideoTrack && (
