@@ -55,6 +55,20 @@ export function createApp() {
   // Request logger
   app.use(requestLogger);
 
+  // Root status and ping check (for root URLs and load balancer probes)
+  app.get('/', (_req, res) => {
+    return res.status(200).json({
+      success: true,
+      message: 'FluentEdge API is online',
+      version: '2.0.0',
+      health: '/api/v1/health',
+      api: '/api/v1',
+    });
+  });
+  app.head('/', (_req, res) => {
+    return res.status(200).end();
+  });
+
   // Mount API v1
   app.use('/api/v1', v1Routes);
 

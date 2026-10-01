@@ -31,10 +31,12 @@ async function startServer() {
   await initAdmissionSchema();
   await ensureLiveSessionSchema();
 
-  // 1.1 Run Comprehensive Super Admin Seeder in background (non-blocking)
-  runComprehensiveSeed().catch((seedErr) => {
-    console.warn('⚠️ Seeding warning (non-fatal):', seedErr.message);
-  });
+  // 1.1 Run Comprehensive Super Admin Seeder in background (only if requested or in development)
+  if (process.env.RUN_SEEDER === 'true' || env.NODE_ENV === 'development') {
+    runComprehensiveSeed().catch((seedErr) => {
+      console.warn('⚠️ Seeding warning (non-fatal):', seedErr.message);
+    });
+  }
 
   // 2. Create Express app
   const app = createApp();
