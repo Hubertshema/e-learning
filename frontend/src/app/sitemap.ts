@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/pricing',
     '/about',
     '/login',
-    '/register',
+    '/apply',
     '/verify/certificate/ENG-2026-001',
   ];
 

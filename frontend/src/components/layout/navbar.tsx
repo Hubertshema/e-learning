@@ -199,7 +199,7 @@ export function Navbar() {
                   Sign In
                 </button>
               </Link>
-              <Link href="/register">
+              <Link href="/apply">
                 <button className="rounded-xl bg-[#006EF3] text-white hover:bg-[#005ed1] px-3.5 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-[15px] font-bold shadow-md transition hover:scale-105 active:scale-95 whitespace-nowrap">
                   Get Started
                 </button>
@@ -345,7 +345,7 @@ export function Navbar() {
                       Sign In
                     </button>
                   </Link>
-                  <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/apply" onClick={() => setMobileMenuOpen(false)}>
                     <button className="w-full rounded-xl bg-[#006EF3] py-2.5 text-xs font-bold text-white hover:bg-[#005ed1] transition shadow-md">
                       Get Started Free
                     </button>

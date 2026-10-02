@@ -695,8 +695,8 @@ export default function DiagnosticQuizPage() {
                   <Link
                     href={
                       result.recommendedCourse
-                        ? `/register?role=student&course=${result.recommendedCourse.id}&level=${result.recommendedLevel}`
-                        : `/register?role=student&level=${result.recommendedLevel}`
+                        ? `/apply?course=${result.recommendedCourse.id}&level=${result.recommendedLevel}`
+                        : `/apply?level=${result.recommendedLevel}`
                     }
                     className="flex-1"
                   >

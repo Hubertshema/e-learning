@@ -171,8 +171,8 @@ export default function SecurityPage() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          {/* Sticky Left Table of Contents */}
-          <aside className="lg:col-span-4 sticky top-24 space-y-4">
+          {/* Left Table of Contents: relative on mobile, sticky only on desktop */}
+          <aside className="lg:col-span-4 relative lg:sticky lg:top-28 space-y-4 h-fit">
             <Card className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
               <p className="text-xs font-bold uppercase tracking-wider text-[#667085]">
                 Table of Contents

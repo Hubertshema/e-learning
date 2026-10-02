@@ -311,7 +311,7 @@ export default function HomePage() {
                 <p className="text-xs sm:text-sm text-[#667085] leading-relaxed break-words">
                   {levels[activeLevelIndex].desc}
                 </p>
-                <Link href={`/register?role=student&level=${levels[activeLevelIndex].code}`} className="block sm:inline-block w-full sm:w-auto">
+                <Link href={`/apply?level=${levels[activeLevelIndex].code}`} className="block sm:inline-block w-full sm:w-auto">
                   <Button className="w-full sm:w-auto rounded-xl bg-[#012970] text-white hover:bg-[#006EF3] text-xs font-bold px-5 transition-colors">
                     Start Level {levels[activeLevelIndex].code} Syllabus
                   </Button>
@@ -553,7 +553,7 @@ export default function HomePage() {
               Take the free diagnostic placement quiz or register today to join hundreds of learners mastering English with LinguaChris Academy.
             </p>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-2">
-              <Link href="/register?role=student" className="w-full sm:w-auto">
+              <Link href="/apply" className="w-full sm:w-auto">
                 <Button className="w-full sm:w-auto rounded-xl bg-[#F5B400] hover:bg-[#e0a400] text-[#011b4a] px-6 sm:px-8 py-3 font-bold text-xs uppercase tracking-wider shadow-lg transition-transform hover:scale-105 active:scale-95 text-center">
                   Join as a Student
                 </Button>

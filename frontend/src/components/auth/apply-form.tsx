@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient, tokenStorage } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,15 @@ const GOAL_OPTIONS = [
 
 export function ApplyForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
+
+  const initialLevel = (() => {
+    const raw = searchParams.get('level')?.toUpperCase();
+    if (!raw) return 'A2';
+    if (raw === 'PRE-A1' || raw === 'PRE_A1') return 'PRE_A1';
+    return ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(raw) ? raw : 'A2';
+  })();
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -39,7 +47,7 @@ export function ApplyForm() {
     password: '',
     phone: '',
     nativeLanguage: '',
-    targetLevel: 'A2',
+    targetLevel: initialLevel,
     learningGoals: ['Everyday Fluency & Travel'],
     motivation: '',
   });

@@ -270,7 +270,7 @@ export default function CoursesPage() {
                   </div>
 
                   {/* Action Button */}
-                  <Link href={`/register?role=student&course=${course.id}`} className="block w-full">
+                  <Link href={`/apply?course=${course.id}&level=${course.level}`} className="block w-full">
                     <Button className="w-full rounded-xl bg-[#012970] text-white hover:bg-[#001f54] text-xs font-bold py-2.5 transition-colors">
                       <span>Enroll in Syllabus</span>
                       <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
