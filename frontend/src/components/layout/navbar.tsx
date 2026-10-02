@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
@@ -11,6 +12,12 @@ import {
   LogOut,
   LayoutDashboard,
   ChevronDown,
+  Home,
+  Users,
+  BookOpen,
+  Sparkles,
+  Award,
+  ArrowRight,
 } from 'lucide-react';
 
 export function Navbar() {
@@ -18,7 +25,12 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let isTicking = false;
@@ -69,11 +81,11 @@ export function Navbar() {
   }, []);
 
   const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'About Us', href: '/about' },
-    { name: 'Courses', href: '/courses' },
-    { name: 'Diagnostic Quiz', href: '/quiz' },
-    { name: 'Levels (CEFR)', href: '/levels' },
+    { name: 'Home', href: '/', icon: Home },
+    { name: 'About Us', href: '/about', icon: Users },
+    { name: 'Courses', href: '/courses', icon: BookOpen },
+    { name: 'Diagnostic Quiz', href: '/quiz', icon: Sparkles },
+    { name: 'Levels (CEFR)', href: '/levels', icon: Award },
   ];
 
   return (
@@ -209,11 +221,11 @@ export function Navbar() {
       </div>
 
       {/* =========================================================================
-          SLIDE-OVER ASIDE DRAWER (NOT FULL WIDTH - SLIDES FROM RIGHT WITH BACKDROP)
+          SLIDE-OVER ASIDE DRAWER (PORTALED TO DOCUMENT.BODY TO PREVENT CLIPPING)
       ========================================================================= */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          {/* Backdrop overlay */}
+      {mounted && mobileMenuOpen && createPortal(
+        <div className="fixed inset-0 z-[99999] lg:hidden">
+          {/* Full-screen Dark Backdrop overlay */}
           <div
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
             onClick={() => setMobileMenuOpen(false)}
@@ -222,11 +234,11 @@ export function Navbar() {
 
           {/* Slide-over Aside Panel */}
           <aside
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-[300px] sm:max-w-sm bg-white shadow-2xl flex flex-col justify-between border-l border-slate-200 transition-transform duration-300 ease-out animate-in slide-in-from-right"
+            className="fixed inset-y-0 right-0 z-[100000] w-[280px] sm:w-[320px] max-w-[85vw] h-full h-[100dvh] bg-white shadow-2xl flex flex-col justify-between border-l border-slate-200 transition-transform duration-300 ease-out animate-in slide-in-from-right"
             aria-label="Mobile Navigation"
           >
             {/* Aside Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
               <Link
                 href="/"
                 onClick={() => setMobileMenuOpen(false)}
@@ -255,26 +267,32 @@ export function Navbar() {
             </div>
 
             {/* Aside Nav Links */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
               <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#667085]">
-                Navigation
+                Menu
               </div>
               {navigation.map((item) => {
                 const isActive = pathname === item.href;
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition ${
+                    className={`flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-medium transition ${
                       isActive
                         ? 'bg-[#012970] text-white font-semibold shadow-sm'
                         : 'text-[#172033] hover:bg-[#F3F7FC]'
                     }`}
                   >
-                    <span>{item.name}</span>
-                    {isActive && (
+                    <div className="flex items-center gap-3">
+                      <Icon className={`h-4 w-4 ${isActive ? 'text-[#F5B400]' : 'text-[#006EF3]'}`} />
+                      <span>{item.name}</span>
+                    </div>
+                    {isActive ? (
                       <span className="h-2 w-2 rounded-full bg-[#F5B400]" />
+                    ) : (
+                      <ArrowRight className="h-3.5 w-3.5 text-slate-300" />
                     )}
                   </Link>
                 );
@@ -282,7 +300,7 @@ export function Navbar() {
             </div>
 
             {/* Aside Footer / Actions */}
-            <div className="p-4 border-t border-slate-100 bg-[#F8FAFC] space-y-3">
+            <div className="p-4 border-t border-slate-100 bg-[#F8FAFC] space-y-3 shrink-0">
               {isAuthenticated && user ? (
                 <div className="space-y-2">
                   <div className="px-3 py-2 bg-white rounded-xl border border-slate-200/80 flex items-center gap-3">
@@ -335,12 +353,13 @@ export function Navbar() {
                 </div>
               )}
 
-              <p className="text-[10px] text-center text-[#667085] pt-1">
+              <p className="text-[10px] text-center text-[#667085]">
                 LinguaChris Academy &copy; {new Date().getFullYear()}
               </p>
             </div>
           </aside>
-        </div>
+        </div>,
+        document.body
       )}
     </header>
   );
