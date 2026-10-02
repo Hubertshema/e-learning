@@ -106,7 +106,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="flex flex-col gap-16 md:gap-24 overflow-hidden bg-white">
+    <div className="flex flex-col gap-12 sm:gap-16 md:gap-24 overflow-x-hidden w-full max-w-full bg-white">
       {/* =========================================================================
           HERO SECTION — MODERN GEOMETRIC STYLE MATCHING BRAND IDENTITY
       ========================================================================= */}
@@ -213,7 +213,7 @@ export default function HomePage() {
       {/* =========================================================================
           KEY PLATFORM CAPABILITIES & STATS BAR
       ========================================================================= */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-6">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-6 min-w-0">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <div className="rounded-2xl border border-[#E2E8F0] bg-white p-3.5 sm:p-5 shadow-sm flex items-center gap-3 sm:gap-4 hover:border-[#006EF3]/40 transition-colors">
             <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#012970]">
@@ -260,10 +260,10 @@ export default function HomePage() {
       {/* =========================================================================
           7-SKILL MATRIX & INTERACTIVE CEFR LEVEL EXPLORER
       ========================================================================= */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-2xl sm:rounded-3xl border border-[#E2E8F0] bg-[#F3F7FC] p-4 sm:p-8 lg:p-10">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0">
+        <div className="w-full max-w-full min-w-0 rounded-2xl sm:rounded-3xl border border-[#E2E8F0] bg-[#F3F7FC] p-4 sm:p-8 lg:p-10 overflow-hidden">
           <div className="text-center space-y-2 sm:space-y-3 max-w-2xl mx-auto mb-6 sm:mb-8">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#172033]">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#172033] break-words">
               Interactive CEFR Level Explorer
             </h2>
             <p className="text-xs sm:text-sm text-[#667085]">
@@ -272,41 +272,43 @@ export default function HomePage() {
           </div>
 
           {/* Level Selector Tabs: horizontally scrollable with touch-friendly pills on mobile */}
-          <div className="flex sm:flex-wrap items-center sm:justify-center gap-1.5 sm:gap-2 mb-6 sm:mb-8 overflow-x-auto pb-2 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 scrollbar-none">
-            {levels.map((lvl, idx) => (
-              <button
-                key={lvl.code}
-                onClick={() => setActiveLevelIndex(idx)}
-                className={`shrink-0 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold transition-all ${
-                  activeLevelIndex === idx
-                    ? 'bg-[#012970] text-white shadow-md scale-105'
-                    : 'bg-white text-[#172033] hover:bg-[#dbe7f8] border border-[#E2E8F0]'
-                }`}
-              >
-                <span>{lvl.code}</span>
-                <span className="ml-1 text-[10px] opacity-80">({lvl.name})</span>
-              </button>
-            ))}
+          <div className="w-full max-w-full min-w-0 overflow-x-auto pb-2 sm:pb-0 mb-6 sm:mb-8 scrollbar-none">
+            <div className="inline-flex sm:flex sm:flex-wrap items-center sm:justify-center gap-1.5 sm:gap-2 min-w-max sm:min-w-0 px-1 py-1">
+              {levels.map((lvl, idx) => (
+                <button
+                  key={lvl.code}
+                  onClick={() => setActiveLevelIndex(idx)}
+                  className={`shrink-0 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold transition-all ${
+                    activeLevelIndex === idx
+                      ? 'bg-[#012970] text-white shadow-md scale-105'
+                      : 'bg-white text-[#172033] hover:bg-[#dbe7f8] border border-[#E2E8F0]'
+                  }`}
+                >
+                  <span>{lvl.code}</span>
+                  <span className="ml-1 text-[10px] opacity-80">({lvl.name})</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Active Level Detail Showcase */}
-          <div className="rounded-2xl sm:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-8 shadow-md transition-all">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-center">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
+          <div className="w-full max-w-full min-w-0 rounded-2xl sm:rounded-3xl border border-[#E2E8F0] bg-white p-4 sm:p-8 shadow-md transition-all overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-center min-w-0">
+              <div className="space-y-4 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#006EF3] text-white font-bold text-lg shadow-sm shrink-0">
                     {levels[activeLevelIndex].code}
                   </span>
-                  <div>
-                    <h3 className="text-xl font-bold text-[#172033]">
+                  <div className="min-w-0">
+                    <h3 className="text-lg sm:text-xl font-bold text-[#172033] truncate">
                       {levels[activeLevelIndex].name} Tier
                     </h3>
-                    <p className="text-xs text-[#006EF3] font-semibold">
+                    <p className="text-xs text-[#006EF3] font-semibold truncate">
                       {levels[activeLevelIndex].targetSkill}
                     </p>
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm text-[#667085] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#667085] leading-relaxed break-words">
                   {levels[activeLevelIndex].desc}
                 </p>
                 <Link href={`/register?role=student&level=${levels[activeLevelIndex].code}`} className="block sm:inline-block w-full sm:w-auto">
@@ -317,18 +319,18 @@ export default function HomePage() {
               </div>
 
               {/* Interactive Audio Sample */}
-              <div className="rounded-2xl border border-[#E2E8F0] bg-[#F3F7FC] p-4 sm:p-6 space-y-3">
+              <div className="w-full min-w-0 rounded-2xl border border-[#E2E8F0] bg-[#F3F7FC] p-4 sm:p-6 space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-[#172033]">
                   <span>Native Speaking Model</span>
                   <button
                     onClick={() => playTts(levels[activeLevelIndex].samplePhrase)}
-                    className="flex items-center gap-1 text-[#006EF3] hover:text-[#012970] font-semibold"
+                    className="flex items-center gap-1 text-[#006EF3] hover:text-[#012970] font-semibold shrink-0"
                   >
                     <Volume2 className="h-4 w-4" />
                     <span>Listen</span>
                   </button>
                 </div>
-                <p className="text-xs sm:text-sm font-medium italic text-[#172033] leading-relaxed">
+                <p className="text-xs sm:text-sm font-medium italic text-[#172033] leading-relaxed break-words">
                   "{levels[activeLevelIndex].samplePhrase}"
                 </p>
                 <p className="text-[10px] text-[#667085]">
@@ -337,7 +339,7 @@ export default function HomePage() {
               </div>
 
               {/* Vocabulary Pill Cloud */}
-              <div className="rounded-2xl border border-[#E2E8F0] bg-[#F3F7FC] p-4 sm:p-6 space-y-3">
+              <div className="w-full min-w-0 rounded-2xl border border-[#E2E8F0] bg-[#F3F7FC] p-4 sm:p-6 space-y-3">
                 <p className="text-xs font-bold text-[#172033]">
                   Core Oxford Vocabulary Focus
                 </p>
@@ -363,7 +365,7 @@ export default function HomePage() {
       {/* =========================================================================
           16 INTERACTIVE MULTI-SKILL ACTIVITIES DEMO & FLASHCARD
       ========================================================================= */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           <div className="lg:col-span-6 space-y-5 sm:space-y-6">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#172033]">
@@ -459,7 +461,7 @@ export default function HomePage() {
       {/* =========================================================================
           STUDENT TESTIMONIALS & SUCCESS STORIES
       ========================================================================= */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0">
         <div className="text-center space-y-2 sm:space-y-3 max-w-2xl mx-auto mb-8 sm:mb-10">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#172033]">
             Trusted by Professionals &amp; Learners Across East Africa
@@ -541,7 +543,7 @@ export default function HomePage() {
       {/* =========================================================================
           FINAL CALL TO ACTION BANNER (MATCHING THE 50% PROMO THEME)
       ========================================================================= */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-8">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 min-w-0">
         <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#011b4a] via-[#012970] to-[#006EF3] p-6 sm:p-10 lg:p-12 text-white shadow-2xl">
           <div className="relative z-10 max-w-2xl space-y-4">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight text-white">
