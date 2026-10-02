@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { UserModel } from '../models/user.model.js';
+import { PasswordResetModel } from '../models/password-reset.model.js';
+import { emailService } from './email.service.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.util.js';
 
 export class AuthService {
@@ -170,5 +172,74 @@ export class AuthService {
 
     await UserModel.update(userId, { passwordHash: newHash });
     return true;
+  }
+
+  /**
+   * Request password reset link
+   */
+  static async forgotPassword(email) {
+    if (!email || !email.includes('@')) {
+      const err = new Error('A valid email address is required');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await UserModel.findByEmail(cleanEmail);
+    if (!user) {
+      // Don't disclose if user doesn't exist
+      return { sent: true };
+    }
+
+    const resetRecord = await PasswordResetModel.createToken(user.id, user.email);
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Student';
+
+    // Dispatch reset link via email asynchronously
+    emailService.sendPasswordResetEmail({
+      email: user.email,
+      name: fullName,
+      resetToken: resetRecord.token,
+    }).catch(err => console.error('Error sending reset email:', err));
+
+    return { sent: true };
+  }
+
+  /**
+   * Reset password with valid token
+   */
+  static async resetPassword({ token, password }) {
+    if (!token) {
+      const err = new Error('Reset token is required');
+      err.statusCode = 400;
+      throw err;
+    }
+    if (!password || password.length < 8) {
+      const err = new Error('Password must be at least 8 characters long');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const record = await PasswordResetModel.findValidToken(token);
+    if (!record) {
+      const err = new Error('This password reset link is invalid or has expired. Please request a new one.');
+      err.statusCode = 400;
+      err.code = 'INVALID_OR_EXPIRED_TOKEN';
+      throw err;
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const newHash = await bcrypt.hash(password, salt);
+
+    await UserModel.update(record.userId, { passwordHash: newHash });
+    await PasswordResetModel.markUsed(record.id);
+
+    // Send security alert
+    const fullName = `${record.firstName || ''} ${record.lastName || ''}`.trim() || 'Student';
+    emailService.sendPasswordChangedAlert({
+      email: record.email,
+      name: fullName,
+    }).catch(err => console.error('Error sending password changed alert:', err));
+
+    return { success: true };
   }
 }

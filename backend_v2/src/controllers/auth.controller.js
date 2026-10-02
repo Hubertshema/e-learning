@@ -102,4 +102,36 @@ export class AuthController {
       next(err);
     }
   }
+
+  /**
+   * POST /api/v1/auth/forgot-password
+   */
+  static async forgotPassword(req, res, next) {
+    try {
+      const { email } = req.body || {};
+      if (!email) {
+        return sendError(res, 'Email address is required', 400, 'VALIDATION_ERROR');
+      }
+      const result = await AuthService.forgotPassword(email);
+      return sendSuccess(res, result, 'If your email is registered, password reset instructions have been sent.');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/v1/auth/reset-password
+   */
+  static async resetPassword(req, res, next) {
+    try {
+      const { token, password } = req.body || {};
+      if (!token || !password) {
+        return sendError(res, 'Reset token and new password are required', 400, 'VALIDATION_ERROR');
+      }
+      const result = await AuthService.resetPassword({ token, password });
+      return sendSuccess(res, result, 'Password successfully reset. You may now log in.');
+    } catch (err) {
+      next(err);
+    }
+  }
 }

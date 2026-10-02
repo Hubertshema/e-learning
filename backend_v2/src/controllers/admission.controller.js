@@ -1,5 +1,6 @@
 import { sendSuccess, sendError } from '../utils/response.util.js';
 import { AdmissionModel } from '../models/admission.model.js';
+import { emailService } from '../services/email.service.js';
 
 export class AdmissionController {
   /**
@@ -39,6 +40,22 @@ export class AdmissionController {
         motivation,
         learningGoals,
       });
+
+      // Dispatch notification emails asynchronously
+      const fullName = `${firstName} ${lastName}`.trim();
+      Promise.allSettled([
+        emailService.sendApplicationSubmittedToStudent({
+          email,
+          name: fullName,
+          level: currentEnglishLevel,
+        }),
+        emailService.sendNewApplicationAlertToAdmin({
+          studentName: fullName,
+          email,
+          phone,
+          currentEnglishLevel,
+        }),
+      ]).catch((err) => console.error('Error dispatching application emails:', err));
 
       return sendSuccess(res, result, 'Application submitted successfully. Waiting for faculty review.', 201);
     } catch (error) {
@@ -104,6 +121,20 @@ export class AdmissionController {
         paymentDate,
         notes: notes || '',
       });
+
+      // Dispatch billing alert to admin asynchronously
+      AdmissionModel.getStudentStatus(studentId).then((status) => {
+        if (status?.user) {
+          const studentName = `${status.user.firstName || ''} ${status.user.lastName || ''}`.trim() || 'Student';
+          emailService.sendPaymentProofAdminAlert({
+            studentName,
+            studentEmail: status.user.email,
+            amount: Number(amount),
+            currency: currency || 'RWF',
+            transactionRef: resolvedRef,
+          }).catch((err) => console.error('Error dispatching payment proof alert:', err));
+        }
+      }).catch((err) => console.error('Error fetching student profile for billing alert:', err));
 
       return sendSuccess(res, payment, 'Payment proof submitted successfully. Awaiting faculty verification.', 201);
     } catch (error) {
@@ -181,6 +212,21 @@ export class AdmissionController {
         notes,
       });
 
+      // Dispatch decision email to student asynchronously
+      AdmissionModel.getStudentStatus(studentId).then((status) => {
+        if (status?.user?.email) {
+          const studentName = `${status.user.firstName || ''} ${status.user.lastName || ''}`.trim() || 'Student';
+          const levelName = status.admission?.level?.name || null;
+          emailService.sendAdmissionDecisionEmail({
+            email: status.user.email,
+            name: studentName,
+            decision,
+            rejectionReason,
+            levelName,
+          }).catch((err) => console.error('Error dispatching admission decision email:', err));
+        }
+      }).catch((err) => console.error('Error fetching student profile for admission email:', err));
+
       return sendSuccess(res, result, `Application successfully ${decision === 'ACCEPT' ? 'accepted' : 'rejected'}`);
     } catch (error) {
       console.error('Review Application Error:', error);
@@ -211,6 +257,16 @@ export class AdmissionController {
         paymentRequirement,
         notes,
       });
+
+      // Dispatch welcome credentials email to student asynchronously
+      if (result?.user?.email) {
+        const studentName = `${result.user.firstName || ''} ${result.user.lastName || ''}`.trim() || 'Student';
+        emailService.sendDirectStudentWelcomeEmail({
+          email: result.user.email,
+          name: studentName,
+          temporaryPassword: password || 'LinguaChris2026!',
+        }).catch((err) => console.error('Error dispatching direct student welcome email:', err));
+      }
 
       return sendSuccess(res, result, 'Direct student admitted successfully', 201);
     } catch (error) {
@@ -268,6 +324,20 @@ export class AdmissionController {
         notes,
       });
 
+      // Dispatch payment approved & access unlocked email asynchronously
+      AdmissionModel.getStudentStatus(studentId).then((status) => {
+        if (status?.user?.email) {
+          const studentName = `${status.user.firstName || ''} ${status.user.lastName || ''}`.trim() || 'Student';
+          emailService.sendPaymentApprovedEmail({
+            email: status.user.email,
+            name: studentName,
+            amount: status.latestPayment?.amount || 'Tuition',
+            currency: status.latestPayment?.currency || 'RWF',
+            transactionRef: status.latestPayment?.transactionRef || 'OFFICIAL',
+          }).catch((err) => console.error('Error dispatching payment verified email:', err));
+        }
+      }).catch((err) => console.error('Error fetching student profile for payment approved email:', err));
+
       return sendSuccess(res, result, 'Payment verified successfully. Student learning access is now ACTIVE.');
     } catch (error) {
       console.error('Verify Payment Error:', error);
@@ -293,6 +363,18 @@ export class AdmissionController {
         paymentId,
         reason,
       });
+
+      // Dispatch payment rejected email asynchronously
+      AdmissionModel.getStudentStatus(studentId).then((status) => {
+        if (status?.user?.email) {
+          const studentName = `${status.user.firstName || ''} ${status.user.lastName || ''}`.trim() || 'Student';
+          emailService.sendPaymentRejectedEmail({
+            email: status.user.email,
+            name: studentName,
+            reason,
+          }).catch((err) => console.error('Error dispatching payment rejected email:', err));
+        }
+      }).catch((err) => console.error('Error fetching student profile for payment rejected email:', err));
 
       return sendSuccess(res, result, 'Payment proof rejected. Student notified to resubmit.');
     } catch (error) {

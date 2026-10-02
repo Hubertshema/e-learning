@@ -1,4 +1,7 @@
 import { LiveSessionModel } from '../models/live-session.model.js';
+import { emailService } from '../services/email.service.js';
+import { env } from '../config/env.js';
+import { query } from '../config/database.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 import { getIO } from '../config/socket.js';
 
@@ -65,6 +68,22 @@ export class LiveSessionController {
           });
         });
       }
+
+      // Dispatch calendar/session invite emails asynchronously
+      query(`SELECT id, email, "firstName", "lastName" FROM "public"."users" WHERE id = ANY($1)`, [studentIds])
+        .then((userRes) => {
+          for (const student of userRes.rows) {
+            const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
+            emailService.sendLiveSessionInvitation({
+              email: student.email,
+              name: studentName,
+              sessionTitle: session.title,
+              scheduledAt: session.scheduledAt,
+              joinUrl: `${env.FRONTEND_URL}/live-sessions`,
+            }).catch((err) => console.error(`Error sending session invite to ${student.email}:`, err));
+          }
+        })
+        .catch((err) => console.error('Error fetching students for live session email invites:', err));
 
       return sendSuccess(res, session, 'Live session created successfully', 201);
     } catch (err) {

@@ -1,4 +1,5 @@
 import { query } from '../config/database.js';
+import { emailService } from '../services/email.service.js';
 import crypto from 'crypto';
 
 export class CertificateModel {
@@ -149,6 +150,27 @@ export class CertificateModel {
 
           const cert = await this.issueCertificate(studentProfileId || studentId, courseId, cLevel, 100);
           
+          // Dispatch congratulatory certificate email asynchronously
+          query(`
+            SELECT u.email, u."firstName", u."lastName", c.title as "courseTitle"
+            FROM "public"."users" u
+            LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
+            CROSS JOIN "public"."courses" c
+            WHERE (u.id = $1 OR sp.id = $1) AND c.id = $2
+            LIMIT 1
+          `, [studentProfileId || studentId, courseId]).then((studentRes) => {
+            if (studentRes.rows[0]?.email) {
+              const row = studentRes.rows[0];
+              const studentName = `${row.firstName || ''} ${row.lastName || ''}`.trim() || 'Student';
+              emailService.sendCertificateIssuedEmail({
+                email: row.email,
+                name: studentName,
+                courseName: row.courseTitle || 'English Mastery Course',
+                certificateCode: cert.certificateCode,
+              }).catch((err) => console.error('Error dispatching certificate email:', err));
+            }
+          }).catch((err) => console.error('Error fetching student for certificate email:', err));
+
           return { cert, courseId, allCompleted: true };
         }
       }

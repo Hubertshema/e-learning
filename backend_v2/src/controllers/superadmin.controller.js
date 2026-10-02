@@ -1,5 +1,9 @@
 import { SuperadminModel } from '../models/superadmin.model.js';
 import { CourseModel } from '../models/course.model.js';
+import { ContactModel } from '../models/contact.model.js';
+import { emailService } from '../services/email.service.js';
+import { env } from '../config/env.js';
+import { query } from '../config/database.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 import bcrypt from 'bcryptjs';
 
@@ -389,10 +393,13 @@ export class SuperadminController {
   static async getEmailSettings(req, res, next) {
     try {
       const emailSettings = {
-        host: process.env.SMTP_HOST || 'smtp.sendgrid.net',
-        port: parseInt(process.env.SMTP_PORT || '587', 10),
-        from: process.env.EMAIL_FROM || 'noreply@fluentedge.edu',
-        authConfigured: Boolean(process.env.SMTP_USER && process.env.SMTP_PASS),
+        host: env.SMTP_HOST || 'Not Configured (Preview Mode)',
+        port: env.SMTP_PORT || 587,
+        secure: env.SMTP_SECURE,
+        from: env.SMTP_FROM,
+        adminNotificationEmail: env.ADMIN_NOTIFICATION_EMAIL,
+        authConfigured: Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
+        previewMode: !Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
       };
       return sendSuccess(res, emailSettings, 'Email settings retrieved');
     } catch (err) {
@@ -405,7 +412,28 @@ export class SuperadminController {
    */
   static async testEmailSettings(req, res, next) {
     try {
-      return sendSuccess(res, { sentTo: req.body?.to || 'test@fluentedge.edu' }, 'Test email dispatched');
+      const to = req.body?.to || req.user?.email || env.ADMIN_NOTIFICATION_EMAIL;
+      const html = emailService.renderBaseLayout({
+        title: 'SMTP Diagnostic Transmission',
+        preheader: 'Your LinguaChris email dispatch pipeline is active',
+        contentHtml: `
+          <p>This is a live diagnostic message dispatched from your <strong>LinguaChris Academy</strong> backend service.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0; background: #F8FAFC; border-radius: 8px;">
+            <tr><td style="padding: 8px 12px; font-weight: bold; width: 140px;">Timestamp:</td><td style="padding: 8px 12px;">${new Date().toISOString()}</td></tr>
+            <tr><td style="padding: 8px 12px; font-weight: bold;">Configured Sender:</td><td style="padding: 8px 12px;">${env.SMTP_FROM}</td></tr>
+            <tr><td style="padding: 8px 12px; font-weight: bold;">Transport Status:</td><td style="padding: 8px 12px; color: #166534; font-weight: bold;">Operational</td></tr>
+          </table>
+          <p>All core workflows (applicant notices, password resets, payment receipts, and session invites) are linked to this transport service.</p>
+        `,
+      });
+
+      const result = await emailService.sendMail({
+        to,
+        subject: '🧪 LinguaChris SMTP Diagnostic Test',
+        html,
+      });
+
+      return sendSuccess(res, { sentTo: to, details: result }, 'Test email dispatched successfully');
     } catch (err) {
       next(err);
     }
@@ -416,7 +444,84 @@ export class SuperadminController {
    */
   static async getContactMessages(req, res, next) {
     try {
-      return sendSuccess(res, [], 'Contact messages retrieved');
+      const { status, limit, offset } = req.query;
+      const result = await ContactModel.listMessages({
+        status,
+        limit: limit ? parseInt(limit, 10) : 50,
+        offset: offset ? parseInt(offset, 10) : 0,
+      });
+      return sendSuccess(res, result, 'Contact messages retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/v1/superadmin/contact-messages/:id/reply
+   */
+  static async replyContactMessage(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { replyMessage } = req.body;
+      if (!replyMessage) {
+        return sendError(res, 'Reply message content is required', 400, 'VALIDATION_ERROR');
+      }
+
+      const existing = await query(`SELECT * FROM "public"."contact_messages" WHERE id = $1`, [id]);
+      const msg = existing.rows[0];
+      if (!msg) {
+        return sendError(res, 'Contact message not found', 404, 'NOT_FOUND');
+      }
+
+      const updated = await ContactModel.updateStatus(id, {
+        status: 'REPLIED',
+        replyMessage,
+        repliedBy: req.user?.id,
+      });
+
+      const html = emailService.renderBaseLayout({
+        title: `Response: ${msg.subject || 'Your Inquiry to LinguaChris'}`,
+        preheader: `LinguaChris academic team response to ${msg.name}`,
+        contentHtml: `
+          <p>Dear <strong>${msg.name}</strong>,</p>
+          <p>Thank you for reaching out to LinguaChris Academy. In response to your message:</p>
+          <div style="background: #F8FAFC; border-left: 4px solid #CBD5E1; padding: 12px 16px; margin: 16px 0; font-style: italic; color: #64748B;">
+            "${msg.message}"
+          </div>
+          <div style="background: #EEF2FF; border-left: 4px solid #4F46E5; padding: 16px; margin: 16px 0; border-radius: 4px; color: #1E293B;">
+            ${replyMessage.replace(/\n/g, '<br/>')}
+          </div>
+        `,
+        actionButton: {
+          label: 'Visit Campus',
+          url: env.FRONTEND_URL,
+        },
+      });
+
+      await emailService.sendMail({
+        to: msg.email,
+        subject: `[LinguaChris Support] Re: ${msg.subject || 'Your Inquiry'}`,
+        html,
+      });
+
+      return sendSuccess(res, updated, 'Reply sent and message marked as REPLIED');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * PATCH /api/v1/superadmin/contact-messages/:id/status
+   */
+  static async updateContactMessageStatus(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      if (!status) {
+        return sendError(res, 'Status is required', 400, 'VALIDATION_ERROR');
+      }
+      const updated = await ContactModel.updateStatus(id, { status });
+      return sendSuccess(res, updated, `Status updated to ${status}`);
     } catch (err) {
       next(err);
     }

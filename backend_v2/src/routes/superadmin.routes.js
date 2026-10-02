@@ -58,6 +58,8 @@ router.patch('/settings', SuperadminController.updateSettings);
 router.get('/email-settings', SuperadminController.getEmailSettings);
 router.post('/email-settings/test', SuperadminController.testEmailSettings);
 router.get('/contact-messages', SuperadminController.getContactMessages);
+router.post('/contact-messages/:id/reply', SuperadminController.replyContactMessage);
+router.patch('/contact-messages/:id/status', SuperadminController.updateContactMessageStatus);
 router.post('/seed', SuperadminController.seedTestData);
 
 export default router;

@@ -9,6 +9,7 @@ import { runComprehensiveSeed } from './seeds/comprehensive_seeder.js';
 import { ensureInteractiveVideoSchema } from './config/interactive-video-schema.js';
 import { initAdmissionSchema } from './config/init-admission-schema.js';
 import { ensureLiveSessionSchema } from './config/live-session-schema.js';
+import { ensureEmailSchema } from './config/email-schema.js';
 
 // Live session schema and routes active
 
@@ -30,6 +31,7 @@ async function startServer() {
   await ensureInteractiveVideoSchema();
   await initAdmissionSchema();
   await ensureLiveSessionSchema();
+  await ensureEmailSchema();
 
   // 1.1 Run Comprehensive Super Admin Seeder in background (only if requested or in development)
   if (process.env.RUN_SEEDER === 'true' || env.NODE_ENV === 'development') {
