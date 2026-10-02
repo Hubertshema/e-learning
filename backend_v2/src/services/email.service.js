@@ -1,8 +1,14 @@
 import nodemailer from 'nodemailer';
 import path from 'path';
 import fs from 'fs';
+import dns from 'dns';
 import { fileURLToPath } from 'url';
 import { env } from '../config/env.js';
+
+// Force IPv4 DNS resolution for all mail connections (prevents ENETUNREACH on Render)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,22 +27,27 @@ class EmailService {
   async initTransporter() {
     const cleanPass = (env.SMTP_PASS || '').replace(/\s+/g, '');
     if (env.SMTP_HOST && env.SMTP_USER && cleanPass) {
+      const isGmail = env.SMTP_HOST.includes('gmail') || env.SMTP_USER.includes('gmail');
+      const host = env.SMTP_HOST || (isGmail ? 'smtp.gmail.com' : 'localhost');
+      const port = Number(env.SMTP_PORT) || 465;
+      const isSecure = port === 465 || env.SMTP_SECURE === true;
+
       const transportConfig = {
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        secure: env.SMTP_SECURE,
+        host,
+        port,
+        secure: isSecure,
         auth: {
           user: env.SMTP_USER,
           pass: cleanPass,
         },
+        family: 4, // CRITICAL: Force IPv4 socket connection to prevent ENETUNREACH on Render
+        tls: {
+          rejectUnauthorized: false,
+        },
       };
 
-      if (env.SMTP_HOST.includes('gmail') || env.SMTP_USER.includes('gmail')) {
-        transportConfig.service = 'gmail';
-      }
-
       this.transporter = nodemailer.createTransport(transportConfig);
-      console.log(`📧 SMTP Transporter configured for host: ${env.SMTP_HOST}:${env.SMTP_PORT} (${env.SMTP_USER})`);
+      console.log(`📧 SMTP Transporter configured for host: ${host}:${port} (${env.SMTP_USER}) [IPv4 forced]`);
     } else {
       console.log('ℹ️ SMTP credentials not configured. EmailService is operating in Console Preview mode.');
     }

@@ -1,5 +1,12 @@
 import http from 'http';
 import os from 'os';
+import dns from 'dns';
+
+// Force IPv4-first DNS resolution to prevent ENETUNREACH errors on Render/cloud containers
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { connectDatabase, pool } from './config/database.js';
