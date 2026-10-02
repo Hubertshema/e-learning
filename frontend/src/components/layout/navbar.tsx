@@ -45,6 +45,29 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Handle body scroll lock when mobile aside drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
+  // Handle ESC key to close aside drawer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about' },
@@ -78,7 +101,7 @@ export function Navbar() {
               className="h-full w-full object-contain"
             />
           </div>
-          {/* Desktop version: Full real logo (which already includes the text) */}
+          {/* Desktop version: Full real logo */}
           <img
             src="/real-logo.png"
             alt="LinguaChris Academy"
@@ -88,7 +111,7 @@ export function Navbar() {
           />
         </Link>
 
-        {/* Center: Navigation Links with Medium Weight and Sleek Rounded Corners */}
+        {/* Center: Navigation Links */}
         <nav className="hidden lg:flex items-center gap-1.5 sm:gap-2">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
@@ -172,79 +195,151 @@ export function Navbar() {
             </div>
           )}
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile Menu Hamburger Toggle */}
           <div className="flex lg:hidden">
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#172033] hover:bg-[#eaf1fa] transition ml-0.5"
-              aria-label="Toggle navigation menu"
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#172033] hover:bg-[#eaf1fa] transition ml-0.5 border border-slate-200/80"
+              aria-label="Open navigation menu"
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <Menu className="h-5 w-5 text-[#012970]" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* =========================================================================
+          SLIDE-OVER ASIDE DRAWER (NOT FULL WIDTH - SLIDES FROM RIGHT WITH BACKDROP)
+      ========================================================================= */}
       {mobileMenuOpen && (
-        <div className="lg:hidden mt-2 mx-auto max-w-5xl rounded-2xl border border-[#E2E8F0] bg-white/95 backdrop-blur-xl p-5 shadow-2xl animate-in fade-in slide-in-from-top-2">
-          <div className="space-y-1.5">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block rounded-xl px-5 py-3 text-base font-medium transition ${
-                    isActive
-                      ? 'bg-[#012970] text-white font-semibold'
-                      : 'text-[#172033] hover:bg-[#F3F7FC]'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              );
-            })}
-          </div>
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
 
-          <div className="mt-5 border-t border-[#E2E8F0] pt-4">
-            {isAuthenticated && user ? (
-              <div className="space-y-2.5">
-                <Link
-                  href={getDashboardRoute()}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2.5 rounded-xl bg-[#F3F7FC] px-5 py-3 text-sm font-medium text-[#172033] hover:bg-[#eaf1fa]"
-                >
-                  <LayoutDashboard className="h-4 w-4 text-[#006EF3]" />
-                  <span>Go to Dashboard</span>
-                </Link>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    logout();
-                  }}
-                  className="flex w-full items-center gap-2.5 rounded-xl px-5 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Sign Out</span>
-                </button>
+          {/* Slide-over Aside Panel */}
+          <aside
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-[300px] sm:max-w-sm bg-white shadow-2xl flex flex-col justify-between border-l border-slate-200 transition-transform duration-300 ease-out animate-in slide-in-from-right"
+            aria-label="Mobile Navigation"
+          >
+            {/* Aside Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white">
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5"
+              >
+                <div className="h-9 w-9 rounded-xl bg-[#F3F7FC] p-1 border border-slate-200 flex items-center justify-center shrink-0">
+                  <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
+                </div>
+                <div>
+                  <span className="font-black text-sm text-[#012970] block leading-tight">
+                    LinguaChris
+                  </span>
+                  <span className="text-[10px] text-[#667085] font-semibold block leading-tight">
+                    Academy
+                  </span>
+                </div>
+              </Link>
+
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#667085] hover:text-[#172033] hover:bg-[#eaf1fa] transition"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Aside Nav Links */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
+              <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#667085]">
+                Navigation
               </div>
-            ) : (
-              <div className="flex flex-col gap-2.5 pt-1">
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <button className="w-full rounded-xl border border-[#E2E8F0] py-3 text-sm font-semibold text-[#172033] hover:bg-[#F3F7FC]">
-                    Sign In
+              {navigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-[#012970] text-white font-semibold shadow-sm'
+                        : 'text-[#172033] hover:bg-[#F3F7FC]'
+                    }`}
+                  >
+                    <span>{item.name}</span>
+                    {isActive && (
+                      <span className="h-2 w-2 rounded-full bg-[#F5B400]" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Aside Footer / Actions */}
+            <div className="p-4 border-t border-slate-100 bg-[#F8FAFC] space-y-3">
+              {isAuthenticated && user ? (
+                <div className="space-y-2">
+                  <div className="px-3 py-2 bg-white rounded-xl border border-slate-200/80 flex items-center gap-3">
+                    <Avatar
+                      src={user.avatarUrl}
+                      fallback={`${user.firstName[0]}${user.lastName[0]}`}
+                      size="sm"
+                      className="h-8 w-8 text-xs font-semibold rounded-lg bg-[#012970] text-white"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-[#172033] truncate">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p className="text-[10px] text-[#667085] truncate">{user.email}</p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={getDashboardRoute()}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#012970] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#006EF3] transition"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Go to Dashboard</span>
+                  </Link>
+
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-white border border-rose-200 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>Sign Out</span>
                   </button>
-                </Link>
-                <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <button className="w-full rounded-xl bg-[#006EF3] py-3 text-sm font-bold text-white hover:bg-[#005ed1]">
-                    Get Started
-                  </button>
-                </Link>
-              </div>
-            )}
-          </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <button className="w-full rounded-xl bg-white border border-slate-200 py-2.5 text-xs font-semibold text-[#172033] hover:bg-slate-50 transition shadow-2xs">
+                      Sign In
+                    </button>
+                  </Link>
+                  <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                    <button className="w-full rounded-xl bg-[#006EF3] py-2.5 text-xs font-bold text-white hover:bg-[#005ed1] transition shadow-md">
+                      Get Started Free
+                    </button>
+                  </Link>
+                </div>
+              )}
+
+              <p className="text-[10px] text-center text-[#667085] pt-1">
+                LinguaChris Academy &copy; {new Date().getFullYear()}
+              </p>
+            </div>
+          </aside>
         </div>
       )}
     </header>
