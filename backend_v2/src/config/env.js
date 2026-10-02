@@ -25,5 +25,11 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS || '',
   SMTP_FROM: process.env.SMTP_FROM || 'LinguaChris Academy <noreply@linguachris.com>',
   ADMIN_NOTIFICATION_EMAIL: process.env.ADMIN_NOTIFICATION_EMAIL || 'admissions@linguachris.com',
+  // Cloud / Render REST API mailers (Overcome SMTP port blocking on Render Free Tier)
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  RESEND_FROM: process.env.RESEND_FROM || '',
+  BREVO_API_KEY: process.env.BREVO_API_KEY || '',
+  BREVO_FROM_NAME: process.env.BREVO_FROM_NAME || '',
+  BREVO_FROM_EMAIL: process.env.BREVO_FROM_EMAIL || '',
 };
 

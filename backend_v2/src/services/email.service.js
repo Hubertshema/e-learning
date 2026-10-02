@@ -21,10 +21,20 @@ class EmailService {
   }
 
   /**
-   * Initializes the Nodemailer transporter.
-   * Gracefully falls back to mock/logging mode in development if SMTP credentials are missing.
+   * Initializes email transport.
+   * Auto-detects Resend REST API, Brevo REST API, or Nodemailer SMTP fallback.
    */
   async initTransporter() {
+    if (env.RESEND_API_KEY) {
+      console.log('🚀 EmailService initialized using Resend HTTPS API (Port 443) - ideal for Render/Cloud hosting.');
+      return;
+    }
+
+    if (env.BREVO_API_KEY) {
+      console.log('🚀 EmailService initialized using Brevo HTTPS API (Port 443) - ideal for Render/Cloud hosting.');
+      return;
+    }
+
     const cleanPass = (env.SMTP_PASS || '').replace(/\s+/g, '');
     if (env.SMTP_HOST && env.SMTP_USER && cleanPass) {
       const isGmail = env.SMTP_HOST.includes('gmail') || env.SMTP_USER.includes('gmail');
@@ -40,34 +50,158 @@ class EmailService {
           user: env.SMTP_USER,
           pass: cleanPass,
         },
-        family: 4, // CRITICAL: Force IPv4 socket connection to prevent ENETUNREACH on Render
+        family: 4, // Force IPv4 socket connection
         tls: {
           rejectUnauthorized: false,
         },
+        connectionTimeout: 10000, // 10s connection timeout to fail fast if ports are blocked
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       };
 
       this.transporter = nodemailer.createTransport(transportConfig);
       console.log(`📧 SMTP Transporter configured for host: ${host}:${port} (${env.SMTP_USER}) [IPv4 forced]`);
     } else {
-      console.log('ℹ️ SMTP credentials not configured. EmailService is operating in Console Preview mode.');
+      console.log('ℹ️ Email credentials not configured. EmailService is operating in Console Preview mode.');
     }
   }
 
   /**
-   * Universal mail dispatcher with CID logo attachment support
+   * Dispatches email via Resend REST API over HTTPS (Port 443).
+   * Unrestricted on Render Free Tier.
+   */
+  async sendViaResend({ to, subject, html, text }) {
+    let fromAddress = env.RESEND_FROM;
+    if (!fromAddress) {
+      if (env.SMTP_FROM && !env.SMTP_FROM.includes('@gmail.com') && !env.SMTP_FROM.includes('@yourdomain.com')) {
+        fromAddress = env.SMTP_FROM;
+      } else {
+        fromAddress = 'LinguaChris Academy <onboarding@resend.dev>';
+      }
+    }
+
+    const payload = {
+      from: fromAddress,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+      text: text || html.replace(/<[^>]*>?/gm, ''),
+    };
+
+    if (fs.existsSync(logoPath)) {
+      try {
+        const fileBuffer = fs.readFileSync(logoPath);
+        payload.attachments = [
+          {
+            filename: 'linguachris-logo.png',
+            content: fileBuffer.toString('base64'),
+          },
+        ];
+      } catch (e) {
+        // non-blocking
+      }
+    }
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY.trim()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      const errMsg = data.message || JSON.stringify(data);
+      throw new Error(`Resend API Error: ${errMsg}`);
+    }
+
+    console.log(`✉️ Email successfully dispatched via Resend API (HTTPS) to [${to}] - ID: ${data.id}`);
+    return { success: true, messageId: data.id, provider: 'resend' };
+  }
+
+  /**
+   * Dispatches email via Brevo (Sendinblue) REST API over HTTPS (Port 443).
+   * Supports free tier sending with registered Gmail accounts.
+   */
+  async sendViaBrevo({ to, subject, html, text }) {
+    const senderMatch = (env.SMTP_FROM || '').match(/^(.*?)\s*<(.+?)>$/);
+    const senderName = env.BREVO_FROM_NAME || (senderMatch ? senderMatch[1].trim() : 'LinguaChris Academy');
+    const senderEmail = env.BREVO_FROM_EMAIL || (senderMatch ? senderMatch[2].trim() : (env.SMTP_USER || 'admissions@linguachris.com'));
+
+    const recipients = (Array.isArray(to) ? to : [to]).map((email) => ({ email }));
+
+    const payload = {
+      sender: { name: senderName, email: senderEmail },
+      to: recipients,
+      subject,
+      htmlContent: html,
+      textContent: text || html.replace(/<[^>]*>?/gm, ''),
+    };
+
+    if (fs.existsSync(logoPath)) {
+      try {
+        const fileBuffer = fs.readFileSync(logoPath);
+        payload.attachment = [
+          {
+            name: 'linguachris-logo.png',
+            content: fileBuffer.toString('base64'),
+          },
+        ];
+      } catch (e) {
+        // non-blocking
+      }
+    }
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': env.BREVO_API_KEY.trim(),
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      const errMsg = data.message || JSON.stringify(data);
+      throw new Error(`Brevo API Error: ${errMsg}`);
+    }
+
+    console.log(`✉️ Email successfully dispatched via Brevo API (HTTPS) to [${to}] - MessageId: ${data.messageId}`);
+    return { success: true, messageId: data.messageId, provider: 'brevo' };
+  }
+
+  /**
+   * Universal mail dispatcher.
+   * Prioritizes HTTPS REST APIs (Resend / Brevo) for cloud compatibility,
+   * then falls back to Nodemailer SMTP or Preview console.
    */
   async sendMail({ to, subject, html, text }) {
     try {
-      const attachments = [];
-      if (fs.existsSync(logoPath)) {
-        attachments.push({
-          filename: 'linguachris-logo.png',
-          path: logoPath,
-          cid: 'linguachris-logo',
-        });
+      // 1. Resend REST API (HTTPS port 443 - zero firewall blocks on Render)
+      if (env.RESEND_API_KEY) {
+        return await this.sendViaResend({ to, subject, html, text });
       }
 
+      // 2. Brevo REST API (HTTPS port 443)
+      if (env.BREVO_API_KEY) {
+        return await this.sendViaBrevo({ to, subject, html, text });
+      }
+
+      // 3. Nodemailer SMTP (Localhost or unblocked VPS host)
       if (this.transporter) {
+        const attachments = [];
+        if (fs.existsSync(logoPath)) {
+          attachments.push({
+            filename: 'linguachris-logo.png',
+            path: logoPath,
+            cid: 'linguachris-logo',
+          });
+        }
+
         const info = await this.transporter.sendMail({
           from: env.SMTP_FROM,
           to,
@@ -77,29 +211,47 @@ class EmailService {
           attachments,
         });
         console.log(`✉️ Email successfully dispatched to [${to}] - MessageId: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-      } else {
-        console.log('\n================== [EMAIL PREVIEW (MOCK TRANSPORT)] ==================');
-        console.log(`From:    ${env.SMTP_FROM}`);
-        console.log(`To:      ${to}`);
-        console.log(`Subject: ${subject}`);
-        console.log(`Content: \n${text || html.replace(/<[^>]*>?/gm, '').slice(0, 300)}...`);
-        console.log('======================================================================\n');
-        return { success: true, mock: true };
+        return { success: true, messageId: info.messageId, provider: 'smtp' };
       }
+
+      // 4. Console Preview Mode
+      console.log('\n================== [EMAIL PREVIEW (MOCK TRANSPORT)] ==================');
+      console.log(`From:    ${env.SMTP_FROM}`);
+      console.log(`To:      ${to}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Content: \n${text || html.replace(/<[^>]*>?/gm, '').slice(0, 300)}...`);
+      console.log('======================================================================\n');
+      return { success: true, mock: true, provider: 'preview' };
     } catch (err) {
       console.error(`❌ Failed to send email to [${to}]:`, err.message);
+
+      if (
+        err.message?.includes('timeout') ||
+        err.message?.includes('ETIMEDOUT') ||
+        err.message?.includes('ECONNREFUSED') ||
+        err.message?.includes('ENETUNREACH')
+      ) {
+        console.warn(
+          '\n💡 [DEPLOYMENT TIP FOR RENDER]:\n' +
+          '   Render Free Tier blocks raw outbound SMTP ports (25, 465, 587).\n' +
+          '   To send emails without timeouts on Render, add RESEND_API_KEY in your Render Dashboard.\n' +
+          '   (Get your free key at https://resend.com - works over HTTPS Port 443 with 3,000 free emails/month).\n'
+        );
+      }
+
       return { success: false, error: err.message };
     }
   }
 
   /**
    * Executive PRO MODE LinguaChris Branded Email HTML Layout
-   * Includes high-res CID embedded logo, CEFR Accreditation badge, custom typography,
+   * Includes high-res logo, CEFR Accreditation badge, custom typography,
    * security disclaimer seal, direct WhatsApp support, and social media channels.
    */
   renderBaseLayout({ title, preheader = '', contentHtml, actionButton = null }) {
-    const frontendUrl = env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = (env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const isLocal = frontendUrl.includes('localhost');
+    const logoSrc = isLocal ? 'cid:linguachris-logo' : `${frontendUrl}/real-logo.png`;
     const buttonHtml = actionButton
       ? `
         <div style="margin: 36px 0 28px; text-align: center;">
@@ -130,7 +282,7 @@ class EmailService {
                 <tr>
                   <td style="background: linear-gradient(135deg, #060D1E 0%, #0F172A 50%, #1E1B4B 100%); padding: 36px 40px 30px; text-align: center; border-bottom: 3px solid #4F46E5;">
                     <a href="${frontendUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
-                      <img src="cid:linguachris-logo" alt="LinguaChris Academy" style="height: 56px; max-width: 260px; object-fit: contain; margin: 0 auto 12px; display: block;" onerror="this.style.display='none'" />
+                      <img src="${logoSrc}" alt="LinguaChris Academy" style="height: 56px; max-width: 260px; object-fit: contain; margin: 0 auto 12px; display: block;" onerror="this.onerror=null;this.src='cid:linguachris-logo';" />
                     </a>
                     
                     <div style="color: #F8FAFC; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-top: 4px;">

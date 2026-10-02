@@ -392,14 +392,26 @@ export class SuperadminController {
    */
   static async getEmailSettings(req, res, next) {
     try {
+      const activeProvider = env.RESEND_API_KEY
+        ? 'Resend API (HTTPS Port 443)'
+        : env.BREVO_API_KEY
+        ? 'Brevo API (HTTPS Port 443)'
+        : Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS)
+        ? 'SMTP Transporter'
+        : 'Console Preview Mode';
+
       const emailSettings = {
+        activeProvider,
         host: env.SMTP_HOST || 'Not Configured (Preview Mode)',
         port: env.SMTP_PORT || 587,
         secure: env.SMTP_SECURE,
-        from: env.SMTP_FROM,
+        from: env.RESEND_FROM || env.SMTP_FROM,
         adminNotificationEmail: env.ADMIN_NOTIFICATION_EMAIL,
-        authConfigured: Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
-        previewMode: !Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
+        resendConfigured: Boolean(env.RESEND_API_KEY),
+        brevoConfigured: Boolean(env.BREVO_API_KEY),
+        smtpConfigured: Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
+        authConfigured: Boolean(env.RESEND_API_KEY || env.BREVO_API_KEY || (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS)),
+        previewMode: !Boolean(env.RESEND_API_KEY || env.BREVO_API_KEY || (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS)),
       };
       return sendSuccess(res, emailSettings, 'Email settings retrieved');
     } catch (err) {
@@ -413,14 +425,23 @@ export class SuperadminController {
   static async testEmailSettings(req, res, next) {
     try {
       const to = req.body?.to || req.user?.email || env.ADMIN_NOTIFICATION_EMAIL;
+      const activeProvider = env.RESEND_API_KEY
+        ? 'Resend API (HTTPS Port 443)'
+        : env.BREVO_API_KEY
+        ? 'Brevo API (HTTPS Port 443)'
+        : Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS)
+        ? 'SMTP Transporter'
+        : 'Console Preview Mode';
+
       const html = emailService.renderBaseLayout({
-        title: 'SMTP Diagnostic Transmission',
+        title: 'Email Pipeline Diagnostic Transmission',
         preheader: 'Your LinguaChris email dispatch pipeline is active',
         contentHtml: `
           <p>This is a live diagnostic message dispatched from your <strong>LinguaChris Academy</strong> backend service.</p>
           <table style="width: 100%; border-collapse: collapse; margin: 16px 0; background: #F8FAFC; border-radius: 8px;">
             <tr><td style="padding: 8px 12px; font-weight: bold; width: 140px;">Timestamp:</td><td style="padding: 8px 12px;">${new Date().toISOString()}</td></tr>
-            <tr><td style="padding: 8px 12px; font-weight: bold;">Configured Sender:</td><td style="padding: 8px 12px;">${env.SMTP_FROM}</td></tr>
+            <tr><td style="padding: 8px 12px; font-weight: bold;">Active Transport:</td><td style="padding: 8px 12px; color: #4F46E5; font-weight: bold;">${activeProvider}</td></tr>
+            <tr><td style="padding: 8px 12px; font-weight: bold;">Configured Sender:</td><td style="padding: 8px 12px;">${env.RESEND_FROM || env.SMTP_FROM}</td></tr>
             <tr><td style="padding: 8px 12px; font-weight: bold;">Transport Status:</td><td style="padding: 8px 12px; color: #166534; font-weight: bold;">Operational</td></tr>
           </table>
           <p>All core workflows (applicant notices, password resets, payment receipts, and session invites) are linked to this transport service.</p>
