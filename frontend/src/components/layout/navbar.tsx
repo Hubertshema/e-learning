@@ -158,14 +158,14 @@ export function Navbar() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link href="/login">
-                <button className="rounded-xl text-[#172033] hover:text-[#006EF3] hover:bg-[#F3F7FC] px-4 py-2.5 sm:px-5 sm:py-2.5 text-[15px] font-semibold transition">
+            <div className="flex items-center gap-1.5 sm:gap-3">
+              <Link href="/login" className="hidden sm:inline-block">
+                <button className="rounded-xl text-[#172033] hover:text-[#006EF3] hover:bg-[#F3F7FC] px-3.5 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-[15px] font-semibold transition">
                   Sign In
                 </button>
               </Link>
               <Link href="/register">
-                <button className="rounded-xl bg-[#006EF3] text-white hover:bg-[#005ed1] px-5 sm:px-6 py-2.5 sm:py-2.5 text-[15px] font-bold shadow-md transition hover:scale-105 active:scale-95">
+                <button className="rounded-xl bg-[#006EF3] text-white hover:bg-[#005ed1] px-3.5 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-[15px] font-bold shadow-md transition hover:scale-105 active:scale-95 whitespace-nowrap">
                   Get Started
                 </button>
               </Link>
