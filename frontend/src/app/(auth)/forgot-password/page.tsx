@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <Card className="w-full max-w-md border-slate-200/80 shadow-2xl dark:border-slate-800">
+    <Card className="w-full max-w-md border-0 shadow-none bg-transparent p-0">
       <CardHeader className="space-y-1 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-950 mb-2">
           <KeyRound className="h-6 w-6" />

@@ -7,8 +7,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { apiClient, tokenStorage } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { AlertCircle, ArrowLeft, CheckCircle2, GraduationCap, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowLeft, GraduationCap, Sparkles } from 'lucide-react';
 
 const CEFR_LEVELS = [
   { value: 'PRE_A1', label: 'Pre-A1 Starter (Complete Beginner)' },
@@ -106,58 +105,48 @@ export function ApplyForm() {
   };
 
   return (
-    <Card className="w-full max-w-xl border border-[#E2E8F0] bg-white shadow-xl rounded-3xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
-      {/* Mobile-only Logo Header */}
-      <div className="lg:hidden text-center pt-3 pb-0">
-        <Link href="/" className="inline-block">
-          <img
-            src="/real-logo.png"
-            alt="FluentEdge Academy"
-            className="h-8 w-auto object-contain mx-auto"
-          />
-        </Link>
+    <div className="w-full flex flex-col my-auto">
+      {/* Header */}
+      <div className="space-y-1.5 text-center pb-4 shrink-0">
+        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#006EF3]/10 text-[#006EF3] border border-[#006EF3]/20 mb-1">
+          <GraduationCap className="h-6 w-6" />
+        </div>
+        <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+          Student Admission Application
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          Submit your profile details and create your student account. Our academic instructors will review your admission request.
+        </p>
       </div>
 
-      <CardHeader className="space-y-1 text-center px-5 sm:px-6 pt-3 pb-2 shrink-0">
-        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-[#F3F7FC] text-[#006EF3] border border-[#E2E8F0]">
-          <GraduationCap className="h-5 w-5" />
+      {error && (
+        <div className="mb-4 flex items-start gap-2.5 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-800 dark:text-rose-300">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+          <div className="flex-1 font-medium">{error}</div>
         </div>
-        <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-[#172033]">
-          Student Admission Application
-        </CardTitle>
-        <CardDescription className="text-xs text-[#667085] max-w-md mx-auto">
-          Submit your profile details and create your student account. Our academic instructors will review your admission request.
-        </CardDescription>
-      </CardHeader>
+      )}
 
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 sm:px-6 py-2 space-y-3.5 custom-scrollbar">
-        {error && (
-          <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
-            <div className="flex-1 font-medium">{error}</div>
-          </div>
-        )}
-
+      <form onSubmit={handleSubmit} className="space-y-3.5">
         {/* Name Fields */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700">First Name *</label>
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">First Name *</label>
             <Input
               required
               placeholder="e.g. David"
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              className="h-9 text-xs rounded-xl"
+              className="h-10 text-xs sm:text-sm rounded-xl"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700">Last Name *</label>
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Last Name *</label>
             <Input
               required
               placeholder="e.g. Mugisha"
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              className="h-9 text-xs rounded-xl"
+              className="h-10 text-xs sm:text-sm rounded-xl"
             />
           </div>
         </div>
@@ -165,18 +154,18 @@ export function ApplyForm() {
         {/* Email & Password */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700">Email Address *</label>
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Email Address *</label>
             <Input
               type="email"
               required
               placeholder="you@domain.com"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="h-9 text-xs rounded-xl"
+              className="h-10 text-xs sm:text-sm rounded-xl"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700">Account Password *</label>
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Account Password *</label>
             <Input
               type="password"
               required
@@ -184,7 +173,7 @@ export function ApplyForm() {
               placeholder="Min. 6 characters"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="h-9 text-xs rounded-xl"
+              className="h-10 text-xs sm:text-sm rounded-xl"
             />
           </div>
         </div>
@@ -192,34 +181,34 @@ export function ApplyForm() {
         {/* Phone & Native Language */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700">Phone / WhatsApp Number</label>
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phone / WhatsApp Number</label>
             <Input
               placeholder="+250 788 123 456"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="h-9 text-xs rounded-xl"
+              className="h-10 text-xs sm:text-sm rounded-xl"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700">Native / First Language</label>
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Native / First Language</label>
             <Input
               placeholder="e.g. Kinyarwanda, French, Swahili"
               value={formData.nativeLanguage}
               onChange={(e) => setFormData({ ...formData, nativeLanguage: e.target.value })}
-              className="h-9 text-xs rounded-xl"
+              className="h-10 text-xs sm:text-sm rounded-xl"
             />
           </div>
         </div>
 
         {/* Target Level */}
         <div className="space-y-1">
-          <label className="text-[11px] font-bold text-slate-700">
+          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
             Target CEFR English Level
           </label>
           <select
             value={formData.targetLevel}
             onChange={(e) => setFormData({ ...formData, targetLevel: e.target.value })}
-            className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#006EF3]"
+            className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#006EF3] transition-colors"
           >
             {CEFR_LEVELS.map((lvl) => (
               <option key={lvl.value} value={lvl.value}>
@@ -231,7 +220,7 @@ export function ApplyForm() {
 
         {/* Learning Goals */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-700">
+          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
             Primary Learning Goals
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -242,10 +231,10 @@ export function ApplyForm() {
                   type="button"
                   key={goal}
                   onClick={() => handleGoalToggle(goal)}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all ${
+                  className={`text-[11px] sm:text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
                     selected
-                      ? 'bg-[#F3F7FC] text-[#012970] border-[#006EF3] font-bold'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      ? 'bg-[#006EF3]/10 text-[#006EF3] border-[#006EF3] font-bold dark:bg-[#006EF3]/20'
+                      : 'bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   {selected ? '✓ ' : '+ '}
@@ -258,27 +247,28 @@ export function ApplyForm() {
 
         {/* Motivation / Background */}
         <div className="space-y-1">
-          <label className="text-[11px] font-bold text-slate-700">
-            Why do you want to learn with FluentEdge? (Motivation)
+          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            Why do you want to learn with LinguaChris? (Motivation)
           </label>
           <textarea
             rows={2}
             placeholder="Tell us a little about yourself and your English learning goals..."
             value={formData.motivation}
             onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
-            className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#006EF3]"
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#006EF3] transition-colors resize-none"
           />
         </div>
 
+        {/* Submit Button */}
         <div className="pt-2">
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-10 rounded-xl shadow-md text-xs transition-all active:scale-[0.99]"
+            className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-11 rounded-xl shadow-md text-xs sm:text-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 Submitting Application...
               </span>
             ) : (
@@ -291,21 +281,22 @@ export function ApplyForm() {
         </div>
       </form>
 
-      <CardFooter className="flex flex-col gap-1.5 border-t border-slate-100 bg-slate-50/70 p-3 text-center shrink-0">
-        <p className="text-[11px] text-slate-500">
+      {/* Footer Links */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 pt-4 mt-4 text-center">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Already have an account?{' '}
-          <Link href="/login" className="font-bold text-[#012970] hover:text-[#006EF3] hover:underline">
+          <Link href="/login" className="font-bold text-[#006EF3] hover:underline">
             Sign in
           </Link>
         </p>
         <Link
           href="/"
-          className="inline-flex items-center justify-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors"
+          className="inline-flex items-center justify-center gap-1 text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
         >
           <ArrowLeft className="h-3 w-3" />
           Back to homepage
         </Link>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

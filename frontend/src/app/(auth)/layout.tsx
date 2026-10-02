@@ -4,11 +4,11 @@ import { CheckCircle, Star } from 'lucide-react';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-[#E2E5E9] dark:bg-[#0F172A] h-screen max-h-screen overflow-hidden flex items-center justify-center p-3 sm:p-4 md:p-6 antialiased selection:bg-[#006EF3] selection:text-white transition-colors duration-200">
-      <div className="relative w-full max-w-[1000px] max-h-[96vh] bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row">
+    <div className="bg-[#E2E5E9] dark:bg-[#0F172A] min-h-[100dvh] w-full flex items-center justify-center p-3 sm:p-5 md:p-8 py-6 sm:py-8 antialiased selection:bg-[#006EF3] selection:text-white transition-colors duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-[1040px] bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.12)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row my-auto">
         
-        {/* Left Side */}
-        <div className="relative w-full md:w-[45%] bg-[#011538] text-white p-6 md:p-8 flex flex-col justify-between overflow-hidden z-10">
+        {/* Left Side: Desktop Marketing Banner */}
+        <div className="hidden md:flex md:w-[42%] lg:w-[44%] bg-[#011538] text-white p-6 lg:p-8 flex-col justify-between overflow-hidden relative z-10 shrink-0">
           
           <div className="relative z-10">
             <Link
@@ -17,13 +17,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             >
               <img
                 src="/real-logo.png"
-                alt="FluentEdge Academy"
+                alt="LinguaChris Academy"
                 className="h-9 w-auto object-contain"
               />
             </Link>
           </div>
 
-          <div className="relative z-10 max-w-md space-y-3 my-auto py-3">
+          <div className="relative z-10 max-w-md space-y-3 my-auto py-6">
             <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#F5B400] bg-[#006EF3]/20 rounded-full border border-[#F5B400]/40">
               Certified CEFR Learning
             </span>
@@ -80,7 +80,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
 
-          <div className="hidden md:block absolute -right-1 top-0 bottom-0 w-24 pointer-events-none select-none z-20 overflow-hidden">
+          <div className="absolute -right-1 top-0 bottom-0 w-24 pointer-events-none select-none z-20 overflow-hidden">
             <svg className="absolute inset-y-0 right-0 h-full w-24 text-[#012970]/40 fill-current" preserveAspectRatio="none" viewBox="0 0 100 600">
               <path d="M0,0 Q35,50 15,100 Q-5,150 25,200 Q55,250 20,300 Q-15,350 25,400 Q65,450 15,500 Q-35,550 20,600 L100,600 L100,0 Z"></path>
             </svg>
@@ -91,17 +91,25 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <path d="M30,0 Q70,40 45,90 Q20,140 55,190 Q90,240 50,290 Q10,340 55,390 Q100,440 45,490 Q-10,540 50,600 L100,600 L100,0 Z"></path>
             </svg>
           </div>
-          
-          <div className="block md:hidden absolute left-0 right-0 -bottom-1 h-10 pointer-events-none select-none overflow-hidden z-20">
-            <svg className="w-full h-full text-white dark:text-slate-900 fill-current" preserveAspectRatio="none" viewBox="0 0 400 50">
-              <path d="M0,50 Q50,15 100,35 Q150,5 200,30 Q250,10 300,35 Q350,15 400,45 L400,50 L0,50 Z"></path>
-            </svg>
-          </div>
         </div>
 
-        {/* Right Side */}
-        <div className="flex-1 bg-white dark:bg-slate-900 p-6 sm:p-8 lg:p-10 flex flex-col justify-center relative z-10 transition-colors duration-200">
-          <div className="max-w-[380px] w-full mx-auto">
+        {/* Right Side: Form Content */}
+        <div className="flex-1 bg-white dark:bg-slate-900 p-5 sm:p-7 md:p-8 lg:p-10 flex flex-col justify-center relative z-10 transition-colors duration-200 min-h-0 md:max-h-[92vh] md:overflow-y-auto custom-scrollbar">
+          {/* Mobile-only header */}
+          <div className="md:hidden flex items-center justify-between pb-3.5 mb-3 border-b border-slate-100 dark:border-slate-800">
+            <Link href="/" className="inline-flex items-center">
+              <img
+                src="/real-logo.png"
+                alt="LinguaChris Academy"
+                className="h-8 w-auto object-contain"
+              />
+            </Link>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[#006EF3] bg-[#006EF3]/10 px-2.5 py-1 rounded-full border border-[#006EF3]/20">
+              CEFR Platform
+            </span>
+          </div>
+
+          <div className="w-full max-w-[500px] mx-auto my-auto">
             {children}
           </div>
         </div>
