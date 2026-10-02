@@ -25,10 +25,16 @@ export class ContactModel {
     const params = [];
     let idx = 1;
 
+    const VALID_STATUSES = ['UNREAD', 'READ', 'REPLIED', 'ARCHIVED'];
     if (status && status !== 'ALL') {
-      whereClauses.push(`status = $${idx}`);
-      params.push(status);
-      idx++;
+      const upperStatus = String(status).toUpperCase().trim();
+      if (VALID_STATUSES.includes(upperStatus)) {
+        whereClauses.push(`status = $${idx}`);
+        params.push(upperStatus);
+        idx++;
+      } else {
+        whereClauses.push(`1 = 0`);
+      }
     }
 
     const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';

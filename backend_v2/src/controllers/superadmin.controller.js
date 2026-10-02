@@ -139,6 +139,30 @@ export class SuperadminController {
   }
 
   /**
+   * PATCH /api/v1/superadmin/students/:id/level
+   */
+  static async updateStudentLevel(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { level, reason } = req.body;
+      if (!level) {
+        return sendError(res, 'Level is required', 400, 'VALIDATION_ERROR');
+      }
+      const updated = await SuperadminModel.updateStudentLevel(id, {
+        level,
+        reason,
+        adminUserId: req.user?.id,
+      });
+      if (!updated) {
+        return sendError(res, 'Student profile not found', 404, 'NOT_FOUND');
+      }
+      return sendSuccess(res, updated, `Student CEFR level updated to ${level}`);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
    * GET /api/v1/superadmin/courses
    */
   static async getCourses(req, res, next) {
@@ -583,6 +607,23 @@ export class SuperadminController {
         limit: parseInt(limit || '15', 10),
       });
       return sendSuccess(res, result, 'Email logs ledger retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * GET /api/v1/superadmin/newsletter-subscribers
+   */
+  static async getNewsletterSubscribers(req, res, next) {
+    try {
+      const { search, page, limit } = req.query;
+      const result = await SuperadminModel.getNewsletterSubscribers({
+        search,
+        page: parseInt(page || '1', 10),
+        limit: parseInt(limit || '50', 10),
+      });
+      return sendSuccess(res, result, 'Newsletter subscribers retrieved');
     } catch (err) {
       next(err);
     }

@@ -149,7 +149,7 @@ export function LoginForm() {
         <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#006EF3]">
           <Sparkles className="h-3.5 w-3.5 text-[#006EF3]" /> Quick Demo Accounts:
         </p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => handleQuickLogin('student@platform.com')}
@@ -163,13 +163,6 @@ export function LoginForm() {
             className="rounded-xl border border-[#E2E8F0] dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:border-[#006EF3] hover:text-[#006EF3] active:scale-95 transition-all text-center"
           >
             Teacher
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickLogin('admin@platform.com')}
-            className="rounded-xl border border-[#E2E8F0] dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:border-[#006EF3] hover:text-[#006EF3] active:scale-95 transition-all text-center"
-          >
-            Admin
           </button>
         </div>
       </div>

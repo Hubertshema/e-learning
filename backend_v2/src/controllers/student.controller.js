@@ -14,6 +14,9 @@ export class StudentController {
   static async getStudentCourses(req, res) {
     try {
       const studentId = req.params.id;
+      if (studentId && studentId !== 'me' && studentId !== req.user.id && req.user.role !== 'SUPERADMIN' && req.user.role !== 'TEACHER') {
+        return sendError(res, 'Access denied: cannot view courses of another student', 403, 'FORBIDDEN');
+      }
       const targetId = (!studentId || studentId === 'me') ? req.user.id : studentId;
 
       let profile = await UserModel.getStudentProfile(targetId);
@@ -148,6 +151,9 @@ export class StudentController {
   static async getCourseAccess(req, res, next) {
     try {
       const studentId = req.params.id === 'me' ? req.user.id : req.params.id;
+      if (req.params.id && req.params.id !== 'me' && req.params.id !== req.user.id && req.user.role !== 'SUPERADMIN' && req.user.role !== 'TEACHER') {
+        return sendError(res, 'Access denied: cannot inspect course access for another student', 403, 'FORBIDDEN');
+      }
       const courseId = req.params.courseId;
       
       const hasAccess = await AccessService.hasCourseAccess(studentId, courseId);

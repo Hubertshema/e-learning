@@ -24,6 +24,7 @@ router.post('/users/:id/reset-password', SuperadminController.resetUserPassword)
 // Student Management
 router.get('/students', SuperadminController.getStudents);
 router.patch('/students/:id/status', SuperadminController.updateStudentStatus);
+router.patch('/students/:id/level', SuperadminController.updateStudentLevel);
 
 // Course Management
 router.get('/courses', SuperadminController.getCourses);
@@ -60,6 +61,7 @@ router.post('/email-settings/test', SuperadminController.testEmailSettings);
 router.get('/contact-messages', SuperadminController.getContactMessages);
 router.post('/contact-messages/:id/reply', SuperadminController.replyContactMessage);
 router.patch('/contact-messages/:id/status', SuperadminController.updateContactMessageStatus);
+router.get('/newsletter-subscribers', SuperadminController.getNewsletterSubscribers);
 router.post('/seed', SuperadminController.seedTestData);
 
 export default router;

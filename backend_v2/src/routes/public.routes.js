@@ -16,21 +16,29 @@ router.post('/diagnostic-quiz/submit', DiagnosticController.submitPublicAttempt)
 // Public Course Catalog Alias
 router.get('/courses', CourseController.list);
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Public Contact Form
 router.post('/contact', async (req, res, next) => {
   try {
     const { name, email, phone, subject, message } = req.body || {};
-    if (!name || !email || !message) {
-      return sendError(res, 'Name, email, and message are required', 400, 'VALIDATION_ERROR');
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return sendError(res, 'Name is required', 400, 'VALIDATION_ERROR');
+    }
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+      return sendError(res, 'A valid email address is required', 400, 'VALIDATION_ERROR');
+    }
+    if (!message || typeof message !== 'string' || !message.trim()) {
+      return sendError(res, 'Message is required', 400, 'VALIDATION_ERROR');
     }
 
     // 1. Store message in database
     const saved = await ContactModel.createMessage({
-      name,
-      email,
-      phone,
-      subject,
-      message,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone ? String(phone).trim() : null,
+      subject: subject ? String(subject).trim() : null,
+      message: message.trim(),
     });
 
     // 2. Dispatch notifications asynchronously (non-blocking)
@@ -51,7 +59,8 @@ router.post('/contact', async (req, res, next) => {
     return sendSuccess(
       res,
       { id: saved.id, received: true },
-      'Thank you for reaching out! The LinguaChris academic team will contact you shortly.'
+      'Thank you for reaching out! The LinguaChris academic team will contact you shortly.',
+      201
     );
   } catch (err) {
     next(err);
@@ -62,7 +71,7 @@ router.post('/contact', async (req, res, next) => {
 router.post('/newsletter/subscribe', async (req, res, next) => {
   try {
     const { email } = req.body || {};
-    if (!email || !email.includes('@')) {
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
       return sendError(res, 'A valid email address is required', 400, 'VALIDATION_ERROR');
     }
 

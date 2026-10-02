@@ -1,6 +1,7 @@
 import { TeacherModel } from '../models/teacher.model.js';
 import { CourseModel } from '../models/course.model.js';
 import { ClassModel } from '../models/class.model.js';
+import { query } from '../config/database.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 
 export class TeacherController {
@@ -63,10 +64,31 @@ export class TeacherController {
   }
 
   /**
+   * Helper to verify if requesting user owns the course or is SUPERADMIN
+   */
+  static async checkCourseOwnership(courseId, user) {
+    if (user.role === 'SUPERADMIN') return { allowed: true };
+    const course = await CourseModel.findById(courseId);
+    if (!course) return { allowed: false, notFound: true };
+
+    if (course.teacherId === user.id) return { allowed: true, course };
+    const tpRes = await query(`SELECT id FROM "public"."teacher_profiles" WHERE "userId" = $1 LIMIT 1`, [user.id]);
+    if (tpRes.rows[0]?.id === course.teacherId) return { allowed: true, course };
+
+    return { allowed: false, forbidden: true, course };
+  }
+
+  /**
    * PUT /api/v1/teacher/courses/:courseId
    */
   static async updateCourse(req, res, next) {
     try {
+      const check = await TeacherController.checkCourseOwnership(req.params.courseId, req.user);
+      if (!check.allowed) {
+        if (check.notFound) return sendError(res, 'Course not found', 404, 'NOT_FOUND');
+        return sendError(res, 'Access denied: you can only update courses you own', 403, 'FORBIDDEN');
+      }
+
       const updated = await CourseModel.update(req.params.courseId, req.body);
       return sendSuccess(res, updated, 'Course updated successfully');
     } catch (err) {
@@ -79,6 +101,12 @@ export class TeacherController {
    */
   static async publishCourse(req, res, next) {
     try {
+      const check = await TeacherController.checkCourseOwnership(req.params.courseId, req.user);
+      if (!check.allowed) {
+        if (check.notFound) return sendError(res, 'Course not found', 404, 'NOT_FOUND');
+        return sendError(res, 'Access denied: you can only publish courses you own', 403, 'FORBIDDEN');
+      }
+
       const course = await CourseModel.setPublishStatus(req.params.courseId, true);
       if (!course) return sendError(res, 'Course not found', 404);
       return sendSuccess(res, course, 'Course published successfully');
@@ -92,6 +120,12 @@ export class TeacherController {
    */
   static async unpublishCourse(req, res, next) {
     try {
+      const check = await TeacherController.checkCourseOwnership(req.params.courseId, req.user);
+      if (!check.allowed) {
+        if (check.notFound) return sendError(res, 'Course not found', 404, 'NOT_FOUND');
+        return sendError(res, 'Access denied: you can only unpublish courses you own', 403, 'FORBIDDEN');
+      }
+
       const course = await CourseModel.setPublishStatus(req.params.courseId, false);
       if (!course) return sendError(res, 'Course not found', 404);
       return sendSuccess(res, course, 'Course unpublished successfully');
@@ -105,6 +139,12 @@ export class TeacherController {
    */
   static async deleteCourse(req, res, next) {
     try {
+      const check = await TeacherController.checkCourseOwnership(req.params.courseId, req.user);
+      if (!check.allowed) {
+        if (check.notFound) return sendError(res, 'Course not found', 404, 'NOT_FOUND');
+        return sendError(res, 'Access denied: you can only delete courses you own', 403, 'FORBIDDEN');
+      }
+
       const deleted = await CourseModel.delete(req.params.courseId);
       if (!deleted) return sendError(res, 'Course not found', 404);
       return sendSuccess(res, deleted, 'Course deleted successfully');
@@ -414,8 +454,6 @@ export class TeacherController {
     }
   }
 }
-
-import { query } from '../config/database.js';
 
 /**
  * Aggregates all PDF resources + video lessons owned by this teacher into one library list.

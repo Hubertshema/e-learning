@@ -292,6 +292,30 @@ export class SuperadminModel {
   }
 
   /**
+   * Update Student CEFR Level
+   */
+  static async updateStudentLevel(studentId, { level, reason, adminUserId } = {}) {
+    const res = await query(
+      `UPDATE "public"."student_profiles"
+       SET "currentLevel" = $1, "updatedAt" = NOW()
+       WHERE id = $2 OR "userId" = $2
+       RETURNING *`,
+      [level, studentId]
+    );
+    if (res.rows.length === 0) return null;
+
+    if (adminUserId) {
+      await query(
+        `INSERT INTO "public"."audit_logs" (id, action, entity, "entityId", "userId", metadata, "createdAt")
+         VALUES (gen_random_uuid(), 'UPDATE_STUDENT_LEVEL', 'STUDENT_PROFILE', $1, $2, $3, NOW())`,
+        [studentId, adminUserId, JSON.stringify({ level, reason })]
+      ).catch(() => {});
+    }
+
+    return res.rows[0];
+  }
+
+  /**
    * Courses List
    */
   static async getCourses({ isPublished, search, page = 1, limit = 20 } = {}) {
@@ -506,11 +530,19 @@ export class SuperadminModel {
 
     const updatedPay = await query(
       `UPDATE "public"."payments"
-       SET status = $1, notes = COALESCE($2, notes), "verifiedAt" = NOW(), "verifiedBy" = $3, "updatedAt" = NOW()
-       WHERE id = $4
+       SET status = $1, notes = COALESCE($2, notes), "verifiedAt" = NOW(), "updatedAt" = NOW()
+       WHERE id = $3
        RETURNING *`,
-      [status, notes || null, adminUserId || null, paymentId]
+      [status, notes || null, paymentId]
     );
+
+    if (adminUserId) {
+      await query(
+        `INSERT INTO "public"."audit_logs" (id, action, entity, "entityId", "userId", metadata, "createdAt")
+         VALUES (gen_random_uuid(), 'VERIFY_PAYMENT', 'PAYMENT', $1, $2, $3, NOW())`,
+        [paymentId, adminUserId, JSON.stringify({ status, notes })]
+      ).catch(() => {});
+    }
 
     if (status === 'VERIFIED' && payment.studentId) {
       // Activate student subscription
@@ -932,40 +964,84 @@ export class SuperadminModel {
   }
 
   /**
-   * Broadcast Platform Announcement
+   * Broadcast Platform Announcement (High-performance set-based batch insert)
    */
   static async broadcastAnnouncement({ title, message, targetAudience = 'ALL_USERS', adminUserId }) {
-    let whereSql = `WHERE status = 'ACTIVE'`;
+    let roleFilter = '';
     if (targetAudience === 'ALL_STUDENTS') {
-      whereSql += ` AND role = 'STUDENT'`;
+      roleFilter = ` AND role = 'STUDENT'`;
     } else if (targetAudience === 'ALL_TEACHERS') {
-      whereSql += ` AND role = 'TEACHER'`;
+      roleFilter = ` AND role = 'TEACHER'`;
     }
 
-    const usersRes = await query(`SELECT id FROM "public"."users" ${whereSql}`);
-    const users = usersRes.rows;
+    const insertedRes = await query(
+      `INSERT INTO "public"."notifications" (id, "userId", title, message, type, "isRead", "createdAt")
+       SELECT gen_random_uuid(), id, $1, $2, 'PLATFORM_ANNOUNCEMENT', false, NOW()
+       FROM "public"."users"
+       WHERE status = 'ACTIVE' ${roleFilter}
+       RETURNING id`,
+      [title, message]
+    );
 
-    // Create notifications in batch
-    for (const u of users) {
-      const notifId = crypto.randomUUID();
-      await query(
-        `INSERT INTO "public"."notifications" (id, "userId", title, message, type, "isRead", "createdAt")
-         VALUES ($1, $2, $3, $4, 'PLATFORM_ANNOUNCEMENT', false, NOW())`,
-        [notifId, u.id, title, message]
-      );
-    }
+    const count = insertedRes.rowCount || insertedRes.rows.length;
 
     // Log audit log
-    const auditId = crypto.randomUUID();
     await query(
-      `INSERT INTO "public"."audit_logs" (id, "userId", action, entity, metadata, "createdAt")
-       VALUES ($1, $2, 'ANNOUNCEMENT_BROADCAST', 'ANNOUNCEMENT', $3, NOW())`,
-      [auditId, adminUserId || null, JSON.stringify({ title, targetAudience, recipientsCount: users.length })]
+      `INSERT INTO "public"."audit_logs" (id, action, entity, metadata, "createdAt", "userId")
+       VALUES (gen_random_uuid(), 'ANNOUNCEMENT_BROADCAST', 'ANNOUNCEMENT', $1, NOW(), $2)`,
+      [JSON.stringify({ title, targetAudience, recipientsCount: count }), adminUserId || null]
+    ).catch(() => {});
+
+    return {
+      recipientsCount: count,
+      message: `Broadcast delivered to ${count} active platform accounts.`,
+    };
+  }
+
+  /**
+   * Newsletter Subscribers List
+   */
+  static async getNewsletterSubscribers({ search, page = 1, limit = 50 } = {}) {
+    let whereSql = 'WHERE 1=1';
+    const params = [];
+    let pIdx = 1;
+
+    if (search) {
+      whereSql += ` AND email ILIKE $${pIdx++}`;
+      params.push(`%${search}%`);
+    }
+
+    const countRes = await query(
+      `SELECT COUNT(*) AS total FROM "public"."newsletter_subscribers" ${whereSql}`,
+      params
+    );
+    const total = parseInt(countRes.rows[0].total, 10);
+
+    const offset = (page - 1) * limit;
+    const rowsRes = await query(
+      `SELECT id, email, "isActive", "subscribedAt", "updatedAt"
+       FROM "public"."newsletter_subscribers"
+       ${whereSql}
+       ORDER BY "subscribedAt" DESC
+       LIMIT $${pIdx++} OFFSET $${pIdx++}`,
+      [...params, limit, offset]
     );
 
     return {
-      recipientsCount: users.length,
-      message: `Broadcast delivered to ${users.length} active platform accounts.`,
+      subscribers: rowsRes.rows.map((r) => ({
+        id: r.id,
+        email: r.email,
+        isActive: r.isActive,
+        subscribedAt: r.subscribedAt,
+        updatedAt: r.updatedAt,
+      })),
+      total,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 

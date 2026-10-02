@@ -95,7 +95,7 @@ export async function runComprehensiveSeed() {
         firstName: 'Elena',
         lastName: 'Rostova',
         role: 'TEACHER',
-        status: 'PENDING_VERIFICATION',
+        status: 'PENDING_APPROVAL',
         phone: '+33 1 42 68 55 00',
         isVerified: true,
         teacherProfile: {
@@ -110,7 +110,7 @@ export async function runComprehensiveSeed() {
         firstName: 'David',
         lastName: 'Kim',
         role: 'TEACHER',
-        status: 'PENDING_VERIFICATION',
+        status: 'PENDING_APPROVAL',
         phone: '+82 2 312 3456',
         isVerified: true,
         teacherProfile: {
@@ -202,7 +202,7 @@ export async function runComprehensiveSeed() {
         firstName: 'Fatima',
         lastName: 'Al-Zahra',
         role: 'STUDENT',
-        status: 'PENDING_VERIFICATION',
+        status: 'PENDING_APPROVAL',
         phone: '+971 4 123 4567',
         isVerified: false,
         studentProfile: {
@@ -217,7 +217,7 @@ export async function runComprehensiveSeed() {
         firstName: 'Liam',
         lastName: 'Chen',
         role: 'STUDENT',
-        status: 'PENDING_VERIFICATION',
+        status: 'PENDING_APPROVAL',
         phone: '+65 6789 0123',
         isVerified: false,
         studentProfile: {
@@ -253,7 +253,7 @@ export async function runComprehensiveSeed() {
         studentProfile: {
           currentLevel: 'B1',
           targetLevel: 'B2',
-          subscriptionStatus: 'CANCELLED',
+          subscriptionStatus: 'INACTIVE',
           subscriptionDays: -30,
         },
       },
@@ -268,7 +268,7 @@ export async function runComprehensiveSeed() {
         studentProfile: {
           currentLevel: 'C1',
           targetLevel: 'C2',
-          subscriptionStatus: 'CANCELLED',
+          subscriptionStatus: 'INACTIVE',
           subscriptionDays: -60,
         },
       },
@@ -468,16 +468,16 @@ export async function runComprehensiveSeed() {
           courseId = existingCourse.rows[0].id;
           await query(
             `UPDATE "public"."courses"
-             SET description = $1, level = $2, category = $3, price = $4, currency = $5, "isPublished" = $6, "updatedAt" = NOW()
-             WHERE id = $7`,
-            [c.description, c.level, c.category, c.price, c.currency, c.isPublished, courseId]
+             SET description = $1, level = $2, category = $3, currency = $4, "isPublished" = $5, "updatedAt" = NOW()
+             WHERE id = $6`,
+            [c.description, c.level, c.category, c.currency, c.isPublished, courseId]
           );
         } else {
           courseId = crypto.randomUUID();
           await query(
-            `INSERT INTO "public"."courses" (id, title, slug, description, level, category, price, currency, "isPublished", "teacherId", "createdAt", "updatedAt")
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW() - INTERVAL '20 days', NOW())`,
-            [courseId, c.title, c.slug, c.description, c.level, c.category, c.price, c.currency, c.isPublished, c.teacherId]
+            `INSERT INTO "public"."courses" (id, title, slug, description, level, category, currency, "isPublished", "teacherId", "createdAt", "updatedAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW() - INTERVAL '20 days', NOW())`,
+            [courseId, c.title, c.slug, c.description, c.level, c.category, c.currency, c.isPublished, c.teacherId]
           );
         }
 
