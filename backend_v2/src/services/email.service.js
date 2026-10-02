@@ -25,13 +25,14 @@ class EmailService {
    * Auto-detects Resend REST API, Brevo REST API, or Nodemailer SMTP fallback.
    */
   async initTransporter() {
-    if (env.RESEND_API_KEY) {
-      console.log('🚀 EmailService initialized using Resend HTTPS API (Port 443) - ideal for Render/Cloud hosting.');
+    const provider = env.EMAIL_PROVIDER;
+    if (provider === 'brevo' || (env.BREVO_API_KEY && provider !== 'resend')) {
+      console.log('🚀 EmailService initialized using Brevo HTTPS API (Port 443) - unrestricted recipients.');
       return;
     }
 
-    if (env.BREVO_API_KEY) {
-      console.log('🚀 EmailService initialized using Brevo HTTPS API (Port 443) - ideal for Render/Cloud hosting.');
+    if (provider === 'resend' || env.RESEND_API_KEY) {
+      console.log('🚀 EmailService initialized using Resend HTTPS API (Port 443) - ideal for Render/Cloud hosting.');
       return;
     }
 
@@ -181,14 +182,16 @@ class EmailService {
    */
   async sendMail({ to, subject, html, text }) {
     try {
-      // 1. Resend REST API (HTTPS port 443 - zero firewall blocks on Render)
-      if (env.RESEND_API_KEY) {
-        return await this.sendViaResend({ to, subject, html, text });
+      const provider = env.EMAIL_PROVIDER;
+
+      // 1. Brevo REST API (HTTPS port 443 - allows sending to any recipient without domain verification)
+      if (provider === 'brevo' || (env.BREVO_API_KEY && provider !== 'resend')) {
+        return await this.sendViaBrevo({ to, subject, html, text });
       }
 
-      // 2. Brevo REST API (HTTPS port 443)
-      if (env.BREVO_API_KEY) {
-        return await this.sendViaBrevo({ to, subject, html, text });
+      // 2. Resend REST API (HTTPS port 443)
+      if (provider === 'resend' || env.RESEND_API_KEY) {
+        return await this.sendViaResend({ to, subject, html, text });
       }
 
       // 3. Nodemailer SMTP (Localhost or unblocked VPS host)
