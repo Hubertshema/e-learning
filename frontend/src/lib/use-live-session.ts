@@ -107,18 +107,20 @@ export function useLiveSession(sessionId: string) {
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidates = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const videoSenders = useRef<Map<string, RTCRtpSender>>(new Map());
+  const audioSenders = useRef<Map<string, RTCRtpSender>>(new Map());
 
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const isScreenSharingRef = useRef<boolean>(false);
   const screenAudioContextRef = useRef<AudioContext | null>(null);
   const originalMicTrackRef = useRef<MediaStreamTrack | null>(null);
+  const activeAudioTrackRef = useRef<MediaStreamTrack | null>(null);
 
   // Keep refs synchronized with state and attach tracks to any active PCs
   useEffect(() => {
     localStreamRef.current = localStream;
     if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
+      const audioTrack = activeAudioTrackRef.current || localStream.getAudioTracks()[0];
       const videoTrack = isScreenSharingRef.current && screenStreamRef.current
         ? screenStreamRef.current.getVideoTracks()[0]
         : localStream.getVideoTracks()[0];
@@ -127,7 +129,8 @@ export function useLiveSession(sessionId: string) {
         const senders = pc.getSenders();
         if (audioTrack && !senders.find((s) => s.track && s.track.kind === 'audio')) {
           try {
-            pc.addTrack(audioTrack, localStream);
+            const sender = pc.addTrack(audioTrack, localStream);
+            audioSenders.current.set(targetSocketId, sender);
           } catch (e) {
             console.warn('Track attach warning (audio):', e);
           }
@@ -230,11 +233,12 @@ export function useLiveSession(sessionId: string) {
         ? screenStream.getVideoTracks()[0]
         : currentStream?.getVideoTracks()[0];
 
-      const activeAudioTrack = currentStream?.getAudioTracks()[0];
+      const activeAudioTrack = activeAudioTrackRef.current || currentStream?.getAudioTracks()[0];
 
       if (activeAudioTrack && currentStream) {
         try {
-          pc.addTrack(activeAudioTrack, currentStream);
+          const aSender = pc.addTrack(activeAudioTrack, currentStream);
+          audioSenders.current.set(targetSocketId, aSender);
         } catch (e) {
           console.warn('Error adding audio track:', e);
         }
@@ -689,8 +693,11 @@ export function useLiveSession(sessionId: string) {
 
     // Restore original microphone audio track if it was mixed with tab audio
     if (originalMicTrackRef.current) {
-      for (const pc of Array.from(peerConnections.current.values())) {
-        const audioSender = pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
+      activeAudioTrackRef.current = originalMicTrackRef.current;
+      for (const [targetSocketId, pc] of Array.from(peerConnections.current.entries())) {
+        const audioSender =
+          audioSenders.current.get(targetSocketId) ||
+          pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
         if (audioSender && originalMicTrackRef.current) {
           try {
             await audioSender.replaceTrack(originalMicTrackRef.current);
@@ -761,21 +768,41 @@ export function useLiveSession(sessionId: string) {
       if (isScreenSharingRef.current) {
         await stopScreenShare();
       } else {
-        let screenStream: MediaStream;
+        let screenStream: MediaStream | null = null;
         try {
-          // Request display media with audio: true to capture shared tab/window audio
+          // Request display media with tab/system audio
           screenStream = await navigator.mediaDevices.getDisplayMedia({
             video: {
               cursor: 'always',
             } as any,
-            audio: true,
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+            } as any,
           });
-        } catch (e) {
-          // Fallback to video only if browser or OS disallowed display audio
-          screenStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-          });
+        } catch (err: any) {
+          // If the user cancelled the prompt, cleanly return
+          if (err.name === 'NotAllowedError' || err.name === 'AbortError' || err.message?.includes('Permission denied')) {
+            return;
+          }
+          // Fallback attempt with simple audio: true or video only
+          try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({
+              video: true,
+              audio: true,
+            });
+          } catch (err2: any) {
+            if (err2.name === 'NotAllowedError' || err2.name === 'AbortError' || err2.message?.includes('Permission denied')) {
+              return;
+            }
+            screenStream = await navigator.mediaDevices.getDisplayMedia({
+              video: true,
+            });
+          }
         }
+
+        if (!screenStream) return;
 
         screenStreamRef.current = screenStream;
         const screenVideoTrack = screenStream.getVideoTracks()[0];
@@ -795,6 +822,9 @@ export function useLiveSession(sessionId: string) {
             const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
             if (AudioCtxClass) {
               const audioCtx = new AudioCtxClass();
+              if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+              }
               screenAudioContextRef.current = audioCtx;
               const destination = audioCtx.createMediaStreamDestination();
 
@@ -807,8 +837,11 @@ export function useLiveSession(sessionId: string) {
 
               const mixedTrack = destination.stream.getAudioTracks()[0];
               if (mixedTrack) {
-                for (const pc of Array.from(peerConnections.current.values())) {
-                  const audioSender = pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
+                activeAudioTrackRef.current = mixedTrack;
+                for (const [targetSocketId, pc] of Array.from(peerConnections.current.entries())) {
+                  const audioSender =
+                    audioSenders.current.get(targetSocketId) ||
+                    pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
                   if (audioSender) {
                     await audioSender.replaceTrack(mixedTrack);
                   }
@@ -816,9 +849,12 @@ export function useLiveSession(sessionId: string) {
               }
             }
           } catch (mixErr) {
-            console.warn('Audio mixing failed, forwarding screen audio directly:', mixErr);
-            for (const pc of Array.from(peerConnections.current.values())) {
-              const audioSender = pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
+            console.warn('Audio mixing fallback, forwarding screen audio directly:', mixErr);
+            activeAudioTrackRef.current = screenAudioTrack;
+            for (const [targetSocketId, pc] of Array.from(peerConnections.current.entries())) {
+              const audioSender =
+                audioSenders.current.get(targetSocketId) ||
+                pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
               if (audioSender) {
                 await audioSender.replaceTrack(screenAudioTrack);
               }

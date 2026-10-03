@@ -277,11 +277,28 @@ export default function LiveSessionRoomPage() {
       />
 
       {isVideoOff && (
-        <div className="flex flex-col items-center justify-center gap-2 p-2 sm:p-4 text-center">
-          <div className="h-12 w-12 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] border-2 border-white/20 flex items-center justify-center text-lg sm:text-2xl font-black text-white shadow-xl">
-            {user?.firstName?.[0] || 'U'}
+        <div className="flex flex-col items-center justify-center gap-2 p-2 sm:p-4 text-center z-10">
+          <div className="relative h-14 w-14 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] border-2 border-white/20 overflow-hidden shadow-2xl flex items-center justify-center">
+            {user?.avatarUrl && !user.avatarUrl.includes('facebook.com') ? (
+              <img
+                src={user.avatarUrl}
+                alt={`${user.firstName || 'Student'}'s profile picture`}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <span className="text-lg sm:text-2xl font-black text-white">
+                {user?.firstName?.[0] || 'U'}
+              </span>
+            )}
           </div>
-          {!isPip && <p className="text-[11px] sm:text-xs font-medium text-slate-400">Camera is paused</p>}
+          {!isPip && (
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-300">
+              {user?.firstName} {user?.lastName}
+            </p>
+          )}
         </div>
       )}
 
@@ -1053,10 +1070,23 @@ function RemoteVideoTile({
 
       {!hasVideoTrack && (
         <div className="flex flex-col items-center justify-center gap-2 p-4 text-center z-10">
-          <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-slate-700 to-slate-800 border-2 border-slate-600 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-xl">
-            {peer.firstName?.[0] || 'P'}
+          <div className="relative h-16 w-16 sm:h-24 sm:w-24 rounded-full bg-gradient-to-tr from-slate-700 to-slate-800 border-2 border-slate-600/80 overflow-hidden shadow-2xl flex items-center justify-center">
+            {peer.avatarUrl && !peer.avatarUrl.includes('facebook.com') ? (
+              <img
+                src={peer.avatarUrl}
+                alt={`${peer.firstName || 'Participant'}'s profile picture`}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <span className="text-xl sm:text-3xl font-black text-white">
+                {peer.firstName?.[0] || 'P'}
+              </span>
+            )}
           </div>
-          <p className="text-xs font-medium text-slate-400">
+          <p className="text-xs font-semibold text-slate-300">
             {peer.firstName} {peer.lastName}
           </p>
           <span className="text-[10px] text-slate-500">Camera is paused</span>
