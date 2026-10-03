@@ -143,6 +143,7 @@ async function performTokenRefresh(): Promise<string> {
         continue;
       }
       tokenStorage.clearTokens();
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('unauthorized_redirect'));
       throw new ApiError(SESSION_EXPIRED_MESSAGE, 401, 'SESSION_EXPIRED');
     }
 
@@ -231,6 +232,7 @@ export async function apiClient<T = unknown>(endpoint: string, options: ApiOptio
   if (response.status === 401 && requiresAuth && !endpoint.includes('/auth/refresh-token')) {
     if (!tokenStorage.getRefreshToken()) {
       tokenStorage.clearTokens();
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('unauthorized_redirect'));
       throw new ApiError(SESSION_EXPIRED_MESSAGE, 401, 'UNAUTHORIZED');
     }
 
@@ -264,6 +266,7 @@ export async function apiClient<T = unknown>(endpoint: string, options: ApiOptio
         const retryCode: string = retryData.error?.code || '';
         if (retryResponse.status === 401) {
           tokenStorage.clearTokens();
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('unauthorized_redirect'));
         }
         throw new ApiError(
           getFriendlyErrorMessage(retryMessage, retryCode, retryResponse.status),

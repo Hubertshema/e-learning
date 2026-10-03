@@ -126,8 +126,10 @@ export class AuthService {
   static async generateTokenPair(user) {
     const sessionId = crypto.randomUUID();
     
-    // Revoke all previous refresh tokens to enforce single active session
-    await UserModel.revokeAllRefreshTokens(user.id);
+    // Revoke all previous refresh tokens to enforce single active session (except for teachers)
+    if (user.role !== 'TEACHER') {
+      await UserModel.revokeAllRefreshTokens(user.id);
+    }
     
     await UserModel.update(user.id, { activeSessionId: sessionId });
     cache.set(`session_${user.id}`, sessionId, 7 * 24 * 60 * 60);

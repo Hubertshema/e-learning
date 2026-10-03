@@ -124,7 +124,12 @@ export default function TeacherStudentDetailPage() {
 
   const handleSendFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
+    const wordCount = feedbackContent.trim().split(/\s+/).filter(Boolean).length;
     if (!feedbackContent.trim()) return;
+    if (wordCount > 50) {
+      alert('Please limit coaching guidance to 50 words or less.');
+      return;
+    }
 
     try {
       setSendingFeedback(true);

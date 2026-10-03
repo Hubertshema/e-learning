@@ -96,7 +96,7 @@ interface EnrolledStudent {
 
 interface EnrollmentItem {
   id: string;
-  status: 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'PENDING';
+  status: 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'PENDING' | 'COMPLETED';
   enrolledAt: string;
   expiresAt?: string;
   learningAccess?: 'LOCKED' | 'ACTIVE';
@@ -357,8 +357,13 @@ function CoachingNoteModal({ student, onClose, onSuccess, prefillTitle, prefillC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
     if (!content.trim()) {
       setError('Please provide feedback content for the student.');
+      return;
+    }
+    if (wordCount > 50) {
+      setError('Please limit coaching guidance to 50 words or less.');
       return;
     }
     try {
@@ -420,8 +425,8 @@ function CoachingNoteModal({ student, onClose, onSuccess, prefillTitle, prefillC
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Coaching Guidance &amp; Observations</label>
-            <span className={`text-[10px] font-bold ${content.trim().split(/\\s+/).filter(Boolean).length > 50 ? 'text-rose-500' : 'text-slate-400'}`}>
-              {content.trim().split(/\\s+/).filter(Boolean).length} / 50 words
+            <span className={`text-[10px] font-bold ${content.trim().split(/\s+/).filter(Boolean).length > 50 ? 'text-rose-500' : 'text-slate-400'}`}>
+              {content.trim().split(/\s+/).filter(Boolean).length} / 50 words
             </span>
           </div>
           <textarea
@@ -429,7 +434,7 @@ function CoachingNoteModal({ student, onClose, onSuccess, prefillTitle, prefillC
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write constructive, actionable remarks..."
-            className={`w-full rounded-xl border bg-white p-3 text-xs resize-none focus:outline-none dark:bg-slate-900 dark:text-white ${content.trim().split(/\\s+/).filter(Boolean).length > 50 ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-[#006EF3] dark:border-slate-800'}`}
+            className={`w-full rounded-xl border bg-white p-3 text-xs resize-none focus:outline-none dark:bg-slate-900 dark:text-white ${content.trim().split(/\s+/).filter(Boolean).length > 50 ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-[#006EF3] dark:border-slate-800'}`}
             required
           />
         </div>
@@ -698,7 +703,7 @@ function BulkCohortModal({ selectedIds, teacherClasses, onClose, onSuccess }: Bu
 
 function DirectoryTab() {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'EXPIRED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'COMPLETED'>('ALL');
   const [courseFilter, setCourseFilter] = useState<string>('ALL');
   const [levelFilter, setLevelFilter] = useState<string>('ALL');
   const [classFilter, setClassFilter] = useState<string>('ALL');
@@ -777,7 +782,7 @@ function DirectoryTab() {
 
   // Dynamic status counts reflecting active course/level/class scope
   const statusCounts = useMemo(() => {
-    const counts = { ALL: 0, ACTIVE: 0, SUSPENDED: 0, EXPIRED: 0 };
+    const counts = { ALL: 0, ACTIVE: 0, SUSPENDED: 0, COMPLETED: 0 };
     const seen = new Set<string>();
     for (const st of allStudents) {
       const studentKey = st.userId || st.user?.id || st.user?.email || st.studentId || st.id;
@@ -800,9 +805,8 @@ function DirectoryTab() {
       seen.add(studentKey);
       counts.ALL++;
 
-      const isExpired = st.status === 'EXPIRED' || (st.expiresAt && new Date(st.expiresAt).getTime() < Date.now());
-      if (isExpired) {
-        counts.EXPIRED++;
+      if (st.status === 'COMPLETED' || ((st as any).progress !== undefined && (st as any).progress >= 100)) {
+        counts.COMPLETED++;
       } else if (st.status === 'SUSPENDED') {
         counts.SUSPENDED++;
       } else {
@@ -833,14 +837,14 @@ function DirectoryTab() {
       }
       if (!matchesLearningLevel(st, levelFilter)) return false;
 
-      const isExpired = st.status === 'EXPIRED' || (st.expiresAt && new Date(st.expiresAt).getTime() < Date.now());
+      const isCompleted = st.status === 'COMPLETED' || (st.progress !== undefined && st.progress >= 100);
       if (statusFilter !== 'ALL') {
-        if (statusFilter === 'EXPIRED') {
-          if (!isExpired) return false;
+        if (statusFilter === 'COMPLETED') {
+          if (!isCompleted) return false;
         } else if (statusFilter === 'SUSPENDED') {
           if (st.status !== 'SUSPENDED') return false;
         } else if (statusFilter === 'ACTIVE') {
-          if (st.status !== 'ACTIVE' || isExpired) return false;
+          if (st.status !== 'ACTIVE' || isCompleted) return false;
         }
       }
 
@@ -1027,7 +1031,7 @@ function DirectoryTab() {
 
         {/* Status filter pills with counts */}
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 flex-wrap">
-          {(['ALL', 'ACTIVE', 'SUSPENDED', 'EXPIRED'] as const).map((st) => (
+          {(['ALL', 'ACTIVE', 'SUSPENDED', 'COMPLETED'] as const).map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -1037,7 +1041,7 @@ function DirectoryTab() {
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              <span>{st === 'ALL' ? 'All' : st === 'ACTIVE' ? 'Active' : st === 'SUSPENDED' ? 'Suspended' : 'Expired'}</span>
+              <span>{st === 'ALL' ? 'All' : st === 'ACTIVE' ? 'Active' : st === 'SUSPENDED' ? 'Suspended' : 'Completed'}</span>
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   statusFilter === st
@@ -1830,16 +1834,16 @@ function EnrollmentsTab() {
 
   // Dynamic status counts reflecting active course and level scope
   const statusCounts = useMemo(() => {
-    const counts = { ALL: 0, ACTIVE: 0, SUSPENDED: 0, EXPIRED: 0, LOCKED: 0 };
+    const counts = { ALL: 0, ACTIVE: 0, COMPLETED: 0, SUSPENDED: 0, LOCKED: 0 };
     for (const e of uniqueEnrollments) {
       if (!matchesLearningLevel(e, levelFilter)) continue;
       counts.ALL++;
       
-      const isExpired = e.status === 'EXPIRED' || (e.expiresAt && new Date(e.expiresAt).getTime() < Date.now());
+      const isCompleted = e.status === 'COMPLETED';
       const isLocked = (e as any).learningAccess === 'LOCKED' || (e.student as any)?.learningAccess === 'LOCKED' || (e.student as any)?.paymentStatus === 'UNPAID';
 
-      if (isExpired) {
-        counts.EXPIRED++;
+      if (isCompleted) {
+        counts.COMPLETED++;
       } else if (e.status === 'SUSPENDED') {
         counts.SUSPENDED++;
       } else if (isLocked) {
@@ -1856,13 +1860,13 @@ function EnrollmentsTab() {
       if (!matchesLearningLevel(e, levelFilter)) return false;
       let matchStatus = true;
       if (filterStatus !== 'ALL') {
-        const isExpired = e.status === 'EXPIRED' || (e.expiresAt && new Date(e.expiresAt).getTime() < Date.now());
+        const isCompleted = e.status === 'COMPLETED';
         const isLocked = (e as any).learningAccess === 'LOCKED' || (e.student as any)?.learningAccess === 'LOCKED' || (e.student as any)?.paymentStatus === 'UNPAID';
         
-        if (filterStatus === 'EXPIRED') matchStatus = Boolean(isExpired);
-        else if (filterStatus === 'SUSPENDED') matchStatus = e.status === 'SUSPENDED' && !isExpired;
-        else if (filterStatus === 'LOCKED') matchStatus = Boolean(isLocked) && !isExpired && e.status !== 'SUSPENDED';
-        else if (filterStatus === 'ACTIVE') matchStatus = e.status === 'ACTIVE' && !isExpired && !isLocked;
+        if (filterStatus === 'COMPLETED') matchStatus = Boolean(isCompleted);
+        else if (filterStatus === 'SUSPENDED') matchStatus = e.status === 'SUSPENDED' && !isCompleted;
+        else if (filterStatus === 'LOCKED') matchStatus = Boolean(isLocked) && !isCompleted && e.status !== 'SUSPENDED';
+        else if (filterStatus === 'ACTIVE') matchStatus = e.status === 'ACTIVE' && !isCompleted && !isLocked;
       }
       const q = search.toLowerCase();
       const matchSearch =
@@ -1922,7 +1926,7 @@ function EnrollmentsTab() {
     }
   };
 
-  const statusFilters = ['ALL', 'ACTIVE', 'LOCKED', 'SUSPENDED', 'EXPIRED'];
+  const statusFilters = ['ALL', 'ACTIVE', 'COMPLETED', 'LOCKED', 'SUSPENDED'];
 
   return (
     <div className="space-y-4">

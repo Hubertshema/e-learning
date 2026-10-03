@@ -168,6 +168,10 @@ export function ApplyForm() {
       if (!formData.email.trim()) {
         throw new Error('Please enter your email address.');
       }
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        throw new Error('Please enter a valid, well-formatted email address (e.g. yourname@domain.com).');
+      }
       if (!formData.password) {
         throw new Error('Please enter your password.');
       }

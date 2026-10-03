@@ -11,10 +11,21 @@ export interface ParticipantMedia {
   lastName: string;
   email: string;
   avatarUrl?: string;
-  isTeacher: boolean;
+  isTeacher?: boolean;
   isAudioMuted: boolean;
   isVideoOff: boolean;
+  isScreenSharing?: boolean;
   stream?: MediaStream;
+}
+
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  message: string;
+  timestamp: string;
+  isLocal?: boolean;
 }
 
 export interface LiveSessionData {
@@ -85,6 +96,10 @@ export function useLiveSession(sessionId: string) {
 
   // Remote participants map: socketId -> ParticipantMedia
   const [remotePeers, setRemotePeers] = useState<Map<string, ParticipantMedia>>(new Map());
+
+  // Chat & Reactions
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [activeReaction, setActiveReaction] = useState<{ emoji: string; userId: string; id: number } | null>(null);
 
   // WebRTC Peer connections & ICE queues
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
@@ -456,7 +471,7 @@ export function useLiveSession(sessionId: string) {
         });
 
         // Event: Peer media state toggled
-        socket.on('live:peer-media-toggled', ({ socketId, isAudioMuted, isVideoOff }: any) => {
+        socket.on('live:peer-media-toggled', ({ socketId, isAudioMuted, isVideoOff, isScreenSharing }: any) => {
           setRemotePeers((prev) => {
             const next = new Map(prev);
             const peer = next.get(socketId);
@@ -465,10 +480,22 @@ export function useLiveSession(sessionId: string) {
                 ...peer,
                 isAudioMuted: Boolean(isAudioMuted),
                 isVideoOff: Boolean(isVideoOff),
+                isScreenSharing: Boolean(isScreenSharing),
               });
             }
             return next;
           });
+        });
+
+        // Event: Chat Message
+        socket.on('live:chat-message-received', (msg: any) => {
+          setChatMessages((prev) => [...prev, { ...msg, id: Math.random().toString() }]);
+        });
+
+        // Event: Reaction
+        socket.on('live:reaction-received', (reaction: any) => {
+          setActiveReaction({ emoji: reaction.reaction, userId: reaction.userId, id: Date.now() });
+          setTimeout(() => setActiveReaction(null), 3000);
         });
 
         // Event: User left room
@@ -596,6 +623,7 @@ export function useLiveSession(sessionId: string) {
           sessionId,
           isAudioMuted: newMuted,
           isVideoOff,
+          isScreenSharing,
         });
       }
     }
@@ -618,6 +646,7 @@ export function useLiveSession(sessionId: string) {
           sessionId,
           isAudioMuted,
           isVideoOff: newVideoOff,
+          isScreenSharing,
         });
       }
     }
@@ -668,7 +697,16 @@ export function useLiveSession(sessionId: string) {
     }
 
     setIsScreenSharing(false);
-  }, []);
+    const socket = getSocketClient();
+    if (socket?.emit) {
+      socket.emit('live:media-toggle', {
+        sessionId,
+        isAudioMuted,
+        isVideoOff,
+        isScreenSharing: false,
+      });
+    }
+  }, [sessionId, isAudioMuted, isVideoOff]);
 
   /**
    * Toggle Screen Sharing
@@ -716,6 +754,15 @@ export function useLiveSession(sessionId: string) {
         }
 
         setIsScreenSharing(true);
+        const socket = getSocketClient();
+        if (socket?.emit) {
+          socket.emit('live:media-toggle', {
+            sessionId,
+            isAudioMuted,
+            isVideoOff,
+            isScreenSharing: true,
+          });
+        }
       }
     } catch (err: any) {
       console.warn('Screen share toggle cancelled or failed:', err.message);
@@ -756,6 +803,32 @@ export function useLiveSession(sessionId: string) {
     [sessionId]
   );
 
+  /**
+   * Send Chat Message
+   */
+  const sendChatMessage = useCallback((message: string) => {
+    const socket = getSocketClient();
+    if (socket?.emit) {
+      socket.emit('live:chat-message', { sessionId, message });
+      setChatMessages((prev) => [
+        ...prev,
+        { id: Math.random().toString(), userId: 'local', firstName: 'You', lastName: '', message, timestamp: new Date().toISOString(), isLocal: true },
+      ]);
+    }
+  }, [sessionId]);
+
+  /**
+   * Send Reaction (or Raise Hand)
+   */
+  const sendReaction = useCallback((reaction: string) => {
+    const socket = getSocketClient();
+    if (socket?.emit) {
+      socket.emit('live:reaction', { sessionId, reaction });
+      setActiveReaction({ emoji: reaction, userId: 'local', id: Date.now() });
+      setTimeout(() => setActiveReaction(null), 3000);
+    }
+  }, [sessionId]);
+
   return {
     session,
     isTeacher,
@@ -773,5 +846,9 @@ export function useLiveSession(sessionId: string) {
     toggleScreenShare,
     endSession,
     kickParticipant,
+    chatMessages,
+    sendChatMessage,
+    sendReaction,
+    activeReaction,
   };
 }

@@ -151,13 +151,14 @@ export function registerLiveSessionHandlers(io, socket) {
   /**
    * Media Controls State Toggle (Audio Mute / Video Off)
    */
-  socket.on('live:media-toggle', ({ sessionId, isAudioMuted, isVideoOff }) => {
+  socket.on('live:media-toggle', ({ sessionId, isAudioMuted, isVideoOff, isScreenSharing }) => {
     if (!sessionId) return;
     const roomMap = activeRooms.get(sessionId);
     if (roomMap && roomMap.has(socket.id)) {
       const p = roomMap.get(socket.id);
       p.isAudioMuted = isAudioMuted;
       p.isVideoOff = isVideoOff;
+      p.isScreenSharing = isScreenSharing;
     }
 
     socket.to(`room:live-session:${sessionId}`).emit('live:peer-media-toggled', {
@@ -165,6 +166,29 @@ export function registerLiveSessionHandlers(io, socket) {
       userId: socket.user?.id,
       isAudioMuted,
       isVideoOff,
+      isScreenSharing,
+    });
+  });
+
+  socket.on('live:chat-message', ({ sessionId, message }) => {
+    if (!sessionId || !message) return;
+    socket.to(`room:live-session:${sessionId}`).emit('live:chat-message-received', {
+      socketId: socket.id,
+      userId: socket.user?.id,
+      firstName: socket.user?.firstName,
+      lastName: socket.user?.lastName,
+      message,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  socket.on('live:reaction', ({ sessionId, reaction }) => {
+    if (!sessionId) return;
+    socket.to(`room:live-session:${sessionId}`).emit('live:reaction-received', {
+      socketId: socket.id,
+      userId: socket.user?.id,
+      firstName: socket.user?.firstName,
+      reaction,
     });
   });
 

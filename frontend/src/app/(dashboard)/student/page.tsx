@@ -53,6 +53,7 @@ interface DashboardData {
     completedLessonsCount: number;
     studyTimeMinutes: number;
     studyTimeHours: number;
+    studyTimeFormatted?: string;
     streakDays: number;
     totalActivityHoursText: string;
     overallProgressPercentage: number;
@@ -203,6 +204,35 @@ export default function StudentDashboardPage() {
   const activeLiveSession = liveSessions.find((s: any) => s.status === 'LIVE');
   const upcomingLiveSession = liveSessions.find((s: any) => s.status === 'UPCOMING');
 
+  // Format video watch time cleanly (e.g. "40m", "1h 25m", "2h", "0m")
+  const formatWatchTime = (minutes: number = 0) => {
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m`;
+    if (hrs > 0) return `${hrs}h`;
+    return `${mins}m`;
+  };
+
+  const formatWatchTimeSub = (minutes: number = 0) => {
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hrs > 0 && mins > 0) return `${hrs} hr ${mins} min video watch time`;
+    if (hrs > 0) return `${hrs} ${hrs === 1 ? 'hour' : 'hours'} video watch time`;
+    if (mins > 0) return `${mins} mins video watch time`;
+    return '0 mins video watch time';
+  };
+
+  const getCleanSubText = () => {
+    if (
+      stats?.totalActivityHoursText &&
+      !stats.totalActivityHoursText.includes('.') &&
+      !stats.totalActivityHoursText.includes('hours 0 minutes')
+    ) {
+      return stats.totalActivityHoursText;
+    }
+    return formatWatchTimeSub(stats?.studyTimeMinutes ?? 0);
+  };
+
   // Key metrics aligned directly with teacher-provided services
   const studentMetrics = [
     {
@@ -229,9 +259,12 @@ export default function StudentDashboardPage() {
     },
     {
       label: 'Tracked Study Time',
-      value: `${stats?.studyTimeHours ?? 0}h`,
-      sub: stats?.totalActivityHoursText || `${stats?.studyTimeMinutes ?? 0} minutes practice`,
-      badge: 'Video & Audio',
+      value:
+        stats?.studyTimeFormatted && !stats.studyTimeFormatted.includes('.')
+          ? stats.studyTimeFormatted
+          : formatWatchTime(stats?.studyTimeMinutes ?? 0),
+      sub: getCleanSubText(),
+      badge: 'Video Only',
       icon: Clock,
       iconBg: 'bg-amber-600 text-white shadow-lg shadow-amber-600/25',
       borderColor: 'border-amber-200/80 dark:border-amber-900/60',
@@ -380,7 +413,7 @@ export default function StudentDashboardPage() {
               </div>
               <div className="flex items-center gap-2 text-blue-100">
                 <div className="h-1.5 w-1.5 rounded-full bg-sky-300" />
-                <span>Practice: <strong>{stats?.studyTimeHours ?? 0} Hours Logged</strong></span>
+                <span>Video Watch: <strong>{stats?.studyTimeFormatted && !stats.studyTimeFormatted.includes('.') ? stats.studyTimeFormatted : formatWatchTime(stats?.studyTimeMinutes ?? 0)} Logged</strong></span>
               </div>
               <div className="flex items-center gap-2 text-blue-100">
                 <div className="h-1.5 w-1.5 rounded-full bg-white" />

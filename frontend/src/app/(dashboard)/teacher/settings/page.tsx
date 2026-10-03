@@ -25,6 +25,8 @@ import {
   Users,
   Lock,
   Sparkles,
+  CreditCard,
+  Banknote,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData, clientCache } from '@/lib/cache';
@@ -33,7 +35,7 @@ import { apiClient } from '@/lib/api-client';
 
 export default function TeacherSettingsPage() {
   const { user, refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'PROFILE' | 'SECURITY'>('PROFILE');
+  const [activeTab, setActiveTab] = useState<'PROFILE' | 'SECURITY' | 'PAYMENT'>('PROFILE');
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -60,6 +62,21 @@ export default function TeacherSettingsPage() {
 
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [paymentSettings, setPaymentSettings] = useState({
+    momoDialCode: '',
+    momoMerchantName: '',
+    momoNumber: '',
+    airtelMerchantCode: '',
+    airtelRecipient: '',
+    airtelNumber: '',
+    bankName: '',
+    bankAccountNumber: '',
+    bankBeneficiary: '',
+    bankSwiftCode: '',
+    instructionsNote: '',
+  });
+  const [savingPayment, setSavingPayment] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -91,6 +108,22 @@ export default function TeacherSettingsPage() {
     {
       ttl: 60_000,
       onSuccess: (data) => setActiveSessions(data),
+    }
+  );
+
+  useCachedData(
+    'teacher_payment_settings',
+    async () => {
+      const res: any = await apiClient.get('/teacher/payment-settings');
+      return res;
+    },
+    {
+      ttl: 60_000,
+      onSuccess: (data) => {
+        if (data) {
+          setPaymentSettings((prev) => ({ ...prev, ...data }));
+        }
+      },
     }
   );
 
@@ -160,6 +193,19 @@ export default function TeacherSettingsPage() {
     }
   };
 
+  const handleSavePaymentSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingPayment(true);
+    try {
+      await apiClient.patch('/teacher/payment-settings', paymentSettings);
+      showFeedback('success', 'Payment instructions updated successfully.');
+    } catch (err: any) {
+      showFeedback('error', err.message || 'Failed to update payment settings.');
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-5xl animate-fade-in pb-16">
       {/* <div>
@@ -193,6 +239,7 @@ export default function TeacherSettingsPage() {
       <div className="flex flex-wrap gap-1.5 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
         {[
           { id: 'PROFILE', label: 'Profile & Identity', icon: User },
+          { id: 'PAYMENT', label: 'Payment Accounts', icon: CreditCard },
           { id: 'SECURITY', label: 'Security & Password', icon: KeyRound },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -576,6 +623,134 @@ export default function TeacherSettingsPage() {
             </Card>
           </div>
         </div>
+      )}
+      {/* TAB: PAYMENT */}
+      {activeTab === 'PAYMENT' && (
+        <Card className="shadow-lg border-slate-200 dark:border-slate-800">
+          <form onSubmit={handleSavePaymentSettings}>
+            <CardHeader className="border-b border-slate-100 p-6 dark:border-slate-800">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-emerald-600" /> Payment Instructions & Accounts
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Configure the payment methods and account numbers displayed to students during payment verification.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              
+              {/* Mobile Money (MTN) */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <Smartphone className="h-3.5 w-3.5 text-emerald-600" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    MTN Mobile Money
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Input
+                    label="Merchant Code / Dial Code"
+                    value={paymentSettings.momoDialCode}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, momoDialCode: e.target.value })}
+                    placeholder="e.g. *182*8*1*123456#"
+                  />
+                  <Input
+                    label="Merchant Name"
+                    value={paymentSettings.momoMerchantName}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, momoMerchantName: e.target.value })}
+                    placeholder="e.g. FluentEdge Academy"
+                  />
+                  <Input
+                    label="MoMo Number (Direct)"
+                    value={paymentSettings.momoNumber}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, momoNumber: e.target.value })}
+                    placeholder="e.g. 0788123456"
+                  />
+                </div>
+              </div>
+
+              {/* Airtel Money */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <Smartphone className="h-3.5 w-3.5 text-rose-600" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Airtel Money
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Input
+                    label="Merchant Code"
+                    value={paymentSettings.airtelMerchantCode}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, airtelMerchantCode: e.target.value })}
+                    placeholder="e.g. 733123"
+                  />
+                  <Input
+                    label="Recipient Name"
+                    value={paymentSettings.airtelRecipient}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, airtelRecipient: e.target.value })}
+                    placeholder="e.g. FluentEdge Academy"
+                  />
+                  <Input
+                    label="Airtel Number"
+                    value={paymentSettings.airtelNumber}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, airtelNumber: e.target.value })}
+                    placeholder="e.g. 0738123456"
+                  />
+                </div>
+              </div>
+
+              {/* Bank Wire / Deposit */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <Banknote className="h-3.5 w-3.5 text-[#006EF3]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Bank Deposit / Transfer
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Bank Name"
+                    value={paymentSettings.bankName}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, bankName: e.target.value })}
+                    placeholder="e.g. Bank of Kigali"
+                  />
+                  <Input
+                    label="Account Number"
+                    value={paymentSettings.bankAccountNumber}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, bankAccountNumber: e.target.value })}
+                    placeholder="e.g. 4002-8812-9923"
+                  />
+                  <Input
+                    label="Beneficiary Name"
+                    value={paymentSettings.bankBeneficiary}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, bankBeneficiary: e.target.value })}
+                    placeholder="e.g. FluentEdge Language Services"
+                  />
+                  <Input
+                    label="SWIFT / BIC (Optional)"
+                    value={paymentSettings.bankSwiftCode}
+                    onChange={(e) => setPaymentSettings({ ...paymentSettings, bankSwiftCode: e.target.value })}
+                    placeholder="e.g. BOKIRW22"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Input
+                  label="General Instructions Note"
+                  value={paymentSettings.instructionsNote}
+                  onChange={(e) => setPaymentSettings({ ...paymentSettings, instructionsNote: e.target.value })}
+                  placeholder="e.g. After transferring tuition, upload your SMS confirmation or deposit slip screenshot."
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex items-center justify-end border-t border-slate-100 p-6 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+              <Button type="submit" variant="gradient" disabled={savingPayment} className="font-bold">
+                <Save className="h-4 w-4 mr-1.5" />
+                {savingPayment ? 'Saving...' : 'Save Payment Accounts'}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
       )}
 
       {/* TAB: SECURITY */}

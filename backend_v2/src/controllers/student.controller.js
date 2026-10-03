@@ -276,18 +276,19 @@ export class StudentController {
         );
         for (const row of progressRes.rows) {
           if (row.isCompleted) completedLessonIds.add(row.lessonId);
-          totalSeconds += parseInt(row.timeSpentSec, 10) || 0;
         }
 
         const ivProgressRes = await query(
-          `SELECT ivp."lessonId", ivp."watchedSeconds" 
+          `SELECT ivp."lessonId", ivp."watchedSeconds", ivp."completionPercent", ivp."completedAt" 
            FROM "interactive_video_progress" ivp 
-           WHERE (ivp."studentId" = $1 OR ivp."studentId" = $2) 
-             AND (ivp."completionPercent" >= 90 OR ivp."completedAt" IS NOT NULL)`,
+           WHERE (ivp."studentId" = $1 OR ivp."studentId" = $2)`,
           [studentId, userRow.profileId || studentId]
         );
         for (const row of ivProgressRes.rows) {
-          completedLessonIds.add(row.lessonId);
+          if (parseFloat(row.completionPercent) >= 90 || row.completedAt) {
+            completedLessonIds.add(row.lessonId);
+          }
+          // Strictly count ONLY video watch time
           totalSeconds += parseInt(row.watchedSeconds, 10) || 0;
         }
       } catch (err) {
@@ -295,7 +296,25 @@ export class StudentController {
       }
 
       const studyTimeMinutes = Math.round(totalSeconds / 60);
+      const studyHours = Math.floor(studyTimeMinutes / 60);
+      const studyMins = studyTimeMinutes % 60;
       const studyTimeHours = Math.round((studyTimeMinutes / 60) * 10) / 10;
+
+      let studyTimeFormatted = '0m';
+      let totalActivityHoursText = '0 mins video watched';
+      if (studyHours > 0 && studyMins > 0) {
+        studyTimeFormatted = `${studyHours}h ${studyMins}m`;
+        totalActivityHoursText = `${studyHours} hr ${studyMins} min video watched`;
+      } else if (studyHours > 0) {
+        studyTimeFormatted = `${studyHours}h`;
+        totalActivityHoursText = `${studyHours} ${studyHours === 1 ? 'hour' : 'hours'} video watched`;
+      } else if (studyMins > 0) {
+        studyTimeFormatted = `${studyMins}m`;
+        totalActivityHoursText = `${studyMins} mins video watched`;
+      } else {
+        studyTimeFormatted = '0m';
+        totalActivityHoursText = '0 mins video watched';
+      }
 
       // 4. In-progress course details & Next lesson
       let inProgressCourse = null;
@@ -488,8 +507,8 @@ export class StudentController {
           completedLessonsCount,
           studyTimeMinutes,
           studyTimeHours,
-          streakDays: 0,
-          totalActivityHoursText: studyTimeHours > 0 ? `${studyTimeHours} hours ${studyTimeMinutes % 60} minutes` : '0 minutes',
+          studyTimeFormatted,
+          totalActivityHoursText,
           overallProgressPercentage,
           growthPercentage: 0,
           activityDots: [],

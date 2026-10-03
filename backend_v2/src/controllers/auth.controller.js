@@ -14,7 +14,7 @@ export class AuthController {
         return sendError(res, 'Email, password, first name and last name are required', 400, 'VALIDATION_ERROR');
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(email)) {
         return sendError(res, 'Please provide a valid email address', 400, 'VALIDATION_ERROR');
       }
@@ -36,7 +36,7 @@ export class AuthController {
         return sendError(res, 'Email and password are required', 400, 'VALIDATION_ERROR');
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(email)) {
         return sendError(res, 'Please provide a valid email address', 400, 'VALIDATION_ERROR');
       }
@@ -133,7 +133,7 @@ export class AuthController {
         return sendError(res, 'Email address is required', 400, 'VALIDATION_ERROR');
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(email)) {
         return sendError(res, 'Please provide a valid email address', 400, 'VALIDATION_ERROR');
       }

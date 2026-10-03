@@ -19,6 +19,11 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email.trim())) {
+        throw new Error('Please enter a valid, well-formatted email address (e.g. yourname@domain.com).');
+      }
+
       await login(email, password);
     } catch (err: any) {
       setError(err.message || 'Failed to login. Please check your credentials.');

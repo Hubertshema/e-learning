@@ -24,8 +24,8 @@ export async function authenticate(req, res, next) {
   try {
     const decoded = verifyAccessToken(token);
     
-    // Check if session is the active one
-    if (decoded.sessionId) {
+    // Check if session is the active one (except for teachers who can have multiple sessions)
+    if (decoded.sessionId && decoded.role !== 'TEACHER') {
       let activeSessionId = cache.get(`session_${decoded.id}`);
       if (!activeSessionId) {
         const user = await UserModel.findById(decoded.id);
@@ -78,7 +78,7 @@ export async function optionalAuth(req, _res, next) {
     try {
       const decoded = verifyAccessToken(token);
       let isValid = true;
-      if (decoded.sessionId) {
+      if (decoded.sessionId && decoded.role !== 'TEACHER') {
         let activeSessionId = cache.get(`session_${decoded.id}`);
         if (!activeSessionId) {
           const user = await UserModel.findById(decoded.id);

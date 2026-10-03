@@ -23,6 +23,10 @@ import {
   Minimize2,
   Radio,
   Lock,
+  Smile,
+  Hand,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 import { useLiveSession, ParticipantMedia } from '@/lib/use-live-session';
 import { Button } from '@/components/ui/button';
@@ -52,9 +56,15 @@ export default function LiveSessionRoomPage() {
     toggleScreenShare,
     endSession,
     kickParticipant,
+    chatMessages,
+    sendChatMessage,
+    sendReaction,
+    activeReaction,
   } = useLiveSession(sessionId);
 
   const [showParticipantsDrawer, setShowParticipantsDrawer] = useState(false);
+  const [showChatDrawer, setShowChatDrawer] = useState(false);
+  const [chatInput, setChatInput] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [studentToKick, setStudentToKick] = useState<ParticipantMedia | null>(null);
@@ -171,6 +181,9 @@ export default function LiveSessionRoomPage() {
     return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4';
   };
 
+  const sharedRemotePeer = remotePeers.find(p => p.isScreenSharing);
+  const isAnyScreenShared = isScreenSharing || !!sharedRemotePeer;
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white overflow-hidden select-none">
       {/* ─── Top Room Bar ─────────────────────────────────────────────────── */}
@@ -209,7 +222,24 @@ export default function LiveSessionRoomPage() {
           </button>
 
           <button
-            onClick={() => setShowParticipantsDrawer(!showParticipantsDrawer)}
+            onClick={() => {
+              setShowParticipantsDrawer(false);
+              setShowChatDrawer(!showChatDrawer);
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
+              showChatDrawer
+                ? 'bg-[#006EF3] border-[#006EF3] text-white'
+                : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+            }`}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Chat</span>
+          </button>
+          <button
+            onClick={() => {
+              setShowChatDrawer(false);
+              setShowParticipantsDrawer(!showParticipantsDrawer);
+            }}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
               showParticipantsDrawer
                 ? 'bg-[#006EF3] border-[#006EF3] text-white'
@@ -231,10 +261,47 @@ export default function LiveSessionRoomPage() {
       </header>
 
       {/* ─── Main Room Stage ──────────────────────────────────────────────── */}
-      <div className="relative flex-1 flex overflow-hidden">
+      <div className="relative flex-1 flex flex-col sm:flex-row overflow-hidden">
         {/* Video Grid Canvas */}
-        <div className="flex-1 p-3 sm:p-4 overflow-y-auto flex items-center justify-center">
-          <div className={`grid gap-3 sm:gap-4 w-full h-full max-h-full ${getGridClasses()}`}>
+        <div className="flex-1 p-2 sm:p-4 overflow-y-auto flex flex-col">
+          {isAnyScreenShared ? (
+            <div className="flex flex-col h-full gap-3">
+              <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl flex items-center justify-center relative">
+                {/* Large Screen Share View */}
+                {isScreenSharing ? (
+                  <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
+                ) : (
+                  sharedRemotePeer && <RemoteVideoTile peer={sharedRemotePeer} isTeacherViewer={isTeacher} onKick={() => setStudentToKick(sharedRemotePeer)} isLarge={true} />
+                )}
+                {activeReaction && (
+                  <div className="absolute bottom-10 animate-bounce text-6xl shadow-2xl drop-shadow-2xl">
+                    {activeReaction.emoji}
+                  </div>
+                )}
+              </div>
+              <div className="h-28 sm:h-32 shrink-0 flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                {/* Minimized Tiles */}
+                {!isScreenSharing && (
+                  <div className="w-40 sm:w-48 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+                    <video ref={localVideoRef} autoPlay playsInline muted className={`w-full h-full object-cover transform -scale-x-100 ${isVideoOff ? 'hidden' : 'block'}`} />
+                    {isVideoOff && (
+                      <div className="flex h-full items-center justify-center bg-slate-800">
+                         <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white">
+                           {user?.firstName?.[0]}
+                         </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {remotePeers.filter(p => p.socketId !== sharedRemotePeer?.socketId).map(peer => (
+                  <div key={peer.socketId} className="w-40 sm:w-48 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+                     <RemoteVideoTile peer={peer} isTeacherViewer={isTeacher} onKick={() => setStudentToKick(peer)} isSmall={true} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className={`grid gap-3 sm:gap-4 w-full h-full max-h-full ${getGridClasses()}`}>
             {/* 1. Local Video Tile */}
             <div className="relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center group min-h-[180px]">
               <video
@@ -292,6 +359,13 @@ export default function LiveSessionRoomPage() {
               />
             ))}
           </div>
+          )}
+          
+          {!isAnyScreenShared && activeReaction && (
+             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+                <div className="animate-bounce text-8xl shadow-2xl drop-shadow-2xl">{activeReaction.emoji}</div>
+             </div>
+          )}
         </div>
 
         {/* ─── Slide-out Participants Drawer ─────────────────────────────── */}
@@ -390,6 +464,63 @@ export default function LiveSessionRoomPage() {
             </div>
           </aside>
         )}
+
+        {/* ─── Slide-out Chat Drawer ─────────────────────────────── */}
+        {showChatDrawer && (
+          <aside className="w-full sm:w-80 border-l border-slate-800 bg-slate-900/95 backdrop-blur-md flex flex-col z-30 animate-in slide-in-from-right duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-[#006EF3]" />
+                <h3 className="text-sm font-bold text-white">Live Chat</h3>
+              </div>
+              <button
+                onClick={() => setShowChatDrawer(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {chatMessages.length === 0 ? (
+                <div className="text-center text-slate-500 text-xs mt-10">No messages yet. Say hello!</div>
+              ) : (
+                chatMessages.map(msg => (
+                  <div key={msg.id} className={`flex flex-col max-w-[85%] ${msg.isLocal ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
+                    <span className="text-[10px] text-slate-400 mb-1">{msg.firstName} {msg.lastName}</span>
+                    <div className={`px-3 py-2 rounded-2xl text-sm ${msg.isLocal ? 'bg-[#006EF3] text-white rounded-br-sm' : 'bg-slate-800 text-slate-200 rounded-bl-sm'}`}>
+                      {msg.message}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-3 border-t border-slate-800 shrink-0 bg-slate-900">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (chatInput.trim()) {
+                    sendChatMessage(chatInput.trim());
+                    setChatInput('');
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-slate-800 border-none rounded-xl text-sm text-white px-3 py-2 outline-none focus:ring-2 focus:ring-[#006EF3]"
+                />
+                <button type="submit" disabled={!chatInput.trim()} className="p-2 bg-[#006EF3] text-white rounded-xl disabled:opacity-50">
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+          </aside>
+        )}
       </div>
 
       {/* ─── Bottom Floating Control Dock ─────────────────────────────────── */}
@@ -431,13 +562,31 @@ export default function LiveSessionRoomPage() {
           <button
             onClick={toggleScreenShare}
             title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all ${
+            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all hidden sm:flex ${
               isScreenSharing
                 ? 'bg-[#006EF3] text-white shadow-lg shadow-blue-600/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
             }`}
           >
             <ScreenShare className="h-5 w-5" />
+          </button>
+
+          {/* Raise Hand */}
+          <button
+            onClick={() => sendReaction('✋')}
+            title="Raise Hand"
+            className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700"
+          >
+            <Hand className="h-5 w-5" />
+          </button>
+          
+          {/* Reaction */}
+          <button
+            onClick={() => sendReaction('❤️')}
+            title="Send Heart"
+            className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all bg-slate-800 hover:bg-slate-700 text-pink-400 border border-slate-700"
+          >
+            <Smile className="h-5 w-5" />
           </button>
 
           {/* Leave / End Button */}
@@ -528,10 +677,14 @@ function RemoteVideoTile({
   peer,
   isTeacherViewer,
   onKick,
+  isLarge,
+  isSmall,
 }: {
   peer: ParticipantMedia;
   isTeacherViewer: boolean;
   onKick: () => void;
+  isLarge?: boolean;
+  isSmall?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -585,7 +738,7 @@ function RemoteVideoTile({
   return (
     <div
       onClick={unlockAudio}
-      className="relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center group min-h-[180px]"
+      className={`relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center group ${isLarge ? 'w-full h-full' : isSmall ? 'w-full h-full' : 'min-h-[180px]'}`}
     >
       {/* Dedicated hidden audio playback fallback */}
       <audio ref={audioRef} autoPlay playsInline />

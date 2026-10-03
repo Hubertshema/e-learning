@@ -38,6 +38,7 @@ function formatTimeAgo(dateStr: string) {
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [filterTab, setFilterTab] = useState<'ALL' | 'UNREAD'>('ALL');
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -222,6 +223,32 @@ export function NotificationCenter() {
             )}
           </div>
 
+          {/* Quick Filter Tabs */}
+          <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+            <button
+              type="button"
+              onClick={() => setFilterTab('ALL')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
+                filterTab === 'ALL'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              All ({notifications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterTab('UNREAD')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
+                filterTab === 'UNREAD'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Unread ({unreadCount})
+            </button>
+          </div>
+
           {/* List Content */}
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 overscroll-contain">
             {loading && notifications.length === 0 ? (
@@ -235,8 +262,8 @@ export function NotificationCenter() {
                   <Skeleton className="h-3 w-52" />
                 </div>
               </div>
-            ) : notifications.length > 0 ? (
-              notifications.map((n) => (
+            ) : notifications.filter(n => filterTab === 'UNREAD' ? !n.isRead : true).length > 0 ? (
+              notifications.filter(n => filterTab === 'UNREAD' ? !n.isRead : true).map((n) => (
                 <div
                   key={n.id}
                   className={`p-3.5 sm:p-4 transition-colors flex items-start justify-between gap-3 ${
@@ -288,8 +315,12 @@ export function NotificationCenter() {
             ) : (
               <div className="py-12 px-4 text-center">
                 <Bell className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-700 mb-2 opacity-60" />
-                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No notifications</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">You're all caught up with your updates.</p>
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {filterTab === 'UNREAD' ? 'No unread notifications' : 'No notifications'}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {filterTab === 'UNREAD' ? "You're all caught up with your updates." : 'You have no notifications yet.'}
+                </p>
               </div>
             )}
           </div>

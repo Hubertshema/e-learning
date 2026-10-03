@@ -134,7 +134,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshUser();
-  }, [refreshUser]);
+    
+    const handleUnauthorizedRedirect = () => {
+      setUser(null);
+      if (
+        window.location.pathname.startsWith('/teacher') ||
+        window.location.pathname.startsWith('/student') ||
+        window.location.pathname.startsWith('/superadmin')
+      ) {
+        router.push('/login');
+      }
+    };
+
+    window.addEventListener('unauthorized_redirect', handleUnauthorizedRedirect);
+    return () => {
+      window.removeEventListener('unauthorized_redirect', handleUnauthorizedRedirect);
+    };
+  }, [refreshUser, router]);
 
 
   const login = async (email: string, password: string): Promise<User> => {

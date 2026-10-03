@@ -753,6 +753,16 @@ export default function StudentLearnPage() {
             </Button>
           </Link>
 
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border-slate-200 text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] transition-all dark:border-slate-700 dark:text-slate-300"
+            title={sidebarOpen ? "Hide Curriculum" : "Show Curriculum"}
+          >
+            {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </Button>
+
           <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
 
           <div>
@@ -780,18 +790,7 @@ export default function StudentLearnPage() {
         {/* Right: Actions (Syllabus Drawer) */}
         <div className="flex items-center gap-2">
 
-          {/* Flexible Syllabus Toggle */}
-          {!sidebarOpen && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setSidebarOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border-slate-200 text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] transition-all dark:border-slate-700 dark:text-slate-300"
-              title="Show Curriculum"
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Syllabus Toggle moved to the left side */}
         </div>
       </header>
 
@@ -827,14 +826,6 @@ export default function StudentLearnPage() {
                     title={sidebarWidth === 'default' ? 'Expand Sidebar Width' : 'Compact Sidebar Width'}
                   >
                     {sidebarWidth === 'default' ? 'Wide' : 'Standard'}
-                  </button>
-
-                  <button
-                    onClick={() => setSidebarOpen(false)}
-                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#012970] border border-[#012970]/20 dark:bg-slate-800 dark:text-blue-300 hover:opacity-80 transition-opacity"
-                    title="Hide Curriculum"
-                  >
-                    <PanelLeftClose className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -1469,15 +1460,15 @@ export default function StudentLearnPage() {
         <div className="py-2 sm:py-3 text-center flex flex-col items-center w-full max-w-xl mx-auto">
           {/* Radiant Celebration Emblem */}
           <div className="relative mb-3 sm:mb-4">
-            <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-amber-400/30 to-yellow-300/30 blur-md animate-pulse" />
-            <div className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-white flex items-center justify-center shadow-lg ring-4 sm:ring-8 ring-amber-100 dark:ring-amber-950/60">
+            <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-emerald-400/30 to-green-300/30 blur-md animate-pulse" />
+            <div className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-emerald-500 to-green-400 text-white flex items-center justify-center shadow-lg ring-4 sm:ring-8 ring-emerald-100 dark:ring-emerald-950/60">
               <Award className="h-8 w-8 sm:h-10 sm:w-10 text-white stroke-[2.2]" />
             </div>
           </div>
 
           <div className="space-y-1 mb-3.5 w-full">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
-              <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
+              <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
               CEFR Graduation Unlocked
             </span>
             <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -1491,10 +1482,10 @@ export default function StudentLearnPage() {
 
           {/* Certificate Showcase Card */}
           {earnedCertificate ? (
-            <div className="w-full mb-3.5 rounded-2xl border-2 border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-b from-amber-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-3 sm:p-4 text-left shadow-md">
-              <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-amber-200/60 dark:border-slate-800">
+            <div className="w-full mb-3.5 rounded-2xl border-2 border-emerald-300/80 dark:border-emerald-700/60 bg-gradient-to-b from-emerald-50/80 via-white to-emerald-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-3 sm:p-4 text-left shadow-md">
+              <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-emerald-200/60 dark:border-slate-800">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                     <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
                   <div className="min-w-0">
@@ -1533,7 +1524,7 @@ export default function StudentLearnPage() {
               )}
             </div>
           ) : (
-            <div className="w-full mb-3.5 p-3.5 sm:p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-center">
+            <div className="w-full mb-3.5 p-3.5 sm:p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-center">
               <p className="text-xs text-slate-600 dark:text-slate-300 mb-3">
                 Click below to claim your certificate and have it generated and sent directly to your email.
               </p>
@@ -1541,7 +1532,7 @@ export default function StudentLearnPage() {
                 size="sm"
                 disabled={claimingCert}
                 onClick={handleClaimCertificate}
-                className="w-full sm:w-auto min-w-[200px] bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-8.5 rounded-lg text-xs shadow-xs mx-auto cursor-pointer"
+                className="w-full sm:w-auto min-w-[200px] bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-8.5 rounded-lg text-xs shadow-xs mx-auto cursor-pointer"
               >
                 {claimingCert ? (
                   <span className="flex items-center gap-2">
@@ -1560,7 +1551,7 @@ export default function StudentLearnPage() {
             {earnedCertificate && (
               <>
                 <Link href="/student/certificates" onClick={() => setShowCourseCompletionModal(false)} className="w-full sm:w-auto inline-flex">
-                  <Button size="sm" className="w-full sm:w-auto h-8 px-3 bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-lg text-xs gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95">
+                  <Button size="sm" className="w-full sm:w-auto h-8 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95">
                     <Award className="h-3.5 w-3.5" />
                     <span>View in My Certificates</span>
                   </Button>

@@ -27,6 +27,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { CertificateVerificationSection } from '@/components/certificate/certificate-verification-section';
+import { VocabularyWidget } from '@/components/public/vocabulary-widget';
 
 export default function HomePage() {
   // 1. Interactive Flashcard Demo State
@@ -452,84 +453,45 @@ export default function HomePage() {
       <CertificateVerificationSection />
 
       {/* =========================================================================
-          STUDENT TESTIMONIALS & SUCCESS STORIES
+          STATISTICS & VOCABULARY WIDGET
       ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0">
-        <div className="text-center space-y-2 sm:space-y-3 max-w-2xl mx-auto mb-8 sm:mb-10">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#172033]">
-            Trusted by Professionals &amp; Learners Across East Africa
-          </h2>
-          <p className="text-xs sm:text-sm text-[#667085]">
-            Real feedback from graduates who accelerated their global careers and passed CEFR accreditations.
-          </p>
-        </div>
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Statistics Section */}
+          <div className="flex flex-col justify-center space-y-6">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#172033]">
+              Join our growing community
+            </h2>
+            <p className="text-sm text-[#667085]">
+              Empowering learners across East Africa with world-class education.
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+              <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
+                <Users className="h-8 w-8 text-[#006EF3] mb-3" />
+                <span className="text-3xl font-black text-[#172033]">12.5K+</span>
+                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Enrolled Students</span>
+              </Card>
+              
+              <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
+                <BookOpen className="h-8 w-8 text-[#006EF3] mb-3" />
+                <span className="text-3xl font-black text-[#172033]">45</span>
+                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Courses</span>
+              </Card>
+              
+              <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
+                <FileCheck className="h-8 w-8 text-[#006EF3] mb-3" />
+                <span className="text-3xl font-black text-[#172033]">1,200+</span>
+                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Lessons</span>
+              </Card>
+            </div>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          <Card className="rounded-2xl sm:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="space-y-3">
-              <div className="flex gap-1 text-[#F5B400]">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-[#F5B400] text-[#F5B400]" />
-                ))}
-              </div>
-              <p className="text-xs text-[#172033] leading-relaxed italic">
-                "The B2 Upper Intermediate course transformed my confidence in global sprint standups and async technical collaboration. I secured a remote role within 3 months."
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#E2E8F0] flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#012970] text-white font-bold text-xs shadow-sm">
-                EK
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#172033]">Eric Karemera</p>
-                <p className="text-[10px] text-[#667085]">Full-Stack Developer, Kigali</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="rounded-2xl sm:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="space-y-3">
-              <div className="flex gap-1 text-[#F5B400]">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-[#F5B400] text-[#F5B400]" />
-                ))}
-              </div>
-              <p className="text-xs text-[#172033] leading-relaxed italic">
-                "The structured grammar and speaking units gave me the natural fluency needed for international conferences and hospital exchange programs."
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#E2E8F0] flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#006EF3] text-white font-bold text-xs shadow-sm">
-                CM
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#172033]">Dr. Claire Mutoni</p>
-                <p className="text-[10px] text-[#667085]">Clinical Specialist, Rwanda</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="rounded-2xl sm:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="space-y-3">
-              <div className="flex gap-1 text-[#F5B400]">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-[#F5B400] text-[#F5B400]" />
-                ))}
-              </div>
-              <p className="text-xs text-[#172033] leading-relaxed italic">
-                "The C1 Advanced course gave our executive team the vocabulary and precision needed to negotiate multi-million franc cross-border deals."
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-[#E2E8F0] flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#011b4a] text-white font-bold text-xs shadow-sm">
-                PN
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#172033]">Patrick Ndahiro</p>
-                <p className="text-[10px] text-[#667085]">Managing Director, East Africa Logistics</p>
-              </div>
-            </div>
-          </Card>
+          {/* Vocabulary Widget */}
+          <div className="flex items-center justify-center">
+            <VocabularyWidget />
+          </div>
         </div>
       </section>
 

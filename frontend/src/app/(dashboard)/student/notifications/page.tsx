@@ -43,16 +43,28 @@ function formatTimeAgo(dateStr: string) {
 }
 
 export default function StudentNotificationsPage() {
+  const [activeTab, setActiveTab] = useState<'ALL' | 'UNREAD'>('ALL');
+
   const { data: rawNotifications, loading, refresh } = useCachedData<NotificationItem[]>(
     'student_notifications',
     async () => {
-      const res = await apiClient.get<NotificationItem[]>('/notifications');
-      return Array.isArray(res) ? res : (res as any)?.data || [];
+      const res = await apiClient.get<any>('/notifications?limit=100');
+      if (Array.isArray(res)) return res;
+      if (Array.isArray(res?.notifications)) return res.notifications;
+      if (Array.isArray(res?.data?.notifications)) return res.data.notifications;
+      if (Array.isArray(res?.data)) return res.data;
+      return [];
     },
-    { ttl: 60_000, initialData: [] }
+    { ttl: 30_000, initialData: [] }
   );
 
   const notifications = Array.isArray(rawNotifications) ? rawNotifications : [];
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const filteredNotifications = notifications.filter((item) => {
+    if (activeTab === 'UNREAD') return !item.isRead;
+    return true;
+  });
 
   const handleMarkAllRead = async () => {
     try {
@@ -85,12 +97,44 @@ export default function StudentNotificationsPage() {
             Real-time alerts on payment approvals, evaluated assignments, quiz feedback, and course milestones.
           </p>
         </div>
-        {notifications.some((n) => !n.isRead) && (
+        {unreadCount > 0 && (
           <Button variant="outline" size="sm" onClick={handleMarkAllRead} className="self-start sm:self-auto text-xs h-8">
             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-primary-600" />
             Mark All as Read
           </Button>
         )}
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setActiveTab('ALL')}
+          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+            activeTab === 'ALL'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span>All</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold">
+            {notifications.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('UNREAD')}
+          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+            activeTab === 'UNREAD'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span>Unread</span>
+          {unreadCount > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-600 text-white font-bold">
+              {unreadCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {loading && notifications.length === 0 ? (
@@ -108,9 +152,9 @@ export default function StudentNotificationsPage() {
             </Card>
           ))}
         </div>
-      ) : notifications.length > 0 ? (
+      ) : filteredNotifications.length > 0 ? (
         <div className="space-y-3">
-          {notifications.map((item) => (
+          {filteredNotifications.map((item) => (
             <Card
               key={item.id}
               className={`p-3.5 sm:p-5 transition-all ${
@@ -176,9 +220,13 @@ export default function StudentNotificationsPage() {
       ) : (
         <Card className="p-12 text-center">
           <Bell className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white">All caught up!</h3>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+            {activeTab === 'UNREAD' ? 'All caught up!' : 'No notifications yet'}
+          </h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            You don't have any unread notifications right now.
+            {activeTab === 'UNREAD'
+              ? "You don't have any unread notifications right now."
+              : 'You will receive real-time updates and announcements here.'}
           </p>
         </Card>
       )}

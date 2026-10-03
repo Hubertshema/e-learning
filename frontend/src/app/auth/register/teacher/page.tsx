@@ -89,6 +89,12 @@ export default function TeacherRegisterPage() {
       return;
     }
 
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setError('Please enter a valid, well-formatted email address (e.g. yourname@domain.com).');
+      return;
+    }
+
     try {
       setLoading(true);
       await apiClient.post('/auth/register', {

@@ -49,7 +49,7 @@ interface EnrolledCourseItem {
 }
 
 export default function MyCoursesPage() {
-  const [activeTab, setActiveTab] = useState<'ALL' | 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'COMPLETED'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'ACTIVE' | 'COMPLETED'>('ALL');
   const [search, setSearch] = useState('');
 
   const { data: fetchResult, loading } = useCachedData<{ enrolled: EnrolledCourseItem[], primaryLevel: string }>(
@@ -79,8 +79,6 @@ export default function MyCoursesPage() {
 
   const filteredCourses = uniqueCourses.filter((item) => {
     if (activeTab === 'ACTIVE' && (item.status !== 'ACTIVE' || item.isExpired)) return false;
-    if (activeTab === 'PENDING' && item.status !== 'PENDING') return false;
-    if (activeTab === 'EXPIRED' && (!item.isExpired && item.status !== 'EXPIRED')) return false;
     if (activeTab === 'COMPLETED' && item.status !== 'COMPLETED') return false;
     if (search && !item.course.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -206,7 +204,7 @@ export default function MyCoursesPage() {
       {/* Tabs & Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-          {(['ALL', 'ACTIVE', 'PENDING', 'EXPIRED', 'COMPLETED'] as const).map((tab) => (
+          {(['ALL', 'ACTIVE', 'COMPLETED'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
