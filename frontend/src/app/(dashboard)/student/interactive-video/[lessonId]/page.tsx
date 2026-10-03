@@ -28,6 +28,20 @@ export default function StudentInteractiveVideoPage() {
   const saveTimeoutRef = useRef<any>(null);
 
   const handleProgress = (position: number, watched: number, percent: number) => {
+    // Update local data state immediately reflecting highest reached playtime
+    setData((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        progress: {
+          ...(prev.progress || {}),
+          completionPercent: Math.max(prev.progress?.completionPercent || 0, Math.round(percent)),
+          watchedSeconds: Math.max(prev.progress?.watchedSeconds || 0, Math.round(watched)),
+          lastPositionSeconds: Math.round(position),
+        },
+      };
+    });
+
     const roundedPos = Math.round(position);
     if (Math.abs(roundedPos - lastSavedPosRef.current) < 2) return;
     lastSavedPosRef.current = roundedPos;

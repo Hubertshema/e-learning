@@ -515,23 +515,24 @@ export function InteractiveVideoPlayer({
       return;
     }
 
-    // Report curriculum progress to parent
+    // Report curriculum progress to parent using highest reached playtime as numerator
+    const highestReachedPlaytime = Math.max(watchedRef.current || 0, current || 0);
     const totalActs = (activitiesRef.current || []).length;
     const nowCompletedActs = Object.keys(completedRef.current).filter(
       (k) => completedRef.current[k]
     ).length;
     const checkPct = totalActs > 0 ? (nowCompletedActs / totalActs) * 50 : 0;
-    const watchPct = totalDuration > 0 ? Math.min(50, (current / totalDuration) * 50) : 0;
+    const watchPct = totalDuration > 0 ? Math.min(50, (highestReachedPlaytime / totalDuration) * 50) : 0;
     const progressPercent = totalActs > 0
       ? Math.min(100, Math.round(checkPct + watchPct))
-      : (totalDuration > 0 ? Math.min(100, Math.round((current / totalDuration) * 100)) : 0);
+      : (totalDuration > 0 ? Math.min(100, Math.round((highestReachedPlaytime / totalDuration) * 100)) : 0);
 
     // Prevent auto-advance (reaching >= 90%) if there is an active checkpoint blocking the user
     const finalPercent = activeRef.current ? Math.min(89, progressPercent) : progressPercent;
 
     onProgress?.(
       current,
-      Math.max(watchedRef.current, current),
+      highestReachedPlaytime,
       finalPercent
     );
   };
@@ -643,17 +644,18 @@ export function InteractiveVideoPlayer({
         completedRef.current[active.id] = true;
         setCompleted((v) => ({ ...v, [active.id]: true }));
 
-        // Update progress immediately
+        // Update progress immediately using highest reached playtime as numerator
+        const highestReachedPlaytime = Math.max(watchedRef.current || 0, position || 0);
         const totalActs = (activitiesRef.current || []).length;
         const nowCompletedActs = Object.keys(completedRef.current).filter(
           (k) => completedRef.current[k]
         ).length;
         const checkPct = totalActs > 0 ? (nowCompletedActs / totalActs) * 50 : 0;
-        const watchPct = totalDuration > 0 ? Math.min(50, (watchedRef.current / totalDuration) * 50) : 0;
+        const watchPct = totalDuration > 0 ? Math.min(50, (highestReachedPlaytime / totalDuration) * 50) : 0;
         const calculatedPercent = Math.min(100, Math.round(checkPct + watchPct));
         // Prevent auto-advance if somehow another checkpoint is instantly active
         const finalPercent = activeRef.current ? Math.min(89, calculatedPercent) : calculatedPercent;
-        onProgress?.(position, Math.max(watchedRef.current, position), finalPercent);
+        onProgress?.(position, highestReachedPlaytime, finalPercent);
 
         // Gentle auto-resume timer giving student time to review response
         clearAutoResume();

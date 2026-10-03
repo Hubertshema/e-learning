@@ -406,6 +406,21 @@ export default function StudentLearnPage() {
     // Save every 5s, or when crossing 90%, or upon significant forward step (>= 15s)
     if (timeDelta > 5000 || (percent >= 90 && timeDelta > 2000) || posDelta >= 15) {
       lastProgressSyncRef.current = { time: now, pos: position };
+
+      // Update local interactiveVideoData state immediately reflecting highest reached playtime
+      setInteractiveVideoData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          progress: {
+            ...(prev.progress || {}),
+            completionPercent: Math.max(prev.progress?.completionPercent || 0, Math.round(percent)),
+            watchedSeconds: Math.max(prev.progress?.watchedSeconds || 0, Math.round(watched)),
+            lastPositionSeconds: Math.round(position),
+          },
+        };
+      });
+
       try {
         await apiClient.post(`/student/interactive-videos/lessons/${lessonId}/progress`, {
           lastPositionSeconds: Math.round(position),
