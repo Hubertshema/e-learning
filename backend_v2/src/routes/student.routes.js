@@ -26,8 +26,9 @@ router.get('/placement-test', PlacementController.getStudentPlacementTest);
 router.get('/placements', PlacementController.getAvailablePlacements);
 router.post('/placement-test', PlacementController.submitStudentPlacementTest);
 
-// Student Dashboard
+// Student Dashboard & Feedback
 router.get('/dashboard', StudentController.getDashboard);
+router.get('/feedback', StudentController.getAllFeedbacks);
 
 // Student Courses & Learning Room
 router.get('/courses', (req, res, next) => {

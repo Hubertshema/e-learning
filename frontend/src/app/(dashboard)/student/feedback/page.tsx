@@ -39,7 +39,7 @@ export default function StudentFeedbackPage() {
   const { data: rawFeedbacks, loading } = useCachedData<TeacherFeedbackItem[]>(
     'student_feedback',
     async () => {
-      const res = await apiClient.get<TeacherFeedbackItem[]>('/students/feedback');
+      const res = await apiClient.get<TeacherFeedbackItem[]>('/student/feedback');
       return Array.isArray(res) ? res : (res as any)?.data || [];
     },
     { ttl: 120_000, initialData: [] }

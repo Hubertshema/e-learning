@@ -14,6 +14,11 @@ export class AuthController {
         return sendError(res, 'Email, password, first name and last name are required', 400, 'VALIDATION_ERROR');
       }
 
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return sendError(res, 'Please provide a valid email address', 400, 'VALIDATION_ERROR');
+      }
+
       const result = await AuthService.register({ email, password, firstName, lastName, role });
       return sendSuccess(res, result, 'Registration successful', 201);
     } catch (err) {
@@ -29,6 +34,11 @@ export class AuthController {
       const { email, password } = req.body;
       if (!email || !password) {
         return sendError(res, 'Email and password are required', 400, 'VALIDATION_ERROR');
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return sendError(res, 'Please provide a valid email address', 400, 'VALIDATION_ERROR');
       }
 
       const result = await AuthService.login({ email, password });
@@ -122,6 +132,12 @@ export class AuthController {
       if (!email) {
         return sendError(res, 'Email address is required', 400, 'VALIDATION_ERROR');
       }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return sendError(res, 'Please provide a valid email address', 400, 'VALIDATION_ERROR');
+      }
+
       const result = await AuthService.forgotPassword(email);
       return sendSuccess(res, result, 'If your email is registered, password reset instructions have been sent.');
     } catch (err) {

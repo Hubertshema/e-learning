@@ -11,6 +11,58 @@ import { query } from '../config/database.js';
 
 export class StudentController {
   /**
+   * Get all teacher feedbacks for a student
+   */
+  static async getAllFeedbacks(req, res) {
+    try {
+      const studentId = req.user.id;
+      
+      const userRes = await query(
+        `SELECT sp.id as "profileId"
+         FROM "public"."users" u
+         LEFT JOIN "public"."student_profiles" sp ON sp."userId" = u.id
+         WHERE u.id = $1`,
+        [studentId]
+      );
+      
+      const profileId = userRes.rows[0]?.profileId || studentId;
+
+      const fbRes = await query(
+        `SELECT tf.id, tf.title, tf.content, tf.strengths, tf.improvements, tf."createdAt",
+                t."firstName" as "teacherFirstName", t."lastName" as "teacherLastName", t.email as "teacherEmail", t."avatarUrl" as "teacherAvatar"
+         FROM "public"."teacher_feedbacks" tf
+         LEFT JOIN "public"."teacher_profiles" tp ON tp.id = tf."teacherId"
+         LEFT JOIN "public"."users" t ON (t.id = tp."userId" OR t.id = tf."teacherId")
+         WHERE tf."studentId" = $1 OR tf."studentId" = $2
+         ORDER BY tf."createdAt" DESC`,
+        [studentId, profileId]
+      );
+      
+      const feedbacks = fbRes.rows.map(r => ({
+        id: r.id,
+        title: r.title,
+        content: r.content,
+        strengths: Array.isArray(r.strengths) ? r.strengths : [],
+        improvements: Array.isArray(r.improvements) ? r.improvements : [],
+        createdAt: r.createdAt,
+        teacher: {
+          user: {
+            firstName: r.teacherFirstName,
+            lastName: r.teacherLastName,
+            email: r.teacherEmail,
+            avatarUrl: r.teacherAvatar
+          }
+        }
+      }));
+
+      return sendSuccess(res, feedbacks, 'Feedbacks retrieved successfully');
+    } catch (error) {
+      console.error('Get All Feedbacks Error:', error);
+      return sendError(res, 'Failed to fetch feedbacks', 500);
+    }
+  }
+
+  /**
    * Get all courses for a student, combined with their access status
    */
   static async getStudentCourses(req, res) {
