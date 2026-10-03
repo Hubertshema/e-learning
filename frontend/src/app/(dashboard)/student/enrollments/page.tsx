@@ -81,7 +81,7 @@ export default function StudentEnrollmentsPage() {
             View course access durations, enrollment start & expiry timestamps, and payment verification receipts.
           </p>
         </div>
-        <Link href="/student/courses">
+        <Link href="/courses">
           <Button variant="gradient" size="sm">
             <Sparkles className="mr-1.5 h-3.5 w-3.5" />
             Explore New Courses
@@ -148,14 +148,14 @@ export default function StudentEnrollmentsPage() {
                         </Button>
                       </Link>
                     ) : enr.isExpired ? (
-                      <Link href="/student/courses">
+                      <Link href="/courses">
                         <Button variant="outline" size="sm" className="text-rose-600 border-rose-300">
                           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
                           Explore Courses
                         </Button>
                       </Link>
                     ) : (
-                      <Link href="/student/courses">
+                      <Link href="/courses">
                         <Button variant="outline" size="sm" className="text-xs">
                           <BookOpen className="mr-1.5 h-3.5 w-3.5" />
                           Course Catalog
@@ -203,7 +203,7 @@ export default function StudentEnrollmentsPage() {
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto mb-4">
             You haven't requested enrollment in any courses yet. Browse our catalog to start learning.
           </p>
-          <Link href="/student/courses">
+          <Link href="/courses">
             <Button variant="gradient" size="sm">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
               Browse Course Catalog

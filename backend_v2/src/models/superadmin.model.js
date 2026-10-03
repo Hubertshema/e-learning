@@ -1,5 +1,6 @@
 import { query } from '../config/database.js';
 import crypto from 'crypto';
+import { SocketService } from '../services/socket.service.js';
 
 export class SuperadminModel {
   /**
@@ -984,6 +985,19 @@ export class SuperadminModel {
     );
 
     const count = insertedRes.rowCount || insertedRes.rows.length;
+
+    // Real-time broadcast to connected clients
+    try {
+      SocketService.broadcast('notification:new', {
+        title,
+        message,
+        type: 'PLATFORM_ANNOUNCEMENT',
+        createdAt: new Date().toISOString(),
+        isRead: false,
+      });
+    } catch (e) {
+      // Continue
+    }
 
     // Log audit log
     await query(

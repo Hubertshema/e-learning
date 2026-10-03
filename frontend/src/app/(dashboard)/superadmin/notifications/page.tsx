@@ -2,22 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Bell,
   CheckCircle2,
   Clock,
-  AlertCircle,
+  ShieldAlert,
   CreditCard,
-  BookOpen,
-  ClipboardList,
+  Users,
+  Megaphone,
   ArrowRight,
   Trash2,
+  Check,
+  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { useCachedData } from '@/lib/cache';
+import { getSocketClient } from '@/lib/socket-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface NotificationItem {
@@ -43,23 +45,58 @@ function formatTimeAgo(dateStr: string) {
   }
 }
 
-export default function StudentNotificationsPage() {
+function getAdminNotificationIcon(type: string) {
+  switch (type) {
+    case 'SECURITY_ALERT':
+      return <ShieldAlert className="h-4 w-4 text-rose-500" />;
+    case 'PAYMENT_PENDING':
+    case 'PAYMENT_VERIFIED':
+      return <CreditCard className="h-4 w-4 text-emerald-500" />;
+    case 'TEACHER_APPLICATION':
+    case 'STUDENT_ADMISSION':
+      return <Users className="h-4 w-4 text-blue-500" />;
+    case 'PLATFORM_ANNOUNCEMENT':
+      return <Megaphone className="h-4 w-4 text-amber-500" />;
+    default:
+      return <Bell className="h-4 w-4 text-primary-500" />;
+  }
+}
+
+export default function SuperadminNotificationsPage() {
   const [activeTab, setActiveTab] = useState<'ALL' | 'UNREAD'>('ALL');
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: rawNotifications, loading, refresh } = useCachedData<NotificationItem[]>(
-    'student_notifications',
-    async () => {
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
       const res = await apiClient.get<any>('/notifications?limit=100');
-      if (Array.isArray(res)) return res;
-      if (Array.isArray(res?.notifications)) return res.notifications;
-      if (Array.isArray(res?.data?.notifications)) return res.data.notifications;
-      if (Array.isArray(res?.data)) return res.data;
-      return [];
-    },
-    { ttl: 30_000, initialData: [] }
-  );
+      const list = res?.notifications || res?.data?.notifications || res || [];
+      setNotifications(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Failed to load superadmin notifications', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const notifications = Array.isArray(rawNotifications) ? rawNotifications : [];
+  useEffect(() => {
+    fetchNotifications();
+
+    const socket = getSocketClient();
+    if (socket && typeof socket.on === 'function') {
+      const handleNewNotification = (notif: NotificationItem) => {
+        if (!notif) return;
+        setNotifications((prev) => [notif, ...prev.filter((n) => n.id !== notif.id)]);
+      };
+      socket.on('notification:new', handleNewNotification);
+
+      return () => {
+        socket.off('notification:new', handleNewNotification);
+      };
+    }
+  }, []);
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const filteredNotifications = notifications.filter((item) => {
@@ -70,25 +107,25 @@ export default function StudentNotificationsPage() {
   const handleMarkAllRead = async () => {
     try {
       await apiClient.patch('/notifications/read-all');
-      await refresh();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (err) {
-      console.error('Failed to mark notifications read', err);
+      console.error('Failed to mark all as read', err);
     }
   };
 
   const handleMarkOneRead = async (id: string) => {
     try {
       await apiClient.patch(`/notifications/${id}/read`);
-      await refresh();
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     } catch (err) {
-      console.error('Failed to mark notification read', err);
+      console.error('Failed to mark notification as read', err);
     }
   };
 
   const handleDeleteNotification = async (id: string) => {
     try {
       await apiClient.delete(`/notifications/${id}`);
-      await refresh();
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch (err) {
       console.error('Failed to delete notification', err);
     }
@@ -97,7 +134,7 @@ export default function StudentNotificationsPage() {
   const handleClearAll = async () => {
     try {
       await apiClient.delete('/notifications/clear-all');
-      await refresh();
+      setNotifications([]);
     } catch (err) {
       console.error('Failed to clear notifications', err);
     }
@@ -108,12 +145,15 @@ export default function StudentNotificationsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <Badge variant="indigo">Alerts & Milestones</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="indigo">System & Operations</Badge>
+            <span className="text-[11px] font-semibold text-slate-400">Master Audit Logs</span>
+          </div>
           <h1 className="mt-1.5 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Notifications Center
+            Superadmin Notifications Center
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time alerts on payment approvals, evaluated assignments, quiz feedback, and course milestones.
+            Platform-wide administrative alerts, verification requests, transactions, and security signals.
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -162,25 +202,20 @@ export default function StudentNotificationsPage() {
         >
           <span>Unread</span>
           {unreadCount > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-600 text-white font-bold">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-bold">
               {unreadCount}
             </span>
           )}
         </button>
       </div>
 
-      {loading && notifications.length === 0 ? (
+      {/* Notification List */}
+      {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="p-4 flex items-start gap-3">
-              <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-                <Skeleton className="h-3.5 w-full" />
-              </div>
+            <Card key={i} className="p-4 space-y-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-72" />
             </Card>
           ))}
         </div>
@@ -189,38 +224,34 @@ export default function StudentNotificationsPage() {
           {filteredNotifications.map((item) => (
             <Card
               key={item.id}
-              className={`p-3.5 sm:p-5 transition-all ${
+              className={`p-4 transition-all duration-200 ${
                 !item.isRead
-                  ? 'border-l-4 border-l-primary-600 bg-primary-50/20 dark:bg-primary-950/10'
-                  : 'hover:border-slate-300 dark:hover:border-slate-700'
+                  ? 'border-l-4 border-l-primary-600 bg-primary-50/20 dark:bg-primary-950/10 shadow-xs'
+                  : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
               }`}
             >
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
-                    <Bell className="h-4 w-4" />
+                  <div className="mt-0.5 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 shrink-0">
+                    {getAdminNotificationIcon(item.type)}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white break-words">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                         {item.title}
                       </h3>
                       {!item.isRead && (
-                        <span className="h-2 w-2 rounded-full bg-primary-600 animate-pulse shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-primary-600 shrink-0" />
                       )}
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 break-words leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 break-words leading-relaxed">
                       {item.message}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatTimeAgo(item.createdAt)}
-                      </span>
-                      <span className="text-slate-300 dark:text-slate-700 text-[10px]">•</span>
-                      <span className="text-[10px] text-slate-400">
-                        {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                    <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-400">
+                      <Clock className="h-3 w-3" />
+                      <span>{formatTimeAgo(item.createdAt)}</span>
+                      <span>•</span>
+                      <span>{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
                 </div>
@@ -228,9 +259,9 @@ export default function StudentNotificationsPage() {
                 <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800/80 w-full sm:w-auto justify-end">
                   {item.link && (
                     <Link href={item.link}>
-                      <Button size="sm" variant="gradient" className="text-xs h-8 px-3">
-                        View
-                        <ArrowRight className="ml-1 h-3 w-3" />
+                      <Button size="sm" variant="gradient" className="text-xs h-8 px-3 gap-1">
+                        <span>Inspect</span>
+                        <ArrowRight className="h-3 w-3" />
                       </Button>
                     </Link>
                   )}
@@ -239,9 +270,10 @@ export default function StudentNotificationsPage() {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleMarkOneRead(item.id)}
-                      className="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white h-8 px-2.5"
+                      className="text-xs text-slate-500 hover:text-emerald-600 h-8 px-2"
+                      title="Mark as read"
                     >
-                      Dismiss
+                      <Check className="h-3.5 w-3.5" />
                     </Button>
                   )}
                   <Button
@@ -262,12 +294,12 @@ export default function StudentNotificationsPage() {
         <Card className="p-12 text-center">
           <Bell className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-            {activeTab === 'UNREAD' ? 'All caught up!' : 'No notifications yet'}
+            {activeTab === 'UNREAD' ? 'All caught up!' : 'No administrative notifications'}
           </h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
             {activeTab === 'UNREAD'
-              ? "You don't have any unread notifications right now."
-              : 'You will receive real-time updates and announcements here.'}
+              ? 'All system alerts have been reviewed.'
+              : 'You will receive operations, payments, and platform notifications here.'}
           </p>
         </Card>
       )}

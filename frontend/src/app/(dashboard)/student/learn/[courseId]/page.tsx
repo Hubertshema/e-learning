@@ -718,7 +718,7 @@ export default function StudentLearnPage() {
               : 'In accordance with academy access policies, curriculum materials are unlocked once your payment proof is verified by the instructor.'}
           </p>
           <div className="mt-6 flex justify-center gap-3">
-            <Link href="/student/courses">
+            <Link href="/courses">
               <Button variant="gradient" size="sm">
                 Explore Courses
               </Button>

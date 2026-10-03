@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
 import { getSocketClient } from '@/lib/socket-client';
+import { useAuth } from '@/contexts/auth-context';
 
 import { fastDeepEqual } from '@/lib/cache';
 
@@ -37,6 +38,7 @@ function formatTimeAgo(dateStr: string) {
 }
 
 export function NotificationCenter() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filterTab, setFilterTab] = useState<'ALL' | 'UNREAD'>('ALL');
@@ -52,6 +54,13 @@ export function NotificationCenter() {
     width: 360,
     maxHeight: 500,
   });
+
+  const notificationsHref =
+    user?.role === 'SUPERADMIN'
+      ? '/superadmin/notifications'
+      : user?.role === 'TEACHER'
+      ? '/teacher/notifications'
+      : '/student/notifications';
 
   useEffect(() => setMounted(true), []);
 
@@ -192,6 +201,27 @@ export function NotificationCenter() {
     }
   };
 
+  const handleDeleteNotification = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await apiClient.delete(`/notifications/${id}`);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setUnreadCount((prev) => Math.max(0, prev - (notifications.find((n) => n.id === id)?.isRead ? 0 : 1)));
+    } catch (err) {
+      console.error('Failed to delete notification', err);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await apiClient.delete('/notifications/clear-all');
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Failed to clear notifications', err);
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell Button */}
@@ -242,15 +272,26 @@ export function NotificationCenter() {
                 <span className="text-[10px] text-slate-400 font-medium">All caught up</span>
               )}
             </div>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllAsRead}
-                className="text-[11px] text-primary-600 hover:text-primary-700 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
-              >
-                Mark all as read
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllAsRead}
+                  className="text-[11px] text-primary-600 hover:text-primary-700 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+                >
+                  Mark all read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="text-[11px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:underline font-medium cursor-pointer"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Quick Filter Tabs */}
@@ -330,16 +371,26 @@ export function NotificationCenter() {
                     </div>
                   </div>
 
-                  {!n.isRead && (
+                  <div className="flex items-center gap-1 shrink-0 self-start">
+                    {!n.isRead && (
+                      <button
+                        type="button"
+                        title="Mark as read"
+                        onClick={(e) => handleMarkAsRead(n.id, e)}
+                        className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     <button
                       type="button"
-                      title="Mark as read"
-                      onClick={(e) => handleMarkAsRead(n.id, e)}
-                      className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer self-start"
+                      title="Delete notification"
+                      onClick={(e) => handleDeleteNotification(n.id, e)}
+                      className="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                     >
-                      <Check className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                  )}
+                  </div>
                 </div>
               ))
             ) : (
@@ -358,7 +409,7 @@ export function NotificationCenter() {
           {/* Footer: View All Link */}
           <div className="px-4 py-2.5 text-center border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/90 shrink-0">
             <Link
-              href="/student/notifications"
+              href={notificationsHref}
               onClick={() => setIsOpen(false)}
               className="text-xs font-bold text-primary-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
             >

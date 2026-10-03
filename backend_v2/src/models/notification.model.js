@@ -3,14 +3,19 @@ import crypto from 'crypto';
 
 export class NotificationModel {
   /**
-   * Find notifications for user
+   * Find notifications for user with pagination and optional unread filter
    */
-  static async findByUserId(userId, { unreadOnly = false, limit = 20, offset = 0 } = {}) {
+  static async findByUserId(userId, { unreadOnly = false, limit = 50, offset = 0, type = null } = {}) {
     const whereConditions = [`"userId" = $1`];
     const params = [userId];
 
     if (unreadOnly) {
       whereConditions.push(`"isRead" = false`);
+    }
+
+    if (type) {
+      params.push(type);
+      whereConditions.push(`type = $${params.length}`);
     }
 
     params.push(limit, offset);
@@ -19,19 +24,35 @@ export class NotificationModel {
       `SELECT * FROM "public"."notifications"
        WHERE ${whereConditions.join(' AND ')}
        ORDER BY "createdAt" DESC
-       LIMIT $2 OFFSET $3`,
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
 
     const countRes = await query(
-      `SELECT COUNT(*) AS total FROM "public"."notifications" WHERE "userId" = $1 AND "isRead" = false`,
+      `SELECT 
+         COUNT(*) AS total,
+         COUNT(*) FILTER (WHERE "isRead" = false) AS unread
+       FROM "public"."notifications" 
+       WHERE "userId" = $1`,
       [userId]
     );
 
     return {
       notifications: res.rows,
-      unreadCount: parseInt(countRes.rows[0].total, 10),
+      total: parseInt(countRes.rows[0]?.total || '0', 10),
+      unreadCount: parseInt(countRes.rows[0]?.unread || '0', 10),
     };
+  }
+
+  /**
+   * Get unread count for user
+   */
+  static async getUnreadCount(userId) {
+    const res = await query(
+      `SELECT COUNT(*) AS unread FROM "public"."notifications" WHERE "userId" = $1 AND "isRead" = false`,
+      [userId]
+    );
+    return parseInt(res.rows[0]?.unread || '0', 10);
   }
 
   /**
@@ -47,6 +68,34 @@ export class NotificationModel {
       [id, userId, title, message, type, link]
     );
     return res.rows[0];
+  }
+
+  /**
+   * Create multiple notifications in bulk
+   */
+  static async createMany(notifications = []) {
+    if (!notifications.length) return [];
+
+    const values = [];
+    const placeholders = [];
+    let paramIdx = 1;
+
+    for (const n of notifications) {
+      const id = n.id || crypto.randomUUID();
+      placeholders.push(`($${paramIdx}, $${paramIdx + 1}, $${paramIdx + 2}, $${paramIdx + 3}, $${paramIdx + 4}, false, $${paramIdx + 5}, NOW())`);
+      values.push(id, n.userId, n.title, n.message, n.type || 'SYSTEM', n.link || null);
+      paramIdx += 6;
+    }
+
+    const res = await query(
+      `INSERT INTO "public"."notifications"
+        (id, "userId", title, message, type, "isRead", link, "createdAt")
+       VALUES ${placeholders.join(', ')}
+       RETURNING *`,
+      values
+    );
+
+    return res.rows;
   }
 
   /**
@@ -67,11 +116,39 @@ export class NotificationModel {
    * Mark all notifications as read for a user
    */
   static async markAllAsRead(userId) {
-    await query(
+    const res = await query(
       `UPDATE "public"."notifications"
        SET "isRead" = true
-       WHERE "userId" = $1 AND "isRead" = false`,
+       WHERE "userId" = $1 AND "isRead" = false
+       RETURNING id`,
       [userId]
     );
+    return res.rowCount || 0;
+  }
+
+  /**
+   * Delete a single notification
+   */
+  static async delete(id, userId) {
+    const res = await query(
+      `DELETE FROM "public"."notifications"
+       WHERE id = $1 AND "userId" = $2
+       RETURNING id`,
+      [id, userId]
+    );
+    return res.rowCount > 0;
+  }
+
+  /**
+   * Clear all notifications for a user
+   */
+  static async clearAll(userId) {
+    const res = await query(
+      `DELETE FROM "public"."notifications"
+       WHERE "userId" = $1
+       RETURNING id`,
+      [userId]
+    );
+    return res.rowCount || 0;
   }
 }

@@ -231,7 +231,7 @@ export default function StudentLearnHub() {
                   <p className="text-xs text-blue-100 font-medium">
                     No active course enrollments yet. Explore courses to begin!
                   </p>
-                  <Link href="/student/courses" className="mt-3 inline-block">
+                  <Link href="/courses" className="mt-3 inline-block">
                     <Button size="sm" variant="secondary" className="rounded-xl font-bold text-xs">
                       Explore Course Catalog
                     </Button>

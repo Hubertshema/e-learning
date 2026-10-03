@@ -1,4 +1,5 @@
 import { AssignmentModel } from '../models/assignment.model.js';
+import { NotificationService } from '../services/notification.service.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 
 export class AssignmentController {
@@ -122,6 +123,18 @@ export class AssignmentController {
         score: Number(score),
         feedback: feedback || '',
       });
+
+      if (graded?.studentId) {
+        NotificationService.createAndPushNotification({
+          userId: graded.studentId,
+          title: 'Assignment Graded 📝',
+          message: `Your assignment has been graded. Score: ${Number(score)}/100.${feedback ? ` Feedback: "${feedback}"` : ''}`,
+          type: 'ASSIGNMENT_GRADED',
+          link: '/student/assignments',
+        }).catch((err) => {
+          console.warn('Failed to send assignment notification:', err.message);
+        });
+      }
 
       return sendSuccess(res, graded, 'Submission graded and student progress updated');
     } catch (err) {

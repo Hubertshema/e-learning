@@ -7,7 +7,10 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', NotificationController.list);
-router.patch('/:id/read', NotificationController.markRead);
+router.get('/unread-count', NotificationController.getUnreadCount);
 router.patch('/read-all', NotificationController.markAllRead);
+router.patch('/:id/read', NotificationController.markRead);
+router.delete('/clear-all', NotificationController.clearAll);
+router.delete('/:id', NotificationController.delete);
 
 export default router;

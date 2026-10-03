@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { query } from '../config/database.js';
 import { UserModel } from './user.model.js';
 import { AuthService } from '../services/auth.service.js';
+import { NotificationService } from '../services/notification.service.js';
 
 export class AdmissionModel {
   /**
@@ -619,6 +620,17 @@ export class AdmissionModel {
       notes: notes || 'Payment verified by faculty. Learning access unlocked.',
     });
 
+    // Send in-app notification & real-time push to student
+    NotificationService.createAndPushNotification({
+      userId: targetUserId,
+      title: 'Payment Verified & Courses Unlocked! 🎓',
+      message: 'Your payment proof has been verified by the academy. Your learning curriculum is now active and ready!',
+      type: 'PAYMENT_VERIFIED',
+      link: '/student/my-courses',
+    }).catch((err) => {
+      console.warn('Failed to send payment verification notification:', err.message);
+    });
+
     return { success: true, paymentStatus: 'VERIFIED', learningAccess: 'ACTIVE' };
   }
 
@@ -657,6 +669,17 @@ export class AdmissionModel {
       fromState: { paymentStatus: status.admission.paymentStatus, learningAccess: status.admission.learningAccess },
       toState: { paymentStatus: 'REJECTED', learningAccess: 'LOCKED', rejectionReason: reason },
       notes: reason,
+    });
+
+    // Send in-app notification & real-time push to student
+    NotificationService.createAndPushNotification({
+      userId: targetUserId,
+      title: 'Payment Proof Verification Notice ⚠️',
+      message: `Your submitted payment receipt was not approved: ${reason}. Please visit Payments to resubmit a valid proof.`,
+      type: 'PAYMENT_REJECTED',
+      link: '/student/payments',
+    }).catch((err) => {
+      console.warn('Failed to send payment rejection notification:', err.message);
     });
 
     return { success: true, paymentStatus: 'REJECTED', learningAccess: 'LOCKED' };
