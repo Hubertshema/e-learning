@@ -58,6 +58,17 @@ export class UserService {
       if (Object.keys(studentFields).length > 0) {
         await UserModel.updateStudentProfile(userId, studentFields);
       }
+    } else if (user.role === 'TEACHER') {
+      const teacherAllowed = ['whatsapp', 'supportEmail', 'bio'];
+      const teacherFields = {};
+      for (const key of teacherAllowed) {
+        if (data[key] !== undefined) {
+          teacherFields[key] = data[key];
+        }
+      }
+      if (Object.keys(teacherFields).length > 0) {
+        await UserModel.updateTeacherProfile(userId, teacherFields);
+      }
     }
 
     return this.getProfile(userId);

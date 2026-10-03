@@ -845,6 +845,30 @@ class EmailService {
       html,
     });
   }
+
+  async sendCertificateDownloadOtp({ email, name, otp, certificateCode }) {
+    const contentHtml = `
+      <p>Dear <strong>${name}</strong>,</p>
+      <p>A request was made to view or download your official certificate (<strong>${certificateCode}</strong>).</p>
+      <p>Please use the following One-Time Password (OTP) to securely access your credential:</p>
+      <div style="background: #EEF2FF; border-left: 4px solid #4F46E5; padding: 16px; margin: 20px 0; border-radius: 6px; text-align: center;">
+        <h3 style="margin: 0; color: #1E1B4B; font-size: 28px; font-family: monospace; letter-spacing: 6px;">${otp}</h3>
+      </div>
+      <p>For your security, this OTP is valid for 15 minutes. If you did not request this, please ignore this email.</p>
+    `;
+
+    const html = this.renderBaseLayout({
+      title: 'Certificate Access OTP',
+      preheader: `Your OTP for certificate ${certificateCode}`,
+      contentHtml
+    });
+
+    return this.sendMail({
+      to: email,
+      subject: 'Security Code for Certificate Access',
+      html,
+    });
+  }
 }
 
 export const emailService = new EmailService();

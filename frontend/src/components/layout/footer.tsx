@@ -142,9 +142,6 @@ export function Footer() {
                 <Link href="/courses" className="hover:text-[#006EF3] transition-colors">Explore Courses</Link>
               </li>
               <li>
-                <Link href="/quiz" className="hover:text-[#006EF3] transition-colors">Diagnostic Quiz</Link>
-              </li>
-              <li>
                 <Link href="/levels" className="hover:text-[#006EF3] transition-colors">CEFR Levels (Pre-A1 - C2)</Link>
               </li>
               <li>

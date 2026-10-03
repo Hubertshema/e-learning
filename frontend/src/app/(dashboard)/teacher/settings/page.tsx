@@ -48,6 +48,8 @@ export default function TeacherSettingsPage() {
     hourlyRate: user?.teacherProfile?.hourlyRate || 35,
     experienceYears: user?.teacherProfile?.experienceYears || 5,
     profileVisibility: (user?.teacherProfile as any)?.profileVisibility || 'PUBLIC',
+    whatsapp: (user?.teacherProfile as any)?.whatsapp || '',
+    supportEmail: (user?.teacherProfile as any)?.supportEmail || '',
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -74,6 +76,8 @@ export default function TeacherSettingsPage() {
         hourlyRate: user.teacherProfile?.hourlyRate || 35,
         experienceYears: user.teacherProfile?.experienceYears || 5,
         profileVisibility: (user.teacherProfile as any)?.profileVisibility || 'PUBLIC',
+        whatsapp: (user.teacherProfile as any)?.whatsapp || '',
+        supportEmail: (user.teacherProfile as any)?.supportEmail || '',
       });
     }
   }, [user]);
@@ -112,6 +116,8 @@ export default function TeacherSettingsPage() {
         hourlyRate: Number(formData.hourlyRate),
         experienceYears: Number(formData.experienceYears),
         profileVisibility: formData.profileVisibility,
+        whatsapp: formData.whatsapp,
+        supportEmail: formData.supportEmail,
       });
       clientCache.invalidate('teacher_');
       if (refreshUser) await refreshUser();
@@ -360,6 +366,23 @@ export default function TeacherSettingsPage() {
                         placeholder="+250 788 123 456"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="WhatsApp Number (Public)"
+                        type="tel"
+                        placeholder="+250 788 123 456"
+                        value={formData.whatsapp}
+                        onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                      />
+                      <Input
+                        label="Support Email (Public)"
+                        type="email"
+                        placeholder="support@example.com"
+                        value={formData.supportEmail}
+                        onChange={(e) => setFormData({ ...formData, supportEmail: e.target.value })}
                       />
                     </div>
                   </div>

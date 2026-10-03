@@ -198,16 +198,17 @@ export class StudentController {
 
       // 2. Query enrollments with course details
       const enrollmentsRes = await query(
-        `SELECT e.id as "enrollmentId", e.status, e."enrolledAt", e."expiresAt",
+        `SELECT DISTINCT ON (e.id) e.id as "enrollmentId", e.status, e."enrolledAt", e."expiresAt",
                 c.id as "courseId", c.title, c.description, 0 as price, c.currency,
-                l.name as level,
+                COALESCE(l.name, c.level, 'Level 1') as level,
                 t.id as "teacherId", t."firstName" as "teacherFirstName", t."lastName" as "teacherLastName", t."avatarUrl" as "teacherAvatar"
          FROM "public"."enrollments" e
          JOIN "public"."courses" c ON e."courseId" = c.id
          LEFT JOIN "public"."level_courses" lc ON lc."courseId" = c.id
          LEFT JOIN "public"."levels" l ON lc."levelId" = l.id
          LEFT JOIN "public"."users" t ON c."teacherId" = t.id
-         WHERE (e."studentId" = $1 OR e."studentId" = $2) AND c."isPublished" = true`,
+         WHERE (e."studentId" = $1 OR e."studentId" = $2) AND c."isPublished" = true
+         ORDER BY e.id, e."enrolledAt" DESC`,
         [studentId, userRow.profileId || studentId]
       );
 

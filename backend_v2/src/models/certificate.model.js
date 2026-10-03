@@ -192,7 +192,7 @@ export class CertificateModel {
          cert.id, cert."certificateCode", cert."levelCompleted", cert."finalGrade", cert."issueDate", cert."isRevoked",
          c.title as "courseTitle", c.level as "courseLevel",
          tu."firstName" as "teacherFirstName", tu."lastName" as "teacherLastName",
-         su."firstName" as "studentFirstName", su."lastName" as "studentLastName"
+         su."firstName" as "studentFirstName", su."lastName" as "studentLastName", su."email" as "studentEmail"
        FROM "public"."certificates" cert
        JOIN "public"."courses" c ON c.id = cert."courseId"
        LEFT JOIN "public"."teacher_profiles" tp ON tp.id = c."teacherId"
@@ -214,6 +214,7 @@ export class CertificateModel {
       id: row.id,
       certificateCode: row.certificateCode,
       studentName: studentFullName,
+      studentEmail: row.studentEmail,
       courseTitle: row.courseTitle,
       levelCompleted: row.levelCompleted || 'A1',
       finalGrade: Number(row.finalGrade) || 100,

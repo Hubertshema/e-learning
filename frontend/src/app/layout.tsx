@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     'Master English with structured CEFR curriculum (Pre-A1 to C2), specialized tracks for Business, Tech & Healthcare, teacher-guided interactive lessons, and accredited certificates.',
   icons: {
     icon: '/logo.png',
-    shortcut: '/favicon.ico',
+    shortcut: '/logo.png',
     apple: '/logo.png',
   },
   keywords: [

@@ -311,7 +311,7 @@ export default function TermsOfServicePage() {
                   </p>
                   <ul className="text-xs text-rose-800 space-y-1.5 list-disc pl-5">
                     <li>Submitting automated speech synthesizers, voice clones, or third-party audio for oral speaking drills.</li>
-                    <li>Employing surrogate test-takers or unauthorized bots to complete grammar benchmarks and diagnostic quizzes.</li>
+                    <li>Employing surrogate test-takers or unauthorized bots to complete grammar benchmarks.</li>
                     <li>Distributing proprietary syllabus questions, diagnostic test keys, or answer repositories.</li>
                   </ul>
                 </div>

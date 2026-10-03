@@ -93,6 +93,9 @@ router.post('/newsletter/subscribe', async (req, res, next) => {
   }
 });
 
+import crypto from 'crypto';
+import { cache } from '../config/cache.js';
+
 // Public Certificate Verification
 router.get('/certificates/:code', async (req, res, next) => {
   try {
@@ -106,8 +109,70 @@ router.get('/certificates/:code', async (req, res, next) => {
       return sendError(res, `Certificate code '${code}' was not found in our official registry.`, 404, 'NOT_FOUND');
     }
 
-    return sendSuccess(res, cert, 'Certificate verified successfully');
+    const maskedEmail = cert.studentEmail ? cert.studentEmail.replace(/(.{2})(.*)(?=@)/, (gp1, gp2, gp3) => { 
+        return gp1 + '*'.repeat(gp2.length); 
+    }) : '';
+
+    return sendSuccess(res, {
+       certificateCode: cert.certificateCode,
+       studentName: cert.studentName,
+       courseTitle: cert.courseTitle,
+       isValid: cert.isValid,
+       status: cert.status,
+       maskedEmail
+    }, 'Certificate verified successfully');
   } catch (err) {
+    next(err);
+  }
+});
+
+// Request OTP for certificate unlock
+router.post('/certificates/:code/request-otp', async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const cert = await CertificateModel.verifyCertificate(code);
+    if (!cert) return sendError(res, 'Certificate not found', 404, 'NOT_FOUND');
+
+    if (!cert.studentEmail) {
+      return sendError(res, 'No email associated with this certificate owner', 400, 'VALIDATION_ERROR');
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    cache.set(`cert_otp_${code.toUpperCase()}`, otp, 15 * 60);
+
+    await emailService.sendCertificateDownloadOtp({
+      email: cert.studentEmail,
+      name: cert.studentName,
+      otp,
+      certificateCode: cert.certificateCode
+    });
+
+    return sendSuccess(res, { success: true }, 'OTP sent to the certificate owner');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Verify OTP to get full certificate
+router.post('/certificates/:code/verify-otp', async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    const { otp } = req.body;
+
+    if (!otp) return sendError(res, 'OTP is required', 400, 'VALIDATION_ERROR');
+
+    const storedOtp = cache.get(`cert_otp_${code.toUpperCase()}`);
+    if (!storedOtp || storedOtp !== otp.toString()) {
+      return sendError(res, 'Invalid or expired OTP', 400, 'VALIDATION_ERROR');
+    }
+
+    const cert = await CertificateModel.verifyCertificate(code);
+    if (!cert) return sendError(res, 'Certificate not found', 404, 'NOT_FOUND');
+
+    cache.del(`cert_otp_${code.toUpperCase()}`);
+
+    return sendSuccess(res, cert, 'OTP verified, certificate unlocked');
+  } catch(err) {
     next(err);
   }
 });

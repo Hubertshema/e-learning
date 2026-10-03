@@ -84,7 +84,6 @@ export function Navbar() {
     { name: 'Home', href: '/', icon: Home },
     { name: 'About Us', href: '/about', icon: Users },
     { name: 'Courses', href: '/courses', icon: BookOpen },
-    { name: 'Diagnostic Quiz', href: '/quiz', icon: Sparkles },
     { name: 'Levels (CEFR)', href: '/levels', icon: Award },
   ];
 

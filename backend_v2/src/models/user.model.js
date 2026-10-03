@@ -261,4 +261,47 @@ export class UserModel {
 
     return this.getStudentProfile(userId);
   }
+
+  /**
+   * Update teacher profile fields
+   */
+  static async updateTeacherProfile(userId, fields = {}) {
+    const allowed = ['whatsapp', 'supportEmail', 'bio'];
+    const setClauses = [];
+    const values = [];
+    let idx = 1;
+
+    for (const key of allowed) {
+      if (fields[key] !== undefined) {
+        setClauses.push(`"${key}" = $${idx}`);
+        values.push(fields[key]);
+        idx++;
+      }
+    }
+
+    // Ensure teacher_profiles row exists
+    const check = await query(`SELECT id FROM "public"."teacher_profiles" WHERE "userId" = $1 LIMIT 1`, [userId]);
+    if (check.rows.length === 0) {
+      const id = crypto.randomUUID();
+      await query(
+        `INSERT INTO "public"."teacher_profiles" (id, "userId", "createdAt", "updatedAt")
+         VALUES ($1, $2, NOW(), NOW())`,
+        [id, userId]
+      );
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push(`"updatedAt" = NOW()`);
+      values.push(userId);
+
+      await query(
+        `UPDATE "public"."teacher_profiles"
+         SET ${setClauses.join(', ')}
+         WHERE "userId" = $${values.length}`,
+        values
+      );
+    }
+
+    return this.getTeacherProfile(userId);
+  }
 }
