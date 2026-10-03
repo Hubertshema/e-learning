@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -5,7 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 import {
   XCircle,
   ShieldCheck,
@@ -45,6 +46,12 @@ export default function PublicCertificateVerificationPage() {
   const [otpStep, setOtpStep] = useState<'IDLE' | 'SENT' | 'VERIFIED'>('IDLE');
   const [otp, setOtp] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  const showToast = (type: 'success' | 'error', msg: string) => {
+    setToastMessage({ type, msg });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   useEffect(() => {
     const fetchCertificate = async () => {
@@ -79,9 +86,9 @@ export default function PublicCertificateVerificationPage() {
       setOtpLoading(true);
       await apiClient.post(`/public/certificates/${code}/request-otp`);
       setOtpStep('SENT');
-      toast.success('OTP sent to the certificate owner\'s email.');
+      showToast('success', "OTP sent to the certificate owner's email.");
     } catch (err: any) {
-      toast.error(err.message || 'Failed to send OTP.');
+      showToast('error', err.message || 'Failed to send OTP.');
     } finally {
       setOtpLoading(false);
     }
@@ -89,16 +96,16 @@ export default function PublicCertificateVerificationPage() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp.trim()) return toast.error('Please enter the OTP.');
+    if (!otp.trim()) return showToast('error', 'Please enter the OTP.');
     try {
       setOtpLoading(true);
       const res = await apiClient.post(`/public/certificates/${code}/verify-otp`, { otp });
       const payload = (res as any).data || res;
       setFullCert(payload);
       setOtpStep('VERIFIED');
-      toast.success('Certificate unlocked successfully.');
+      showToast('success', 'Certificate unlocked successfully.');
     } catch (err: any) {
-      toast.error(err.message || 'Invalid OTP.');
+      showToast('error', err.message || 'Invalid OTP.');
     } finally {
       setOtpLoading(false);
     }
@@ -106,6 +113,11 @@ export default function PublicCertificateVerificationPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 dark:bg-slate-950 flex flex-col items-center justify-center">
+      {toastMessage && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg border text-sm font-bold animate-in slide-in-from-top-2 ${toastMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+          {toastMessage.msg}
+        </div>
+      )}
       {/* Brand Header */}
       <div className="mb-8 text-center space-y-2">
         <Link href="/" className="inline-flex items-center gap-2.5">
