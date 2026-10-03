@@ -21,6 +21,7 @@ import {
   Maximize2,
   Minimize2,
   X,
+  FileText,
 } from 'lucide-react';
 import { UniversalVideo, UniversalVideoHandle, getYouTubeId } from './universal-video';
 
@@ -199,6 +200,7 @@ export function InteractiveVideoPlayer({
   const [isCompact, setIsCompact] = useState(true);
   const [restrictionNotice, setRestrictionNotice] = useState<string | null>(null);
   const noticeTimeoutRef = useRef<any>(null);
+  const [showTranscript, setShowTranscript] = useState(false);
 
   const [isMuted, setIsMuted] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -737,7 +739,7 @@ export function InteractiveVideoPlayer({
   const isCheckpointBlocking = !!(active && active.required !== false && !completed[active.id]);
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full flex flex-col justify-start">
       {/* Resume playback banner — auto-dismisses after 3 s */}
       {showResumeBanner && effectiveInitialPosition > 5 && (
         <ResumeBanner
@@ -758,10 +760,10 @@ export function InteractiveVideoPlayer({
         />
       )}
 
-      {/* Main Screen Stage: Full Width Video by Default, Split Screen When Checkpoint Active */}
-      <div className={`grid grid-cols-1 gap-6 items-stretch ${active ? 'lg:grid-cols-12' : ''} transition-all duration-500`}>
-        {/* VIDEO COLUMN: Full width normally, side-by-side when checkpoint is active */}
-        <div className={`${active ? 'lg:col-span-7 xl:col-span-8' : 'w-full'} flex flex-col justify-start transition-all duration-500 sticky top-0 z-40 bg-white dark:bg-slate-950 pt-2 pb-4 lg:p-0 lg:static lg:bg-transparent -mx-4 px-4 sm:mx-0 sm:px-0`}>
+      {/* Main Screen Stage: Full Width Video by Default, Split Screen When Checkpoint or Transcript Active */}
+      <div className={`grid grid-cols-1 gap-4 lg:gap-6 items-start ${active || (showTranscript && transcript.length > 0) ? 'lg:grid-cols-12' : ''} transition-all duration-300 w-full`}>
+        {/* VIDEO COLUMN: Full width normally, side-by-side when checkpoint or transcript is active */}
+        <div className={`${active || (showTranscript && transcript.length > 0) ? 'lg:col-span-7 xl:col-span-8' : 'w-full'} flex flex-col justify-start transition-all duration-300 sticky top-0 z-40 bg-white dark:bg-slate-950 pt-1 pb-2 lg:p-0 lg:static lg:bg-transparent -mx-2 px-2 sm:mx-0 sm:px-0`}>
           <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl border border-slate-800 select-none">
             
             {/* Completion Reset Prompt Overlay */}
@@ -824,13 +826,19 @@ export function InteractiveVideoPlayer({
               </div>
             )}
 
-            {/* 16:9 Aspect Video Canvas */}
-            <div className="relative w-full aspect-video bg-black flex items-center justify-center">
+            {/* 16:9 Aspect Video Canvas clamped to viewport height so that video + controls + feedback NEVER scroll */}
+            <div className={`relative w-full aspect-video ${
+              active
+                ? feedback
+                  ? 'max-h-[calc(100dvh-18.5rem)]'
+                  : 'max-h-[calc(100dvh-13.5rem)]'
+                : 'max-h-[calc(100dvh-9.5rem)]'
+            } bg-black flex items-center justify-center overflow-hidden`}>
               <UniversalVideo
                 ref={videoRef}
                 url={videoUrl}
                 controls={allowFreeSeek && isTeacher}
-                className="w-full h-full"
+                className="w-full h-full max-h-full object-contain"
                 initialTime={initialPosition}
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
@@ -1055,6 +1063,21 @@ export function InteractiveVideoPlayer({
                 {speed}x
               </button>
 
+              {/* Transcript Toggle Button */}
+              {transcript && transcript.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowTranscript((v) => !v)}
+                  className={`text-xs font-bold px-2 py-0.5 rounded transition-colors flex items-center gap-1 shrink-0 ${
+                    showTranscript ? 'bg-teal-500/20 text-teal-300' : 'text-slate-300 hover:text-white'
+                  }`}
+                  title={showTranscript ? 'Hide transcript' : 'Show transcript'}
+                >
+                  <FileText size={13} />
+                  <span className="hidden sm:inline">Transcript</span>
+                </button>
+              )}
+
               {/* Volume Mute Toggle */}
               <button
                 type="button"
@@ -1095,9 +1118,85 @@ export function InteractiveVideoPlayer({
             </div>
           )}
 
+          {/* Answer Feedback Directly Below Video */}
+          {active && feedback && (
+            <div className={`mt-2.5 rounded-2xl p-3 sm:p-3.5 text-xs font-medium transition-all flex flex-col sm:flex-row gap-3 sm:items-center justify-between shadow-xs animate-in fade-in slide-in-from-top-2 duration-300 ${
+              feedback.isCorrect
+                ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
+                : 'bg-rose-50 text-rose-900 dark:bg-rose-950/70 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
+            }`}>
+              <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                {feedback.isCorrect ? (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                )}
+                <div className="space-y-1 w-full min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold text-sm">
+                      {feedback.isCorrect ? 'Correct!' : 'Incorrect — not quite right.'}
+                    </p>
+                    {feedback.isCorrect && autoResumeSeconds !== null && (
+                      <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse shrink-0">
+                        <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        Resuming in {autoResumeSeconds}s...
+                      </span>
+                    )}
+                  </div>
+                  {feedback.feedback && !feedback.isCorrect && (
+                    <p className="opacity-90 leading-tight">{feedback.feedback}</p>
+                  )}
+                  {feedback.explanation && (
+                    <p className="text-xs opacity-80 mt-0.5 leading-tight">
+                      <strong>Explanation:</strong> {feedback.explanation}
+                    </p>
+                  )}
+                  {feedback.correctAnswer && (
+                    <div className="mt-1 pt-1 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-1 text-xs">
+                      <span className="font-bold opacity-75">Correct answer:</span>
+                      <span className="font-bold text-emerald-800 dark:text-emerald-200 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-md border border-emerald-300/50">
+                        {Array.isArray(feedback.correctAnswer)
+                          ? feedback.correctAnswer.join(', ')
+                          : typeof feedback.correctAnswer === 'object'
+                          ? Object.entries(feedback.correctAnswer).map(([k, v]) => `${k} → ${v}`).join('; ')
+                          : String(feedback.correctAnswer)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                {!feedback.isCorrect && active.allowRetry !== false && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      clearAutoResume();
+                      setFeedback(null);
+                      setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
+                    }}
+                    className="text-xs font-bold h-8 px-3 rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
+                  >
+                    <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                    Try Again
+                  </Button>
+                )}
+                {(feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
+                  <Button
+                    onClick={continueVideo}
+                    className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl text-xs h-8 px-4 shadow-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-white" />
+                    Continue Video
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          )}
+
           {/* Guidance Hint Below Video if Toggled */}
           {active && showHint && (
-            <div className="mt-4 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in">
+            <div className="mt-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in">
               <p className="font-bold flex items-center gap-1.5 mb-1">
                 <span>💡</span> Guidance:
               </p>
@@ -1108,17 +1207,17 @@ export function InteractiveVideoPlayer({
           )}
         </div>
 
-        {/* RIGHT COLUMN: Question & Interaction Panel - ONLY visible when checkpoint is active */}
-        {active && (
-          <div id="interactive-panel" className="lg:col-span-5 xl:col-span-4 relative flex flex-col min-h-[420px] lg:h-[calc(100vh-8rem)] lg:sticky lg:top-8 scroll-mt-[350px] lg:scroll-mt-0 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="flex-1 flex flex-col lg:overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-md p-4 sm:p-6">
-              <div className="flex flex-col lg:h-full lg:overflow-hidden">
-                <div className="flex-1 lg:overflow-y-auto pr-2 custom-scrollbar pb-4">
+        {/* RIGHT COLUMN: Question & Interaction Panel - ONLY visible when checkpoint is active, OR Transcript panel */}
+        {active ? (
+          <div id="interactive-panel" className="lg:col-span-5 xl:col-span-4 relative flex flex-col h-[calc(100dvh-10rem)] max-h-[calc(100dvh-10rem)] scroll-mt-[350px] lg:scroll-mt-0 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex-1 flex flex-col overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-md p-4 sm:p-5">
+              <div className="flex flex-col h-full overflow-hidden">
+                <div className="flex-1 overflow-y-auto pr-1.5 custom-scrollbar pb-3">
                   {/* Question Header */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800/80 px-3 py-1 rounded-full shadow-2xs">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800/80 px-2.5 py-0.5 rounded-full shadow-2xs">
                           <span className="w-2 h-2 rotate-45 bg-teal-500 shrink-0 inline-block" />
                           Checkpoint {activeCheckpointIndex >= 0 ? `${activeCheckpointIndex + 1} of ${activities.length}` : ''}
                         </span>
@@ -1192,32 +1291,32 @@ export function InteractiveVideoPlayer({
                   </div>
 
                   {/* Top Action Bar */}
-                  <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/95 dark:bg-slate-900/95 z-10 -mx-2 px-2 py-2">
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/95 dark:bg-slate-900/95 z-10 -mx-2 px-2 py-1.5">
                     {!feedback ? (
                       ['FILL_BLANK', 'FILL_IN_BLANK', 'VOCABULARY', 'DRAG_DROP', 'ORDERING', 'MULTIPLE_SELECT', 'SPEAKING'].includes(active.type) ? (
                         <Button
                           onClick={() => submit()}
                           disabled={submitting || (!answer && answer !== 0 && (!Array.isArray(answer) || answer.length === 0))}
-                          className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+                          className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl text-xs h-8 px-4 shadow-md transition-all flex items-center gap-2 shrink-0 cursor-pointer"
                         >
                           {submitting && <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
                           {submitting ? 'Checking...' : 'Submit Answer'}
                         </Button>
                       ) : (
-                        <div className="text-sm font-bold text-slate-500 flex items-center gap-2">
+                        <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
                           Select an option below
                         </div>
                       )
                     ) : (
-                      <div className="text-sm font-bold text-slate-500 flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Answer Submitted
+                      <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Answer Submitted
                       </div>
                     )}
                     
                     <button
                       type="button"
                       onClick={() => setShowHint((v) => !v)}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="text-xs font-semibold px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <span>💡</span> {showHint ? 'Hide hint' : 'Need a hint?'}
                     </button>
@@ -1225,83 +1324,9 @@ export function InteractiveVideoPlayer({
 
                   {/* Question Answer Options */}
                   <ActivityAnswer activity={active} answer={answer} setAnswer={setAnswer} feedback={feedback} onSubmit={submit} submitting={submitting} />
-
-                  {/* Feedback Card with Try Again & Continue Buttons directly inside Panel */}
-                  {feedback && (
-                    <div className={`mt-5 rounded-2xl p-4 text-xs font-medium transition-all flex flex-col gap-3 shadow-xs ${
-                      feedback.isCorrect
-                        ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800'
-                        : 'bg-rose-50 text-rose-900 dark:bg-rose-950/70 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
-                    }`}>
-                      <div className="flex items-start gap-2.5">
-                        {feedback.isCorrect ? (
-                          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                        ) : (
-                          <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                        )}
-                        <div className="space-y-1.5 w-full">
-                          <div className="flex items-center justify-between">
-                            <p className="font-bold text-sm">
-                              {feedback.isCorrect ? 'Correct!' : 'Incorrect — not quite right.'}
-                            </p>
-                            {feedback.isCorrect && autoResumeSeconds !== null && (
-                              <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse shrink-0">
-                                <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                                Resuming in {autoResumeSeconds}s...
-                              </span>
-                            )}
-                          </div>
-                          {feedback.feedback && !feedback.isCorrect && <p className="opacity-90">{feedback.feedback}</p>}
-                          {feedback.explanation && (
-                            <p className="text-xs opacity-80 mt-1">
-                              <strong>Explanation:</strong> {feedback.explanation}
-                            </p>
-                          )}
-                          {feedback.correctAnswer && (
-                            <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-1.5 text-xs">
-                              <span className="font-bold opacity-75">Correct answer:</span>
-                              <span className="font-bold text-emerald-800 dark:text-emerald-200 bg-white/80 dark:bg-black/40 px-2 py-0.5 rounded-md border border-emerald-300/50">
-                                {Array.isArray(feedback.correctAnswer)
-                                  ? feedback.correctAnswer.join(', ')
-                                  : typeof feedback.correctAnswer === 'object'
-                                  ? Object.entries(feedback.correctAnswer).map(([k, v]) => `${k} → ${v}`).join('; ')
-                                  : String(feedback.correctAnswer)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 pt-2 border-t border-black/5 dark:border-white/5">
-                        {!feedback.isCorrect && active.allowRetry !== false && (
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              clearAutoResume();
-                              setFeedback(null);
-                              setAnswer(active.type === 'MULTIPLE_SELECT' ? [] : '');
-                            }}
-                            className="text-xs font-bold h-9 px-4 rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex-1 shadow-xs cursor-pointer"
-                          >
-                            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                            Try Again
-                          </Button>
-                        )}
-                        {(feedback.isCorrect || active.allowRetry === false || feedback.correctAnswer) ? (
-                          <Button
-                            onClick={continueVideo}
-                            className="bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl text-xs h-9 px-5 shadow-md flex items-center justify-center gap-1.5 flex-1 transition-colors cursor-pointer"
-                          >
-                            <Play className="h-3.5 w-3.5 fill-white" />
-                            Continue Video
-                          </Button>
-                        ) : null}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400 shrink-0">
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400 shrink-0">
                   <span>{activities?.length || 0} checkpoints total</span>
                   <span className="font-semibold text-emerald-600">
                     {Object.keys(completed).length} / {activities?.length || 0} completed
@@ -1310,29 +1335,45 @@ export function InteractiveVideoPlayer({
               </div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Transcript Card below if transcript exists */}
-      {transcript.length > 0 && (
-        <Card className="p-5 rounded-2xl border-slate-200 dark:border-slate-800">
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Lesson Transcript</h3>
-          <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
-            {transcript.map((line, i) => (
-              <button
-                key={i}
-                onClick={() => seek(line.time)}
-                className="flex w-full items-start gap-3 rounded-xl p-2 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <span className="w-12 shrink-0 font-mono text-emerald-700 dark:text-emerald-400 font-bold">
-                  {formatVideoTime(line.time)}
-                </span>
-                <span className="text-slate-700 dark:text-slate-300">{line.text}</span>
-              </button>
-            ))}
+        ) : showTranscript && transcript.length > 0 ? (
+          <div id="transcript-panel" className="lg:col-span-5 xl:col-span-4 relative flex flex-col h-[calc(100dvh-10rem)] max-h-[calc(100dvh-10rem)] animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex-1 flex flex-col overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-md p-4 sm:p-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
+                    <FileText className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Lesson Transcript
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowTranscript(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="Close transcript"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto pr-1.5 mt-3 space-y-1.5 custom-scrollbar">
+                {transcript.map((line, i) => (
+                  <button
+                    key={i}
+                    onClick={() => seek(line.time)}
+                    className="flex w-full items-start gap-2.5 rounded-xl p-2 text-left text-xs hover:bg-[#F3F7FC] dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+                  >
+                    <span className="w-12 shrink-0 font-mono text-teal-600 dark:text-teal-400 font-bold group-hover:underline">
+                      {formatVideoTime(line.time)}
+                    </span>
+                    <span className="text-slate-700 dark:text-slate-300 leading-relaxed">{line.text}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </Card>
-      )}
+        ) : null}
+      </div>
     </div>
   );
 }

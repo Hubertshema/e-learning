@@ -142,6 +142,7 @@ export default function StudentLearnPage() {
   const [lessonToReset, setLessonToReset] = useState<Lesson | null>(null);
   const [resettingLesson, setResettingLesson] = useState(false);
   const [showCongratsLesson, setShowCongratsLesson] = useState<Lesson | null>(null);
+  const [showVideoResourcesModal, setShowVideoResourcesModal] = useState(false);
   const autoCompleteTimerRef = useRef<any>(null);
   const autoAdvanceTimerRef = useRef<any>(null);
   const ivAutoAdvancedRef = useRef<string | null>(null); // tracks lessonId that already triggered IV auto-advance
@@ -706,8 +707,20 @@ export default function StudentLearnPage() {
 
         {/* Overall Progress Moved to Sidebar */}
 
-        {/* Right: Actions (Syllabus Drawer) */}
+        {/* Right: Actions (PDF Resources & Syllabus Drawer) */}
         <div className="flex items-center gap-2">
+          {selectedLesson?.type === 'INTERACTIVE_VIDEO' && interactiveVideoData?.resources && interactiveVideoData.resources.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowVideoResourcesModal(true)}
+              className="flex h-9 items-center gap-1.5 rounded-xl border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] dark:border-slate-700 dark:text-slate-300"
+            >
+              <FileText className="h-4 w-4 text-[#006EF3]" />
+              <span>PDFs ({interactiveVideoData.resources.length})</span>
+            </Button>
+          )}
+
           {/* Flexible Syllabus Toggle */}
           {!sidebarOpen && (
             <Button
@@ -923,6 +936,17 @@ export default function StudentLearnPage() {
                         </div>
                       </div>
                     )}
+                    {selectedLesson.type === 'INTERACTIVE_VIDEO' && interactiveVideoData?.resources && interactiveVideoData.resources.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowVideoResourcesModal(true)}
+                        className="w-full flex h-8 items-center justify-center rounded-xl border-slate-200 text-xs text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] dark:border-slate-700 dark:text-slate-300 gap-1.5"
+                      >
+                        <FileText className="h-3.5 w-3.5 text-[#006EF3]" />
+                        <span>Lesson PDFs ({interactiveVideoData.resources.length})</span>
+                      </Button>
+                    )}
                   </div>
                 )}
                 
@@ -944,17 +968,17 @@ export default function StudentLearnPage() {
         )}
 
         {/* Right Main Content Area - Expands to 100% when sidebar is closed */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 min-w-0 transition-all duration-300">
-          <div className="mx-auto w-full max-w-[1600px] space-y-6">
+        <main className={`flex-1 ${selectedLesson?.type === 'INTERACTIVE_VIDEO' ? 'overflow-hidden p-2 sm:p-3 lg:p-4' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} min-w-0 transition-all duration-300`}>
+          <div className={`mx-auto w-full ${selectedLesson?.type === 'INTERACTIVE_VIDEO' ? 'max-w-[1650px] h-full flex flex-col justify-start space-y-2' : 'max-w-[1600px] space-y-6'}`}>
             {/* The congratulations overlay is now rendered over the lesson content below */}
             {/* General feedback banner */}
             {feedback && (
-              <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-[#F3F7FC] p-4 text-xs font-semibold text-[#012970] shadow-sm animate-in fade-in dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+              <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-[#F3F7FC] p-3 text-xs font-semibold text-[#012970] shadow-sm animate-in fade-in dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#006EF3]" />
                   <span>{feedback}</span>
                 </div>
-                <button onClick={() => setFeedback(null)} className="text-[11px] underline text-[#006EF3] hover:text-[#012970] font-semibold">
+                <button onClick={() => setFeedback(null)} className="text-[11px] underline text-[#006EF3] hover:text-[#012970] font-semibold cursor-pointer">
                   Dismiss
                 </button>
               </div>
@@ -983,7 +1007,7 @@ export default function StudentLearnPage() {
                             if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
                             setShowCongratsLesson(null);
                           }}
-                          className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline underline-offset-2 transition-colors mt-2"
+                          className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline underline-offset-2 transition-colors mt-2 cursor-pointer"
                         >
                           Stay on this lesson
                         </button>
@@ -999,7 +1023,7 @@ export default function StudentLearnPage() {
                       <p className="text-xs font-semibold">Loading interactive video studio...</p>
                     </Card>
                   ) : interactiveVideoData ? (
-                    <div className="space-y-6">
+                    <div className="w-full h-full flex flex-col justify-start">
                       <InteractiveVideoPlayer
                         lessonId={selectedLesson.id}
                         videoUrl={interactiveVideoData.videoUrl}
@@ -1018,121 +1042,6 @@ export default function StudentLearnPage() {
                           handleVideoProgressUpdate(selectedLesson.id, position, watched, percent);
                         }}
                       />
-
-                      {/* Progress Card Moved to Sidebar */}                      {/* Lesson Resources Section */}
-                      {interactiveVideoData.resources && interactiveVideoData.resources.length > 0 && (
-                        <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm space-y-3.5">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                            <div className="flex items-center gap-2.5">
-                              <div className="p-2 rounded-xl bg-[#F3F7FC] dark:bg-slate-800 text-[#012970] dark:text-blue-400 border border-[#006EF3]/30 dark:border-blue-900">
-                                <FileText className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                  Lesson PDF Resources
-                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                    {interactiveVideoData.resources.length}
-                                  </span>
-                                </h2>
-                                <p className="text-[11px] text-slate-500">
-                                  Study handouts, worksheets, and reference PDF materials uploaded for this lesson.
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                              <span className="flex items-center gap-1">
-                                <Eye className="h-3 w-3" /> Click PDF badge to preview
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {interactiveVideoData.resources.map((res: LessonResource) => {
-                              const canDownload = Boolean(res.canDownload);
-
-                              return (
-                                <div
-                                  key={res.id}
-                                  className="group p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-900 hover:border-[#006EF3] dark:hover:border-blue-500 hover:shadow-sm transition-all flex flex-col justify-between gap-3"
-                                >
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <ResourceTypeBadge
-                                        resource={res}
-                                        onClick={() => setPreviewResource(res)}
-                                        className="hover:scale-105 active:scale-95 transition-transform"
-                                      />
-                                      {canDownload ? (
-                                        <span
-                                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#006EF3] dark:text-blue-400"
-                                          title="Downloads allowed"
-                                        >
-                                          <CheckCircle2 className="h-3 w-3" /> Downloadable
-                                        </span>
-                                      ) : (
-                                        <span
-                                          className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400"
-                                          title="Downloads restricted by teacher (View Only)"
-                                        >
-                                          <Lock className="h-3 w-3" /> View Only
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <h4
-                                        className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-[#006EF3] dark:hover:text-blue-400 transition-colors"
-                                        onClick={() => setPreviewResource(res)}
-                                        title={res.title}
-                                      >
-                                        {res.title}
-                                      </h4>
-                                      {res.description && (
-                                        <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
-                                          {res.description}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="flex-1 h-7 text-xs font-semibold gap-1 hover:border-[#006EF3] hover:text-[#006EF3] dark:hover:text-blue-400"
-                                      onClick={() => setPreviewResource(res)}
-                                    >
-                                      <Eye className="h-3.5 w-3.5" />
-                                      Preview PDF
-                                    </Button>
-                                    {canDownload && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 px-2.5 text-xs font-semibold gap-1 text-[#012970] hover:bg-[#F3F7FC] dark:text-blue-400 dark:hover:bg-slate-800"
-                                        onClick={() => {
-                                          const a = document.createElement('a');
-                                          a.href = res.url;
-                                          a.download = res.title ? `${res.title}.pdf` : 'download.pdf';
-                                          a.target = '_blank';
-                                          a.rel = 'noopener noreferrer';
-                                          document.body.appendChild(a);
-                                          a.click();
-                                          document.body.removeChild(a);
-                                        }}
-                                        title="Download PDF document"
-                                      >
-                                        <Download className="h-3.5 w-3.5" />
-                                        <span className="hidden sm:inline">Save PDF</span>
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </section>
-                      )}
                     </div>
                   ) : (
                     <Card className="p-12 text-center text-rose-500">
@@ -1458,6 +1367,125 @@ export default function StudentLearnPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Interactive Video PDF Resources Modal */}
+      {showVideoResourcesModal && interactiveVideoData?.resources && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-[#F3F7FC] dark:bg-blue-950/50 text-[#006EF3] border border-blue-200 dark:border-blue-800">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    Lesson PDF Resources ({interactiveVideoData.resources.length})
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Handouts, worksheets, and reference PDF materials for this lesson.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVideoResourcesModal(false)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-3 custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {interactiveVideoData.resources.map((res: LessonResource) => {
+                  const canDownload = Boolean(res.canDownload);
+                  return (
+                    <div
+                      key={res.id}
+                      className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:bg-white dark:hover:bg-slate-900 hover:border-[#006EF3] dark:hover:border-blue-500 transition-all flex flex-col justify-between gap-3"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <ResourceTypeBadge
+                            resource={res}
+                            onClick={() => {
+                              setShowVideoResourcesModal(false);
+                              setPreviewResource(res);
+                            }}
+                            className="hover:scale-105 active:scale-95 transition-transform"
+                          />
+                          {canDownload ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#006EF3] dark:text-blue-400">
+                              <CheckCircle2 className="h-3 w-3" /> Downloadable
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400">
+                              <Lock className="h-3 w-3" /> View Only
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <h4
+                            className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-[#006EF3] dark:hover:text-blue-400 transition-colors"
+                            onClick={() => {
+                              setShowVideoResourcesModal(false);
+                              setPreviewResource(res);
+                            }}
+                            title={res.title}
+                          >
+                            {res.title}
+                          </h4>
+                          {res.description && (
+                            <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
+                              {res.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 h-7 text-xs font-semibold gap-1 hover:border-[#006EF3] hover:text-[#006EF3] dark:hover:text-blue-400"
+                          onClick={() => {
+                            setShowVideoResourcesModal(false);
+                            setPreviewResource(res);
+                          }}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Preview PDF
+                        </Button>
+                        {canDownload && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2.5 text-xs font-semibold gap-1 text-[#012970] hover:bg-[#F3F7FC] dark:text-blue-400 dark:hover:bg-slate-800"
+                            onClick={() => {
+                              const a = document.createElement('a');
+                              a.href = res.url;
+                              a.download = res.title ? `${res.title}.pdf` : 'download.pdf';
+                              a.target = '_blank';
+                              a.rel = 'noopener noreferrer';
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                            }}
+                            title="Download PDF document"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Save</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* In-App Resource Preview Modal */}
       <ResourcePreviewModal
