@@ -115,20 +115,11 @@ export default function TeacherLevelsPage() {
   const selectedLevel = safeLevels.find(l => l.id === selectedLevelId) || null;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 pb-28 sm:pb-12 max-w-7xl mx-auto space-y-5">
 
-      {/* <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Learning Levels</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Manage academic levels, configure curriculums, and enroll students.
-          </p>
-        </div>
-      </div> */}
-
-      <div className="flex border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar">
+      <div className="flex border-b border-slate-200/90 overflow-x-auto no-scrollbar gap-2">
         {loading && safeLevels.length === 0 ? (
-          <div className="p-4 text-sm text-slate-500">Loading levels...</div>
+          <div className="p-4 text-xs font-medium text-slate-400">Loading levels...</div>
         ) : (
           safeLevels.map((level) => {
             const isSelected = selectedLevelId === level.id;
@@ -136,8 +127,8 @@ export default function TeacherLevelsPage() {
               <button
                 key={level.id}
                 onClick={() => setSelectedLevelId(level.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${isSelected
-                  ? 'border-indigo-600 text-indigo-600'
+                className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-all rounded-t-lg ${isSelected
+                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                   }`}
               >
@@ -150,47 +141,45 @@ export default function TeacherLevelsPage() {
 
       {selectedLevel && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-10 w-10 bg-indigo-50 text-indigo-600 rounded-md flex items-center justify-center">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Total Students</p>
-                  <p className="text-2xl font-bold text-slate-900">{selectedLevel.students || 0}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-10 w-10 bg-emerald-50 text-emerald-600 rounded-md flex items-center justify-center">
-                  <BookOpen className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Courses</p>
-                  <p className="text-2xl font-bold text-slate-900">{selectedLevel.courses?.length || 0}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-md flex items-center justify-center">
-                  <PlayCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Total Lessons</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {selectedLevel.courses?.reduce((acc: number, curr: any) => acc + (curr.lessons || 0), 0) || 0}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          {/* 3 Horizontal Small Stat Cards */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2.5 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3.5 shadow-2xs hover:border-slate-300 transition-all">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+              <div className="text-center sm:text-left min-w-0">
+                <p className="text-[10px] sm:text-xs font-semibold text-slate-500 truncate">Total Students</p>
+                <p className="text-base sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">{selectedLevel.students || 0}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2.5 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3.5 shadow-2xs hover:border-slate-300 transition-all">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+              <div className="text-center sm:text-left min-w-0">
+                <p className="text-[10px] sm:text-xs font-semibold text-slate-500 truncate">Courses</p>
+                <p className="text-base sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">{selectedLevel.courses?.length || 0}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2.5 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3.5 shadow-2xs hover:border-slate-300 transition-all">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                <PlayCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+              <div className="text-center sm:text-left min-w-0">
+                <p className="text-[10px] sm:text-xs font-semibold text-slate-500 truncate">Total Lessons</p>
+                <p className="text-base sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                  {selectedLevel.courses?.reduce((acc: number, curr: any) => acc + (curr.lessons || 0), 0) || 0}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <LevelStudentsSection
               levelId={selectedLevel.id}
+              levelName={selectedLevel.name}
               refreshTrigger={refreshTrigger}
               onEnrollClick={() => setIsEnrollModalOpen(true)}
             />

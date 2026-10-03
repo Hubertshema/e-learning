@@ -32,6 +32,9 @@ import {
   X,
   AlertCircle,
   Upload,
+  Save,
+  Loader2,
+  Play,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,6 +115,107 @@ export default function InteractiveVideoEditorPage() {
   const [isUploadingResource, setIsUploadingResource] = useState(false);
   const [uploadedResourceName, setUploadedResourceName] = useState('');
   const resourceFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Transcript state
+  const [transcriptLines, setTranscriptLines] = useState<Array<{ time: number; text: string }>>([]);
+  const [newLineText, setNewLineText] = useState('');
+  const [newLineTime, setNewLineTime] = useState<number>(0);
+  const [isAddingTranscriptLine, setIsAddingTranscriptLine] = useState(false);
+  const [editingTranscriptIndex, setEditingTranscriptIndex] = useState<number | null>(null);
+  const [editingTranscriptText, setEditingTranscriptText] = useState('');
+  const [editingTranscriptTime, setEditingTranscriptTime] = useState<number>(0);
+  const [isSavingTranscript, setIsSavingTranscript] = useState(false);
+  const [transcriptSavedSuccess, setTranscriptSavedSuccess] = useState(false);
+  const [isBulkPasteOpen, setIsBulkPasteOpen] = useState(false);
+  const [bulkPasteText, setBulkPasteText] = useState('');
+
+  const handleAddTranscriptLine = () => {
+    if (!newLineText.trim()) return;
+    const updated = [
+      ...transcriptLines,
+      { time: Math.max(0, Number(newLineTime) || 0), text: newLineText.trim() },
+    ].sort((a, b) => a.time - b.time);
+    setTranscriptLines(updated);
+    setNewLineText('');
+    setNewLineTime(Math.floor(currentTime));
+    setIsAddingTranscriptLine(false);
+  };
+
+  const handleUpdateTranscriptLine = (index: number) => {
+    if (!editingTranscriptText.trim()) return;
+    const updated = [...transcriptLines];
+    updated[index] = {
+      time: Math.max(0, Number(editingTranscriptTime) || 0),
+      text: editingTranscriptText.trim(),
+    };
+    updated.sort((a, b) => a.time - b.time);
+    setTranscriptLines(updated);
+    setEditingTranscriptIndex(null);
+  };
+
+  const handleDeleteTranscriptLine = (index: number) => {
+    setTranscriptLines((prev) => prev.filter((_, i) => i !== index));
+    if (editingTranscriptIndex === index) {
+      setEditingTranscriptIndex(null);
+    }
+  };
+
+  const handleSaveTranscript = async () => {
+    if (!lesson) return;
+    setIsSavingTranscript(true);
+    try {
+      await apiClient.put(`/teacher/interactive-videos/lessons/${lessonId}`, {
+        ...lesson,
+        transcript: transcriptLines,
+      });
+      setLesson((prev: any) => ({ ...prev, transcript: transcriptLines }));
+      setTranscriptSavedSuccess(true);
+      setTimeout(() => setTranscriptSavedSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Failed to save transcript', err);
+      alert(err.message || 'Failed to save transcript.');
+    } finally {
+      setIsSavingTranscript(false);
+    }
+  };
+
+  const handleParseBulkTranscript = () => {
+    if (!bulkPasteText.trim()) return;
+    const lines = bulkPasteText.split('\n').map((l) => l.trim()).filter(Boolean);
+    const parsed: Array<{ time: number; text: string }> = [];
+    const timestampRegex = /^\[?(\d{1,2}):(\d{2})(?::(\d{2}))?\]?\s*(.*)$/;
+    let defaultStep = Math.max(2, Math.floor((duration || 60) / (lines.length || 1)));
+    let currentParsedTime = 0;
+
+    for (const line of lines) {
+      if (line.toUpperCase() === 'WEBVTT' || /^\d+$/.test(line) || line.includes('-->')) continue;
+
+      const match = line.match(timestampRegex);
+      if (match) {
+        let sec = 0;
+        if (match[3]) {
+          sec = parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]);
+        } else {
+          sec = parseInt(match[1]) * 60 + parseInt(match[2]);
+        }
+        const text = match[4].trim();
+        if (text) {
+          parsed.push({ time: sec, text });
+          currentParsedTime = sec + 2;
+        }
+      } else {
+        parsed.push({ time: currentParsedTime, text: line });
+        currentParsedTime += defaultStep;
+      }
+    }
+
+    if (parsed.length > 0) {
+      const merged = [...transcriptLines, ...parsed].sort((a, b) => a.time - b.time);
+      setTranscriptLines(merged);
+      setBulkPasteText('');
+      setIsBulkPasteOpen(false);
+    }
+  };
 
   // Local Video Upload in Settings
   const [isUploadingVideoFile, setIsUploadingVideoFile] = useState(false);
@@ -261,6 +365,7 @@ export default function InteractiveVideoEditorPage() {
       setLesson(lessonData);
       setActivities(lessonData.activities || []);
       setResources(lessonData.resources || []);
+      setTranscriptLines(Array.isArray(lessonData.transcript) ? lessonData.transcript : []);
       setSettingsForm({
         videoUrl: lessonData.videoUrl || '',
         title: lessonData.lessonTitle || lessonData.title || '',
@@ -809,7 +914,7 @@ export default function InteractiveVideoEditorPage() {
                 }`}
               >
                 {tab === 'ACTIVITIES' && `Activities (${activities.length})`}
-                {tab === 'TRANSCRIPT' && 'Transcript'}
+                {tab === 'TRANSCRIPT' && `Transcript (${transcriptLines.length})`}
                 {tab === 'RESOURCES' && `Resources (${resources.length})`}
                 {tab === 'ANALYTICS' && 'Analytics'}
               </button>
@@ -1892,43 +1997,317 @@ export default function InteractiveVideoEditorPage() {
             {/* ── TAB 2: TRANSCRIPT ─────────────────────────────────── */}
             {activeTab === 'TRANSCRIPT' && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-900">Transcript</h3>
-                  <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
-                    <Plus className="h-3 w-3 mr-1" /> Add Lines
-                  </Button>
+                {/* Header & Main Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Lesson Transcript</h3>
+                    <p className="text-[11px] text-slate-500">
+                      Synchronized subtitles and spoken text for students.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsBulkPasteOpen(!isBulkPasteOpen)}
+                      className="h-7 px-2.5 text-xs font-semibold gap-1 text-slate-700 hover:text-indigo-600"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      <span>{isBulkPasteOpen ? 'Close Paste' : 'Paste / Import'}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setNewLineTime(Math.floor(currentTime));
+                        setIsAddingTranscriptLine(!isAddingTranscriptLine);
+                      }}
+                      className="h-7 px-2.5 text-xs font-semibold gap-1 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add Line</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isSavingTranscript}
+                      onClick={handleSaveTranscript}
+                      className="h-7 px-3 text-xs font-bold gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs rounded-lg"
+                    >
+                      {isSavingTranscript ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : transcriptSavedSuccess ? (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+                          <span>Saved!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-3.5 w-3.5" />
+                          <span>Save</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-center py-12 text-slate-400 text-xs border-2 border-dashed border-slate-100 rounded-xl">
-                  {lesson.transcript && lesson.transcript.length > 0 ? (
-                    <div className="space-y-1.5 text-left">
-                      {lesson.transcript.map((item: any, i: number) => (
-                        <div key={i} className="flex gap-2 text-xs p-1 hover:bg-slate-50 rounded">
-                          <span className="font-mono text-indigo-600 font-bold">{formatTime(item.time)}</span>
-                          <span className="text-slate-700">{item.text}</span>
-                        </div>
-                      ))}
+
+                {/* Bulk Paste / Import Drawer */}
+                {isBulkPasteOpen && (
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-indigo-100 space-y-2.5 shadow-2xs animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800">Paste Full Transcript or VTT</span>
+                      <span className="text-[10px] text-slate-400">Supports timestamped lines e.g. [00:15]</span>
                     </div>
-                  ) : (
-                    'No transcript recorded yet. You can paste lines or auto-generate.'
-                  )}
-                </div>
+                    <textarea
+                      rows={5}
+                      value={bulkPasteText}
+                      onChange={(e) => setBulkPasteText(e.target.value)}
+                      placeholder={`Paste dialogue, WebVTT, or timestamped text lines:\n[00:05] Welcome to today's English lesson.\n[00:18] Today we explore business vocabulary.\n[00:45] Notice how formal polite questions start with 'Could you'.`}
+                      className="w-full text-xs font-mono p-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed"
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsBulkPasteOpen(false)}
+                        className="h-7 px-2.5 text-xs text-slate-500"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleParseBulkTranscript}
+                        disabled={!bulkPasteText.trim()}
+                        className="h-7 px-3 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        Import Lines
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Single Line Add Form */}
+                {isAddingTranscriptLine && (
+                  <div className="p-3 bg-indigo-50/60 rounded-2xl border border-indigo-200/80 space-y-2.5 shadow-2xs animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-indigo-950">Add Transcript Line</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingTranscriptLine(false)}
+                        className="text-slate-400 hover:text-slate-600 text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                      <div className="sm:col-span-1 space-y-1">
+                        <label className="text-[10px] font-semibold text-slate-600">Timestamp</label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            className="h-8 text-xs bg-white font-mono"
+                            value={newLineTime}
+                            onChange={(e) => setNewLineTime(Math.max(0, parseInt(e.target.value) || 0))}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setNewLineTime(Math.floor(currentTime))}
+                          className="text-[10px] text-indigo-600 font-semibold hover:underline block"
+                        >
+                          Use Video ({formatTime(currentTime)})
+                        </button>
+                      </div>
+                      <div className="sm:col-span-3 space-y-1">
+                        <label className="text-[10px] font-semibold text-slate-600">Spoken Text / Sentence</label>
+                        <Input
+                          className="h-8 text-xs bg-white"
+                          placeholder="e.g. Good morning everyone, today we cover..."
+                          value={newLineText}
+                          onChange={(e) => setNewLineText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTranscriptLine();
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-1.5 pt-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleAddTranscriptLine}
+                        disabled={!newLineText.trim()}
+                        className="h-7 px-3 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+                      >
+                        Add Line
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Transcript Lines List */}
+                {transcriptLines.length === 0 ? (
+                  <div className="text-center py-10 px-4 text-slate-400 text-xs border-2 border-dashed border-slate-200/80 rounded-2xl space-y-2 bg-slate-50/40">
+                    <FileText className="h-8 w-8 text-slate-300 mx-auto" />
+                    <p className="font-semibold text-slate-600">No transcript recorded yet</p>
+                    <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                      Add dialogue cues to display synchronized subtitles and interactive text for students.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setNewLineTime(Math.floor(currentTime));
+                          setIsAddingTranscriptLine(true);
+                        }}
+                        className="h-7 px-2.5 text-xs text-indigo-600 border-indigo-200"
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Add First Line
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setIsBulkPasteOpen(true)}
+                        className="h-7 px-2.5 text-xs"
+                      >
+                        Paste Script
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 max-h-[500px] overflow-y-auto no-scrollbar pr-0.5">
+                    {transcriptLines.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-2.5 rounded-xl border transition-all text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                          editingTranscriptIndex === idx
+                            ? 'bg-indigo-50/40 border-indigo-300 ring-1 ring-indigo-200'
+                            : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50/60'
+                        }`}
+                      >
+                        {editingTranscriptIndex === idx ? (
+                          <div className="w-full space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min={0}
+                                className="h-7 w-20 text-xs font-mono bg-white"
+                                value={editingTranscriptTime}
+                                onChange={(e) =>
+                                  setEditingTranscriptTime(Math.max(0, parseInt(e.target.value) || 0))
+                                }
+                              />
+                              <Input
+                                className="h-7 flex-1 text-xs bg-white"
+                                value={editingTranscriptText}
+                                onChange={(e) => setEditingTranscriptText(e.target.value)}
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleUpdateTranscriptLine(idx);
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-end gap-1.5">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setEditingTranscriptIndex(null)}
+                                className="h-6 px-2 text-xs"
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => handleUpdateTranscriptLine(idx)}
+                                className="h-6 px-2.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                              >
+                                Save Line
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                              {/* Clickable Timestamp that seeks video */}
+                              <button
+                                type="button"
+                                onClick={() => seekTo(item.time)}
+                                title={`Jump video to ${formatTime(item.time)}`}
+                                className="font-mono text-indigo-600 bg-indigo-50 hover:bg-indigo-100 active:scale-95 border border-indigo-200/60 px-2 py-0.5 rounded-md font-bold text-[11px] shrink-0 transition-transform flex items-center gap-1 cursor-pointer"
+                              >
+                                <Play className="h-2.5 w-2.5 fill-indigo-600 text-indigo-600" />
+                                <span>{formatTime(item.time)}</span>
+                              </button>
+                              <span className="text-slate-800 leading-relaxed font-normal select-text break-words">
+                                {item.text}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingTranscriptIndex(idx);
+                                  setEditingTranscriptText(item.text);
+                                  setEditingTranscriptTime(item.time);
+                                }}
+                                className="h-6 w-6 p-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                                title="Edit Line"
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteTranscriptLine(idx)}
+                                className="h-6 w-6 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded"
+                                title="Delete Line"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
             {/* ── TAB 3: RESOURCES ──────────────────────────────────── */}
             {activeTab === 'RESOURCES' && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
+                  <div className="min-w-0">
                     <h3 className="text-sm font-bold text-slate-900">Lesson PDF Resources</h3>
-                    <p className="text-[11px] text-slate-500">
-                      Upload PDF handouts, worksheets, and study notes. Click the PDF badge to preview.
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Upload PDF handouts, worksheets, and study notes.
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 px-2.5 text-xs font-semibold gap-1.5"
+                    className="h-7 px-2.5 text-xs font-semibold gap-1.5 self-start xs:self-auto shrink-0"
                     onClick={() => {
                       setNewResource({ title: '', url: '', resourceType: 'PDF', canDownload: false });
                       setUploadedResourceName('');
@@ -2056,14 +2435,15 @@ export default function InteractiveVideoEditorPage() {
                     {resources.map((res: any) => (
                       <div
                         key={res.id}
-                        className="p-3.5 rounded-2xl border border-slate-200/90 bg-white hover:border-slate-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                        className="p-3 rounded-2xl border border-slate-200/90 bg-white hover:border-slate-300 transition-all shadow-2xs space-y-2.5"
                       >
-                        <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                        {/* Top Section: Badge + Title + Description */}
+                        <div className="flex items-start gap-2.5 min-w-0">
                           {/* PDF Badge is CLICKABLE to preview */}
                           <ResourceTypeBadge
                             resource={res}
                             onClick={() => setPreviewResource(res)}
-                            className="hover:scale-105 active:scale-95 transition-transform shrink-0 mt-0.5 sm:mt-0"
+                            className="hover:scale-105 active:scale-95 transition-transform shrink-0 mt-0.5"
                           />
                           <div className="min-w-0 flex-1">
                             <p
@@ -2078,77 +2458,77 @@ export default function InteractiveVideoEditorPage() {
                                 {res.description}
                               </p>
                             )}
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              {/* Direct Permission Toggle Button */}
-                              <button
-                                type="button"
-                                onClick={() => handleToggleResourceDownload(res.id, res.canDownload)}
-                                disabled={updatingResourceId === res.id}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
-                                  res.canDownload
-                                    ? 'bg-[#F3F7FC] text-[#006EF3] border-blue-200 hover:bg-blue-50 hover:border-blue-300'
-                                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
-                                }`}
-                                title={
-                                  res.canDownload
-                                    ? 'Students can download this PDF. Click to restrict to high-security View-Only.'
-                                    : 'Protected view-only mode. Click to allow student downloads.'
-                                }
-                              >
-                                {updatingResourceId === res.id ? (
-                                  <span className="text-[10px]">Updating...</span>
-                                ) : res.canDownload ? (
-                                  <>
-                                    <Download className="h-3 w-3 text-[#006EF3]" />
-                                    <span>Download Allowed</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Lock className="h-3 w-3 text-amber-600" />
-                                    <span>View Only (Restricted)</span>
-                                  </>
-                                )}
-                                <span className="opacity-60 font-normal underline ml-0.5">(Click to change)</span>
-                              </button>
-                            </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
-                            onClick={() => setPreviewResource(res)}
-                            title="Preview PDF"
+                        {/* Bottom Row: Compact Permission Toggle & Action Buttons */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                          {/* Direct Permission Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleResourceDownload(res.id, res.canDownload)}
+                            disabled={updatingResourceId === res.id}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                              res.canDownload
+                                ? 'bg-[#F3F7FC] text-[#006EF3] border-blue-200 hover:bg-blue-50'
+                                : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                            }`}
+                            title="Click to toggle download permission for students"
                           >
-                            <Eye className="h-3.5 w-3.5 mr-1" />
-                            Preview
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
-                            onClick={() => setEditingResource({
-                              id: res.id,
-                              title: res.title,
-                              description: res.description || '',
-                              canDownload: Boolean(res.canDownload),
-                            })}
-                            title="Edit Resource & Permissions"
-                          >
-                            <Edit2 className="h-3.5 w-3.5 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                            onClick={() => handleDeleteResource(res.id)}
-                            title="Delete PDF"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                            {updatingResourceId === res.id ? (
+                              <span className="text-[10px]">Updating...</span>
+                            ) : res.canDownload ? (
+                              <>
+                                <Download className="h-3 w-3 text-[#006EF3]" />
+                                <span>Download Allowed</span>
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3 w-3 text-amber-600" />
+                                <span>View Only</span>
+                              </>
+                            )}
+                            <span className="opacity-60 text-[9px] font-normal underline ml-0.5">(Toggle)</span>
+                          </button>
+
+                          <div className="flex items-center gap-1 shrink-0 ml-auto">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg gap-1"
+                              onClick={() => setPreviewResource(res)}
+                              title="Preview PDF"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              <span className="text-[11px]">Preview</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg gap-1"
+                              onClick={() =>
+                                setEditingResource({
+                                  id: res.id,
+                                  title: res.title,
+                                  description: res.description || '',
+                                  canDownload: Boolean(res.canDownload),
+                                })
+                              }
+                              title="Edit Resource"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                              <span className="text-[11px]">Edit</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg shrink-0"
+                              onClick={() => handleDeleteResource(res.id)}
+                              title="Delete PDF"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
