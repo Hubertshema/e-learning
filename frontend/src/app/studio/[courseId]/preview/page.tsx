@@ -23,7 +23,6 @@ import {
   Video,
   Edit2,
   AlertCircle,
-  ExternalLink,
   BookOpen,
   Download,
   Play,
@@ -448,20 +447,6 @@ export default function StudioCoursePreviewPage() {
                       </Button>
                     </Link>
 
-                    <Link
-                      href={`/student/interactive-video/${selectedLesson.id}`}
-                      target="_blank"
-                    >
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-8 px-2.5 font-bold hover:text-primary-700"
-                        title="Open standalone student player"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                        <span>Student Tab</span>
-                      </Button>
-                    </Link>
                   </div>
                 </div>
               </Card>
