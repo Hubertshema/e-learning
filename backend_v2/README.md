@@ -1,4 +1,4 @@
-# FluentEdge Backend V2
+# LinguaChris Academy Backend V2
 
 A scalable, high-performance Node.js + Express.js backend implementation with **Socket.IO** for real-time communication and **direct PostgreSQL queries** (`pg.Pool`), without Prisma or any ORM.
 

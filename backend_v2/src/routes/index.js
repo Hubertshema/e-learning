@@ -24,13 +24,13 @@ const router = Router();
 // API v1 Welcome
 router.get('/', (_req, res) => {
   return sendSuccess(res, {
-    name: 'FluentEdge E-Learning API v2',
+    name: 'LinguaChris Academy API v2',
     version: '2.0.0',
     runtime: 'Node.js + Express.js',
     realtime: 'Socket.IO',
     database: 'PostgreSQL Direct Pool',
     healthCheck: '/api/v1/health',
-  }, 'FluentEdge API v2 is online');
+  }, 'LinguaChris Academy API v2 is online');
 });
 
 // Health check endpoint

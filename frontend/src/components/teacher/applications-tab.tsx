@@ -51,14 +51,14 @@ export interface PaymentSettingsConfig {
 
 export const DEFAULT_PAYMENT_CONFIG: PaymentSettingsConfig = {
   momoDialCode: '*182*8*1*123456#',
-  momoMerchantName: 'FluentEdge Academy',
+  momoMerchantName: 'LinguaChris Academy',
   momoNumber: '0788123456',
   airtelMerchantCode: '733123',
-  airtelRecipient: 'FluentEdge Academy',
+  airtelRecipient: 'LinguaChris Academy',
   airtelNumber: '0738123456',
   bankName: 'Bank of Kigali / Equity Bank',
   bankAccountNumber: '4002-8812-9923',
-  bankBeneficiary: 'FluentEdge Language Services',
+  bankBeneficiary: 'LinguaChris Academy',
   bankSwiftCode: 'BOKIRW22',
   instructionsNote: 'After transferring tuition, upload your SMS confirmation or deposit slip screenshot.',
 };
@@ -1337,7 +1337,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                         onChange={(e) =>
                           setPaymentSettings((prev) => ({ ...prev, momoMerchantName: e.target.value }))
                         }
-                        placeholder="FluentEdge Academy"
+                        placeholder="LinguaChris Academy"
                         className="h-9 text-xs rounded-xl bg-white dark:bg-slate-900"
                       />
                     </div>
@@ -1391,7 +1391,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                         onChange={(e) =>
                           setPaymentSettings((prev) => ({ ...prev, airtelRecipient: e.target.value }))
                         }
-                        placeholder="FluentEdge Academy"
+                        placeholder="LinguaChris Academy"
                         className="h-9 text-xs rounded-xl bg-white dark:bg-slate-900"
                       />
                     </div>
@@ -1459,7 +1459,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
                         onChange={(e) =>
                           setPaymentSettings((prev) => ({ ...prev, bankBeneficiary: e.target.value }))
                         }
-                        placeholder="FluentEdge Language Services"
+                        placeholder="LinguaChris Academy"
                         className="h-9 text-xs rounded-xl bg-white dark:bg-slate-900"
                       />
                     </div>

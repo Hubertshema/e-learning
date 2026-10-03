@@ -10,7 +10,7 @@ export class AIService {
     const skillsStr = skills && skills.length > 0 ? skills.join(', ') : 'Grammar, Speaking, Vocabulary';
 
     const systemPrompt =
-      `You are an elite Cambridge & Oxford accredited English Language Professor and master curriculum designer for FluentEdge Academy. ` +
+      `You are an elite Cambridge & Oxford accredited English Language Professor and master curriculum designer for LinguaChris Academy. ` +
       `Your mission is to generate a comprehensive, highly detailed, real-world English lesson in clean HTML format designed directly for display and editing in a TinyMCE rich text editor. ` +
       `Target CEFR Level: ${cefrLevel}. Target Skills: ${skillsStr}. ` +
       `Topic / Focus: "${prompt}". ` +
@@ -169,7 +169,7 @@ export class AIService {
       throw new Error('No AI provider configured');
     }
 
-    const systemPrompt = `You are FluentEdge AI, an expert pedagogical assistant for English language teachers.`;
+    const systemPrompt = `You are LinguaChris AI, an expert pedagogical assistant for English language teachers at LinguaChris Academy.`;
     const formattedMessages = [
       { role: 'system', content: systemPrompt },
       ...messages.map((m) => ({ role: m.role, content: m.content })),
@@ -383,7 +383,7 @@ export class AIService {
       : 'Grammar, Vocabulary, Reading, Listening, Writing, Conversation';
 
     const systemPrompt =
-      `You are the Chief Assessment Officer and Cambridge/Oxford ELT pedagogical director at FluentEdge English Academy. ` +
+      `You are the Chief Assessment Officer and Cambridge/Oxford ELT pedagogical director at LinguaChris Academy. ` +
       `Your platform is dedicated EXCLUSIVELY to English language learning. ` +
       `You specialize in CEFR-aligned assessments (A1 Beginner to C2 Mastery). ` +
       `\nLinguistic Target Competencies: ` +
@@ -550,7 +550,7 @@ export class AIService {
     const validLevels = ['PRE_A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
     const systemPrompt =
-      `You are the Chief Diagnostic Assessment Officer at FluentEdge English Academy. ` +
+      `You are the Chief Diagnostic Assessment Officer at LinguaChris Academy. ` +
       `Your platform is dedicated EXCLUSIVELY to English language learning and candidate placement. ` +
       `You specialize in CEFR-aligned placement diagnostics (Cambridge English Placement Test style). ` +
       `\nTarget Assessment Parameters: ` +
@@ -644,7 +644,7 @@ export class AIService {
    */
   static async generateAssignment(teacherId, { skillType = 'WRITING', cefrLevel = 'B1', topic = '', lessonTitle = '', courseTitle = '', instruction = '' }) {
     const systemPrompt =
-      `You are an expert CEFR-certified English Language teacher and assessment designer at FluentEdge Academy. ` +
+      `You are an expert CEFR-certified English Language teacher and assessment designer at LinguaChris Academy. ` +
       `Generate a complete, ready-to-publish student assignment for a ${cefrLevel} English class. ` +
       `Skill domain: ${skillType}. Lesson: "${lessonTitle || topic}". Course: "${courseTitle}". ` +
       `Your output must be a single valid JSON object (no markdown, no code blocks) with this exact structure:\n` +

@@ -24,12 +24,12 @@ export default function ErrorBoundary({
           <Link href="/" className="flex items-center gap-2">
             <img
               src="/logo.png"
-              alt="FluentEdge Academy"
+              alt="LinguaChris Academy"
               className="h-9 w-9 object-contain sm:hidden"
             />
             <img
               src="/real-logo.png"
-              alt="FluentEdge Academy"
+              alt="LinguaChris Academy"
               className="h-10 w-auto object-contain hidden sm:block"
             />
           </Link>
@@ -85,7 +85,7 @@ export default function ErrorBoundary({
 
       {/* Footer */}
       <footer className="w-full border-t border-[#E2E8F0] py-4 text-center text-xs text-[#667085]">
-        <p>© {new Date().getFullYear()} FluentEdge Academy. Learn today, Speak tomorrow.</p>
+        <p>© {new Date().getFullYear()} LinguaChris Academy. Learn today, Speak tomorrow.</p>
       </footer>
     </div>
   );

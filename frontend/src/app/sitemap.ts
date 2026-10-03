@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://fluentedge.edu';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://linguachris.com';
 
   const publicRoutes = [
     '',

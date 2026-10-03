@@ -71,7 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="hidden sm:inline hover:text-[#006EF3] dark:hover:text-blue-400 font-bold transition-colors cursor-pointer"
                 title="Go to Dashboard Home"
               >
-                FluentEdge LMS
+                LinguaChris Academy
               </Link>
               <span className="hidden sm:inline text-slate-300 dark:text-slate-700">/</span>
               <Link

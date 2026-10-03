@@ -34,9 +34,9 @@ export default function SuperadminSettingsPage() {
   const [activeTab, setActiveTab] = useState<'GENERAL' | 'ADMISSION' | 'LEARNING' | 'PAYMENTS' | 'SECURITY' | 'DANGER'>('GENERAL');
   
   // Platform Settings State
-  const [platformName, setPlatformName] = useState('FluentEdge Academy');
-  const [supportEmail, setSupportEmail] = useState('support@fluentedge.com');
-  const [supportPhone, setSupportPhone] = useState('+250 788 000 111');
+  const [platformName, setPlatformName] = useState('LinguaChris Academy');
+  const [supportEmail, setSupportEmail] = useState('linguachrisltd@gmail.com');
+  const [supportPhone, setSupportPhone] = useState('+250 782 572 028');
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [defaultTimezone, setDefaultTimezone] = useState('Africa/Kigali');
   const [defaultLanguage, setDefaultLanguage] = useState('en');

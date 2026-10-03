@@ -1,4 +1,4 @@
-# FluentEdge Academy — English Learning & Teacher Management Platform
+# LinguaChris Academy — English Learning & Teacher Management Platform
 
 A complete, production-grade web platform for English language education, teacher-led instruction, interactive multi-skill exercises, and verified CEFR accreditation, engineered strictly in accordance with the 7-Phase Master Specification.
 
@@ -134,7 +134,7 @@ npm install
 cp .env.example .env
 
 # Configure your PostgreSQL connection string in .env:
-# DATABASE_URL="postgresql://user:password@localhost:5432/fluentedge?schema=public"
+# DATABASE_URL="postgresql://user:password@localhost:5432/linguachris?schema=public"
 
 # Run migrations and generate Prisma Client
 npm run prisma:migrate
@@ -171,7 +171,7 @@ npm run dev
 
 ## 🌐 Production Deployment Architecture
 
-* **Frontend**: Deploy `frontend/` to **Vercel** with `NEXT_PUBLIC_API_URL=https://api.fluentedge.edu/api/v1`.
-* **Backend**: Deploy `backend/` to **Render** / **Railway** with `PORT=5000`, `NODE_ENV=production`, and `FRONTEND_URL=https://fluentedge.edu`.
+* **Frontend**: Deploy `frontend/` to **Vercel** with `NEXT_PUBLIC_API_URL=https://api.linguachris.com/api/v1`.
+* **Backend**: Deploy `backend/` to **Render** / **Railway** with `PORT=5000`, `NODE_ENV=production`, and `FRONTEND_URL=https://linguachris.com`.
 * **Database**: Hosted on **Supabase** or **Neon PostgreSQL**.
 * **Storage**: Integrated with **Cloudinary** or S3-compatible object storage.

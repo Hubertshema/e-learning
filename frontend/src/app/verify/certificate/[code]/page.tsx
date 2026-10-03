@@ -121,8 +121,8 @@ export default function PublicCertificateVerificationPage() {
       {/* Brand Header */}
       <div className="mb-8 text-center space-y-2">
         <Link href="/" className="inline-flex items-center gap-2.5">
-          <img src="/logo.png" alt="FluentEdge Academy" className="h-10 w-auto object-contain" />
-          <span className="text-xl font-bold text-[#172033]">FluentEdge Academy</span>
+          <img src="/logo.png" alt="LinguaChris Academy" className="h-10 w-auto object-contain" />
+          <span className="text-xl font-bold text-[#172033]">LinguaChris Academy</span>
         </Link>
         <p className="text-xs text-[#667085] uppercase tracking-widest font-semibold">
           Official Public Credential Verification Portal
@@ -251,7 +251,7 @@ export default function PublicCertificateVerificationPage() {
                     {/* Content */}
                     <div className="absolute inset-0 flex flex-col justify-between p-6 md:p-10 pr-[38%]">
                       <div>
-                        <p className="text-[9px] md:text-[11px] font-bold tracking-[0.25em] text-[#012970] uppercase mb-0.5" style={{ fontFamily: 'sans-serif' }}>FluentEdge Academy</p>
+                        <p className="text-[9px] md:text-[11px] font-bold tracking-[0.25em] text-[#012970] uppercase mb-0.5" style={{ fontFamily: 'sans-serif' }}>LinguaChris Academy</p>
                         <h1 className="text-xl md:text-3xl font-black tracking-[0.15em] text-[#012970] uppercase leading-none">Certificate</h1>
                         <p className="text-[9px] md:text-[11px] tracking-[0.3em] text-[#006EF3] uppercase font-bold mt-1" style={{ fontFamily: 'sans-serif' }}>of Achievement</p>
                       </div>
@@ -261,7 +261,7 @@ export default function PublicCertificateVerificationPage() {
                       </div>
                       <p className="text-[8px] md:text-[10px] text-[#667085] leading-relaxed max-w-[85%]" style={{ fontFamily: 'sans-serif' }}>
                         This is to certify that the above named has successfully completed all required modules and assessments for{' '}
-                        <strong className="text-[#172033]">{fullCert.courseTitle}</strong> at FluentEdge Academy.
+                        <strong className="text-[#172033]">{fullCert.courseTitle}</strong> at LinguaChris Academy.
                       </p>
                       <div className="flex gap-4 md:gap-10 items-end">
                         <div>

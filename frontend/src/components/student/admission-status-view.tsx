@@ -566,8 +566,8 @@ export function AdmissionStatusView({
                         <ActionButtons text={status.paymentInstructions?.momoDialCode || '*182*8*1*123456#'} isPhone={true} />
                       </p>
                       <p className="text-slate-600 dark:text-slate-400">
-                        Merchant Name: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.momoMerchantName || 'FluentEdge Academy'}</strong>
-                        <ActionButtons text={status.paymentInstructions?.momoMerchantName || 'FluentEdge Academy'} />
+                        Merchant Name: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.momoMerchantName || 'LinguaChris Academy'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.momoMerchantName || 'LinguaChris Academy'} />
                       </p>
                       {status.paymentInstructions?.momoNumber && (
                         <p className="text-slate-600 dark:text-slate-400">
@@ -591,8 +591,8 @@ export function AdmissionStatusView({
                         <ActionButtons text={status.paymentInstructions?.airtelMerchantCode || '733123'} />
                       </p>
                       <p className="text-slate-600 dark:text-slate-400">
-                        Recipient: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.airtelRecipient || 'FluentEdge Academy'}</strong>
-                        <ActionButtons text={status.paymentInstructions?.airtelRecipient || 'FluentEdge Academy'} />
+                        Recipient: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.airtelRecipient || 'LinguaChris Academy'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.airtelRecipient || 'LinguaChris Academy'} />
                       </p>
                       {status.paymentInstructions?.airtelNumber && (
                         <p className="text-slate-600 dark:text-slate-400">
@@ -616,8 +616,8 @@ export function AdmissionStatusView({
                         <ActionButtons text={status.paymentInstructions?.bankAccountNumber || '4002-8812-9923'} />
                       </p>
                       <p className="text-slate-600 dark:text-slate-400">
-                        Beneficiary: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.bankBeneficiary || 'FluentEdge Language Services'}</strong>
-                        <ActionButtons text={status.paymentInstructions?.bankBeneficiary || 'FluentEdge Language Services'} />
+                        Beneficiary: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.bankBeneficiary || 'LinguaChris Academy'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.bankBeneficiary || 'LinguaChris Academy'} />
                       </p>
                       {status.paymentInstructions?.bankSwiftCode && (
                         <p className="text-slate-600 dark:text-slate-400">

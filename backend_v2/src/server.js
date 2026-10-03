@@ -60,7 +60,7 @@ async function startServer() {
   // 5. Start listening
   const server = httpServer.listen(env.PORT, '0.0.0.0', () => {
     const lanIp = getLocalIpAddress();
-    console.log('\n\x1b[1m\x1b[32m%s\x1b[0m', '🚀 FluentEdge Backend V2 (Node.js + Express + Socket.IO) is running:');
+    console.log('\n\x1b[1m\x1b[32m%s\x1b[0m', '🚀 LinguaChris Academy Backend V2 (Node.js + Express + Socket.IO) is running:');
     console.log(`   - Local:   \x1b[36mhttp://localhost:${env.PORT}\x1b[0m`);
     if (lanIp) {
       console.log(`   - Network: \x1b[1m\x1b[36mhttp://${lanIp}:${env.PORT}\x1b[0m`);

@@ -657,7 +657,7 @@ export default function TeacherSettingsPage() {
                     label="Merchant Name"
                     value={paymentSettings.momoMerchantName}
                     onChange={(e) => setPaymentSettings({ ...paymentSettings, momoMerchantName: e.target.value })}
-                    placeholder="e.g. FluentEdge Academy"
+                    placeholder="e.g. LinguaChris Academy"
                   />
                   <Input
                     label="MoMo Number (Direct)"
@@ -687,7 +687,7 @@ export default function TeacherSettingsPage() {
                     label="Recipient Name"
                     value={paymentSettings.airtelRecipient}
                     onChange={(e) => setPaymentSettings({ ...paymentSettings, airtelRecipient: e.target.value })}
-                    placeholder="e.g. FluentEdge Academy"
+                    placeholder="e.g. LinguaChris Academy"
                   />
                   <Input
                     label="Airtel Number"
@@ -723,7 +723,7 @@ export default function TeacherSettingsPage() {
                     label="Beneficiary Name"
                     value={paymentSettings.bankBeneficiary}
                     onChange={(e) => setPaymentSettings({ ...paymentSettings, bankBeneficiary: e.target.value })}
-                    placeholder="e.g. FluentEdge Language Services"
+                    placeholder="e.g. LinguaChris Academy"
                   />
                   <Input
                     label="SWIFT / BIC (Optional)"

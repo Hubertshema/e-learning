@@ -13,7 +13,7 @@ export default function Loading() {
 
       <div className="text-center space-y-1">
         <p className="text-xs font-bold uppercase tracking-wider text-[#012970]">
-          FluentEdge Academy
+          LinguaChris Academy
         </p>
         <p className="text-xs text-[#667085] font-medium">
           Loading learning materials...

@@ -180,7 +180,7 @@ export default function SuperadminAnnouncementsPage() {
 
           <Card className="overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="bg-gradient-to-r from-[#011538] via-[#012970] to-[#006EF3] p-4 text-white text-center">
-              <p className="text-sm font-black">FluentEdge Academy</p>
+              <p className="text-sm font-black">LinguaChris Academy</p>
               <p className="text-[10px] text-blue-200">Official Announcement</p>
             </div>
 
@@ -198,7 +198,7 @@ export default function SuperadminAnnouncementsPage() {
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 text-center">
-                &copy; {new Date().getFullYear()} FluentEdge Academy. Automated Notification.
+                &copy; {new Date().getFullYear()} LinguaChris Academy. Automated Notification.
               </div>
             </div>
           </Card>

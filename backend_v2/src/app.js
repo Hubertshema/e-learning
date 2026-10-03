@@ -59,7 +59,7 @@ export function createApp() {
   app.get('/', (_req, res) => {
     return res.status(200).json({
       success: true,
-      message: 'FluentEdge API is online',
+      message: 'LinguaChris Academy API is online',
       version: '2.0.0',
       health: '/api/v1/health',
       api: '/api/v1',

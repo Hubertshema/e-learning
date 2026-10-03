@@ -1071,7 +1071,7 @@ export class SuperadminModel {
       const meta = typeof r.metadata === 'string' ? JSON.parse(r.metadata || '{}') : (r.metadata || {});
       return {
         id: r.id,
-        recipient: r.email || meta.recipient || 'student@fluentedge.edu',
+        recipient: r.email || meta.recipient || 'student@linguachris.com',
         subject: meta.subject || meta.title || 'Platform Security & Course Update',
         template: meta.template || 'TRANSACTIONAL_ALERT',
         status: 'SENT',
@@ -1102,8 +1102,8 @@ export class SuperadminModel {
       logs: logs.length > 0 ? logs : [
         {
           id: 'log-seed-1',
-          recipient: 'student@fluentedge.edu',
-          subject: 'Welcome to FluentEdge — Account Verification',
+          recipient: 'student@linguachris.com',
+          subject: 'Welcome to LinguaChris Academy — Account Verification',
           template: 'WELCOME_VERIFY',
           status: 'SENT',
           provider: 'SendGrid SMTP (TLS 1.3)',
@@ -1114,7 +1114,7 @@ export class SuperadminModel {
         },
         {
           id: 'log-seed-2',
-          recipient: 'teacher@fluentedge.edu',
+          recipient: 'teacher@linguachris.com',
           subject: 'Teacher Application Approved — Welcome to the Faculty',
           template: 'TEACHER_APPROVED',
           status: 'SENT',

@@ -89,14 +89,14 @@ export class AdmissionModel {
 
   static DEFAULT_PAYMENT_SETTINGS = {
     momoDialCode: '*182*8*1*123456#',
-    momoMerchantName: 'FluentEdge Academy',
+    momoMerchantName: 'LinguaChris Academy',
     momoNumber: '0788123456',
     airtelMerchantCode: '733123',
-    airtelRecipient: 'FluentEdge Academy',
+    airtelRecipient: 'LinguaChris Academy',
     airtelNumber: '0738123456',
     bankName: 'Bank of Kigali / Equity Bank',
     bankAccountNumber: '4002-8812-9923',
-    bankBeneficiary: 'FluentEdge Language Services',
+    bankBeneficiary: 'LinguaChris Academy',
     bankSwiftCode: 'BOKIRW22',
     instructionsNote: 'After transferring tuition, upload your SMS confirmation or deposit slip screenshot.',
   };
@@ -127,9 +127,10 @@ export class AdmissionModel {
 
     await query(
       `INSERT INTO "public"."platform_settings" (id, "platformName", "paymentSettings", "createdAt", "updatedAt")
-       VALUES ('default', 'FluentEdge Academy', $1::jsonb, NOW(), NOW())
+       VALUES ('default', 'LinguaChris Academy', $1::jsonb, NOW(), NOW())
        ON CONFLICT (id) DO UPDATE SET
          "paymentSettings" = EXCLUDED."paymentSettings",
+         "platformName" = 'LinguaChris Academy',
          "updatedAt" = NOW()`,
       [JSON.stringify(merged)]
     );

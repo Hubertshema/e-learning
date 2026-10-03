@@ -386,8 +386,8 @@ export class SuperadminController {
   static async getSettings(req, res, next) {
     try {
       const settings = {
-        platformName: 'FluentEdge E-Learning',
-        supportEmail: 'support@fluentedge.edu',
+        platformName: 'LinguaChris Academy',
+        supportEmail: 'linguachrisltd@gmail.com',
         defaultCurrency: 'USD',
         allowTeacherRegistration: true,
         allowStudentRegistration: true,

@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/superadmin/', '/teacher/', '/student/', '/api/'],
       },
     ],
-    sitemap: 'https://fluentedge.edu/sitemap.xml',
+    sitemap: `${process.env.NEXT_PUBLIC_APP_URL || 'https://linguachris.com'}/sitemap.xml`,
   };
 }
