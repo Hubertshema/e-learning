@@ -336,19 +336,19 @@ export function StartLiveSessionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-blue-200/80 dark:border-blue-900/60 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl max-h-[96vh] sm:max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-blue-200/80 dark:border-blue-900/60 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-[#012970] to-[#006EF3] text-white">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-md">
-              <Video className="h-5 w-5 text-[#F5B400] animate-pulse" />
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-[#012970] to-[#006EF3] text-white">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-md shrink-0">
+              <Video className="h-4 w-4 sm:h-5 sm:w-5 text-[#F5B400] animate-pulse" />
             </div>
-            <div>
-              <h2 className="text-lg font-black tracking-tight">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-black tracking-tight truncate">
                 {timingMode === 'NOW' ? 'Start Live Session' : 'Schedule Live Session'}
               </h2>
-              <p className="text-xs text-blue-100/90 font-medium">
+              <p className="text-[11px] sm:text-xs text-blue-100/90 font-medium line-clamp-1">
                 {timingMode === 'NOW'
                   ? 'Host an interactive coaching or group classroom with real-time video'
                   : 'Set up an upcoming live video class in advance for your students'}
@@ -357,14 +357,14 @@ export function StartLiveSessionModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition-colors shrink-0"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Body Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
           {errorMessage && (
             <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 flex items-center gap-2.5 text-red-700 dark:text-red-300 text-xs font-semibold">
               <AlertCircle className="h-4 w-4 shrink-0" />
@@ -403,7 +403,7 @@ export function StartLiveSessionModal({
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
               Session Format
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -419,7 +419,7 @@ export function StartLiveSessionModal({
                 }`}
               >
                 <div
-                  className={`h-9 w-9 rounded-lg flex items-center justify-center font-bold ${
+                  className={`h-9 w-9 rounded-lg flex items-center justify-center font-bold shrink-0 ${
                     sessionType === 'ONE_ON_ONE'
                       ? 'bg-[#006EF3] text-white'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600'
@@ -445,7 +445,7 @@ export function StartLiveSessionModal({
                 }`}
               >
                 <div
-                  className={`h-9 w-9 rounded-lg flex items-center justify-center font-bold ${
+                  className={`h-9 w-9 rounded-lg flex items-center justify-center font-bold shrink-0 ${
                     sessionType === 'GROUP'
                       ? 'bg-[#006EF3] text-white'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600'
@@ -468,7 +468,7 @@ export function StartLiveSessionModal({
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
               Session Timing
             </label>
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
               <button
                 type="button"
                 onClick={() => setTimingMode('NOW')}
@@ -756,8 +756,8 @@ export function StartLiveSessionModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80">
-          <div className="text-xs text-slate-500">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80">
+          <div className="text-xs text-slate-500 text-center sm:text-left">
             <span className="font-semibold text-slate-700 dark:text-slate-300">
               {selectedStudentIds.length}
             </span>{' '}
@@ -765,13 +765,13 @@ export function StartLiveSessionModal({
             {timingMode === 'SCHEDULED' && ` • Scheduled for ${scheduledDate} at ${scheduledTime}`}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
-              className="text-xs h-9"
+              className="flex-1 sm:flex-none text-xs h-10 sm:h-9"
             >
               Cancel
             </Button>
@@ -780,7 +780,7 @@ export function StartLiveSessionModal({
               type="button"
               onClick={handleSubmitSession}
               disabled={isSubmitting || selectedStudentIds.length === 0 || !title.trim()}
-              className="text-xs h-9 font-bold bg-[#006EF3] hover:bg-[#0057C2] text-white shadow-md gap-2"
+              className="flex-[2] sm:flex-none text-xs h-10 sm:h-9 font-bold bg-[#006EF3] hover:bg-[#0057C2] text-white shadow-md gap-2 active:scale-95"
             >
               {isSubmitting ? (
                 <>

@@ -125,10 +125,10 @@ export default function TeacherLiveSessionsPage() {
   return (
     <div className="p-4 sm:p-6 space-y-5 animate-in fade-in duration-300">
       {/* ─── Hero Header ──────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#011538] via-[#012970] to-[#006EF3] p-5 sm:p-6 text-white shadow-lg border border-blue-500/25">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#011538] via-[#012970] to-[#006EF3] p-4 sm:p-6 text-white shadow-lg border border-blue-500/25">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5 max-w-2xl">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-white border border-white/20 backdrop-blur-md">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#F5B400] animate-pulse" />
                 Live Video Classrooms
@@ -144,19 +144,20 @@ export default function TeacherLiveSessionsPage() {
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
               Interactive Live Sessions
             </h1>
-            <p className="text-xs sm:text-sm text-blue-100/90 leading-normal">
+            <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed">
               Host high-definition 1-to-1 oral sessions or cohort group classes with real-time video,
               mic controls, and instantaneous participant updates.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 w-full md:w-auto pt-1 sm:pt-0">
             <Button
               variant="outline"
               size="sm"
               onClick={fetchSessions}
               disabled={isLoading}
-              className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md h-9 px-3"
+              title="Refresh sessions"
+              className="border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-md h-9 w-9 p-0 flex items-center justify-center shrink-0"
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
@@ -166,9 +167,9 @@ export default function TeacherLiveSessionsPage() {
                 setModalMode('NOW');
                 setIsModalOpen(true);
               }}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white font-black h-9 px-3.5 shadow-lg shadow-black/20 gap-1.5 text-xs"
+              className="flex-1 sm:flex-initial bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-black h-9 px-3 sm:px-4 shadow-lg shadow-black/20 gap-1.5 text-xs justify-center whitespace-nowrap"
             >
-              <Play className="h-3.5 w-3.5 fill-current" />
+              <Play className="h-3.5 w-3.5 fill-current shrink-0" />
               <span>Start Live Now</span>
             </Button>
 
@@ -177,26 +178,30 @@ export default function TeacherLiveSessionsPage() {
                 setModalMode('SCHEDULED');
                 setIsModalOpen(true);
               }}
-              className="bg-[#F5B400] hover:bg-[#d99f00] text-[#012970] font-black h-9 px-4 shadow-lg shadow-black/20 gap-1.5 text-xs"
+              className="flex-1 sm:flex-initial bg-[#F5B400] hover:bg-[#d99f00] active:scale-95 text-[#012970] font-black h-9 px-3 sm:px-4 shadow-lg shadow-black/20 gap-1.5 text-xs justify-center whitespace-nowrap"
             >
-              <Calendar className="h-4 w-4" />
-              <span>Schedule Session</span>
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span>Schedule</span>
+              <span className="hidden min-[380px]:inline">Session</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* ─── Filter Tabs & Summary ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-        <div className="flex items-center gap-2">
+      <div className="border-b border-slate-200 dark:border-slate-800 pb-2.5 sm:pb-3">
+        <div
+          className="flex items-center gap-2 overflow-x-auto py-0.5 -mx-4 px-4 sm:mx-0 sm:px-0"
+          style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
+        >
           {(['ALL', 'LIVE', 'UPCOMING', 'ENDED'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`whitespace-nowrap shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                 activeTab === tab
-                  ? 'bg-[#006EF3] text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 border border-slate-200 dark:border-slate-800'
+                  ? 'bg-[#006EF3] text-white shadow-sm ring-1 ring-blue-400/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
               }`}
             >
               {tab === 'ALL' && `All Sessions (${sessions.length})`}
@@ -210,7 +215,7 @@ export default function TeacherLiveSessionsPage() {
 
       {/* ─── Sessions List ────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((n) => (
             <div
               key={n}
@@ -219,7 +224,7 @@ export default function TeacherLiveSessionsPage() {
           ))}
         </div>
       ) : filteredSessions.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-10 text-center bg-white/50 dark:bg-slate-900/50 space-y-3">
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-8 sm:p-10 text-center bg-white/50 dark:bg-slate-900/50 space-y-3">
           <div className="h-12 w-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-[#006EF3] mx-auto flex items-center justify-center">
             <Video className="h-6 w-6" />
           </div>
@@ -232,25 +237,28 @@ export default function TeacherLiveSessionsPage() {
               : `No sessions currently marked as ${activeTab.toLowerCase()}.`}
           </p>
           <Button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setModalMode('NOW');
+              setIsModalOpen(true);
+            }}
             size="sm"
-            className="bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold gap-1.5 shadow-md shadow-blue-600/20"
+            className="bg-[#006EF3] hover:bg-[#0057c2] active:scale-95 text-white font-bold gap-1.5 shadow-md shadow-blue-600/20"
           >
             <Plus className="h-4 w-4" />
             Start Live Session
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredSessions.map((session) => (
             <div
               key={session.id}
-              className="relative flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all p-5 group"
+              className="relative flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all p-4 sm:p-5 group"
             >
               {/* Card Header: Badges & Format */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center flex-wrap gap-1.5 min-w-0">
                     {session.status === 'LIVE' ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 animate-pulse">
                         <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -279,27 +287,27 @@ export default function TeacherLiveSessionsPage() {
                   <button
                     onClick={() => copySessionLink(session.id)}
                     title="Copy Session Link"
-                    className="p-1 rounded-md text-slate-400 hover:text-[#006EF3] hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-[#006EF3] hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors shrink-0"
                   >
                     {copiedId === session.id ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      <Check className="h-4 w-4 text-emerald-500" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5" />
+                      <Copy className="h-4 w-4" />
                     )}
                   </button>
                 </div>
 
                 {/* Title & Topic & Scheduled Time */}
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#006EF3] transition-colors line-clamp-1">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#006EF3] transition-colors line-clamp-2 leading-snug">
                     {session.title}
                   </h3>
                   {session.topic && (
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{session.topic}</p>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">{session.topic}</p>
                   )}
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-2 font-medium">
-                    <Calendar className="h-3 w-3 text-[#006EF3]" />
-                    <span>
+                    <Calendar className="h-3.5 w-3.5 text-[#006EF3] shrink-0" />
+                    <span className="truncate">
                       {session.scheduledAt
                         ? new Date(session.scheduledAt).toLocaleString(undefined, {
                             month: 'short',
@@ -313,7 +321,7 @@ export default function TeacherLiveSessionsPage() {
                 </div>
 
                 {/* Participants Preview */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
                   <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
                     <span className="flex items-center gap-1 font-medium">
                       <Users className="h-3.5 w-3.5 text-slate-400" />
@@ -321,13 +329,14 @@ export default function TeacherLiveSessionsPage() {
                       {session.participantCount === 1 ? 'Student' : 'Students'}
                     </span>
                     {session.status === 'LIVE' && session.activeParticipantCount > 0 && (
-                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         {session.activeParticipantCount} connected
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center -space-x-1.5 overflow-hidden">
+                  <div className="flex items-center -space-x-1.5 overflow-hidden py-0.5">
                     {session.participants?.slice(0, 5).map((p, idx) => (
                       <div
                         key={p.studentId || idx}
@@ -358,14 +367,14 @@ export default function TeacherLiveSessionsPage() {
               </div>
 
               {/* Action Button */}
-              <div className="pt-4 mt-3">
+              <div className="pt-3.5 mt-3 border-t border-slate-100 dark:border-slate-800/80">
                 {session.status === 'LIVE' ? (
                   <Link href={`/live/${session.id}`} className="w-full block">
                     <Button
                       size="sm"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 shadow-md shadow-emerald-600/20"
+                      className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold gap-2 shadow-md shadow-emerald-600/20"
                     >
-                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <Play className="h-4 w-4 fill-current" />
                       <span>Join Live Room</span>
                     </Button>
                   </Link>
@@ -373,9 +382,9 @@ export default function TeacherLiveSessionsPage() {
                   <Button
                     size="sm"
                     onClick={() => handleStartSessionNow(session.id)}
-                    className="w-full bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold gap-2 shadow-md shadow-blue-600/20"
+                    className="w-full h-10 bg-[#006EF3] hover:bg-[#0057c2] active:scale-[0.98] text-white font-bold gap-2 shadow-md shadow-blue-600/20"
                   >
-                    <Play className="h-3.5 w-3.5 fill-current" />
+                    <Play className="h-4 w-4 fill-current" />
                     <span>Start Session Now</span>
                   </Button>
                 ) : (
@@ -383,7 +392,7 @@ export default function TeacherLiveSessionsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold"
+                      className="w-full h-10 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
                       <span>View Session Summary</span>
                     </Button>
