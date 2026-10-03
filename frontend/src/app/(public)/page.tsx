@@ -341,11 +341,10 @@ export default function HomePage() {
                 <button
                   key={lvl.code}
                   onClick={() => setActiveLevelIndex(idx)}
-                  className={`shrink-0 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold transition-all ${
-                    activeLevelIndex === idx
+                  className={`shrink-0 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold transition-all ${activeLevelIndex === idx
                       ? 'bg-[#012970] text-white shadow-md scale-105'
                       : 'bg-white text-[#172033] hover:bg-[#dbe7f8] border border-[#E2E8F0]'
-                  }`}
+                    }`}
                 >
                   <span>{lvl.code}</span>
                   <span className="ml-1 text-[10px] opacity-80">({lvl.name})</span>
@@ -517,7 +516,7 @@ export default function HomePage() {
       ========================================================================= */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
+
           {/* Statistics Section */}
           <div className="flex flex-col justify-center space-y-6">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#172033]">
@@ -526,7 +525,7 @@ export default function HomePage() {
             <p className="text-sm text-[#667085]">
               Empowering learners across East Africa with world-class education.
             </p>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
               <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
                 <Users className="h-8 w-8 text-[#006EF3] mb-3" />
@@ -535,7 +534,7 @@ export default function HomePage() {
                 </span>
                 <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Enrolled Students</span>
               </Card>
-              
+
               <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
                 <BookOpen className="h-8 w-8 text-[#006EF3] mb-3" />
                 <span className="text-3xl font-black text-[#172033]">
@@ -543,7 +542,7 @@ export default function HomePage() {
                 </span>
                 <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Courses</span>
               </Card>
-              
+
               <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
                 <FileCheck className="h-8 w-8 text-[#006EF3] mb-3" />
                 <span className="text-3xl font-black text-[#172033]">
