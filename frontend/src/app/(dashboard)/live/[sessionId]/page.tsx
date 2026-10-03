@@ -1320,7 +1320,7 @@ function RemoteVideoTile({
 }
 
 /**
- * Rich Live Session Concluded & Summary Dashboard View
+ * Rich Live Session Concluded & Summary Dashboard View (White & Fully Responsive)
  */
 function LiveSessionSummaryView({
   session,
@@ -1404,24 +1404,24 @@ function LiveSessionSummaryView({
   const returnUrl = isTeacher ? '/teacher/live-sessions' : '/student/live-sessions';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-slate-100 flex flex-col">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#F8FAFC] text-slate-900 flex flex-col">
       {/* Top Header Bar */}
-      <header className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-20 border-b border-slate-200/90 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <Link
             href={returnUrl}
-            className="flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors py-1.5 px-3 rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800"
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors py-1.5 px-2.5 sm:px-3 rounded-xl hover:bg-slate-100 border border-slate-200/80 bg-white shadow-2xs"
           >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Live Sessions</span>
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to Sessions</span>
           </Link>
-          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-          <div className="flex items-center gap-2">
-            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs px-2.5 py-0.5 font-bold">
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-2.5 py-0.5 font-bold">
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-600" />
               SESSION CONCLUDED
             </Badge>
-            <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs px-2.5 py-0.5">
+            <Badge className="bg-blue-50 text-[#006EF3] border-blue-200 text-xs px-2.5 py-0.5 font-semibold">
               {session?.type === 'ONE_ON_ONE' ? '1-on-1 Class' : 'Group Class'}
             </Badge>
           </div>
@@ -1432,16 +1432,16 @@ function LiveSessionSummaryView({
             size="sm"
             variant="outline"
             onClick={handleCopyId}
-            className="h-8 text-xs border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300"
+            className="h-8 text-xs border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold"
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 mr-1 text-emerald-400" />
+                <Check className="h-3.5 w-3.5 mr-1 text-emerald-600" />
                 <span>Copied</span>
               </>
             ) : (
               <>
-                <Copy className="h-3.5 w-3.5 mr-1" />
+                <Copy className="h-3.5 w-3.5 mr-1 text-slate-500" />
                 <span className="hidden sm:inline">Copy ID</span>
               </>
             )}
@@ -1450,7 +1450,7 @@ function LiveSessionSummaryView({
           <Button
             size="sm"
             onClick={onReturn}
-            className="h-8 text-xs bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold"
+            className="h-8 text-xs bg-[#006EF3] hover:bg-[#0057c2] active:scale-[0.98] text-white font-bold shadow-xs"
           >
             Dashboard
           </Button>
@@ -1458,26 +1458,26 @@ function LiveSessionSummaryView({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-6 md:p-10 space-y-8 animate-in fade-in-50 duration-300">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 animate-in fade-in-50 duration-300">
         {/* Hero Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 p-6 md:p-8 shadow-2xl">
-          <div className="absolute top-0 right-0 -mt-12 -mr-12 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/3 -mb-12 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+        <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-7 md:p-8 shadow-xs">
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 h-56 w-56 rounded-full bg-blue-50/70 blur-2xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 -mb-10 h-56 w-56 rounded-full bg-indigo-50/60 blur-2xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-[#006EF3]">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#006EF3] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                   Live Class Report
                 </span>
-                <span className="text-slate-600">•</span>
-                <span className="text-xs text-slate-400">{formatDate(session?.scheduledAt)}</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-xs font-semibold text-slate-500">{formatDate(session?.scheduledAt)}</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 {session?.title || 'Interactive Live Class'}
               </h1>
               {session?.topic ? (
-                <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                   {session.topic}
                 </p>
               ) : (
@@ -1489,22 +1489,22 @@ function LiveSessionSummaryView({
 
             {/* Teacher Card */}
             {session?.teacher && (
-              <div className="shrink-0 flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-[#006EF3] font-black text-base border border-blue-500/30">
+              <div className="shrink-0 flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-[#006EF3] font-black text-sm border border-blue-200 shadow-2xs">
                   {session.teacher.firstName?.charAt(0) || 'T'}
                   {session.teacher.lastName?.charAt(0) || ''}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                       Instructor
                     </span>
-                    <GraduationCap className="h-3.5 w-3.5 text-blue-400" />
+                    <GraduationCap className="h-3 w-3 text-[#006EF3]" />
                   </div>
-                  <p className="text-sm font-bold text-white">
+                  <p className="text-sm font-bold text-slate-900">
                     {session.teacher.firstName} {session.teacher.lastName}
                   </p>
-                  <p className="text-[11px] text-slate-400">{session.teacher.email}</p>
+                  <p className="text-[11px] text-slate-500">{session.teacher.email}</p>
                 </div>
               </div>
             )}
@@ -1512,173 +1512,240 @@ function LiveSessionSummaryView({
         </div>
 
         {/* 4 KPI Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Duration */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-bold uppercase tracking-wider">Duration</span>
-              <Clock className="h-4 w-4 text-amber-400" />
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Duration</span>
+              <div className="h-7 w-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                <Clock className="h-3.5 w-3.5" />
+              </div>
             </div>
             <div>
-              <p className="text-2xl font-black text-white">{durationText}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">Active call time</p>
+              <p className="text-xl sm:text-2xl font-black text-slate-900">{durationText}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5 font-medium">Active call time</p>
             </div>
           </div>
 
           {/* Attendance */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-bold uppercase tracking-wider">Attendance</span>
-              <UserCheck className="h-4 w-4 text-emerald-400" />
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Attendance</span>
+              <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                <UserCheck className="h-3.5 w-3.5" />
+              </div>
             </div>
             <div>
-              <p className="text-2xl font-black text-white">
+              <p className="text-xl sm:text-2xl font-black text-slate-900">
                 {attendedCount} / {totalInvited}
               </p>
-              <p className="text-[11px] text-emerald-400 font-semibold mt-0.5">
+              <p className="text-[11px] text-emerald-700 font-bold mt-0.5">
                 {attendanceRate}% Participation
               </p>
             </div>
           </div>
 
           {/* Started At */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-bold uppercase tracking-wider">Started</span>
-              <Calendar className="h-4 w-4 text-blue-400" />
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Started</span>
+              <div className="h-7 w-7 rounded-lg bg-blue-50 text-[#006EF3] flex items-center justify-center border border-blue-100">
+                <Calendar className="h-3.5 w-3.5" />
+              </div>
             </div>
             <div>
-              <p className="text-sm font-bold text-white truncate">
+              <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                 {formatTime(session?.startedAt)}
               </p>
-              <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+              <p className="text-[11px] text-slate-500 mt-0.5 truncate font-medium">
                 {formatDate(session?.startedAt)}
               </p>
             </div>
           </div>
 
           {/* Ended At */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-bold uppercase tracking-wider">Concluded</span>
-              <CheckCircle2 className="h-4 w-4 text-indigo-400" />
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Concluded</span>
+              <div className="h-7 w-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              </div>
             </div>
             <div>
-              <p className="text-sm font-bold text-white truncate">
+              <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                 {formatTime(session?.endedAt)}
               </p>
-              <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+              <p className="text-[11px] text-slate-500 mt-0.5 truncate font-medium">
                 {formatDate(session?.endedAt)}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Participants Table Card */}
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
-          <div className="p-5 md:p-6 border-b border-slate-800 flex items-center justify-between">
+        {/* Participants Card */}
+        <div className="rounded-3xl border border-slate-200/90 bg-white overflow-hidden shadow-xs">
+          <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-xl bg-blue-500/10 text-[#006EF3] flex items-center justify-center font-bold">
+              <div className="h-8 w-8 rounded-xl bg-blue-50 text-[#006EF3] flex items-center justify-center font-bold border border-blue-100">
                 <Users className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Student Attendance & Activity</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">Student Attendance & Activity</h3>
+                <p className="text-[11px] sm:text-xs text-slate-500">
                   Detailed check-in, checkout, and call duration records
                 </p>
               </div>
             </div>
 
-            <Badge variant="outline" className="border-slate-800 text-slate-400 text-xs">
+            <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 text-xs font-semibold shrink-0">
               {totalInvited} {totalInvited === 1 ? 'Student' : 'Students'}
             </Badge>
           </div>
 
           {participants.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">
+            <div className="p-10 text-center text-slate-400 text-xs sm:text-sm">
               No participants recorded for this session.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-800/80 bg-slate-950/40 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    <th className="py-3.5 px-6">Student</th>
-                    <th className="py-3.5 px-6">Status</th>
-                    <th className="py-3.5 px-6">Joined Time</th>
-                    <th className="py-3.5 px-6">Left Time</th>
-                    <th className="py-3.5 px-6 text-right">Time in Call</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/50">
-                  {participants.map((p: any) => {
-                    const attended = p.status === 'JOINED' || p.status === 'LEFT' || p.joinedAt;
-                    return (
-                      <tr key={p.participantId || p.studentId} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-xl bg-slate-800 text-blue-400 font-bold flex items-center justify-center text-xs border border-slate-700">
-                              {p.firstName?.charAt(0) || 'S'}
-                              {p.lastName?.charAt(0) || ''}
+            <>
+              {/* Desktop Table (Visible on md and up) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="py-3 px-6">Student</th>
+                      <th className="py-3 px-6">Status</th>
+                      <th className="py-3 px-6">Joined Time</th>
+                      <th className="py-3 px-6">Left Time</th>
+                      <th className="py-3 px-6 text-right">Time in Call</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {participants.map((p: any) => {
+                      const attended = p.status === 'JOINED' || p.status === 'LEFT' || p.joinedAt;
+                      return (
+                        <tr key={p.participantId || p.studentId} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3.5 px-6">
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 rounded-xl bg-slate-100 text-[#006EF3] font-bold flex items-center justify-center text-xs border border-slate-200">
+                                {p.firstName?.charAt(0) || 'S'}
+                                {p.lastName?.charAt(0) || ''}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-slate-900">
+                                  {p.firstName} {p.lastName}
+                                </p>
+                                <p className="text-[11px] text-slate-500">{p.email}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs font-bold text-white">
-                                {p.firstName} {p.lastName}
-                              </p>
-                              <p className="text-[11px] text-slate-400">{p.email}</p>
-                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-6">
+                            {attended ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Attended
+                              </span>
+                            ) : p.status === 'REMOVED' ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                <UserX className="h-3 w-3" />
+                                Removed
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                Absent
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-6 text-xs text-slate-700">
+                            {formatTime(p.joinedAt)}
+                          </td>
+
+                          <td className="py-3.5 px-6 text-xs text-slate-700">
+                            {formatTime(p.leftAt)}
+                          </td>
+
+                          <td className="py-3.5 px-6 text-xs font-bold text-right text-slate-900">
+                            {formatParticipantDuration(p.joinedAt, p.leftAt)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card List (Visible on < md) */}
+              <div className="block md:hidden divide-y divide-slate-100">
+                {participants.map((p: any) => {
+                  const attended = p.status === 'JOINED' || p.status === 'LEFT' || p.joinedAt;
+                  return (
+                    <div key={p.participantId || p.studentId} className="p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-xl bg-slate-100 text-[#006EF3] font-bold flex items-center justify-center text-xs border border-slate-200 shrink-0">
+                            {p.firstName?.charAt(0) || 'S'}
+                            {p.lastName?.charAt(0) || ''}
                           </div>
-                        </td>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 truncate">
+                              {p.firstName} {p.lastName}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">{p.email}</p>
+                          </div>
+                        </div>
 
-                        <td className="py-4 px-6">
-                          {attended ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <CheckCircle2 className="h-3 w-3" />
-                              Attended
-                            </span>
-                          ) : p.status === 'REMOVED' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                              <UserX className="h-3 w-3" />
-                              Removed
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
-                              Absent
-                            </span>
-                          )}
-                        </td>
+                        {attended ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Attended
+                          </span>
+                        ) : p.status === 'REMOVED' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                            <UserX className="h-3 w-3" />
+                            Removed
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                            Absent
+                          </span>
+                        )}
+                      </div>
 
-                        <td className="py-4 px-6 text-xs text-slate-300">
-                          {formatTime(p.joinedAt)}
-                        </td>
-
-                        <td className="py-4 px-6 text-xs text-slate-300">
-                          {formatTime(p.leftAt)}
-                        </td>
-
-                        <td className="py-4 px-6 text-xs font-semibold text-right text-white">
-                          {formatParticipantDuration(p.joinedAt, p.leftAt)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+                        <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                          <p className="text-[10px] font-bold uppercase text-slate-400">Joined</p>
+                          <p className="text-[11px] font-semibold text-slate-800 mt-0.5 truncate">{formatTime(p.joinedAt)}</p>
+                        </div>
+                        <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                          <p className="text-[10px] font-bold uppercase text-slate-400">Left</p>
+                          <p className="text-[11px] font-semibold text-slate-800 mt-0.5 truncate">{formatTime(p.leftAt)}</p>
+                        </div>
+                        <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                          <p className="text-[10px] font-bold uppercase text-slate-400">Duration</p>
+                          <p className="text-[11px] font-bold text-slate-900 mt-0.5 truncate">{formatParticipantDuration(p.joinedAt, p.leftAt)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500">
-            Session ID: <code className="text-slate-400 font-mono">{session?.id}</code>
+        <div className="pt-2 pb-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200/80">
+          <p className="text-xs text-slate-400 order-2 sm:order-1 text-center sm:text-left">
+            Session ID: <code className="text-slate-600 font-mono bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">{session?.id}</code>
           </p>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto order-1 sm:order-2">
             <Link href={returnUrl} className="w-full sm:w-auto">
               <Button
                 variant="outline"
-                className="w-full sm:w-auto text-xs border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800"
+                className="w-full sm:w-auto text-xs border-slate-200 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-semibold"
               >
                 Return to Live Sessions
               </Button>
@@ -1686,7 +1753,7 @@ function LiveSessionSummaryView({
 
             <Button
               onClick={onReturn}
-              className="w-full sm:w-auto text-xs bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold"
+              className="w-full sm:w-auto text-xs bg-[#006EF3] hover:bg-[#0057c2] active:scale-[0.98] text-white font-bold shadow-xs"
             >
               Back to Dashboard
             </Button>
