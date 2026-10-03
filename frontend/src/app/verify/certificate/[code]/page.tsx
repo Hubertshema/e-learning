@@ -172,7 +172,7 @@ export default function PublicCertificateVerificationPage() {
                 </div>
               </div>
             </div>
-            <Badge variant="primary" className="px-3 py-1 font-bold bg-[#012970] text-white">
+            <Badge variant="primary" className="px-3 py-1 font-bold bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600">
               Active & Valid
             </Badge>
           </div>

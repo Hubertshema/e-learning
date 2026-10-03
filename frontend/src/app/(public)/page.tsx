@@ -164,13 +164,6 @@ export default function HomePage() {
                     READ MORE
                   </button>
                 </Link>
-
-                <Link href="/quiz" className="w-full sm:w-auto">
-                  <button className="w-full sm:w-auto rounded-xl bg-[#F3F7FC] text-[#012970] border border-[#dbe7f8] px-3 sm:px-5 py-2.5 sm:py-3 font-bold text-xs hover:bg-[#dbe7f8] transition-all flex items-center justify-center gap-1.5 shadow-sm text-center">
-                    <Sparkles className="h-3.5 w-3.5 text-[#F5B400] shrink-0" />
-                    <span className="truncate">Free Diagnostic</span>
-                  </button>
-                </Link>
               </div>
             </div>
 
@@ -550,17 +543,12 @@ export default function HomePage() {
               Ready to Accelerate Your English Fluency &amp; Career?
             </h2>
             <p className="text-xs sm:text-sm text-[#F3F7FC] leading-relaxed">
-              Take the free diagnostic placement quiz or register today to join hundreds of learners mastering English with LinguaChris Academy.
+              Register today to join hundreds of learners mastering English with LinguaChris Academy.
             </p>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-2">
               <Link href="/apply" className="w-full sm:w-auto">
                 <Button className="w-full sm:w-auto rounded-xl bg-[#F5B400] hover:bg-[#e0a400] text-[#011b4a] px-6 sm:px-8 py-3 font-bold text-xs uppercase tracking-wider shadow-lg transition-transform hover:scale-105 active:scale-95 text-center">
                   Join as a Student
-                </Button>
-              </Link>
-              <Link href="/quiz" className="w-full sm:w-auto">
-                <Button variant="outline" className="w-full sm:w-auto rounded-xl border-2 border-white text-white hover:bg-white/20 px-5 sm:px-6 py-3 font-bold text-xs uppercase tracking-wider text-center">
-                  Take Free Quick Test
                 </Button>
               </Link>
               <Link href="/courses" className="w-full sm:w-auto">

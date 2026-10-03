@@ -62,7 +62,7 @@ export default function AboutUsPage() {
       category: 'Placement & Testing',
       question: 'How do I know which level to start with?',
       answer:
-        'You can take our free Diagnostic Placement Quiz (takes under 5 minutes) before enrolling. It evaluates grammar, vocabulary, collocations, and contextual listening to recommend your optimal starting tier from Pre-A1 to C2.',
+        'When you register, our accredited instructors will guide you and directly assign you to your optimal CEFR starting tier from Pre-A1 to C2.',
     },
     {
       category: 'Certificates & Verification',
