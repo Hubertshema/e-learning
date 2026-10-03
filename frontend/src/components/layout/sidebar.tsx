@@ -367,7 +367,7 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
       </aside>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-[max(0.25rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
         {sections
           .flatMap((s) => s.items)
           .slice(0, 5) // Limit to 5 items to fit nicely
@@ -380,22 +380,49 @@ export function Sidebar({ role, mobileOpen = false, onClose }: SidebarProps) {
                 pathname.startsWith(item.href));
             const Icon = item.icon;
 
+            const shortLabel =
+              item.name === 'Students Directory'
+                ? 'Students'
+                : item.name === 'Courses & Syllabus' || item.name === 'Course Catalog'
+                ? 'Courses'
+                : item.name === 'Learning Levels'
+                ? 'Levels'
+                : item.name === 'Resource Library'
+                ? 'Library'
+                : item.name === 'Teacher Approvals'
+                ? 'Teachers'
+                : item.name === 'Platform Enrollments'
+                ? 'Enrollments'
+                : item.name === 'Financials & Payments'
+                ? 'Payments'
+                : item.name;
+
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 title={item.name}
                 className={cn(
-                  'relative flex items-center justify-center flex-1 py-3 transition-colors',
+                  'relative flex flex-col items-center justify-center flex-1 py-1.5 transition-all active:scale-95 min-h-[52px]',
                   isActive
-                    ? 'text-[#012970] dark:text-[#006EF3]'
+                    ? 'text-[#006EF3] dark:text-blue-400 font-bold'
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                 )}
               >
-                <Icon className={cn('h-[22px] w-[22px]', isActive && 'stroke-[2.5px]')} />
                 {isActive && (
-                  <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-[#006EF3]" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full bg-[#006EF3]" />
                 )}
+                <div
+                  className={cn(
+                    'p-1 rounded-xl transition-all flex items-center justify-center',
+                    isActive && 'bg-blue-50 dark:bg-blue-950/60 shadow-xs'
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5', isActive ? 'stroke-[2.5px]' : 'stroke-2')} />
+                </div>
+                <span className="text-[10px] font-bold tracking-tight mt-0.5 leading-none truncate max-w-[64px]">
+                  {shortLabel}
+                </span>
               </Link>
             );
           })}

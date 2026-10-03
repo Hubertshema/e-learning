@@ -54,20 +54,7 @@ function formatTime(seconds: number) {
 
 const ALL_ACTIVITY_TYPES = [
   { id: 'MULTIPLE_CHOICE', label: 'Multiple Choice', category: 'Objective Quizzes', icon: '🔘', desc: 'Single correct answer from options' },
-  { id: 'MULTIPLE_SELECT', label: 'Multiple Select', category: 'Objective Quizzes', icon: '☑️', desc: 'Select one or more correct options' },
   { id: 'TRUE_FALSE', label: 'True / False', category: 'Objective Quizzes', icon: '⚖️', desc: 'Binary true or false proposition' },
-  { id: 'FILL_BLANK', label: 'Fill in the Blank', category: 'Language Drills', icon: '📝', desc: 'Missing word in a sentence template' },
-  { id: 'SHORT_ANSWER', label: 'Short Answer', category: 'Language Drills', icon: '💬', desc: 'Open text answer with acceptable alternatives' },
-  { id: 'MATCHING', label: 'Matching Pairs', category: 'Interactive Drills', icon: '🔗', desc: 'Match items on the left to items on the right' },
-  { id: 'ORDERING', label: 'Ordering / Sequence', category: 'Interactive Drills', icon: '🔢', desc: 'Arrange words, steps, or sentences in sequence' },
-  { id: 'DRAG_DROP', label: 'Sentence Builder', category: 'Interactive Drills', icon: '🧩', desc: 'Construct sentences from draggable word tokens' },
-  { id: 'IMAGE', label: 'Image-Based Question', category: 'Visual Learning', icon: '🖼️', desc: 'Visual prompt or picture comprehension' },
-  { id: 'SPEAKING', label: 'Speaking Practice', category: 'Oral & Pronunciation', icon: '🎙️', desc: 'Read aloud, repeat, or oral response drill' },
-  { id: 'LISTENING', label: 'Listening Comprehension', category: 'Audio Skills', icon: '🎧', desc: 'Audio cue or dictation question' },
-  { id: 'VOCABULARY', label: 'Vocabulary Drill', category: 'Vocabulary', icon: '📚', desc: 'Target word, definition, part of speech & example' },
-  { id: 'GRAMMAR', label: 'Grammar Practice', category: 'Grammar', icon: '🔤', desc: 'Grammar topic focus, transformation or error drill' },
-  { id: 'READING', label: 'Reading Comprehension', category: 'Comprehension', icon: '📖', desc: 'Transcript passage or excerpt with questions' },
-  { id: 'WRITING', label: 'Writing Task', category: 'Production', icon: '✍️', desc: 'Written response with word targets & guidance' },
 ];
 
 export default function InteractiveVideoEditorPage() {
@@ -186,15 +173,17 @@ export default function InteractiveVideoEditorPage() {
     }
   };
 
+  // Custom Interactive Delete Modal State
+  const [itemToDelete, setItemToDelete] = useState<{
+    type: 'ACTIVITY' | 'RESOURCE';
+    id: string;
+    title?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleDeleteResource = async (resourceId: string) => {
-    if (!confirm('Are you sure you want to delete this resource?')) return;
-    try {
-      await apiClient.delete(`/teacher/interactive-videos/resources/${resourceId}`);
-      setResources((prev) => prev.filter((r) => r.id !== resourceId));
-      fetchLesson();
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete resource');
-    }
+    const res = resources.find((r) => r.id === resourceId);
+    setItemToDelete({ type: 'RESOURCE', id: resourceId, title: res?.title || 'Resource PDF' });
   };
 
   const [updatingResourceId, setUpdatingResourceId] = useState<string | null>(null);
@@ -486,13 +475,28 @@ export default function InteractiveVideoEditorPage() {
   };
 
   const handleDeleteActivity = async (activityId: string) => {
-    if (!confirm('Are you sure you want to delete this activity?')) return;
+    const act = activities.find((a) => a.id === activityId);
+    setItemToDelete({ type: 'ACTIVITY', id: activityId, title: act?.title || 'Interactive Activity' });
+  };
+
+  const executeDelete = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
     try {
-      await apiClient.delete(`/teacher/interactive-videos/activities/${activityId}`);
-      if (editingActivity?.id === activityId) setEditingActivity(null);
-      fetchLesson();
-    } catch (err) {
-      console.error('Failed to delete', err);
+      if (itemToDelete.type === 'RESOURCE') {
+        await apiClient.delete(`/teacher/interactive-videos/resources/${itemToDelete.id}`);
+        setResources((prev) => prev.filter((r) => r.id !== itemToDelete.id));
+        fetchLesson();
+      } else {
+        await apiClient.delete(`/teacher/interactive-videos/activities/${itemToDelete.id}`);
+        if (editingActivity?.id === itemToDelete.id) setEditingActivity(null);
+        fetchLesson();
+      }
+    } catch (err: any) {
+      console.error('Failed to delete item:', err);
+    } finally {
+      setIsDeleting(false);
+      setItemToDelete(null);
     }
   };
 
@@ -555,49 +559,51 @@ export default function InteractiveVideoEditorPage() {
   const youtubeId = getYouTubeId(lesson.videoUrl);
 
   return (
-    <div className="flex flex-col h-screen max-h-screen overflow-hidden bg-slate-50">
+    <div className="flex flex-col min-h-screen md:h-screen md:max-h-screen overflow-y-auto md:overflow-hidden bg-slate-50">
       {/* ── TOP HEADER ──────────────────────────────────────────────── */}
-      <header className="h-14 shrink-0 border-b border-slate-200 bg-white flex items-center justify-between px-4 z-20">
-        <div className="flex items-center gap-3 min-w-0">
+      <header className="min-h-[56px] py-2 sm:h-14 shrink-0 border-b border-slate-200 bg-white flex flex-wrap sm:flex-nowrap items-center justify-between px-3 sm:px-4 z-20 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <Link href={`/studio/${courseId}`}>
-            <Button variant="ghost" size="sm" className="text-slate-500 px-2 hover:bg-slate-100">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Curriculum
+            <Button variant="ghost" size="sm" className="text-slate-500 px-2 hover:bg-slate-100 h-8 text-xs shrink-0">
+              <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+              <span className="hidden xs:inline">Courses</span>
             </Button>
           </Link>
-          <div className="h-4 w-px bg-slate-200" />
-          <h1 className="text-sm font-bold text-slate-900 flex items-center gap-2 truncate max-w-[260px] md:max-w-md">
+          <div className="h-4 w-px bg-slate-200 shrink-0" />
+          <h1 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 truncate min-w-0">
             <PlayCircle className="h-4 w-4 text-indigo-500 shrink-0" />
             <span className="truncate">{lesson.lessonTitle || lesson.title || 'Untitled Interactive Video'}</span>
           </h1>
 
           {lesson.status === 'DRAFT' ? (
-            <span className="text-[10px] uppercase font-black tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+            <span className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
               DRAFT
             </span>
           ) : (
-            <span className="text-[10px] uppercase font-black tracking-wider text-[#006EF3] bg-[#F3F7FC] border border-blue-200 px-2 py-0.5 rounded">
+            <span className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider text-[#006EF3] bg-[#F3F7FC] border border-blue-200 px-1.5 py-0.5 rounded shrink-0">
               PUBLISHED
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Video Link / Settings Button */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsSettingsOpen(true)}
-            className="h-8 text-xs font-semibold border-indigo-200 bg-indigo-50/50 text-indigo-700 hover:bg-indigo-100/60"
+            className="h-8 px-2.5 text-xs font-semibold border-indigo-200 bg-indigo-50/50 text-indigo-700 hover:bg-indigo-100/60"
             title="Access, change or configure the video link"
           >
-            <Link2 className="h-3.5 w-3.5 mr-1.5 text-indigo-600" />
-            <span>Video Link & Info</span>
+            <Link2 className="h-3.5 w-3.5 sm:mr-1.5 text-indigo-600" />
+            <span className="hidden sm:inline">Video Link & Info</span>
           </Button>
 
           {/* Student Preview Link */}
           <Link href={`/student/interactive-video/${lessonId}`} target="_blank">
-            <Button variant="ghost" size="sm" className="h-8 text-xs text-slate-600 hover:text-[#006EF3] hover:bg-[#F3F7FC]">
-              <Eye className="h-3.5 w-3.5 mr-1 text-[#006EF3]" /> Preview
+            <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs text-slate-600 hover:text-[#006EF3] hover:bg-[#F3F7FC]">
+              <Eye className="h-3.5 w-3.5 sm:mr-1 text-[#006EF3]" />
+              <span className="hidden sm:inline">Preview</span>
             </Button>
           </Link>
 
@@ -607,7 +613,7 @@ export default function InteractiveVideoEditorPage() {
             size="sm"
             onClick={handleTogglePublish}
             disabled={isPublishing}
-            className="h-8 text-xs"
+            className="h-8 px-3 text-xs font-bold"
           >
             {lesson.status === 'PUBLISHED' ? (
               'Unpublish'
@@ -621,9 +627,9 @@ export default function InteractiveVideoEditorPage() {
       </header>
 
       {/* ── MAIN WORKSPACE ───────────────────────────────────────────── */}
-      <main className="flex-1 overflow-hidden flex flex-col md:flex-row">
+      <main className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
         {/* Left Column: Video Player & Timeline */}
-        <section className="flex-1 flex flex-col min-w-0 border-r border-slate-200 bg-slate-100">
+        <section className="flex-1 flex flex-col min-w-0 border-r border-slate-200 bg-slate-100 md:overflow-y-auto">
           {/* Active Video Info Bar */}
           <div className="px-4 py-2 bg-white border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 truncate">
@@ -709,8 +715,8 @@ export default function InteractiveVideoEditorPage() {
           </div>
 
           {/* Interactive Timeline Scrubbing Bar */}
-          <div className="h-44 shrink-0 bg-white border-t border-slate-200 p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
+          <div className="min-h-44 shrink-0 bg-white border-t border-slate-200 p-3 sm:p-4 flex flex-col">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <div>
                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Interactive Timeline</h3>
                 <p className="text-[11px] text-slate-500">
@@ -719,7 +725,7 @@ export default function InteractiveVideoEditorPage() {
               </div>
               <Button
                 onClick={handleStartAddActivity}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white h-7 text-xs font-bold rounded-lg shadow-sm"
+                className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white h-8 text-xs font-bold rounded-lg shadow-sm w-full sm:w-auto justify-center"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" /> Add Activity at {formatTime(currentTime)}
               </Button>
@@ -783,9 +789,12 @@ export default function InteractiveVideoEditorPage() {
         </section>
 
         {/* Right Column: Activities, Transcript, Resources & Analytics */}
-        <aside className="w-full md:w-[420px] shrink-0 bg-white flex flex-col border-l border-slate-200">
+        <aside className="w-full md:w-[420px] shrink-0 bg-white flex flex-col border-l border-slate-200 md:overflow-y-auto">
           {/* Tab Navigation */}
-          <div className="flex border-b border-slate-200 shrink-0 bg-slate-50/50">
+          <div
+            className="flex overflow-x-auto border-b border-slate-200 shrink-0 bg-slate-50/50"
+            style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
+          >
             {(['ACTIVITIES', 'TRANSCRIPT', 'RESOURCES', 'ANALYTICS'] as const).map((tab) => (
               <button
                 key={tab}
@@ -793,7 +802,7 @@ export default function InteractiveVideoEditorPage() {
                   setActiveTab(tab);
                   setEditingActivity(null);
                 }}
-                className={`flex-1 py-3 text-xs font-bold transition-colors ${
+                className={`flex-1 sm:flex-none whitespace-nowrap shrink-0 px-3.5 sm:px-4 py-3 text-xs font-bold transition-colors ${
                   activeTab === tab
                     ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'
@@ -808,7 +817,7 @@ export default function InteractiveVideoEditorPage() {
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-3.5 sm:p-4">
             {/* ── TAB 1: ACTIVITIES ─────────────────────────────────── */}
             {activeTab === 'ACTIVITIES' && !editingActivity && (
               <div className="space-y-3">
@@ -819,37 +828,12 @@ export default function InteractiveVideoEditorPage() {
                   </div>
                   <div className="flex gap-1.5">
                     <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
-                      onClick={async () => {
-                        try {
-                          alert('Generating activities with AI... This might take a few seconds.');
-                          const res = await apiClient.post(
-                            `/teacher/interactive-videos/lessons/${lessonId}/generate-activities`,
-                            { density: 'medium', targetLevel: lesson.cefrLevel || 'B1' }
-                          );
-                          const generated = (res as any).data || res || [];
-                          if (Array.isArray(generated)) {
-                            for (const act of generated) {
-                              await apiClient.post(`/teacher/interactive-videos/lessons/${lessonId}/activities`, act);
-                            }
-                            fetchLesson();
-                            alert('Activities generated successfully!');
-                          }
-                        } catch (err) {
-                          alert('Failed to generate activities.');
-                        }
-                      }}
-                    >
-                      <Sparkles className="h-3 w-3 mr-1 text-indigo-600" /> AI Auto-Gen
-                    </Button>
-                    <Button
                       size="sm"
                       onClick={handleStartAddActivity}
-                      className="h-7 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
+                      className="h-8 px-3 text-xs bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold gap-1 shadow-sm"
                     >
-                      <Plus className="h-3 w-3 mr-1" /> Add
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add Activity</span>
                     </Button>
                   </div>
                 </div>
@@ -974,13 +958,13 @@ export default function InteractiveVideoEditorPage() {
                 </div>
 
                 {/* Timestamp & Playhead helper */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Timestamp (seconds)</label>
                     <Input
                       type="number"
                       min={0}
-                      className="h-8 text-xs font-mono"
+                      className="h-9 text-xs font-mono w-full"
                       value={editingActivity.timestampSeconds}
                       onChange={(e) =>
                         setEditingActivity({
@@ -990,7 +974,8 @@ export default function InteractiveVideoEditorPage() {
                       }
                     />
                   </div>
-                  <div className="flex items-end">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1 invisible sm:visible">Sync with video</label>
                     <Button
                       type="button"
                       variant="outline"
@@ -1001,9 +986,10 @@ export default function InteractiveVideoEditorPage() {
                           timestampSeconds: Math.floor(currentTime),
                         })
                       }
-                      className="h-8 w-full text-[11px] font-semibold text-indigo-700 bg-indigo-50/50 border-indigo-200 hover:bg-indigo-100"
+                      className="h-9 w-full text-xs font-semibold text-indigo-700 bg-indigo-50/50 border-indigo-200 hover:bg-indigo-100 flex items-center justify-center gap-1.5"
                     >
-                      <Clock className="h-3 w-3 mr-1" /> Use Playhead ({formatTime(currentTime)})
+                      <Clock className="h-3.5 w-3.5 shrink-0" />
+                      <span>Use Playhead ({formatTime(currentTime)})</span>
                     </Button>
                   </div>
                 </div>
@@ -2480,6 +2466,53 @@ export default function InteractiveVideoEditorPage() {
         onClose={() => setPreviewResource(null)}
         isTeacher={true}
       />
+
+      {/* ─── Custom Interactive Delete Confirmation Modal ───────────────────── */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-100 dark:border-rose-900/50">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Delete {itemToDelete.type === 'RESOURCE' ? 'Resource' : 'Activity'}?
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5 truncate">
+                  {itemToDelete.title || 'This item will be permanently removed.'}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Are you sure you want to delete this {itemToDelete.type === 'RESOURCE' ? 'resource' : 'interactive checkpoint'}? This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setItemToDelete(null)}
+                disabled={isDeleting}
+                className="text-xs h-9"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={executeDelete}
+                disabled={isDeleting}
+                className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs h-9 gap-1.5 shadow-md shadow-rose-600/20"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

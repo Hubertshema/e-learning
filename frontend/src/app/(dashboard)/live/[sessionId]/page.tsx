@@ -86,6 +86,7 @@ export default function LiveSessionRoomPage() {
   const [chatInput, setChatInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [studentToKick, setStudentToKick] = useState<ParticipantMedia | null>(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const reactionPickerRef = useRef<HTMLDivElement>(null);
 
@@ -732,26 +733,18 @@ export default function LiveSessionRoomPage() {
           {/* Red Leave / End Call Button */}
           {isTeacher ? (
             <Button
-              onClick={() => {
-                if (window.confirm('Are you sure you want to end this live session for all participants?')) {
-                  endSession();
-                }
-              }}
-              className="h-9 w-9 sm:h-12 sm:w-auto p-0 sm:px-6 shrink-0 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30 flex items-center justify-center"
-              title="End Session"
+              onClick={() => setShowLeaveModal(true)}
+              className="h-9 w-9 sm:h-12 sm:w-auto p-0 sm:px-6 shrink-0 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold gap-2 shadow-lg shadow-red-600/30 flex items-center justify-center transition-transform"
+              title="End or Leave Session"
             >
               <PhoneOff className="h-4 w-4" />
               <span className="hidden sm:inline">End Session</span>
             </Button>
           ) : (
             <Button
-              onClick={() => {
-                if (window.confirm('Leave this live session?')) {
-                  router.push('/student');
-                }
-              }}
-              className="h-9 w-9 sm:h-12 sm:w-auto p-0 sm:px-6 shrink-0 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30 flex items-center justify-center"
-              title="Leave"
+              onClick={() => setShowLeaveModal(true)}
+              className="h-9 w-9 sm:h-12 sm:w-auto p-0 sm:px-6 shrink-0 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold gap-2 shadow-lg shadow-red-600/30 flex items-center justify-center transition-transform"
+              title="Leave Session"
             >
               <PhoneOff className="h-4 w-4" />
               <span className="hidden sm:inline">Leave</span>
@@ -838,6 +831,75 @@ export default function LiveSessionRoomPage() {
                 className="bg-red-600 hover:bg-red-700 text-white font-bold"
               >
                 Remove
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Interactive Custom Leave / End Session Confirmation Modal ──────── */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-2xl bg-slate-900 border border-slate-800 p-5 sm:p-6 text-white shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-2xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                <PhoneOff className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">
+                  {isTeacher ? 'Leave or End Live Class?' : 'Leave Live Session?'}
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                  {isTeacher
+                    ? 'Choose whether to end this live session for everyone or leave the room.'
+                    : 'Are you sure you want to leave this session? You can rejoin anytime while the class is live.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              {isTeacher ? (
+                <>
+                  <Button
+                    onClick={() => {
+                      setShowLeaveModal(false);
+                      endSession();
+                    }}
+                    className="w-full h-10 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold text-xs shadow-lg shadow-red-600/30 gap-2 justify-center"
+                  >
+                    <PhoneOff className="h-4 w-4" />
+                    <span>End Session for Everyone</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowLeaveModal(false);
+                      router.push('/teacher/live-sessions');
+                    }}
+                    className="w-full h-10 border-slate-700 bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-slate-200 text-xs font-semibold justify-center"
+                  >
+                    Leave Room (Keep Session Running)
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setShowLeaveModal(false);
+                    router.push('/student');
+                  }}
+                  className="w-full h-10 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold text-xs shadow-lg shadow-red-600/30 gap-2 justify-center"
+                >
+                  <PhoneOff className="h-4 w-4" />
+                  <span>Leave Session</span>
+                </Button>
+              )}
+
+              <Button
+                variant="ghost"
+                onClick={() => setShowLeaveModal(false)}
+                className="w-full h-9 text-slate-400 hover:text-white text-xs font-semibold justify-center hover:bg-slate-800"
+              >
+                Cancel &amp; Stay in Class
               </Button>
             </div>
           </div>
