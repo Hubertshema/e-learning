@@ -35,7 +35,9 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
-  Download
+  Download,
+  ShieldCheck,
+  Mail
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { fastDeepEqual } from '@/lib/cache';
@@ -103,6 +105,7 @@ interface CourseLearningData {
     isCompleted: boolean;
     timeSpentSec: number;
   }>;
+  certificate?: any;
 }
 
 export default function StudentLearnPage() {
@@ -138,6 +141,9 @@ export default function StudentLearnPage() {
   const [justCompletedLesson, setJustCompletedLesson] = useState<Lesson | null>(null);
   const [showCourseCompletionModal, setShowCourseCompletionModal] = useState(false);
   const [earnedCertificate, setEarnedCertificate] = useState<any>(null);
+  const [claimingCert, setClaimingCert] = useState(false);
+  const [resendingCertEmail, setResendingCertEmail] = useState(false);
+  const [certEmailSentFeedback, setCertEmailSentFeedback] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [lessonToReset, setLessonToReset] = useState<Lesson | null>(null);
   const [resettingLesson, setResettingLesson] = useState(false);
@@ -200,8 +206,14 @@ export default function StudentLearnPage() {
           if (initialLesson) {
             setSelectedLesson(initialLesson);
           }
+          if (learningData.certificate) {
+            setEarnedCertificate(learningData.certificate);
+          }
         } else {
           // Silent background auto-sync: only update if data changed structurally
+          if (learningData.certificate) {
+            setEarnedCertificate(learningData.certificate);
+          }
           setData((prev) => {
             if (!prev) return learningData;
             if (fastDeepEqual(prev, learningData)) return prev;
@@ -533,6 +545,40 @@ export default function StudentLearnPage() {
       setFeedback(err.message || 'Failed to update lesson completion status.');
     } finally {
       setCompleting(false);
+    }
+  };
+
+  const handleClaimCertificate = async () => {
+    try {
+      setClaimingCert(true);
+      setCertEmailSentFeedback(null);
+      const res = await apiClient.post<any>(`/student/courses/${courseId}/claim-certificate`);
+      const cert = res?.certificate || (res as any)?.data?.certificate || res;
+      setEarnedCertificate(cert);
+      setShowCourseCompletionModal(true);
+      if (res?.emailSent) {
+        setCertEmailSentFeedback(`Official accredited certificate credentials issued and sent to ${res?.recipientEmail || 'your email'}!`);
+      } else {
+        setCertEmailSentFeedback('Certificate officially issued and recorded in the academic registry!');
+      }
+    } catch (err: any) {
+      console.error('Failed to claim certificate', err);
+      setFeedback(err?.message || 'Failed to claim certificate. Please ensure all lessons are completed.');
+    } finally {
+      setClaimingCert(false);
+    }
+  };
+
+  const handleResendCertEmail = async (code: string) => {
+    try {
+      setResendingCertEmail(true);
+      await apiClient.post(`/student/certificates/${encodeURIComponent(code)}/resend-email`);
+      setCertEmailSentFeedback('Certificate email re-sent successfully to your inbox!');
+    } catch (err: any) {
+      console.error('Failed to resend certificate email', err);
+      setCertEmailSentFeedback(err?.message || 'Failed to resend email. Please try again.');
+    } finally {
+      setResendingCertEmail(false);
     }
   };
 
@@ -980,6 +1026,18 @@ export default function StudentLearnPage() {
                 )}
                 
                 <div className="space-y-2">
+                  {totalLessonsCount > 0 && completedCount === totalLessonsCount && (
+                    <Button
+                      size="sm"
+                      disabled={claimingCert}
+                      onClick={handleClaimCertificate}
+                      className="w-full flex h-8 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-[#012970] hover:from-amber-600 hover:to-[#006EF3] text-white text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <Award className="h-3.5 w-3.5" />
+                      <span>{earnedCertificate ? 'View Certificate' : 'Claim Certificate'}</span>
+                    </Button>
+                  )}
+
                   <Button
                     size="sm"
                     variant="outline"
@@ -1010,6 +1068,55 @@ export default function StudentLearnPage() {
                 <button onClick={() => setFeedback(null)} className="text-[11px] underline text-[#006EF3] hover:text-[#012970] font-semibold cursor-pointer">
                   Dismiss
                 </button>
+              </div>
+            )}
+
+            {/* Course Completed Certificate Banner */}
+            {totalLessonsCount > 0 && completedCount === totalLessonsCount && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border-2 border-amber-300 dark:border-amber-500/40 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/70 dark:from-amber-950/40 dark:via-yellow-950/20 dark:to-slate-900 p-3.5 sm:p-4 text-slate-900 dark:text-white shadow-md animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md ring-4 ring-amber-200 dark:ring-amber-900/40">
+                    <Award className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-200/60 dark:bg-amber-900/50 px-2 py-0.5 rounded-full">
+                        Curriculum Completed 100%
+                      </span>
+                      {earnedCertificate && (
+                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <CheckCircle2 className="h-2.5 w-2.5" /> Certificate Ready
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                      {earnedCertificate
+                        ? `Congratulations! Your official CEFR Certificate has been issued and emailed.`
+                        : `Congratulations! You completed all lessons. Claim your official CEFR Certificate now.`}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                  <Button
+                    size="sm"
+                    disabled={claimingCert}
+                    onClick={handleClaimCertificate}
+                    className="w-full sm:w-auto h-9 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-[#012970] hover:from-amber-600 hover:to-[#006EF3] text-white font-bold text-xs shadow-md gap-1.5 cursor-pointer active:scale-95 transition-all"
+                  >
+                    {claimingCert ? (
+                      <>
+                        <div className="h-3.5 w-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                        <span>Claiming & Emailing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Award className="h-4 w-4" />
+                        <span>{earnedCertificate ? 'View & Download Certificate' : 'Claim Certificate'}</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -1326,43 +1433,119 @@ export default function StudentLearnPage() {
         </div>
       </Modal>
 
-      {/* Course Completion Modal */}
-      <Modal isOpen={showCourseCompletionModal} onClose={() => setShowCourseCompletionModal(false)} title="Course Completed!">
-        <div className="py-8 text-center flex flex-col items-center">
-          <div className="relative mb-6">
-            <div className="absolute -inset-4 rounded-full bg-yellow-100 dark:bg-yellow-900/20 animate-pulse" />
-            <Award className="relative h-24 w-24 text-yellow-500 dark:text-yellow-400" />
+      {/* Course Completion & Congratulatory Certificate Modal */}
+      <Modal isOpen={showCourseCompletionModal} onClose={() => setShowCourseCompletionModal(false)} title="Official CEFR Certificate">
+        <div className="py-6 px-2 sm:px-4 text-center flex flex-col items-center max-w-lg mx-auto">
+          {/* Radiant Celebration Emblem */}
+          <div className="relative mb-5">
+            <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-amber-400/30 to-yellow-300/30 blur-lg animate-pulse" />
+            <div className="relative h-20 w-20 rounded-3xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-white flex items-center justify-center shadow-xl ring-8 ring-amber-100 dark:ring-amber-950/60">
+              <Award className="h-10 w-10 text-white stroke-[2.2]" />
+            </div>
           </div>
-          <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white">Congratulations!</h2>
-          <p className="mb-6 text-base text-slate-600 dark:text-slate-300">
-            You have successfully completed all lessons in <br/><strong>{data?.course?.title}</strong>.
-          </p>
-          
-          {earnedCertificate && (
-            <div className="mb-8 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-left dark:border-yellow-900/50 dark:bg-yellow-900/10">
-              <div className="flex items-start gap-4">
-                <div className="rounded-lg bg-yellow-100 p-2 dark:bg-yellow-900/50">
-                  <FileText className="h-6 w-6 text-yellow-700 dark:text-yellow-500" />
+
+          <div className="space-y-1.5 mb-5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+              <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+              CEFR Graduation Unlocked
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              Congratulations!
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md leading-relaxed">
+              You have successfully completed 100% of the lessons and checkpoints in{' '}
+              <strong className="text-slate-900 dark:text-white">{data?.course?.title}</strong>.
+            </p>
+          </div>
+
+          {/* Certificate Showcase Card */}
+          {earnedCertificate ? (
+            <div className="w-full mb-6 rounded-2xl border-2 border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-b from-amber-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-5 text-left shadow-lg">
+              <div className="flex items-start justify-between gap-3 pb-3 border-b border-amber-200/60 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      Accredited Certificate
+                    </h4>
+                    <p className="text-[11px] font-mono font-bold text-[#006EF3] dark:text-blue-400">
+                      {earnedCertificate.certificateCode}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-slate-900 dark:text-white">Certificate Issued!</h4>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Code: {earnedCertificate.certificateCode}</p>
-                  <Link href="/student/certificates" onClick={() => setShowCourseCompletionModal(false)}>
-                    <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700 text-white">
-                      View Certificate <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </Link>
+                <Badge variant="indigo" className="text-[10px] font-bold uppercase">
+                  {earnedCertificate.levelCompleted || data?.course?.level || 'CEFR'}
+                </Badge>
+              </div>
+
+              {/* Direct Email Confirmation Box */}
+              <div className="mt-3 p-3 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
+                <Mail className="h-4 w-4 text-[#006EF3] shrink-0 mt-0.5" />
+                <div className="space-y-0.5 flex-1">
+                  <p className="font-bold text-[11px]">
+                    Directly Sent to Your Email
+                  </p>
+                  <p className="text-[10.5px] opacity-85 leading-relaxed">
+                    Your official certificate credentials and graduation verification link have been dispatched directly to your registered student email address.
+                  </p>
                 </div>
               </div>
+
+              {certEmailSentFeedback && (
+                <div className="mt-2 text-center text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-in fade-in">
+                  ✓ {certEmailSentFeedback}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-center">
+              <p className="text-xs text-slate-600 dark:text-slate-300 mb-3">
+                Click below to claim your certificate and have it generated and sent directly to your email.
+              </p>
+              <Button
+                disabled={claimingCert}
+                onClick={handleClaimCertificate}
+                className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-10 rounded-xl"
+              >
+                {claimingCert ? 'Claiming & Emailing...' : 'Claim Certificate Now'}
+              </Button>
             </div>
           )}
 
-          <div className="flex gap-3">
-            <Link href="/student/my-courses">
-              <Button variant="outline" onClick={() => setShowCourseCompletionModal(false)}>
-                Return to Dashboard
-              </Button>
-            </Link>
+          {/* Action Buttons */}
+          <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2.5">
+            {earnedCertificate && (
+              <>
+                <Link href="/student/certificates" onClick={() => setShowCourseCompletionModal(false)} className="w-full sm:w-auto">
+                  <Button size="default" className="w-full sm:w-auto h-10 bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl text-xs gap-1.5 shadow-md">
+                    <Award className="h-4 w-4" />
+                    <span>View in My Certificates</span>
+                  </Button>
+                </Link>
+
+                <Button
+                  variant="outline"
+                  size="default"
+                  disabled={resendingCertEmail}
+                  onClick={() => earnedCertificate?.certificateCode && handleResendCertEmail(earnedCertificate.certificateCode)}
+                  className="w-full sm:w-auto h-10 border-slate-300 dark:border-slate-700 text-xs font-semibold rounded-xl gap-1.5"
+                >
+                  <Mail className="h-3.5 w-3.5 text-[#006EF3]" />
+                  <span>{resendingCertEmail ? 'Sending...' : 'Resend to Email'}</span>
+                </Button>
+              </>
+            )}
+
+            <Button
+              variant="ghost"
+              size="default"
+              onClick={() => setShowCourseCompletionModal(false)}
+              className="w-full sm:w-auto h-10 text-xs text-slate-500 rounded-xl"
+            >
+              Close
+            </Button>
           </div>
         </div>
       </Modal>

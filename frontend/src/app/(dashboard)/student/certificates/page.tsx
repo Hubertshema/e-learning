@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Award, BookOpen, ShieldCheck, Download, ExternalLink } from 'lucide-react';
+import { Award, BookOpen, ShieldCheck, Download, ExternalLink, Mail, CheckCircle2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useCachedData } from '@/lib/cache';
 import { CardGridSkeleton } from '@/components/ui/card-grid-skeleton';
@@ -278,11 +278,17 @@ function CertificatePreview({
   cert,
   onDownload,
   isDownloading,
+  onResendEmail,
+  isResending,
+  resendStatus,
   fallbackStudentName,
 }: {
   cert: Certificate;
   onDownload: () => void;
   isDownloading: boolean;
+  onResendEmail?: () => void;
+  isResending?: boolean;
+  resendStatus?: string;
   fallbackStudentName?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -367,30 +373,55 @@ function CertificatePreview({
           <ExternalLink className="h-3 w-3 text-slate-400 shrink-0" />
         </Link>
 
-        <Button
-          size="sm"
-          disabled={isDownloading}
-          className="text-xs h-8 px-3 sm:px-3.5 gap-1.5 bg-[#c79a3b] hover:bg-[#a87521] text-white border-0 shadow-sm transition-all ml-auto sm:ml-0 shrink-0 font-medium"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!isDownloading) onDownload();
-          }}
-        >
-          {isDownloading ? (
-            <>
-              <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-              <span>Generating…</span>
-            </>
-          ) : (
-            <>
-              <Download className="h-3.5 w-3.5" />
-              <span>Download PDF</span>
-            </>
+        <div className="flex items-center gap-2 ml-auto sm:ml-0">
+          {onResendEmail && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isResending}
+              className="text-xs h-8 px-2.5 sm:px-3 gap-1.5 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-[#006EF3] hover:border-[#006EF3] font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                onResendEmail();
+              }}
+              title="Send this certificate directly to your email"
+            >
+              {isResending ? (
+                <div className="h-3 w-3 rounded-full border-2 border-slate-400 border-t-transparent animate-spin" />
+              ) : resendStatus ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              ) : (
+                <Mail className="h-3.5 w-3.5 text-[#006EF3]" />
+              )}
+              <span>{resendStatus || 'Email Me'}</span>
+            </Button>
           )}
-        </Button>
+
+          <Button
+            size="sm"
+            disabled={isDownloading}
+            className="text-xs h-8 px-3 sm:px-3.5 gap-1.5 bg-[#c79a3b] hover:bg-[#a87521] text-white border-0 shadow-sm transition-all shrink-0 font-medium"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDownloading) onDownload();
+            }}
+          >
+            {isDownloading ? (
+              <>
+                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <span>Generating…</span>
+              </>
+            ) : (
+              <>
+                <Download className="h-3.5 w-3.5" />
+                <span>Download PDF</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -403,8 +434,30 @@ export default function StudentCertificatesPage() {
   const currentUserName = currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() : '';
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendStatusMap, setResendStatusMap] = useState<Record<string, string>>({});
   const [certToDownload, setCertToDownload] = useState<Certificate | null>(null);
   const downloadRef = useRef<HTMLDivElement>(null);
+
+  const resendCertificateEmail = async (cert: Certificate) => {
+    try {
+      setResendingId(cert.id);
+      await apiClient.post(`/student/certificates/${encodeURIComponent(cert.certificateCode)}/resend-email`);
+      setResendStatusMap((prev) => ({ ...prev, [cert.id]: 'Sent to Email!' }));
+      setTimeout(() => {
+        setResendStatusMap((prev) => {
+          const next = { ...prev };
+          delete next[cert.id];
+          return next;
+        });
+      }, 4000);
+    } catch (err: any) {
+      console.error('Failed to resend email', err);
+      setResendStatusMap((prev) => ({ ...prev, [cert.id]: 'Failed to send' }));
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   const downloadCertificate = useCallback(async (cert: Certificate) => {
     setDownloadingId(cert.id);
@@ -479,6 +532,9 @@ export default function StudentCertificatesPage() {
                 cert={cert}
                 onDownload={() => downloadCertificate(cert)}
                 isDownloading={downloadingId === cert.id}
+                onResendEmail={() => resendCertificateEmail(cert)}
+                isResending={resendingId === cert.id}
+                resendStatus={resendStatusMap[cert.id]}
                 fallbackStudentName={currentUserName}
               />
             ))}

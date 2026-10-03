@@ -46,5 +46,7 @@ router.get('/lessons/:lessonId/activities', StudentController.getLessonActivitie
 
 // Certificates
 router.get('/certificates', StudentController.getCertificates);
+router.post('/courses/:courseId/claim-certificate', StudentController.claimCertificate);
+router.post('/certificates/:code/resend-email', StudentController.resendCertificateEmail);
 
 export default router;

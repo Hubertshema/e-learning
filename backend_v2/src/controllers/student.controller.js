@@ -6,6 +6,7 @@ import { AdmissionModel } from '../models/admission.model.js';
 import { OverrideModel } from '../models/override.model.js';
 import { CertificateModel } from '../models/certificate.model.js';
 import { AccessService } from '../services/access.service.js';
+import { emailService } from '../services/email.service.js';
 import { query } from '../config/database.js';
 
 export class StudentController {
@@ -692,6 +693,23 @@ export class StudentController {
         console.warn('Progress records warning:', err.message);
       }
 
+      // 5. Fetch existing certificate if already issued
+      let certificate = null;
+      try {
+        const certRes = await query(
+          `SELECT cert.id, cert."certificateCode", cert."levelCompleted", cert."finalGrade", cert."issueDate"
+           FROM "public"."certificates" cert
+           WHERE (cert."studentId" = $1 OR cert."studentId" = $2) AND cert."courseId" = $3
+           ORDER BY cert."issueDate" DESC LIMIT 1`,
+          [studentId, studentProfileId, courseId]
+        );
+        if (certRes.rows.length > 0) {
+          certificate = certRes.rows[0];
+        }
+      } catch (certErr) {
+        console.warn('Certificate lookup notice:', certErr.message);
+      }
+
       const payload = {
         course: {
           id: course.id,
@@ -714,6 +732,7 @@ export class StudentController {
           status: enrollmentStatus,
         },
         progressRecords,
+        certificate,
       };
 
       return sendSuccess(res, payload, 'Course learning room retrieved successfully');
@@ -929,6 +948,179 @@ export class StudentController {
     } catch (error) {
       console.error('Get Certificates Error:', error);
       return sendError(res, 'Failed to fetch certificates', 500);
+    }
+  }
+
+  /**
+   * POST /api/v1/student/courses/:courseId/claim-certificate
+   * Checks course completion, issues certificate if not yet issued,
+   * sends congratulatory email directly to student's email, and returns certificate data.
+   */
+  static async claimCertificate(req, res) {
+    try {
+      const studentId = req.user.id;
+      const courseId = req.params.courseId;
+
+      let profile = null;
+      try {
+        profile = await UserModel.getStudentProfile(studentId);
+      } catch {}
+      const studentProfileId = profile?.id || studentId;
+
+      // 1. Fetch course details
+      const courseRes = await query(
+        `SELECT id, title, level FROM "public"."courses" WHERE id = $1 LIMIT 1`,
+        [courseId]
+      );
+      if (courseRes.rows.length === 0) {
+        return sendError(res, 'Course not found', 404, 'NOT_FOUND');
+      }
+      const course = courseRes.rows[0];
+
+      // 2. Check all lessons completion for this course
+      const allLessonsRes = await query(
+        `SELECT l.id FROM "public"."lessons" l JOIN "public"."units" u ON u.id = l."unitId" WHERE u."courseId" = $1`,
+        [courseId]
+      );
+      const courseLessonIds = allLessonsRes.rows.map((r) => r.id);
+
+      if (courseLessonIds.length === 0) {
+        return sendError(res, 'This course does not have any curriculum lessons configured yet.', 400, 'NO_LESSONS');
+      }
+
+      const completedSet = new Set();
+      const completedRes = await query(
+        `SELECT "lessonId" FROM "public"."progress" WHERE ("studentId" = $1 OR "studentId" = $2) AND "isCompleted" = true`,
+        [studentId, studentProfileId]
+      );
+      completedRes.rows.forEach((r) => completedSet.add(r.lessonId));
+
+      const ivCompletedRes = await query(
+        `SELECT "lessonId" FROM "interactive_video_progress" WHERE ("studentId" = $1 OR "studentId" = $2) AND ("completionPercent" >= 90 OR "completedAt" IS NOT NULL)`,
+        [studentId, studentProfileId]
+      );
+      ivCompletedRes.rows.forEach((r) => completedSet.add(r.lessonId));
+
+      const completedCount = courseLessonIds.filter((id) => completedSet.has(id)).length;
+      const allCompleted = completedCount === courseLessonIds.length;
+
+      if (!allCompleted) {
+        return sendError(
+          res,
+          `Course incomplete (${completedCount}/${courseLessonIds.length} lessons completed). Please complete all lessons to unlock and claim your certificate.`,
+          400,
+          'COURSE_INCOMPLETE'
+        );
+      }
+
+      // 3. Check if certificate already exists
+      const existingCertRes = await query(
+        `SELECT cert.id, cert."certificateCode", cert."levelCompleted", cert."finalGrade", cert."issueDate"
+         FROM "public"."certificates" cert
+         WHERE (cert."studentId" = $1 OR cert."studentId" = $2) AND cert."courseId" = $3
+         ORDER BY cert."issueDate" DESC LIMIT 1`,
+        [studentId, studentProfileId, courseId]
+      );
+
+      let cert;
+      if (existingCertRes.rows.length > 0) {
+        cert = existingCertRes.rows[0];
+      } else {
+        let cLevel = course.level || 'A1';
+        if (/^[1-6]$/.test(cLevel)) {
+          const cefrMap = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+          cLevel = cefrMap[parseInt(cLevel, 10) - 1];
+        } else if (!/^[A-C][1-2]$/.test(cLevel)) {
+          cLevel = 'A1';
+        }
+
+        cert = await CertificateModel.issueCertificate(studentProfileId || studentId, courseId, cLevel, 100);
+      }
+
+      // 4. Fetch student details and send congratulatory email
+      const studentUserRes = await query(
+        `SELECT u.email, u."firstName", u."lastName" FROM "public"."users" u WHERE u.id = $1 LIMIT 1`,
+        [studentId]
+      );
+      const studentRow = studentUserRes.rows[0];
+      const studentEmail = studentRow?.email || req.user.email;
+      const studentName = `${studentRow?.firstName || req.user.firstName || ''} ${studentRow?.lastName || req.user.lastName || ''}`.trim() || 'Student';
+
+      let emailSent = false;
+      if (studentEmail) {
+        try {
+          await emailService.sendCertificateIssuedEmail({
+            email: studentEmail,
+            name: studentName,
+            courseName: course.title,
+            certificateCode: cert.certificateCode,
+          });
+          emailSent = true;
+        } catch (err) {
+          console.error('Failed to send certificate email:', err);
+        }
+      }
+
+      return sendSuccess(
+        res,
+        {
+          certificate: {
+            ...cert,
+            studentName,
+            course: {
+              title: course.title,
+              level: course.level,
+            },
+          },
+          emailSent,
+          recipientEmail: studentEmail,
+        },
+        'Certificate successfully claimed and emailed!'
+      );
+    } catch (error) {
+      console.error('Claim Certificate Error:', error);
+      return sendError(res, 'Failed to claim certificate', 500);
+    }
+  }
+
+  /**
+   * POST /api/v1/student/certificates/:code/resend-email
+   * Resends the certificate email directly to the student
+   */
+  static async resendCertificateEmail(req, res) {
+    try {
+      const studentId = req.user.id;
+      const code = req.params.code;
+
+      const certRes = await query(
+        `SELECT cert.id, cert."certificateCode", cert."levelCompleted", c.title as "courseTitle",
+                u.email, u."firstName", u."lastName"
+         FROM "public"."certificates" cert
+         JOIN "public"."courses" c ON c.id = cert."courseId"
+         JOIN "public"."users" u ON u.id = $1
+         WHERE cert."certificateCode" = $2 AND (cert."studentId" = $1 OR cert."studentId" = (SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1))
+         LIMIT 1`,
+        [studentId, code]
+      );
+
+      if (certRes.rows.length === 0) {
+        return sendError(res, 'Certificate not found or not owned by you', 404, 'NOT_FOUND');
+      }
+
+      const row = certRes.rows[0];
+      const studentName = `${row.firstName || ''} ${row.lastName || ''}`.trim() || 'Student';
+
+      await emailService.sendCertificateIssuedEmail({
+        email: row.email,
+        name: studentName,
+        courseName: row.courseTitle,
+        certificateCode: row.certificateCode,
+      });
+
+      return sendSuccess(res, { emailSent: true, email: row.email }, 'Certificate email sent successfully');
+    } catch (error) {
+      console.error('Resend Certificate Email Error:', error);
+      return sendError(res, 'Failed to resend certificate email', 500);
     }
   }
 }
