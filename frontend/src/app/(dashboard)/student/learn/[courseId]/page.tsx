@@ -487,7 +487,8 @@ export default function StudentLearnPage() {
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
-  const completedCount = (data?.progressRecords || []).filter((p) => p.isCompleted).length;
+  const allLessonIds = new Set(allLessons.map(l => l.id));
+  const completedCount = (data?.progressRecords || []).filter((p) => p.isCompleted && allLessonIds.has(p.lessonId)).length;
   const totalLessonsCount = allLessons.length;
   const progressPercent = totalLessonsCount > 0 ? Math.round((completedCount / totalLessonsCount) * 100) : 0;
 
