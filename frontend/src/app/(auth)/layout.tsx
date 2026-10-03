@@ -5,10 +5,10 @@ import { CheckCircle, Star } from 'lucide-react';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-[#E2E5E9] dark:bg-[#0F172A] min-h-[100dvh] w-full flex items-center justify-center p-3 sm:p-5 md:p-8 py-6 sm:py-8 antialiased selection:bg-[#006EF3] selection:text-white transition-colors duration-200 overflow-y-auto">
-      <div className="relative w-full max-w-[1040px] bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.12)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row my-auto">
+      <div className="relative w-full max-w-[1040px] xl:max-w-[1180px] 2xl:max-w-[1260px] bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.12)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row my-auto">
         
         {/* Left Side: Desktop Marketing Banner */}
-        <div className="hidden md:flex md:w-[42%] lg:w-[44%] bg-[#011538] text-white p-6 lg:p-8 flex-col justify-between overflow-hidden relative z-10 shrink-0">
+        <div className="hidden md:flex md:w-[40%] lg:w-[38%] xl:w-[34%] bg-[#011538] text-white p-6 lg:p-8 flex-col justify-between overflow-hidden relative z-10 shrink-0">
           
           <div className="relative z-10">
             <Link
@@ -94,7 +94,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* Right Side: Form Content */}
-        <div className="flex-1 bg-white dark:bg-slate-900 p-5 sm:p-7 md:p-8 lg:p-10 flex flex-col justify-center relative z-10 transition-colors duration-200 min-h-0 md:max-h-[92vh] md:overflow-y-auto custom-scrollbar">
+        <div className="flex-1 bg-white dark:bg-slate-900 p-5 sm:p-7 md:p-8 lg:p-10 flex flex-col justify-start relative z-10 transition-colors duration-200 min-h-0 md:max-h-[92vh] md:overflow-y-auto custom-scrollbar">
           {/* Mobile-only header */}
           <div className="md:hidden flex items-center justify-between pb-3.5 mb-3 border-b border-slate-100 dark:border-slate-800">
             <Link href="/" className="inline-flex items-center">
@@ -109,7 +109,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </span>
           </div>
 
-          <div className="w-full max-w-[500px] mx-auto my-auto">
+          <div className="w-full max-w-[500px] xl:max-w-[680px] 2xl:max-w-[760px] mx-auto">
             {children}
           </div>
         </div>

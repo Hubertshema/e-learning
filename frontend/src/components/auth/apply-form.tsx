@@ -7,7 +7,25 @@ import { useAuth } from '@/contexts/auth-context';
 import { apiClient, tokenStorage } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, ArrowLeft, GraduationCap, Sparkles } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  GraduationCap,
+  Sparkles,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  ShieldCheck,
+  KeyRound,
+  Copy,
+  Check,
+  Lock,
+  User,
+  Mail,
+  Phone,
+  Globe,
+  Compass,
+} from 'lucide-react';
 
 const CEFR_LEVELS = [
   { value: 'PRE_A1', label: 'Pre-A1 Starter (Complete Beginner)' },
@@ -44,6 +62,7 @@ export function ApplyForm() {
     lastName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phone: '',
     nativeLanguage: '',
     targetLevel: initialLevel,
@@ -51,8 +70,76 @@ export function ApplyForm() {
     motivation: '',
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [copiedNotice, setCopiedNotice] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Suggested Password Generator
+  const handleSuggestPassword = () => {
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijkmnopqrstuvwxyz';
+    const numbers = '23456789';
+    const symbols = '!@#$%^&*';
+
+    // Ensure at least one character from each set
+    const selected = [
+      uppercase[Math.floor(Math.random() * uppercase.length)],
+      lowercase[Math.floor(Math.random() * lowercase.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      symbols[Math.floor(Math.random() * symbols.length)],
+    ];
+
+    const allChars = uppercase + lowercase + numbers + symbols;
+    for (let i = 0; i < 10; i++) {
+      selected.push(allChars[Math.floor(Math.random() * allChars.length)]);
+    }
+
+    // Shuffle characters
+    const generated = selected.sort(() => 0.5 - Math.random()).join('');
+
+    setFormData((prev) => ({
+      ...prev,
+      password: generated,
+      confirmPassword: generated,
+    }));
+    setShowPassword(true);
+    setShowConfirmPassword(true);
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(generated);
+      setCopiedNotice(true);
+      setTimeout(() => setCopiedNotice(false), 3500);
+    }
+  };
+
+  // Password Security Strength Metrics
+  const password = formData.password;
+  const hasLength = password.length >= 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSymbol = /[^A-Za-z0-9]/.test(password);
+  const score = [hasLength, hasUpper, hasNumber, hasSymbol].filter(Boolean).length;
+
+  const strengthDetails = (() => {
+    if (!password) {
+      return { label: '', color: 'bg-slate-200 dark:bg-slate-700', percent: 0, textClass: 'text-slate-400' };
+    }
+    if (password.length < 6) {
+      return { label: 'Too short (min 6)', color: 'bg-rose-500', percent: 20, textClass: 'text-rose-500' };
+    }
+    if (score === 1) {
+      return { label: 'Weak', color: 'bg-rose-500', percent: 35, textClass: 'text-rose-500' };
+    }
+    if (score === 2) {
+      return { label: 'Fair', color: 'bg-amber-500', percent: 55, textClass: 'text-amber-500' };
+    }
+    if (score === 3) {
+      return { label: 'Good', color: 'bg-blue-500', percent: 80, textClass: 'text-blue-500' };
+    }
+    return { label: 'Strong & Secure', color: 'bg-emerald-500', percent: 100, textClass: 'text-emerald-500 font-bold' };
+  })();
 
   const handleGoalToggle = (goal: string) => {
     setFormData((prev) => {
@@ -81,13 +168,29 @@ export function ApplyForm() {
       if (!formData.password || formData.password.length < 6) {
         throw new Error('Password must be at least 6 characters long.');
       }
+      if (formData.confirmPassword && formData.password !== formData.confirmPassword) {
+        throw new Error('Passwords do not match. Please verify your password confirmation.');
+      }
+
+      const payload = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        phone: formData.phone.trim(),
+        nativeLanguage: formData.nativeLanguage.trim(),
+        targetLevel: formData.targetLevel,
+        currentEnglishLevel: formData.targetLevel,
+        learningGoals: formData.learningGoals,
+        motivation: formData.motivation.trim(),
+      };
 
       const res = await apiClient<{
         user: any;
         tokens: { accessToken: string; refreshToken: string };
       }>('/auth/apply', {
         method: 'POST',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
         requiresAuth: false,
       });
 
@@ -105,166 +208,345 @@ export function ApplyForm() {
   };
 
   return (
-    <div className="w-full flex flex-col my-auto">
+    <div className="w-full flex flex-col py-1 sm:py-3">
       {/* Header */}
       <div className="space-y-1.5 text-center pb-4 shrink-0">
-        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#006EF3]/10 text-[#006EF3] border border-[#006EF3]/20 mb-1">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#006EF3]/10 text-[#006EF3] border border-[#006EF3]/20 mb-2 shadow-2xs">
           <GraduationCap className="h-6 w-6" />
         </div>
+        <div className="flex items-center justify-center gap-2">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#F3F7FC] dark:bg-blue-950/60 text-[#012970] dark:text-blue-300 border border-[#012970]/15 dark:border-blue-800">
+            <Sparkles className="h-2.5 w-2.5 text-[#006EF3]" /> Admission Application
+          </span>
+          <span className="text-[10px] font-semibold text-slate-400">
+            Academic Year 2026/2027
+          </span>
+        </div>
         <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-          Student Admission Application
+          Apply for Student Admission
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-          Submit your profile details and create your student account. Our academic instructors will review your admission request.
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
+          Submit your profile details and create your student account. Our academic team reviews and activates enrollments promptly.
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 flex items-start gap-2.5 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-800 dark:text-rose-300">
+        <div className="mb-4 flex items-start gap-2.5 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-800 dark:text-rose-300 animate-in fade-in">
           <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
           <div className="flex-1 font-medium">{error}</div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        {/* Name Fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">First Name *</label>
-            <Input
-              required
-              placeholder="e.g. David"
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              className="h-10 text-xs sm:text-sm rounded-xl"
-            />
+      {copiedNotice && (
+        <div className="mb-4 flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span><strong>Suggested strong password generated!</strong> Copied to your clipboard.</span>
           </div>
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Last Name *</label>
-            <Input
-              required
-              placeholder="e.g. Mugisha"
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              className="h-10 text-xs sm:text-sm rounded-xl"
-            />
+          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700 dark:text-emerald-400">
+            Copied
+          </span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Section 1: Personal Details */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
+            <User className="h-3.5 w-3.5 text-[#006EF3]" />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Personal Information
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">First Name *</label>
+              <Input
+                required
+                placeholder="e.g. David"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                className="h-10 text-xs sm:text-sm rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Last Name *</label>
+              <Input
+                required
+                placeholder="e.g. Mugisha"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                className="h-10 text-xs sm:text-sm rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Email Address *</label>
+              <Input
+                type="email"
+                required
+                placeholder="you@domain.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="h-10 text-xs sm:text-sm rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phone / WhatsApp Number</label>
+              <Input
+                placeholder="+250 788 123 456"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="h-10 text-xs sm:text-sm rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Email & Password */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Email Address *</label>
-            <Input
-              type="email"
-              required
-              placeholder="you@domain.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="h-10 text-xs sm:text-sm rounded-xl"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Account Password *</label>
-            <Input
-              type="password"
-              required
-              minLength={6}
-              placeholder="Min. 6 characters"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="h-10 text-xs sm:text-sm rounded-xl"
-            />
-          </div>
-        </div>
+        {/* Section 2: Account Password & Suggested Security */}
+        <div className="rounded-2xl border border-blue-100 dark:border-blue-950/60 bg-[#F3F7FC]/50 dark:bg-slate-800/40 p-3.5 sm:p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-blue-200/60 dark:border-slate-700">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-[#006EF3]" />
+              <span className="text-xs font-bold text-[#012970] dark:text-blue-300 uppercase tracking-wider">
+                Account Security & Password
+              </span>
+            </div>
 
-        {/* Phone & Native Language */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Phone / WhatsApp Number</label>
-            <Input
-              placeholder="+250 788 123 456"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="h-10 text-xs sm:text-sm rounded-xl"
-            />
+            {/* Suggested Password Generator Tool */}
+            <button
+              type="button"
+              onClick={handleSuggestPassword}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-[#006EF3]/30 text-[#006EF3] dark:text-blue-400 hover:bg-[#006EF3]/10 text-[11px] font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+              title="Generate a high-security random password and copy to clipboard"
+            >
+              <KeyRound className="h-3 w-3" />
+              <span>Suggest Strong Password</span>
+            </button>
           </div>
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Native / First Language</label>
-            <Input
-              placeholder="e.g. Kinyarwanda, French, Swahili"
-              value={formData.nativeLanguage}
-              onChange={(e) => setFormData({ ...formData, nativeLanguage: e.target.value })}
-              className="h-10 text-xs sm:text-sm rounded-xl"
-            />
-          </div>
-        </div>
 
-        {/* Target Level */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            Target CEFR English Level
-          </label>
-          <select
-            value={formData.targetLevel}
-            onChange={(e) => setFormData({ ...formData, targetLevel: e.target.value })}
-            className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#006EF3] transition-colors"
-          >
-            {CEFR_LEVELS.map((lvl) => (
-              <option key={lvl.value} value={lvl.value}>
-                {lvl.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Learning Goals */}
-        <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            Primary Learning Goals
-          </label>
-          <div className="flex flex-wrap gap-1.5">
-            {GOAL_OPTIONS.map((goal) => {
-              const selected = formData.learningGoals.includes(goal);
-              return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Password Input */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Password *
+                </label>
+                {formData.password && (
+                  <span className={`text-[10px] font-semibold ${strengthDetails.textClass}`}>
+                    {strengthDetails.label}
+                  </span>
+                )}
+              </div>
+              <div className="relative flex items-center">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  placeholder="Min. 8 characters suggested"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="h-10 text-xs sm:text-sm rounded-xl pr-10 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                />
                 <button
                   type="button"
-                  key={goal}
-                  onClick={() => handleGoalToggle(goal)}
-                  className={`text-[11px] sm:text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
-                    selected
-                      ? 'bg-[#006EF3]/10 text-[#006EF3] border-[#006EF3] font-bold dark:bg-[#006EF3]/20'
-                      : 'bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password Input */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Confirm Password
+                </label>
+                {formData.confirmPassword && (
+                  <span
+                    className={`text-[10px] font-semibold ${
+                      formData.password === formData.confirmPassword
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-rose-500'
+                    }`}
+                  >
+                    {formData.password === formData.confirmPassword ? '✓ Passwords match' : 'Passwords do not match'}
+                  </span>
+                )}
+              </div>
+              <div className="relative flex items-center">
+                <Input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Re-enter your password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="h-10 text-xs sm:text-sm rounded-xl pr-10 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Password Security Strength Bar */}
+          {formData.password && (
+            <div className="space-y-1.5 pt-0.5">
+              <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${strengthDetails.color}`}
+                  style={{ width: `${strengthDetails.percent}%` }}
+                />
+              </div>
+
+              {/* Password Checklist Chips */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
+                <div
+                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md ${
+                    hasLength
+                      ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
+                      : 'text-slate-400 bg-white/60 dark:bg-slate-900/60'
                   }`}
                 >
-                  {selected ? '✓ ' : '+ '}
-                  {goal}
-                </button>
-              );
-            })}
+                  {hasLength ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center">•</span>}
+                  <span>8+ Characters</span>
+                </div>
+                <div
+                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md ${
+                    hasUpper
+                      ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
+                      : 'text-slate-400 bg-white/60 dark:bg-slate-900/60'
+                  }`}
+                >
+                  {hasUpper ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center">•</span>}
+                  <span>Uppercase (A-Z)</span>
+                </div>
+                <div
+                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md ${
+                    hasNumber
+                      ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
+                      : 'text-slate-400 bg-white/60 dark:bg-slate-900/60'
+                  }`}
+                >
+                  {hasNumber ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center">•</span>}
+                  <span>Number (0-9)</span>
+                </div>
+                <div
+                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md ${
+                    hasSymbol
+                      ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
+                      : 'text-slate-400 bg-white/60 dark:bg-slate-900/60'
+                  }`}
+                >
+                  {hasSymbol ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center">•</span>}
+                  <span>Symbol (!@#$)</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Section 3: Academic Placement & Goals */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
+            <Compass className="h-3.5 w-3.5 text-[#006EF3]" />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Academic Placement & Goals
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                Target CEFR English Level *
+              </label>
+              <select
+                value={formData.targetLevel}
+                onChange={(e) => setFormData({ ...formData, targetLevel: e.target.value })}
+                className="w-full h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3 text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#006EF3] transition-colors"
+              >
+                {CEFR_LEVELS.map((lvl) => (
+                  <option key={lvl.value} value={lvl.value}>
+                    {lvl.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                Native / First Language
+              </label>
+              <Input
+                placeholder="e.g. Kinyarwanda, French, Swahili"
+                value={formData.nativeLanguage}
+                onChange={(e) => setFormData({ ...formData, nativeLanguage: e.target.value })}
+                className="h-10 text-xs sm:text-sm rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80"
+              />
+            </div>
+          </div>
+
+          {/* Primary Learning Goals */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+              Primary Learning Goals
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {GOAL_OPTIONS.map((goal) => {
+                const selected = formData.learningGoals.includes(goal);
+                return (
+                  <button
+                    type="button"
+                    key={goal}
+                    onClick={() => handleGoalToggle(goal)}
+                    className={`text-[11px] sm:text-xs px-3 py-1.5 rounded-xl border font-medium transition-all cursor-pointer ${
+                      selected
+                        ? 'bg-[#006EF3]/10 text-[#006EF3] border-[#006EF3] font-bold dark:bg-[#006EF3]/20 shadow-2xs'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
+                    }`}
+                  >
+                    {selected ? '✓ ' : '+ '}
+                    {goal}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Motivation / Learning Background */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+              Why do you want to learn with LinguaChris? (Motivation)
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Tell us a little about yourself, your career or academic aspirations..."
+              value={formData.motivation}
+              onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#006EF3] transition-colors resize-none"
+            />
           </div>
         </div>
 
-        {/* Motivation / Background */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-            Why do you want to learn with LinguaChris? (Motivation)
-          </label>
-          <textarea
-            rows={2}
-            placeholder="Tell us a little about yourself and your English learning goals..."
-            value={formData.motivation}
-            onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
-            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#006EF3] transition-colors resize-none"
-          />
-        </div>
-
-        {/* Submit Button */}
-        <div className="pt-2">
+        {/* Submit Button & Security Note */}
+        <div className="pt-2 space-y-2">
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-11 rounded-xl shadow-md text-xs sm:text-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2"
+            className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-11 rounded-xl shadow-md text-xs sm:text-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -278,11 +560,16 @@ export function ApplyForm() {
               </span>
             )}
           </Button>
+
+          <p className="text-[10px] text-center text-slate-400 flex items-center justify-center gap-1">
+            <Lock className="h-3 w-3" />
+            <span>256-bit SSL encrypted & secure student credential management.</span>
+          </p>
         </div>
       </form>
 
       {/* Footer Links */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 pt-4 mt-4 text-center">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 pt-3.5 mt-3.5 text-center">
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Already have an account?{' '}
           <Link href="/login" className="font-bold text-[#006EF3] hover:underline">
