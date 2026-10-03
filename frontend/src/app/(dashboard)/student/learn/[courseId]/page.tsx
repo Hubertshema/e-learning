@@ -1505,9 +1505,10 @@ export default function StudentLearnPage() {
                 Click below to claim your certificate and have it generated and sent directly to your email.
               </p>
               <Button
+                size="sm"
                 disabled={claimingCert}
                 onClick={handleClaimCertificate}
-                className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-10 rounded-xl"
+                className="w-full sm:w-auto min-w-[200px] bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-8.5 rounded-lg text-xs shadow-xs mx-auto cursor-pointer"
               >
                 {claimingCert ? 'Claiming & Emailing...' : 'Claim Certificate Now'}
               </Button>
@@ -1515,22 +1516,22 @@ export default function StudentLearnPage() {
           )}
 
           {/* Action Buttons */}
-          <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2.5">
+          <div className="w-full flex flex-wrap items-center justify-center gap-2 pt-1">
             {earnedCertificate && (
               <>
-                <Link href="/student/certificates" onClick={() => setShowCourseCompletionModal(false)} className="w-full sm:w-auto">
-                  <Button size="default" className="w-full sm:w-auto h-10 bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-xl text-xs gap-1.5 shadow-md">
-                    <Award className="h-4 w-4" />
+                <Link href="/student/certificates" onClick={() => setShowCourseCompletionModal(false)} className="w-full sm:w-auto inline-flex">
+                  <Button size="sm" className="w-full sm:w-auto h-8 px-3 bg-[#012970] hover:bg-[#006EF3] text-white font-bold rounded-lg text-xs gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95">
+                    <Award className="h-3.5 w-3.5" />
                     <span>View in My Certificates</span>
                   </Button>
                 </Link>
 
                 <Button
                   variant="outline"
-                  size="default"
+                  size="sm"
                   disabled={resendingCertEmail}
                   onClick={() => earnedCertificate?.certificateCode && handleResendCertEmail(earnedCertificate.certificateCode)}
-                  className="w-full sm:w-auto h-10 border-slate-300 dark:border-slate-700 text-xs font-semibold rounded-xl gap-1.5"
+                  className="w-full sm:w-auto h-8 px-3 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold rounded-lg gap-1.5 cursor-pointer transition-all active:scale-95"
                 >
                   <Mail className="h-3.5 w-3.5 text-[#006EF3]" />
                   <span>{resendingCertEmail ? 'Sending...' : 'Resend to Email'}</span>
@@ -1540,9 +1541,9 @@ export default function StudentLearnPage() {
 
             <Button
               variant="ghost"
-              size="default"
+              size="sm"
               onClick={() => setShowCourseCompletionModal(false)}
-              className="w-full sm:w-auto h-10 text-xs text-slate-500 rounded-xl"
+              className="w-full sm:w-auto h-8 px-3 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-all"
             >
               Close
             </Button>
