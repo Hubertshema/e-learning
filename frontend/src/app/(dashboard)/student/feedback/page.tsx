@@ -99,7 +99,7 @@ export default function StudentFeedbackPage() {
               </div>
 
               {/* Feedback Content */}
-              <div className="mt-4 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-normal bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="mt-4 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-normal bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 break-words whitespace-pre-wrap">
                 {item.content}
               </div>
 

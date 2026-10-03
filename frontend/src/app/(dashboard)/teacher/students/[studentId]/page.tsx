@@ -504,7 +504,7 @@ export default function TeacherStudentDetailPage() {
                           {new Date(fb.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
+                      <div className="text-slate-600 dark:text-slate-300 leading-relaxed pt-1 break-words whitespace-pre-wrap">
                         <RichTextRenderer content={fb.content} />
                       </div>
                     </div>

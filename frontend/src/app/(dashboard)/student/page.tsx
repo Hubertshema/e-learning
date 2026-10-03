@@ -736,7 +736,7 @@ export default function StudentDashboardPage() {
                         </Badge>
                       </div>
 
-                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-3">
+                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-3 break-words whitespace-pre-wrap">
                         {item.content}
                       </p>
 
