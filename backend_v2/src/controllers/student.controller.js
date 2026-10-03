@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 import { UserModel } from '../models/user.model.js';
 import { LevelCourseModel } from '../models/level_course.model.js';
+import { AdmissionModel } from '../models/admission.model.js';
 import { OverrideModel } from '../models/override.model.js';
 import { CertificateModel } from '../models/certificate.model.js';
 import { AccessService } from '../services/access.service.js';
@@ -23,9 +24,16 @@ export class StudentController {
       const studentProfileId = profile?.id || targetId;
       const primaryLevelName = profile?.level?.name || profile?.currentLevel || 'Level 1';
 
-      // 1. Get primary level courses
+      // 1. Get primary level courses and auto-sync student level enrollments
       let levelCourses = [];
       if (profile?.levelId) {
+        if (profile?.learningAccess === 'ACTIVE') {
+          try {
+            await AdmissionModel.enrollStudentInLevelCourses(targetId, profile.levelId);
+          } catch (syncErr) {
+            console.warn('Auto-sync level courses warning:', syncErr.message);
+          }
+        }
         levelCourses = await LevelCourseModel.findByLevelId(profile.levelId);
       }
 
@@ -522,13 +530,37 @@ export class StudentController {
         isExpired = enr.expiresAt ? new Date(enr.expiresAt).getTime() < Date.now() : false;
         isAccessActive = enr.status === 'ACTIVE' && !isExpired;
       } else {
-        // Allow access if learningAccess is ACTIVE or for demo/faculty roles
-        if (req.user.role === 'SUPERADMIN' || req.user.role === 'TEACHER') {
-          isEnrolled = true;
-          isAccessActive = true;
-          enrollmentStatus = 'ACTIVE';
-        } else {
-          return sendError(res, 'You are not enrolled in this course', 403, 'FORBIDDEN');
+        // Auto-enroll if course belongs to student's enrolled level and access is ACTIVE
+        if (profile?.levelId && profile?.learningAccess === 'ACTIVE') {
+          const lcRes = await query(
+            `SELECT id FROM "public"."level_courses"
+             WHERE "levelId" = $1 AND "courseId" = $2 AND "isActive" = true LIMIT 1`,
+            [profile.levelId, courseId]
+          );
+          if (lcRes.rows.length > 0) {
+            const enrollmentId = crypto.randomUUID();
+            await query(
+              `INSERT INTO "public"."enrollments"
+                (id, "studentId", "courseId", "levelCourseId", status, "enrolledAt", "updatedAt")
+               VALUES ($1, $2, $3, $4, 'ACTIVE', NOW(), NOW())
+               ON CONFLICT DO NOTHING`,
+              [enrollmentId, studentProfileId, courseId, lcRes.rows[0].id]
+            );
+            isEnrolled = true;
+            isAccessActive = true;
+            enrollmentStatus = 'ACTIVE';
+          }
+        }
+
+        if (!isEnrolled) {
+          // Allow access for demo/faculty roles
+          if (req.user.role === 'SUPERADMIN' || req.user.role === 'TEACHER') {
+            isEnrolled = true;
+            isAccessActive = true;
+            enrollmentStatus = 'ACTIVE';
+          } else {
+            return sendError(res, 'You are not enrolled in this course', 403, 'FORBIDDEN');
+          }
         }
       }
 

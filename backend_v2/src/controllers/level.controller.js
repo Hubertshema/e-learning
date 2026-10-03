@@ -99,6 +99,35 @@ export class LevelController {
         isActive
       });
 
+      // Automatically enroll all active students of this level into the newly assigned course
+      try {
+        const parsedLevelId = parseInt(levelId, 10);
+        const studentsInLevel = await query(
+          `SELECT sp.id as "profileId", sp."userId"
+           FROM "public"."student_profiles" sp
+           WHERE sp."levelId" = $1 AND sp."learningAccess" = 'ACTIVE'`,
+          [isNaN(parsedLevelId) ? levelId : parsedLevelId]
+        );
+
+        for (const st of studentsInLevel.rows) {
+          const existing = await query(
+            `SELECT id FROM "public"."enrollments" WHERE "studentId" = $1 AND "courseId" = $2`,
+            [st.profileId, courseId]
+          );
+          if (existing.rows.length === 0) {
+            const enrollmentId = crypto.randomUUID();
+            await query(
+              `INSERT INTO "public"."enrollments"
+                (id, "studentId", "courseId", "levelCourseId", status, "enrolledAt", "updatedAt")
+               VALUES ($1, $2, $3, $4, 'ACTIVE', NOW(), NOW())`,
+              [enrollmentId, st.profileId, courseId, assignment.id]
+            );
+          }
+        }
+      } catch (autoEnrollErr) {
+        console.warn('Auto-enroll students in new level course warning:', autoEnrollErr.message);
+      }
+
       return sendSuccess(res, assignment, 'Course assigned to level successfully');
     } catch (error) {
       console.error('Assign Course Error:', error);
