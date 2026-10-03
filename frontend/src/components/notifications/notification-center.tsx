@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Bell, Check, Trash2, ExternalLink, Sparkles, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +41,45 @@ export function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number; width: number; maxHeight: number }>({
+    top: 64,
+    left: 8,
+    width: 360,
+    maxHeight: 500,
+  });
+
+  useEffect(() => setMounted(true), []);
+
+  // Compute a viewport-clamped position anchored to the bell button
+  const updatePosition = useCallback(() => {
+    const btn = buttonRef.current;
+    if (!btn || typeof window === 'undefined') return;
+    const rect = btn.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 8;
+    const width = Math.min(410, vw - margin * 2);
+    // Align panel's right edge with the bell's right edge, then clamp inside viewport
+    let left = rect.right - width;
+    left = Math.max(margin, Math.min(left, vw - width - margin));
+    const top = rect.bottom + 8;
+    const maxHeight = Math.max(240, Math.min(520, vh - top - 12));
+    setPanelPos({ top, left, width, maxHeight });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, updatePosition]);
 
   const fetchNotifications = async (silent = false) => {
     try {
@@ -87,7 +127,10 @@ export function NotificationCenter() {
   // Handle outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const insideTrigger = dropdownRef.current?.contains(target);
+      const insidePanel = panelRef.current?.contains(target);
+      if (!insideTrigger && !insidePanel) {
         setIsOpen(false);
       }
     };
@@ -122,6 +165,7 @@ export function NotificationCenter() {
     <div className="relative" ref={dropdownRef}>
       {/* Bell Button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         title="Notifications"
@@ -137,18 +181,24 @@ export function NotificationCenter() {
         )}
       </button>
 
-      {/* Mobile Backdrop Overlay */}
-      {isOpen && (
+      {/* Portal: Backdrop + Panel rendered on <body> so header transforms/blur/overflow can't clip it */}
+      {isOpen && mounted && createPortal(
+        <>
         <div
-          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] sm:hidden"
+          className="fixed inset-0 z-[90] bg-black/30 backdrop-blur-[2px] sm:hidden"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />
-      )}
-
-      {/* Notification Dropdown Popover (Responsive Fixed on Mobile, Absolute Popover on Desktop) */}
-      {isOpen && (
-        <div className="fixed inset-x-2.5 top-[62px] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[410px] max-w-[calc(100vw-20px)] sm:max-w-[420px] rounded-2xl bg-white shadow-2xl border border-slate-200/90 dark:bg-slate-900 dark:border-slate-800 z-50 overflow-hidden flex flex-col max-h-[calc(100dvh-80px)] sm:max-h-[520px] animate-in fade-in zoom-in-95 duration-150">
+        <div
+          ref={panelRef}
+          style={{
+            top: panelPos.top,
+            left: panelPos.left,
+            width: panelPos.width,
+            maxHeight: panelPos.maxHeight,
+          }}
+          className="fixed rounded-2xl bg-white shadow-2xl border border-slate-200/90 dark:bg-slate-900 dark:border-slate-800 z-[100] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
+        >
           {/* Header */}
           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/90 shrink-0">
             <div className="flex items-center gap-2">
@@ -255,6 +305,8 @@ export function NotificationCenter() {
             </Link>
           </div>
         </div>
+        </>,
+        document.body
       )}
     </div>
   );
