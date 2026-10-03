@@ -456,15 +456,6 @@ export default function HomePage() {
                 <span className="text-xs font-bold text-[#172033]">Sentence Unscrambler</span>
               </div>
             </div>
-
-            <div className="pt-2">
-              <Link href="/quiz" className="block sm:inline-block w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-xl bg-[#006EF3] text-white hover:bg-[#005ed1] text-xs font-bold px-6 shadow-md transition-all justify-center">
-                  <span>Test Your English Now (Free Quiz)</span>
-                  <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
           </div>
 
           {/* Interactive 3D Flippable Flashcard Demo Box */}
