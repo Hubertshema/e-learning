@@ -383,7 +383,7 @@ export default function StudentLearnPage() {
       } catch (err: any) {
         console.error('Auto-complete failed', err);
       }
-    }, 2000);
+    }, 500);
 
     return () => {
       if (autoCompleteTimerRef.current) clearTimeout(autoCompleteTimerRef.current);
@@ -548,14 +548,22 @@ export default function StudentLearnPage() {
     }
   };
 
+  const handleOpenCertificateModal = () => {
+    setShowCourseCompletionModal(true);
+    if (!earnedCertificate) {
+      handleClaimCertificate();
+    }
+  };
+
   const handleClaimCertificate = async () => {
+    // Open modal immediately so student has zero wait time
+    setShowCourseCompletionModal(true);
     try {
       setClaimingCert(true);
       setCertEmailSentFeedback(null);
       const res = await apiClient.post<any>(`/student/courses/${courseId}/claim-certificate`);
       const cert = res?.certificate || (res as any)?.data?.certificate || res;
       setEarnedCertificate(cert);
-      setShowCourseCompletionModal(true);
       if (res?.emailSent) {
         setCertEmailSentFeedback(`Official accredited certificate credentials issued and sent to ${res?.recipientEmail || 'your email'}!`);
       } else {
@@ -1030,7 +1038,7 @@ export default function StudentLearnPage() {
                     <Button
                       size="sm"
                       disabled={claimingCert}
-                      onClick={handleClaimCertificate}
+                      onClick={handleOpenCertificateModal}
                       className="w-full flex h-8 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-[#012970] hover:from-amber-600 hover:to-[#006EF3] text-white text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
                     >
                       <Award className="h-3.5 w-3.5" />
@@ -1058,38 +1066,38 @@ export default function StudentLearnPage() {
         <main className={`flex-1 ${selectedLesson?.type === 'INTERACTIVE_VIDEO' ? 'overflow-y-auto lg:overflow-hidden p-2 sm:p-3 lg:p-4' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} min-w-0 transition-all duration-300`}>
           <div className={`mx-auto w-full ${selectedLesson?.type === 'INTERACTIVE_VIDEO' ? 'max-w-[1650px] h-full flex flex-col justify-start space-y-2' : 'max-w-[1600px] space-y-6'}`}>
             {/* The congratulations overlay is now rendered over the lesson content below */}
-            {/* General feedback banner */}
+            {/* General feedback banner - Responsive */}
             {feedback && (
-              <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-[#F3F7FC] p-3 text-xs font-semibold text-[#012970] shadow-sm animate-in fade-in dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#006EF3]" />
-                  <span>{feedback}</span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 rounded-2xl border border-blue-200 bg-[#F3F7FC] p-3 text-xs font-semibold text-[#012970] shadow-sm animate-in fade-in dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200 w-full">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <CheckCircle2 className="h-4 w-4 text-[#006EF3] shrink-0" />
+                  <span className="break-words leading-relaxed">{feedback}</span>
                 </div>
-                <button onClick={() => setFeedback(null)} className="text-[11px] underline text-[#006EF3] hover:text-[#012970] font-semibold cursor-pointer">
+                <button onClick={() => setFeedback(null)} className="text-[11px] underline text-[#006EF3] hover:text-[#012970] font-semibold cursor-pointer shrink-0 self-end sm:self-auto">
                   Dismiss
                 </button>
               </div>
             )}
 
-            {/* Course Completed Certificate Banner */}
+            {/* Course Completed Certificate Banner - Responsive on PC & Mobile */}
             {totalLessonsCount > 0 && completedCount === totalLessonsCount && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border-2 border-amber-300 dark:border-amber-500/40 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/70 dark:from-amber-950/40 dark:via-yellow-950/20 dark:to-slate-900 p-3.5 sm:p-4 text-slate-900 dark:text-white shadow-md animate-in fade-in">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3.5 rounded-2xl border-2 border-amber-300 dark:border-amber-500/40 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/70 dark:from-amber-950/40 dark:via-yellow-950/20 dark:to-slate-900 p-3.5 sm:p-4 text-slate-900 dark:text-white shadow-md animate-in fade-in w-full">
+                <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
                   <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md ring-4 ring-amber-200 dark:ring-amber-900/40">
                     <Award className="h-6 w-6" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-200/60 dark:bg-amber-900/50 px-2 py-0.5 rounded-full">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-200/60 dark:bg-amber-900/50 px-2 py-0.5 rounded-full shrink-0">
                         Curriculum Completed 100%
                       </span>
                       {earnedCertificate && (
-                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
                           <CheckCircle2 className="h-2.5 w-2.5" /> Certificate Ready
                         </span>
                       )}
                     </div>
-                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white mt-1 break-words">
                       {earnedCertificate
                         ? `Congratulations! Your official CEFR Certificate has been issued and emailed.`
                         : `Congratulations! You completed all lessons. Claim your official CEFR Certificate now.`}
@@ -1097,12 +1105,12 @@ export default function StudentLearnPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
                   <Button
                     size="sm"
                     disabled={claimingCert}
-                    onClick={handleClaimCertificate}
-                    className="w-full sm:w-auto h-9 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-[#012970] hover:from-amber-600 hover:to-[#006EF3] text-white font-bold text-xs shadow-md gap-1.5 cursor-pointer active:scale-95 transition-all"
+                    onClick={handleOpenCertificateModal}
+                    className="w-full md:w-auto h-9 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-[#012970] hover:from-amber-600 hover:to-[#006EF3] text-white font-bold text-xs shadow-md gap-1.5 cursor-pointer active:scale-95 transition-all"
                   >
                     {claimingCert ? (
                       <>
@@ -1434,25 +1442,32 @@ export default function StudentLearnPage() {
       </Modal>
 
       {/* Course Completion & Congratulatory Certificate Modal */}
-      <Modal isOpen={showCourseCompletionModal} onClose={() => setShowCourseCompletionModal(false)} title="Official CEFR Certificate">
-        <div className="py-6 px-2 sm:px-4 text-center flex flex-col items-center max-w-lg mx-auto">
+      {/* Course Completion & Congratulatory Certificate Modal */}
+      <Modal
+        isOpen={showCourseCompletionModal}
+        onClose={() => setShowCourseCompletionModal(false)}
+        title="Official CEFR Certificate"
+        size="lg"
+        className="w-full sm:max-w-xl md:max-w-2xl"
+      >
+        <div className="py-2 sm:py-3 text-center flex flex-col items-center w-full max-w-xl mx-auto">
           {/* Radiant Celebration Emblem */}
-          <div className="relative mb-5">
-            <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-amber-400/30 to-yellow-300/30 blur-lg animate-pulse" />
-            <div className="relative h-20 w-20 rounded-3xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-white flex items-center justify-center shadow-xl ring-8 ring-amber-100 dark:ring-amber-950/60">
-              <Award className="h-10 w-10 text-white stroke-[2.2]" />
+          <div className="relative mb-3 sm:mb-4">
+            <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-amber-400/30 to-yellow-300/30 blur-md animate-pulse" />
+            <div className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-white flex items-center justify-center shadow-lg ring-4 sm:ring-8 ring-amber-100 dark:ring-amber-950/60">
+              <Award className="h-8 w-8 sm:h-10 sm:w-10 text-white stroke-[2.2]" />
             </div>
           </div>
 
-          <div className="space-y-1.5 mb-5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+          <div className="space-y-1 mb-3.5 w-full">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
               <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-400" />
               CEFR Graduation Unlocked
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Congratulations!
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto leading-relaxed">
               You have successfully completed 100% of the lessons and checkpoints in{' '}
               <strong className="text-slate-900 dark:text-white">{data?.course?.title}</strong>.
             </p>
@@ -1460,35 +1475,37 @@ export default function StudentLearnPage() {
 
           {/* Certificate Showcase Card */}
           {earnedCertificate ? (
-            <div className="w-full mb-6 rounded-2xl border-2 border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-b from-amber-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-5 text-left shadow-lg">
-              <div className="flex items-start justify-between gap-3 pb-3 border-b border-amber-200/60 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                    <ShieldCheck className="h-5 w-5" />
+            <div className="w-full mb-3.5 rounded-2xl border-2 border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-b from-amber-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-3 sm:p-4 text-left shadow-md">
+              <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-amber-200/60 dark:border-slate-800">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                    <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  <div className="min-w-0">
+                    <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider truncate">
                       Accredited Certificate
                     </h4>
-                    <p className="text-[11px] font-mono font-bold text-[#006EF3] dark:text-blue-400">
+                    <p className="text-[11px] sm:text-xs font-mono font-bold text-[#006EF3] dark:text-blue-400 truncate">
                       {earnedCertificate.certificateCode}
                     </p>
                   </div>
                 </div>
-                <Badge variant="indigo" className="text-[10px] font-bold uppercase">
+                <Badge variant="indigo" className="text-[10px] font-bold uppercase shrink-0">
                   {earnedCertificate.levelCompleted || data?.course?.level || 'CEFR'}
                 </Badge>
               </div>
 
-              {/* Direct Email Confirmation Box */}
-              <div className="mt-3 p-3 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
-                <Mail className="h-4 w-4 text-[#006EF3] shrink-0 mt-0.5" />
-                <div className="space-y-0.5 flex-1">
-                  <p className="font-bold text-[11px]">
+              {/* Direct Email Confirmation Box - Responsive on PC & Mobile */}
+              <div className="mt-2.5 p-2.5 sm:p-3 rounded-xl bg-blue-50/90 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 flex items-start sm:items-center gap-2.5 w-full">
+                <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-[#006EF3] shrink-0">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <div className="space-y-0.5 flex-1 min-w-0 text-left">
+                  <p className="font-bold text-[11px] sm:text-xs text-blue-950 dark:text-blue-100">
                     Directly Sent to Your Email
                   </p>
-                  <p className="text-[10.5px] opacity-85 leading-relaxed">
-                    Your official certificate credentials and graduation verification link have been dispatched directly to your registered student email address.
+                  <p className="text-[10px] sm:text-[11px] text-blue-800 dark:text-blue-300 leading-relaxed break-words">
+                    Your official accredited certificate credentials and graduation verification link have been dispatched directly to your registered student email address.
                   </p>
                 </div>
               </div>
@@ -1500,7 +1517,7 @@ export default function StudentLearnPage() {
               )}
             </div>
           ) : (
-            <div className="w-full mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-center">
+            <div className="w-full mb-3.5 p-3.5 sm:p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-center">
               <p className="text-xs text-slate-600 dark:text-slate-300 mb-3">
                 Click below to claim your certificate and have it generated and sent directly to your email.
               </p>
@@ -1510,7 +1527,14 @@ export default function StudentLearnPage() {
                 onClick={handleClaimCertificate}
                 className="w-full sm:w-auto min-w-[200px] bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-8.5 rounded-lg text-xs shadow-xs mx-auto cursor-pointer"
               >
-                {claimingCert ? 'Claiming & Emailing...' : 'Claim Certificate Now'}
+                {claimingCert ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    Claiming & Emailing...
+                  </span>
+                ) : (
+                  'Claim Certificate Now'
+                )}
               </Button>
             </div>
           )}

@@ -124,8 +124,8 @@ export function NotificationCenter() {
 
       {/* Notification Dropdown Popover */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 dark:bg-slate-900 dark:border-slate-800 z-50 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/80">
+        <div className="absolute -right-1 sm:right-0 mt-2 w-[calc(100vw-24px)] sm:w-96 max-w-[380px] rounded-2xl bg-white shadow-2xl border border-slate-200 dark:bg-slate-900 dark:border-slate-800 z-50 overflow-hidden">
+          <div className="p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/80">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications</span>
               {unreadCount > 0 && (
@@ -167,12 +167,12 @@ export function NotificationCenter() {
                       : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                   }`}
                 >
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 break-words">
                       {!n.isRead && <span className="h-2 w-2 rounded-full bg-primary-600 shrink-0" />}
-                      {n.title}
+                      <span className="truncate">{n.title}</span>
                     </p>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug break-words">
                       {n.message}
                     </p>
                     <div className="flex items-center gap-3 pt-1">

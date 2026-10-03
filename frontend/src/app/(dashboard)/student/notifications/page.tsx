@@ -106,19 +106,19 @@ export default function StudentNotificationsPage() {
                   : 'hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
                     <Bell className="h-4 w-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white">{item.title}</h3>
+                      <h3 className="text-xs font-bold text-slate-900 dark:text-white break-words">{item.title}</h3>
                       {!item.isRead && (
-                        <span className="h-2 w-2 rounded-full bg-primary-600 animate-pulse" />
+                        <span className="h-2 w-2 rounded-full bg-primary-600 animate-pulse shrink-0" />
                       )}
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 break-words leading-relaxed">
                       {item.message}
                     </p>
                     <span className="text-[10px] text-slate-400 mt-1 block font-mono">
@@ -127,10 +127,10 @@ export default function StudentNotificationsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto pt-1 sm:pt-0">
                   {item.link && (
                     <Link href={item.link}>
-                      <Button size="sm" variant="gradient" className="text-xs">
+                      <Button size="sm" variant="gradient" className="text-xs h-8 px-3">
                         View
                         <ArrowRight className="ml-1 h-3 w-3" />
                       </Button>
@@ -141,7 +141,7 @@ export default function StudentNotificationsPage() {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleMarkOneRead(item.id)}
-                      className="text-xs text-slate-500"
+                      className="text-xs text-slate-500 h-8 px-2.5"
                     >
                       Dismiss
                     </Button>
