@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Mic,
@@ -17,8 +17,6 @@ import {
   CheckCircle2,
   X,
   Volume2,
-  Copy,
-  Check,
   Maximize2,
   Minimize2,
   Radio,
@@ -67,6 +65,7 @@ export default function LiveSessionRoomPage() {
     isAudioMuted,
     isVideoOff,
     isScreenSharing,
+    screenStream,
     isHandRaised,
     toggleHandRaise,
     toggleAudio,
@@ -85,12 +84,17 @@ export default function LiveSessionRoomPage() {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [floatingParticles, setFloatingParticles] = useState<FloatingParticle[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [copiedLink, setCopiedLink] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [studentToKick, setStudentToKick] = useState<ParticipantMedia | null>(null);
 
-  const localVideoRef = useRef<HTMLVideoElement>(null);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
+
+  // Prioritize participants with raised hands first so the teacher sees them immediately
+  const sortedRemotePeers = [...remotePeers].sort((a, b) => {
+    if (a.isHandRaised && !b.isHandRaised) return -1;
+    if (!a.isHandRaised && b.isHandRaised) return 1;
+    return (a.firstName || '').localeCompare(b.firstName || '');
+  });
 
   // Exact 1 Click = 1 Reaction Flying Upwards
   const spawnSingleFloatingEmoji = (emoji: string) => {
@@ -144,17 +148,6 @@ export default function LiveSessionRoomPage() {
     };
   }, [showReactionPicker]);
 
-  // Attach local stream to local video element
-  useEffect(() => {
-    const videoEl = localVideoRef.current;
-    if (videoEl && localStream) {
-      if (videoEl.srcObject !== localStream) {
-        videoEl.srcObject = localStream;
-      }
-      videoEl.play().catch(() => {});
-    }
-  }, [localStream, isVideoOff, isScreenSharing]);
-
   // Handle Fullscreen toggle
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -163,14 +156,6 @@ export default function LiveSessionRoomPage() {
     } else {
       document.exitFullscreen().catch(() => {});
       setIsFullscreen(false);
-    }
-  };
-
-  const copyRoomLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
     }
   };
 
@@ -259,92 +244,18 @@ export default function LiveSessionRoomPage() {
 
   // Local Video Tile Renderer
   const renderLocalVideoTile = (isSmall = false, isPip = false) => (
-    <div
-      className={`relative rounded-2xl bg-slate-900 border overflow-hidden shadow-lg flex items-center justify-center group transition-all duration-200 ${
-        isHandRaised
-          ? 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/20 shadow-xl'
-          : 'border-slate-800'
-      } ${isSmall ? 'w-full h-full' : isPip ? 'w-full h-full' : 'min-h-[180px] w-full h-full'}`}
-    >
-      <video
-        ref={localVideoRef}
-        autoPlay
-        playsInline
-        muted
-        className={`w-full h-full object-cover ${
-          isScreenSharing ? '' : 'transform -scale-x-100'
-        } ${isVideoOff ? 'hidden' : 'block'}`}
-      />
-
-      {isVideoOff && (
-        <div className="flex flex-col items-center justify-center gap-2 p-2 sm:p-4 text-center z-10">
-          <div className="relative h-14 w-14 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] border-2 border-white/20 overflow-hidden shadow-2xl flex items-center justify-center">
-            {user?.avatarUrl && !user.avatarUrl.includes('facebook.com') ? (
-              <img
-                src={user.avatarUrl}
-                alt={`${user.firstName || 'Student'}'s profile picture`}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <span className="text-lg sm:text-2xl font-black text-white">
-                {user?.firstName?.[0] || 'U'}
-              </span>
-            )}
-          </div>
-          {!isPip && (
-            <p className="text-[11px] sm:text-xs font-semibold text-slate-300">
-              {user?.firstName} {user?.lastName}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Persistent Hand Raised Badge on Local Tile (Google Meet experience) */}
-      {isHandRaised && (
-        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] sm:text-xs font-bold shadow-lg animate-pulse">
-          <span>✋</span>
-          {!isPip && <span>Hand Raised</span>}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleHandRaise();
-            }}
-            className="ml-0.5 text-[9px] sm:text-[10px] bg-slate-950/20 hover:bg-slate-950/40 px-1 py-0.5 rounded uppercase font-black text-slate-950 transition-colors"
-            title="Lower your hand"
-          >
-            Lower
-          </button>
-        </div>
-      )}
-
-      {/* Status Badges Overlay */}
-      <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex items-center gap-1.5 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-semibold border border-white/10">
-        <span className="text-white truncate max-w-[110px] sm:max-w-none">
-          {user?.firstName} {user?.lastName} (You)
-        </span>
-        {isTeacher && (
-          <span className="px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-black bg-[#F5B400] text-[#012970]">
-            HOST
-          </span>
-        )}
-      </div>
-
-      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-1 sm:gap-1.5">
-        {isAudioMuted && (
-          <div className="p-1 sm:p-1.5 rounded-lg bg-red-600/90 text-white shadow-sm" title="Microphone Muted">
-            <MicOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-          </div>
-        )}
-        {isScreenSharing && (
-          <div className="p-1 sm:p-1.5 rounded-lg bg-[#006EF3] text-white shadow-sm" title="Sharing Screen">
-            <ScreenShare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-          </div>
-        )}
-      </div>
-    </div>
+    <LocalVideoTile
+      stream={localStream}
+      isVideoOff={isVideoOff}
+      isAudioMuted={isAudioMuted}
+      isScreenSharing={isScreenSharing}
+      isHandRaised={isHandRaised}
+      onLowerHand={toggleHandRaise}
+      user={user}
+      isTeacher={isTeacher}
+      isSmall={isSmall}
+      isPip={isPip}
+    />
   );
 
   return (
@@ -386,7 +297,7 @@ export default function LiveSessionRoomPage() {
             {/* 1. Large Presentation View */}
             <div className="flex-1 min-w-0 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex items-center justify-center relative h-full">
               {isScreenSharing ? (
-                <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
+                <ScreenSharePlayer stream={screenStream || localStream} />
               ) : (
                 sharedRemotePeer && (
                   <RemoteVideoTile
@@ -419,7 +330,7 @@ export default function LiveSessionRoomPage() {
                   {renderLocalVideoTile(true)}
                 </div>
               )}
-              {remotePeers
+              {sortedRemotePeers
                 .filter((p) => p.socketId !== sharedRemotePeer?.socketId)
                 .map((peer) => (
                   <div key={peer.socketId} className="h-44 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
@@ -441,7 +352,7 @@ export default function LiveSessionRoomPage() {
                   {renderLocalVideoTile(true)}
                 </div>
               )}
-              {remotePeers
+              {sortedRemotePeers
                 .filter((p) => p.socketId !== sharedRemotePeer?.socketId)
                 .map((peer) => (
                   <div key={peer.socketId} className="w-36 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
@@ -460,15 +371,15 @@ export default function LiveSessionRoomPage() {
           /* Normal Grid Video Stage */
           <div className="flex-1 w-full h-full p-2 sm:p-4 overflow-y-auto flex flex-col relative">
             {/* 1-on-1 Call Layout: Mobile Fullscreen + Floating PiP (Image 3) */}
-            {totalParticipants === 2 && remotePeers.length === 1 ? (
+            {totalParticipants === 2 && sortedRemotePeers.length === 1 ? (
               <>
                 {/* Mobile View (< sm): Remote is full screen, local user is in a compact bottom-right PiP card */}
                 <div className="sm:hidden absolute inset-0 w-full h-full overflow-hidden">
                   <RemoteVideoTile
-                    peer={remotePeers[0]}
+                    peer={sortedRemotePeers[0]}
                     isTeacherViewer={isTeacher}
-                    onKick={() => setStudentToKick(remotePeers[0])}
-                    onLowerHand={() => toggleHandRaise(remotePeers[0].userId)}
+                    onKick={() => setStudentToKick(sortedRemotePeers[0])}
+                    onLowerHand={() => toggleHandRaise(sortedRemotePeers[0].userId)}
                     isLarge={true}
                   />
                   {/* Floating Picture-in-Picture Local User Card (Image 3) */}
@@ -481,10 +392,10 @@ export default function LiveSessionRoomPage() {
                 <div className="hidden sm:grid sm:grid-cols-2 gap-4 w-full h-full max-h-full">
                   {renderLocalVideoTile()}
                   <RemoteVideoTile
-                    peer={remotePeers[0]}
+                    peer={sortedRemotePeers[0]}
                     isTeacherViewer={isTeacher}
-                    onKick={() => setStudentToKick(remotePeers[0])}
-                    onLowerHand={() => toggleHandRaise(remotePeers[0].userId)}
+                    onKick={() => setStudentToKick(sortedRemotePeers[0])}
+                    onLowerHand={() => toggleHandRaise(sortedRemotePeers[0].userId)}
                   />
                 </div>
               </>
@@ -492,7 +403,7 @@ export default function LiveSessionRoomPage() {
               /* Group Adaptive Grid (2+ remote peers) */
               <div className={`grid gap-2 sm:gap-4 w-full h-full max-h-full ${getGridClasses()}`}>
                 {renderLocalVideoTile()}
-                {remotePeers.map((peer) => (
+                {sortedRemotePeers.map((peer) => (
                   <RemoteVideoTile
                     key={peer.socketId}
                     peer={peer}
@@ -506,19 +417,20 @@ export default function LiveSessionRoomPage() {
           </div>
         )}
 
-        {/* ─── Slide-out Participants Drawer ─────────────────────────────── */}
+        {/* ─── Slide-out Participants Drawer (Responsive Mobile Overlay) ──── */}
         {showParticipantsDrawer && (
-          <aside className="w-72 sm:w-80 border-l border-slate-800 bg-slate-900/95 backdrop-blur-md flex flex-col z-30 animate-in slide-in-from-right duration-200">
-            <div className="flex items-center justify-between p-4 border-b border-slate-800">
+          <aside className="fixed inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-xl sm:static sm:inset-auto sm:w-80 sm:border-l sm:border-slate-800 sm:bg-slate-900/95 sm:z-30 h-full max-h-screen animate-in slide-in-from-right duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-[#006EF3]" />
                 <h3 className="text-sm font-bold text-white">Participants ({totalParticipants})</h3>
               </div>
               <button
                 onClick={() => setShowParticipantsDrawer(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                title="Close participants"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5 sm:h-4 sm:w-4" />
               </button>
             </div>
 
@@ -558,11 +470,15 @@ export default function LiveSessionRoomPage() {
                 </div>
               </div>
 
-              {/* Remote Participants */}
-              {remotePeers.map((peer) => (
+              {/* Remote Participants - Sorted with raised hands first */}
+              {sortedRemotePeers.map((peer) => (
                 <div
                   key={peer.socketId}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/70 border border-slate-800 transition-colors"
+                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-colors ${
+                    peer.isHandRaised
+                      ? 'bg-amber-500/10 border-amber-500/40 hover:bg-amber-500/20'
+                      : 'bg-slate-800/40 hover:bg-slate-800/70 border-slate-800'
+                  }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-200 shrink-0 overflow-hidden">
@@ -630,9 +546,9 @@ export default function LiveSessionRoomPage() {
           </aside>
         )}
 
-        {/* ─── Slide-out Chat Drawer ─────────────────────────────── */}
+        {/* ─── Slide-out Chat Drawer (Responsive Mobile Overlay) ─────────── */}
         {showChatDrawer && (
-          <aside className="w-full sm:w-80 border-l border-slate-800 bg-slate-900/95 backdrop-blur-md flex flex-col z-30 animate-in slide-in-from-right duration-200">
+          <aside className="fixed inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-xl sm:static sm:inset-auto sm:w-80 sm:border-l sm:border-slate-800 sm:bg-slate-900/95 sm:z-30 h-full max-h-screen animate-in slide-in-from-right duration-200">
             <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4 text-[#006EF3]" />
@@ -640,9 +556,10 @@ export default function LiveSessionRoomPage() {
               </div>
               <button
                 onClick={() => setShowChatDrawer(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                title="Close chat"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5 sm:h-4 sm:w-4" />
               </button>
             </div>
 
@@ -661,7 +578,7 @@ export default function LiveSessionRoomPage() {
               )}
             </div>
 
-            <div className="p-3 border-t border-slate-800 shrink-0 bg-slate-900">
+            <div className="p-3 border-t border-slate-800 shrink-0 bg-slate-900/95 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -677,9 +594,13 @@ export default function LiveSessionRoomPage() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="Type a message..."
-                  className="flex-1 bg-slate-800 border-none rounded-xl text-sm text-white px-3 py-2 outline-none focus:ring-2 focus:ring-[#006EF3]"
+                  className="flex-1 bg-slate-800 border-none rounded-xl text-sm text-white px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-[#006EF3]"
                 />
-                <button type="submit" disabled={!chatInput.trim()} className="p-2 bg-[#006EF3] text-white rounded-xl disabled:opacity-50">
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="p-2.5 bg-[#006EF3] hover:bg-[#0057c2] text-white rounded-xl disabled:opacity-50 transition-colors"
+                >
                   <Send className="h-4 w-4" />
                 </button>
               </form>
@@ -826,17 +747,8 @@ export default function LiveSessionRoomPage() {
           )}
         </div>
 
-        {/* Right: Drawer Toggles & Link */}
+        {/* Right: Drawer Toggles */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <button
-            onClick={copyRoomLink}
-            title="Copy Session Link"
-            className="p-2 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5"
-          >
-            {copiedLink ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-            <span className="hidden lg:inline">{copiedLink ? 'Copied' : 'Invite'}</span>
-          </button>
-
           <button
             onClick={() => {
               setShowParticipantsDrawer(false);
@@ -944,6 +856,184 @@ export default function LiveSessionRoomPage() {
 }
 
 /**
+ * Dedicated Subcomponent for Local Camera Video Tile
+ * Uses callback ref to immediately attach stream and trigger playback on mount
+ */
+function LocalVideoTile({
+  stream,
+  isVideoOff,
+  isAudioMuted,
+  isScreenSharing,
+  isHandRaised,
+  onLowerHand,
+  user,
+  isTeacher,
+  isSmall = false,
+  isPip = false,
+}: {
+  stream: MediaStream | null;
+  isVideoOff: boolean;
+  isAudioMuted: boolean;
+  isScreenSharing: boolean;
+  isHandRaised: boolean;
+  onLowerHand?: () => void;
+  user: any;
+  isTeacher: boolean;
+  isSmall?: boolean;
+  isPip?: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const attachMedia = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && stream) {
+      if (el.srcObject !== stream) {
+        el.srcObject = stream;
+      }
+      el.play().catch(() => {});
+    }
+  }, [stream]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (el && stream) {
+      if (el.srcObject !== stream) {
+        el.srcObject = stream;
+      }
+      el.play().catch(() => {});
+    }
+  }, [stream, isVideoOff, isScreenSharing]);
+
+  return (
+    <div
+      className={`relative rounded-2xl bg-slate-900 border overflow-hidden shadow-lg flex items-center justify-center group transition-all duration-200 ${
+        isHandRaised
+          ? 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/20 shadow-xl'
+          : 'border-slate-800'
+      } ${isSmall ? 'w-full h-full' : isPip ? 'w-full h-full' : 'min-h-[180px] w-full h-full'}`}
+    >
+      <video
+        ref={attachMedia}
+        autoPlay
+        playsInline
+        muted
+        className={`w-full h-full object-cover ${
+          isScreenSharing ? '' : 'transform -scale-x-100'
+        } ${isVideoOff ? 'hidden' : 'block'}`}
+      />
+
+      {isVideoOff && (
+        <div className="flex flex-col items-center justify-center gap-2 p-2 sm:p-4 text-center z-10">
+          <div className="relative h-14 w-14 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] border-2 border-white/20 overflow-hidden shadow-2xl flex items-center justify-center">
+            {user?.avatarUrl && !user.avatarUrl.includes('facebook.com') ? (
+              <img
+                src={user.avatarUrl}
+                alt={`${user.firstName || 'Student'}'s profile picture`}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <span className="text-lg sm:text-2xl font-black text-white">
+                {user?.firstName?.[0] || 'U'}
+              </span>
+            )}
+          </div>
+          {!isPip && (
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-300">
+              {user?.firstName} {user?.lastName}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Persistent Hand Raised Badge on Local Tile */}
+      {isHandRaised && (
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] sm:text-xs font-bold shadow-lg animate-pulse">
+          <span>✋</span>
+          {!isPip && <span>Hand Raised</span>}
+          {onLowerHand && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onLowerHand();
+              }}
+              className="ml-0.5 text-[9px] sm:text-[10px] bg-slate-950/20 hover:bg-slate-950/40 px-1 py-0.5 rounded uppercase font-black text-slate-950 transition-colors"
+              title="Lower your hand"
+            >
+              Lower
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Status Badges Overlay */}
+      <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex items-center gap-1.5 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-semibold border border-white/10">
+        <span className="text-white truncate max-w-[110px] sm:max-w-none">
+          {user?.firstName} {user?.lastName} (You)
+        </span>
+        {isTeacher && (
+          <span className="px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-black bg-[#F5B400] text-[#012970]">
+            HOST
+          </span>
+        )}
+      </div>
+
+      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-1 sm:gap-1.5">
+        {isAudioMuted && (
+          <div className="p-1 sm:p-1.5 rounded-lg bg-red-600/90 text-white shadow-sm" title="Microphone Muted">
+            <MicOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          </div>
+        )}
+        {isScreenSharing && (
+          <div className="p-1 sm:p-1.5 rounded-lg bg-[#006EF3] text-white shadow-sm" title="Sharing Screen">
+            <ScreenShare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Dedicated Subcomponent for Screen Share Presentation
+ */
+function ScreenSharePlayer({ stream }: { stream: MediaStream | null }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const attachMedia = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && stream) {
+      if (el.srcObject !== stream) {
+        el.srcObject = stream;
+      }
+      el.play().catch(() => {});
+    }
+  }, [stream]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (el && stream) {
+      if (el.srcObject !== stream) {
+        el.srcObject = stream;
+      }
+      el.play().catch(() => {});
+    }
+  }, [stream]);
+
+  return (
+    <video
+      ref={attachMedia}
+      autoPlay
+      playsInline
+      muted
+      className="w-full h-full object-contain"
+    />
+  );
+}
+
+/**
  * Subcomponent for Rendering Remote Video Track
  */
 function RemoteVideoTile({
@@ -961,9 +1051,37 @@ function RemoteVideoTile({
   isLarge?: boolean;
   isSmall?: boolean;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioBlocked, setAudioBlocked] = useState(false);
+
+  const attachAudio = useCallback((el: HTMLAudioElement | null) => {
+    audioRef.current = el;
+    if (el && peer.stream) {
+      if (el.srcObject !== peer.stream) {
+        el.srcObject = peer.stream;
+      }
+      el.play().catch((err) => {
+        if (err.name === 'NotAllowedError') {
+          setAudioBlocked(true);
+        }
+      });
+    }
+  }, [peer.stream]);
+
+  const attachVideo = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && peer.stream) {
+      if (el.srcObject !== peer.stream) {
+        el.srcObject = peer.stream;
+      }
+      el.play().catch((err) => {
+        if (err.name === 'NotAllowedError') {
+          setAudioBlocked(true);
+        }
+      });
+    }
+  }, [peer.stream]);
 
   // Dedicated Audio element for remote sound
   useEffect(() => {
@@ -1046,11 +1164,11 @@ function RemoteVideoTile({
       )}
 
       {/* Dedicated hidden audio playback fallback */}
-      <audio ref={audioRef} autoPlay playsInline />
+      <audio ref={attachAudio} autoPlay playsInline />
 
       {/* Video element (unmuted so remote voice plays directly) */}
       <video
-        ref={videoRef}
+        ref={attachVideo}
         autoPlay
         playsInline
         className={`w-full h-full object-cover transition-opacity duration-300 ${

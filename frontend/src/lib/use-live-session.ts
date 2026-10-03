@@ -94,6 +94,7 @@ export function useLiveSession(sessionId: string) {
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [isVideoOff, setIsVideoOff] = useState<boolean>(false);
   const [isScreenSharing, setIsScreenSharing] = useState<boolean>(false);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const [isHandRaised, setIsHandRaised] = useState<boolean>(false);
 
   // Remote participants map: socketId -> ParticipantMedia
@@ -203,6 +204,11 @@ export function useLiveSession(sessionId: string) {
         }
       }
 
+      stream.getTracks().forEach((track) => {
+        track.enabled = true;
+      });
+      setIsVideoOff(false);
+      setIsAudioMuted(false);
       setLocalStream(stream);
       localStreamRef.current = stream;
       return stream;
@@ -749,6 +755,7 @@ export function useLiveSession(sessionId: string) {
     }
 
     setIsScreenSharing(false);
+    setScreenStream(null);
     const socket = getSocketClient();
     if (socket?.emit) {
       socket.emit('live:media-toggle', {
@@ -888,6 +895,7 @@ export function useLiveSession(sessionId: string) {
         }
 
         setIsScreenSharing(true);
+        setScreenStream(screenStream);
         const socket = getSocketClient();
         if (socket?.emit) {
           socket.emit('live:media-toggle', {
@@ -1000,6 +1008,7 @@ export function useLiveSession(sessionId: string) {
     isAudioMuted,
     isVideoOff,
     isScreenSharing,
+    screenStream,
     isHandRaised,
     toggleHandRaise,
     toggleAudio,
