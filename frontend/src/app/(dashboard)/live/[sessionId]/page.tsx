@@ -27,6 +27,7 @@ import {
   Hand,
   MessageSquare,
   Send,
+  ArrowLeft,
 } from 'lucide-react';
 import { useLiveSession, ParticipantMedia } from '@/lib/use-live-session';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,9 @@ interface FloatingParticle {
   swayMid: number;
   swayEnd: number;
 }
+
+// 10 Essential & Expressive Reactions (Google Meet experience)
+const REACTIONS = ['💖', '👍', '👏', '🎉', '🔥', '😂', '😮', '😢', '🤔', '💯'];
 
 export default function LiveSessionRoomPage() {
   const params = useParams();
@@ -88,37 +92,37 @@ export default function LiveSessionRoomPage() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
 
-  // Quick floating emojis spawner (stream upward rapidly)
-  const spawnFloatingEmojis = (emoji: string, count = 8) => {
-    const newParticles: FloatingParticle[] = [];
-    const baseLeft = 52 + (Math.random() * 24 - 12);
-    for (let i = 0; i < count; i++) {
-      newParticles.push({
-        id: `${Date.now()}-${i}-${Math.random()}`,
-        emoji,
-        left: Math.max(6, Math.min(94, baseLeft + (Math.random() * 24 - 12))),
-        bottom: 75 + Math.random() * 25,
-        size: 20 + Math.floor(Math.random() * 8), // small 20px - 28px
-        duration: 1.1 + Math.random() * 0.45, // fast: 1.1s - 1.55s
-        delay: i * 0.045,
-        swayMid: (Math.random() - 0.5) * 45,
-        swayEnd: (Math.random() - 0.5) * 85,
-      });
-    }
+  // Exact 1 Click = 1 Reaction Flying Upwards
+  const spawnSingleFloatingEmoji = (emoji: string) => {
+    const baseLeft = 50 + (Math.random() * 32 - 16);
+    const particle: FloatingParticle = {
+      id: `${Date.now()}-${Math.random()}`,
+      emoji,
+      left: Math.max(8, Math.min(92, baseLeft + (Math.random() * 20 - 10))),
+      bottom: 80,
+      size: 22 + Math.floor(Math.random() * 8), // 22px - 30px
+      duration: 1.1 + Math.random() * 0.4, // 1.1s - 1.5s
+      delay: 0,
+      swayMid: (Math.random() - 0.5) * 50,
+      swayEnd: (Math.random() - 0.5) * 90,
+    };
 
-    setFloatingParticles((prev) => [...prev, ...newParticles]);
+    setFloatingParticles((prev) => [...prev, particle]);
 
     setTimeout(() => {
-      setFloatingParticles((prev) =>
-        prev.filter((p) => !newParticles.find((np) => np.id === p.id))
-      );
-    }, 2200);
+      setFloatingParticles((prev) => prev.filter((p) => p.id !== particle.id));
+    }, 1800);
   };
 
-  // Trigger floating emojis whenever an incoming reaction is received
+  const handleReactionClick = (emoji: string) => {
+    sendReaction(emoji);
+    spawnSingleFloatingEmoji(emoji);
+  };
+
+  // Trigger floating emoji whenever an incoming reaction is received from another peer
   useEffect(() => {
     if (activeReaction?.emoji) {
-      spawnFloatingEmojis(activeReaction.emoji, 8);
+      spawnSingleFloatingEmoji(activeReaction.emoji);
     }
   }, [activeReaction?.id]);
 
@@ -253,135 +257,155 @@ export default function LiveSessionRoomPage() {
   const sharedRemotePeer = remotePeers.find(p => p.isScreenSharing);
   const isAnyScreenShared = isScreenSharing || !!sharedRemotePeer;
 
+  // Local Video Tile Renderer
+  const renderLocalVideoTile = (isSmall = false, isPip = false) => (
+    <div
+      className={`relative rounded-2xl bg-slate-900 border overflow-hidden shadow-lg flex items-center justify-center group transition-all duration-200 ${
+        isHandRaised
+          ? 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/20 shadow-xl'
+          : 'border-slate-800'
+      } ${isSmall ? 'w-full h-full' : isPip ? 'w-full h-full' : 'min-h-[180px] w-full h-full'}`}
+    >
+      <video
+        ref={localVideoRef}
+        autoPlay
+        playsInline
+        muted
+        className={`w-full h-full object-cover ${
+          isScreenSharing ? '' : 'transform -scale-x-100'
+        } ${isVideoOff ? 'hidden' : 'block'}`}
+      />
+
+      {isVideoOff && (
+        <div className="flex flex-col items-center justify-center gap-2 p-2 sm:p-4 text-center">
+          <div className="h-12 w-12 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] border-2 border-white/20 flex items-center justify-center text-lg sm:text-2xl font-black text-white shadow-xl">
+            {user?.firstName?.[0] || 'U'}
+          </div>
+          {!isPip && <p className="text-[11px] sm:text-xs font-medium text-slate-400">Camera is paused</p>}
+        </div>
+      )}
+
+      {/* Persistent Hand Raised Badge on Local Tile (Google Meet experience) */}
+      {isHandRaised && (
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] sm:text-xs font-bold shadow-lg animate-pulse">
+          <span>✋</span>
+          {!isPip && <span>Hand Raised</span>}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleHandRaise();
+            }}
+            className="ml-0.5 text-[9px] sm:text-[10px] bg-slate-950/20 hover:bg-slate-950/40 px-1 py-0.5 rounded uppercase font-black text-slate-950 transition-colors"
+            title="Lower your hand"
+          >
+            Lower
+          </button>
+        </div>
+      )}
+
+      {/* Status Badges Overlay */}
+      <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex items-center gap-1.5 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-semibold border border-white/10">
+        <span className="text-white truncate max-w-[110px] sm:max-w-none">
+          {user?.firstName} {user?.lastName} (You)
+        </span>
+        {isTeacher && (
+          <span className="px-1.5 py-0.2 rounded text-[9px] sm:text-[10px] font-black bg-[#F5B400] text-[#012970]">
+            HOST
+          </span>
+        )}
+      </div>
+
+      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-1 sm:gap-1.5">
+        {isAudioMuted && (
+          <div className="p-1 sm:p-1.5 rounded-lg bg-red-600/90 text-white shadow-sm" title="Microphone Muted">
+            <MicOff className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          </div>
+        )}
+        {isScreenSharing && (
+          <div className="p-1 sm:p-1.5 rounded-lg bg-[#006EF3] text-white shadow-sm" title="Sharing Screen">
+            <ScreenShare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white overflow-hidden select-none">
-      {/* ─── Top Room Bar ─────────────────────────────────────────────────── */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-800/80 bg-slate-900/90 px-4 md:px-6 backdrop-blur-md z-20">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="flex h-3 w-3 relative">
+      {/* ─── Minimalist Floating Top Overlay (Removed bulky header - Google Meet experience) ─── */}
+      <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <button
+            onClick={() => {
+              if (window.confirm('Leave this live session?')) {
+                router.push(user?.role === 'TEACHER' ? '/teacher' : '/student');
+              }
+            }}
+            title="Leave session"
+            className="h-9 w-9 rounded-full bg-slate-900/80 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-slate-800 transition-colors shadow-lg"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-white/10 backdrop-blur-md text-xs font-semibold text-white shadow-lg">
+            <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
             </span>
-            <span className="text-xs font-black uppercase tracking-wider text-red-400">LIVE</span>
-          </div>
-
-          <span className="text-slate-600 hidden sm:inline">|</span>
-
-          <div className="truncate">
-            <h1 className="text-sm font-bold text-white truncate">
-              {session?.title || 'Live Classroom Session'}
-            </h1>
-            {session?.topic && (
-              <p className="text-[11px] text-slate-400 truncate hidden sm:block">
-                {session.topic}
-              </p>
-            )}
+            <span className="font-bold truncate max-w-[140px] sm:max-w-xs">
+              {session?.title || 'Team meeting'}
+            </span>
+            <span className="text-slate-400">({totalParticipants})</span>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={copyRoomLink}
-            title="Copy Session Link"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
-          >
-            {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-            <span className="hidden sm:inline">{copiedLink ? 'Copied' : 'Invite Link'}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setShowParticipantsDrawer(false);
-              setShowChatDrawer(!showChatDrawer);
-            }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
-              showChatDrawer
-                ? 'bg-[#006EF3] border-[#006EF3] text-white'
-                : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
-            }`}
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Chat</span>
-          </button>
-          <button
-            onClick={() => {
-              setShowChatDrawer(false);
-              setShowParticipantsDrawer(!showParticipantsDrawer);
-            }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
-              showParticipantsDrawer
-                ? 'bg-[#006EF3] border-[#006EF3] text-white'
-                : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
-            }`}
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span>{totalParticipants}</span>
-          </button>
-
-          <button
-            onClick={toggleFullscreen}
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors hidden sm:block"
-          >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </button>
-        </div>
-      </header>
+      </div>
 
       {/* ─── Main Room Stage ──────────────────────────────────────────────── */}
-      <div className="relative flex-1 flex flex-col sm:flex-row overflow-hidden">
-        {/* Video Grid Canvas */}
-        <div className="flex-1 p-2 sm:p-4 overflow-y-auto flex flex-col">
-          {isAnyScreenShared ? (
-            <div className="flex flex-col h-full gap-3">
-              <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl flex items-center justify-center relative">
-                {/* Large Screen Share View */}
-                {isScreenSharing ? (
-                  <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
-                ) : (
-                  sharedRemotePeer && (
-                    <RemoteVideoTile
-                      peer={sharedRemotePeer}
-                      isTeacherViewer={isTeacher}
-                      onKick={() => setStudentToKick(sharedRemotePeer)}
-                      onLowerHand={() => toggleHandRaise(sharedRemotePeer.userId)}
-                      isLarge={true}
-                    />
-                  )
-                )}
+      <div className="relative flex-1 flex flex-col sm:flex-row overflow-hidden pt-12 sm:pt-0">
+        {/* Stage Content */}
+        {isAnyScreenShared ? (
+          /* Presentation Screen Share Layout (Desktop Side-by-Side as in Image 1, Mobile Stacking) */
+          <div className="flex-1 flex flex-col md:flex-row h-full w-full gap-3 p-2 sm:p-3 overflow-hidden">
+            {/* 1. Large Presentation View */}
+            <div className="flex-1 min-w-0 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex items-center justify-center relative h-full">
+              {isScreenSharing ? (
+                <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
+              ) : (
+                sharedRemotePeer && (
+                  <RemoteVideoTile
+                    peer={sharedRemotePeer}
+                    isTeacherViewer={isTeacher}
+                    onKick={() => setStudentToKick(sharedRemotePeer)}
+                    onLowerHand={() => toggleHandRaise(sharedRemotePeer.userId)}
+                    isLarge={true}
+                  />
+                )
+              )}
+
+              {/* Presenter Pill Badge (Google Meet style in Image 1) */}
+              <div className="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/85 border border-white/10 backdrop-blur-md text-xs font-semibold text-white shadow-xl pointer-events-none">
+                <div className="h-5 w-5 rounded-full bg-[#006EF3] flex items-center justify-center text-[10px] font-bold">
+                  {isScreenSharing ? (user?.firstName?.[0] || 'Y') : (sharedRemotePeer?.firstName?.[0] || 'P')}
+                </div>
+                <span>
+                  {isScreenSharing
+                    ? 'You are presenting'
+                    : `${sharedRemotePeer?.firstName || 'Participant'} is presenting`}
+                </span>
               </div>
-              <div className="h-28 sm:h-32 shrink-0 flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                {/* Minimized Tiles */}
-                {!isScreenSharing && (
-                  <div
-                    className={`w-40 sm:w-48 shrink-0 relative rounded-xl bg-slate-900 border overflow-hidden shadow-lg transition-all duration-200 ${
-                      isHandRaised ? 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/20' : 'border-slate-800'
-                    }`}
-                  >
-                    <video
-                      ref={localVideoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className={`w-full h-full object-cover transform -scale-x-100 ${isVideoOff ? 'hidden' : 'block'}`}
-                    />
-                    {isVideoOff && (
-                      <div className="flex h-full items-center justify-center bg-slate-800">
-                        <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white">
-                          {user?.firstName?.[0]}
-                        </div>
-                      </div>
-                    )}
-                    {isHandRaised && (
-                      <div className="absolute top-1.5 left-1.5 z-20 flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-bold shadow animate-pulse">
-                        <span>✋</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {remotePeers.filter(p => p.socketId !== sharedRemotePeer?.socketId).map(peer => (
-                  <div key={peer.socketId} className="w-40 sm:w-48 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+            </div>
+
+            {/* 2. Desktop Vertical Participant Sidebar (Image 1 experience) */}
+            <div className="hidden md:flex md:w-72 lg:w-80 shrink-0 h-full flex-col gap-2 overflow-y-auto custom-scrollbar">
+              {!isScreenSharing && (
+                <div className="h-44 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+                  {renderLocalVideoTile(true)}
+                </div>
+              )}
+              {remotePeers
+                .filter((p) => p.socketId !== sharedRemotePeer?.socketId)
+                .map((peer) => (
+                  <div key={peer.socketId} className="h-44 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
                     <RemoteVideoTile
                       peer={peer}
                       isTeacherViewer={isTeacher}
@@ -391,94 +415,79 @@ export default function LiveSessionRoomPage() {
                     />
                   </div>
                 ))}
-              </div>
             </div>
-          ) : (
-            <div className={`grid gap-3 sm:gap-4 w-full h-full max-h-full ${getGridClasses()}`}>
-              {/* 1. Local Video Tile */}
-              <div
-                className={`relative rounded-2xl bg-slate-900 border overflow-hidden shadow-lg flex items-center justify-center group min-h-[180px] transition-all duration-200 ${
-                  isHandRaised
-                    ? 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/20 shadow-xl'
-                    : 'border-slate-800'
-                }`}
-              >
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`w-full h-full object-cover ${
-                    isScreenSharing ? '' : 'transform -scale-x-100'
-                  } ${isVideoOff ? 'hidden' : 'block'}`}
-                />
 
-                {isVideoOff && (
-                  <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
-                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] border-2 border-white/20 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-xl">
-                      {user?.firstName?.[0] || 'U'}
-                    </div>
-                    <p className="text-xs font-medium text-slate-400">Camera is paused</p>
+            {/* 3. Mobile Horizontal Participant Strip */}
+            <div className="md:hidden h-28 shrink-0 flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+              {!isScreenSharing && (
+                <div className="w-36 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+                  {renderLocalVideoTile(true)}
+                </div>
+              )}
+              {remotePeers
+                .filter((p) => p.socketId !== sharedRemotePeer?.socketId)
+                .map((peer) => (
+                  <div key={peer.socketId} className="w-36 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+                    <RemoteVideoTile
+                      peer={peer}
+                      isTeacherViewer={isTeacher}
+                      onKick={() => setStudentToKick(peer)}
+                      onLowerHand={() => toggleHandRaise(peer.userId)}
+                      isSmall={true}
+                    />
                   </div>
-                )}
-
-                {/* Persistent Hand Raised Badge on Local Tile (Google Meet experience) */}
-                {isHandRaised && (
-                  <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold shadow-lg animate-pulse">
-                    <span>✋</span>
-                    <span>Hand Raised</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleHandRaise();
-                      }}
-                      className="ml-1 text-[10px] bg-slate-950/20 hover:bg-slate-950/40 px-1.5 py-0.5 rounded uppercase font-black tracking-wide text-slate-950 transition-colors"
-                      title="Lower your hand"
-                    >
-                      Lower
-                    </button>
+                ))}
+            </div>
+          </div>
+        ) : (
+          /* Normal Grid Video Stage */
+          <div className="flex-1 w-full h-full p-2 sm:p-4 overflow-y-auto flex flex-col relative">
+            {/* 1-on-1 Call Layout: Mobile Fullscreen + Floating PiP (Image 3) */}
+            {totalParticipants === 2 && remotePeers.length === 1 ? (
+              <>
+                {/* Mobile View (< sm): Remote is full screen, local user is in a compact bottom-right PiP card */}
+                <div className="sm:hidden absolute inset-0 w-full h-full overflow-hidden">
+                  <RemoteVideoTile
+                    peer={remotePeers[0]}
+                    isTeacherViewer={isTeacher}
+                    onKick={() => setStudentToKick(remotePeers[0])}
+                    onLowerHand={() => toggleHandRaise(remotePeers[0].userId)}
+                    isLarge={true}
+                  />
+                  {/* Floating Picture-in-Picture Local User Card (Image 3) */}
+                  <div className="absolute bottom-20 right-3 w-28 h-40 rounded-2xl shadow-2xl overflow-hidden z-20">
+                    {renderLocalVideoTile(false, true)}
                   </div>
-                )}
-
-                {/* Status Badges Overlay */}
-                <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold border border-white/10">
-                  <span className="text-white">
-                    {user?.firstName} {user?.lastName} (You)
-                  </span>
-                  {isTeacher && (
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-black bg-[#F5B400] text-[#012970]">
-                      HOST
-                    </span>
-                  )}
                 </div>
 
-                <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                  {isAudioMuted && (
-                    <div className="p-1.5 rounded-lg bg-red-600/90 text-white shadow-sm" title="Microphone Muted">
-                      <MicOff className="h-3.5 w-3.5" />
-                    </div>
-                  )}
-                  {isScreenSharing && (
-                    <div className="p-1.5 rounded-lg bg-[#006EF3] text-white shadow-sm" title="Sharing Screen">
-                      <ScreenShare className="h-3.5 w-3.5" />
-                    </div>
-                  )}
+                {/* Desktop View (>= sm): Balanced side-by-side grid */}
+                <div className="hidden sm:grid sm:grid-cols-2 gap-4 w-full h-full max-h-full">
+                  {renderLocalVideoTile()}
+                  <RemoteVideoTile
+                    peer={remotePeers[0]}
+                    isTeacherViewer={isTeacher}
+                    onKick={() => setStudentToKick(remotePeers[0])}
+                    onLowerHand={() => toggleHandRaise(remotePeers[0].userId)}
+                  />
                 </div>
+              </>
+            ) : (
+              /* Group Adaptive Grid (2+ remote peers) */
+              <div className={`grid gap-2 sm:gap-4 w-full h-full max-h-full ${getGridClasses()}`}>
+                {renderLocalVideoTile()}
+                {remotePeers.map((peer) => (
+                  <RemoteVideoTile
+                    key={peer.socketId}
+                    peer={peer}
+                    isTeacherViewer={isTeacher}
+                    onKick={() => setStudentToKick(peer)}
+                    onLowerHand={() => toggleHandRaise(peer.userId)}
+                  />
+                ))}
               </div>
-
-              {/* 2. Remote Peer Video Tiles */}
-              {remotePeers.map((peer) => (
-                <RemoteVideoTile
-                  key={peer.socketId}
-                  peer={peer}
-                  isTeacherViewer={isTeacher}
-                  onKick={() => setStudentToKick(peer)}
-                  onLowerHand={() => toggleHandRaise(peer.userId)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* ─── Slide-out Participants Drawer ─────────────────────────────── */}
         {showParticipantsDrawer && (
@@ -662,109 +671,117 @@ export default function LiveSessionRoomPage() {
         )}
       </div>
 
-      {/* ─── Bottom Floating Control Dock ─────────────────────────────────── */}
-      <footer className="h-20 shrink-0 border-t border-slate-800/80 bg-slate-900/95 px-4 flex items-center justify-between backdrop-blur-md z-20">
-        <div className="hidden md:flex items-center gap-2 text-xs text-slate-400">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Real-time WebRTC Mesh Active</span>
+      {/* ─── Upper Rower of 10 Reactions (Google Meet style) ─────────────── */}
+      {showReactionPicker && (
+        <div
+          ref={reactionPickerRef}
+          className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-slate-700/80 rounded-full px-3 py-2 shadow-2xl backdrop-blur-md flex items-center gap-1 sm:gap-2 animate-in fade-in zoom-in-95 duration-150 max-w-[95vw] overflow-x-auto custom-scrollbar"
+        >
+          {REACTIONS.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => handleReactionClick(emoji)}
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-slate-800 flex items-center justify-center text-lg sm:text-xl hover:scale-125 active:scale-75 transition-all select-none"
+              title={`React ${emoji}`}
+            >
+              {emoji}
+            </button>
+          ))}
+          <button
+            onClick={() => setShowReactionPicker(false)}
+            className="p-1.5 ml-1 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
+            title="Close reactions"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ─── Bottom Floating Control Dock (Google Meet style) ──────────────── */}
+      <footer className="h-16 sm:h-20 shrink-0 bg-slate-950/95 border-t border-slate-800/80 px-3 sm:px-6 flex items-center justify-between backdrop-blur-md z-30">
+        {/* Left: Meeting Title */}
+        <div className="hidden md:flex items-center gap-2.5 text-xs text-slate-300 min-w-0 max-w-[200px] truncate">
+          <span className="font-bold text-white truncate">{session?.title || 'Team meeting'}</span>
+          <span className="text-slate-600">|</span>
+          <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px]">Active</span>
+          </span>
         </div>
 
-        {/* Core Media Controls */}
-        <div className="flex items-center gap-2.5 mx-auto">
+        {/* Center: Core Controls */}
+        <div className="flex items-center gap-2 sm:gap-3 mx-auto">
           {/* Mic */}
           <button
             onClick={toggleAudio}
             title={isAudioMuted ? 'Unmute Microphone' : 'Mute Microphone'}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all ${
+            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all ${
               isAudioMuted
                 ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
             }`}
           >
-            {isAudioMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            {isAudioMuted ? <MicOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Mic className="h-4 w-4 sm:h-5 sm:w-5" />}
           </button>
 
           {/* Camera */}
           <button
             onClick={toggleVideo}
             title={isVideoOff ? 'Turn Video On' : 'Turn Video Off'}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all ${
+            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all ${
               isVideoOff
                 ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
             }`}
           >
-            {isVideoOff ? <VideoOff className="h-5 w-5" /> : <VideoIcon className="h-5 w-5" />}
+            {isVideoOff ? <VideoOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <VideoIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
           </button>
 
-          {/* Screen Share */}
+          {/* Screen Share (With shared tab/system audio) */}
           <button
             onClick={toggleScreenShare}
-            title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all hidden sm:flex ${
+            title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen (includes tab audio)'}
+            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all ${
               isScreenSharing
                 ? 'bg-[#006EF3] text-white shadow-lg shadow-blue-600/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
             }`}
           >
-            <ScreenShare className="h-5 w-5" />
+            <ScreenShare className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
 
-          {/* Raise Hand Toggle (Persistent Google Meet experience) */}
+          {/* Raise Hand Toggle (Persistent like Google Meet) */}
           <button
             onClick={() => {
               toggleHandRaise();
               if (!isHandRaised) {
-                spawnFloatingEmojis('✋', 8);
+                spawnSingleFloatingEmoji('✋');
               }
             }}
             title={isHandRaised ? 'Lower Hand (✋ Raised)' : 'Raise Hand'}
-            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all ${
+            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all ${
               isHandRaised
                 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-lg shadow-amber-500/30 ring-2 ring-amber-300 ring-offset-2 ring-offset-slate-900 animate-pulse'
                 : 'bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700'
             }`}
           >
-            <Hand className={`h-5 w-5 ${isHandRaised ? 'fill-slate-950 text-slate-950' : ''}`} />
+            <Hand className={`h-4 w-4 sm:h-5 sm:w-5 ${isHandRaised ? 'fill-slate-950 text-slate-950' : ''}`} />
           </button>
           
-          {/* Quick Reaction Picker Popover */}
-          <div className="relative">
-            {showReactionPicker && (
-              <div
-                ref={reactionPickerRef}
-                className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl backdrop-blur-md flex items-center gap-1 z-50 animate-in fade-in zoom-in-95 duration-150"
-              >
-                {['❤️', '👍', '👏', '🎉', '🔥', '😂', '💡', '🙌'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => {
-                      sendReaction(emoji);
-                      spawnFloatingEmojis(emoji, 8);
-                      setShowReactionPicker(false);
-                    }}
-                    className="h-9 w-9 rounded-xl hover:bg-slate-800 flex items-center justify-center text-xl hover:scale-125 transition-transform"
-                    title={`React ${emoji}`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-            <button
-              onClick={() => setShowReactionPicker((prev) => !prev)}
-              title="Send Reaction"
-              className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all border ${
-                showReactionPicker
-                  ? 'bg-[#006EF3] text-white border-[#006EF3]'
-                  : 'bg-slate-800 hover:bg-slate-700 text-pink-400 border-slate-700'
-              }`}
-            >
-              <Smile className="h-5 w-5" />
-            </button>
-          </div>
+          {/* Reaction Button (Toggles Upper Rower) */}
+          <button
+            onClick={() => setShowReactionPicker((prev) => !prev)}
+            title="Choose Reaction"
+            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all border ${
+              showReactionPicker
+                ? 'bg-[#006EF3] text-white border-[#006EF3]'
+                : 'bg-slate-800 hover:bg-slate-700 text-pink-400 border-slate-700'
+            }`}
+          >
+            <Smile className="h-4 w-4 sm:h-5 sm:w-5" />
+          </button>
 
-          {/* Leave / End Button */}
+          {/* Red Leave / End Call Button */}
           {isTeacher ? (
             <Button
               onClick={() => {
@@ -772,10 +789,10 @@ export default function LiveSessionRoomPage() {
                   endSession();
                 }
               }}
-              className="h-11 sm:h-12 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30"
+              className="h-10 sm:h-12 px-4 sm:px-6 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30"
             >
               <PhoneOff className="h-4 w-4" />
-              <span>End Session</span>
+              <span className="hidden sm:inline">End Session</span>
             </Button>
           ) : (
             <Button
@@ -784,24 +801,66 @@ export default function LiveSessionRoomPage() {
                   router.push('/student');
                 }
               }}
-              className="h-11 sm:h-12 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30"
+              className="h-10 sm:h-12 px-4 sm:px-6 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30"
             >
               <PhoneOff className="h-4 w-4" />
-              <span>Leave</span>
+              <span className="hidden sm:inline">Leave</span>
             </Button>
           )}
         </div>
 
-        <div className="hidden md:flex items-center gap-2">
-          {session?.type === 'ONE_ON_ONE' ? (
-            <Badge variant="outline" className="text-slate-400 border-slate-700">
-              1-to-1 Private
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-slate-400 border-slate-700">
-              Group Classroom
-            </Badge>
-          )}
+        {/* Right: Drawer Toggles & Link */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            onClick={copyRoomLink}
+            title="Copy Session Link"
+            className="p-2 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5"
+          >
+            {copiedLink ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+            <span className="hidden lg:inline">{copiedLink ? 'Copied' : 'Invite'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowParticipantsDrawer(false);
+              setShowChatDrawer(!showChatDrawer);
+            }}
+            title="Chat"
+            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+              showChatDrawer
+                ? 'bg-[#006EF3] border-[#006EF3] text-white'
+                : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+            }`}
+          >
+            <MessageSquare className="h-4 w-4" />
+            {chatMessages.length > 0 && (
+              <span className="h-2 w-2 rounded-full bg-blue-400" />
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              setShowChatDrawer(false);
+              setShowParticipantsDrawer(!showParticipantsDrawer);
+            }}
+            title="Participants"
+            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+              showParticipantsDrawer
+                ? 'bg-[#006EF3] border-[#006EF3] text-white'
+                : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            <span className="text-xs">{totalParticipants}</span>
+          </button>
+
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors hidden sm:flex items-center justify-center"
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
         </div>
       </footer>
 

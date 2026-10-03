@@ -111,6 +111,8 @@ export function useLiveSession(sessionId: string) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const isScreenSharingRef = useRef<boolean>(false);
+  const screenAudioContextRef = useRef<AudioContext | null>(null);
+  const originalMicTrackRef = useRef<MediaStreamTrack | null>(null);
 
   // Keep refs synchronized with state and attach tracks to any active PCs
   useEffect(() => {
@@ -677,13 +679,32 @@ export function useLiveSession(sessionId: string) {
   }, [sessionId, isAudioMuted]);
 
   /**
-   * Stop Screen Sharing and revert to Camera
+   * Stop Screen Sharing and revert to Camera & Microphone
    */
   const stopScreenShare = useCallback(async () => {
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach((t) => t.stop());
       screenStreamRef.current = null;
     }
+
+    // Restore original microphone audio track if it was mixed with tab audio
+    if (originalMicTrackRef.current) {
+      for (const pc of Array.from(peerConnections.current.values())) {
+        const audioSender = pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
+        if (audioSender && originalMicTrackRef.current) {
+          try {
+            await audioSender.replaceTrack(originalMicTrackRef.current);
+          } catch (err) {
+            console.warn('Error restoring mic track:', err);
+          }
+        }
+      }
+    }
+    if (screenAudioContextRef.current) {
+      screenAudioContextRef.current.close().catch(() => {});
+      screenAudioContextRef.current = null;
+    }
+    originalMicTrackRef.current = null;
 
     let cameraTrack: MediaStreamTrack | null = null;
     try {
@@ -733,24 +754,77 @@ export function useLiveSession(sessionId: string) {
   }, [sessionId, isAudioMuted, isVideoOff]);
 
   /**
-   * Toggle Screen Sharing
+   * Toggle Screen Sharing with shared tab/system audio
    */
   const toggleScreenShare = useCallback(async () => {
     try {
       if (isScreenSharingRef.current) {
         await stopScreenShare();
       } else {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: false,
-        });
+        let screenStream: MediaStream;
+        try {
+          // Request display media with audio: true to capture shared tab/window audio
+          screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              cursor: 'always',
+            } as any,
+            audio: true,
+          });
+        } catch (e) {
+          // Fallback to video only if browser or OS disallowed display audio
+          screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+          });
+        }
+
         screenStreamRef.current = screenStream;
-        const screenTrack = screenStream.getVideoTracks()[0];
+        const screenVideoTrack = screenStream.getVideoTracks()[0];
+        const screenAudioTrack = screenStream.getAudioTracks()[0];
 
         // Listen for user stopping screen share via browser stop button
-        screenTrack.onended = () => {
+        screenVideoTrack.onended = () => {
           stopScreenShare();
         };
+
+        // If tab/system audio is shared, mix with microphone so peers hear both voice and tab
+        if (screenAudioTrack) {
+          const micTrack = localStreamRef.current?.getAudioTracks()[0];
+          originalMicTrackRef.current = micTrack || null;
+
+          try {
+            const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioCtxClass) {
+              const audioCtx = new AudioCtxClass();
+              screenAudioContextRef.current = audioCtx;
+              const destination = audioCtx.createMediaStreamDestination();
+
+              if (micTrack && micTrack.readyState === 'live') {
+                const micSource = audioCtx.createMediaStreamSource(new MediaStream([micTrack]));
+                micSource.connect(destination);
+              }
+              const screenSource = audioCtx.createMediaStreamSource(new MediaStream([screenAudioTrack]));
+              screenSource.connect(destination);
+
+              const mixedTrack = destination.stream.getAudioTracks()[0];
+              if (mixedTrack) {
+                for (const pc of Array.from(peerConnections.current.values())) {
+                  const audioSender = pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
+                  if (audioSender) {
+                    await audioSender.replaceTrack(mixedTrack);
+                  }
+                }
+              }
+            }
+          } catch (mixErr) {
+            console.warn('Audio mixing failed, forwarding screen audio directly:', mixErr);
+            for (const pc of Array.from(peerConnections.current.values())) {
+              const audioSender = pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'audio');
+              if (audioSender) {
+                await audioSender.replaceTrack(screenAudioTrack);
+              }
+            }
+          }
+        }
 
         // Replace video track in all active peer connections
         for (const [targetSocketId, pc] of Array.from(peerConnections.current.entries())) {
@@ -760,7 +834,7 @@ export function useLiveSession(sessionId: string) {
 
           if (videoSender) {
             try {
-              await videoSender.replaceTrack(screenTrack);
+              await videoSender.replaceTrack(screenVideoTrack);
             } catch (err) {
               console.error('Error replacing track with screen share:', err);
             }
@@ -773,7 +847,7 @@ export function useLiveSession(sessionId: string) {
           if (oldVideoTrack) {
             localStreamRef.current.removeTrack(oldVideoTrack);
           }
-          localStreamRef.current.addTrack(screenTrack);
+          localStreamRef.current.addTrack(screenVideoTrack);
           setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
         }
 
@@ -791,7 +865,7 @@ export function useLiveSession(sessionId: string) {
     } catch (err: any) {
       console.warn('Screen share toggle cancelled or failed:', err.message);
     }
-  }, [stopScreenShare]);
+  }, [stopScreenShare, sessionId, isAudioMuted, isVideoOff]);
 
   /**
    * Teacher ends the live session
