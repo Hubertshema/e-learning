@@ -8,7 +8,7 @@ export class UserModel {
   static async findByEmail(email) {
     const res = await query(
       `SELECT id, email, "passwordHash", "firstName", "lastName", role, status, "isVerified", 
-              "avatarUrl", phone, country, city, timezone, "preferredLanguage", "createdAt"
+              "avatarUrl", phone, country, city, timezone, "preferredLanguage", "activeSessionId", "createdAt"
        FROM "public"."users" 
        WHERE LOWER(email) = LOWER($1) 
        LIMIT 1`,
@@ -23,7 +23,7 @@ export class UserModel {
   static async findById(id) {
     const res = await query(
       `SELECT id, email, "firstName", "lastName", role, status, "isVerified", 
-              "avatarUrl", phone, country, city, timezone, "preferredLanguage", "createdAt"
+              "avatarUrl", phone, country, city, timezone, "preferredLanguage", "activeSessionId", "createdAt"
        FROM "public"."users" 
        WHERE id = $1 
        LIMIT 1`,
@@ -38,7 +38,7 @@ export class UserModel {
   static async findWithPasswordById(id) {
     const res = await query(
       `SELECT id, email, "passwordHash", "firstName", "lastName", role, status, "isVerified", 
-              "avatarUrl", phone, country, city, timezone, "preferredLanguage", "createdAt"
+              "avatarUrl", phone, country, city, timezone, "preferredLanguage", "activeSessionId", "createdAt"
        FROM "public"."users" 
        WHERE id = $1 
        LIMIT 1`,
@@ -126,6 +126,18 @@ export class UserModel {
        SET revoked = true 
        WHERE "tokenHash" = $1`,
       [tokenHash]
+    );
+  }
+
+  /**
+   * Revoke ALL refresh tokens for user
+   */
+  static async revokeAllRefreshTokens(userId) {
+    await query(
+      `UPDATE "public"."refresh_tokens" 
+       SET revoked = true 
+       WHERE "userId" = $1`,
+      [userId]
     );
   }
 

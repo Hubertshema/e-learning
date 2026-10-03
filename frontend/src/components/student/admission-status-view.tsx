@@ -29,6 +29,8 @@ import {
   FileCheck,
   Trash2,
   Image as ImageIcon,
+  Copy,
+  PhoneCall
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
@@ -94,6 +96,36 @@ interface AdmissionStatusViewProps {
   studentEmail: string;
   onRefresh: () => Promise<void>;
 }
+
+const ActionButtons = ({ text, isPhone = false }: { text: string; isPhone?: boolean }) => {
+  const [copied, setCopied] = React.useState(false);
+  const onCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <span className="inline-flex items-center gap-1 ml-2 align-middle relative -top-0.5">
+      <button 
+        type="button" 
+        onClick={onCopy} 
+        className="p-1 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-colors shadow-sm border border-slate-200/50 dark:border-slate-700/50" 
+        title="Copy"
+      >
+        {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200" />}
+      </button>
+      {isPhone && (
+        <a 
+          href={`tel:${text.replace(/#/g, '%23')}`} 
+          className="p-1 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-colors shadow-sm border border-slate-200/50 dark:border-slate-700/50 inline-flex items-center justify-center" 
+          title="Dial/Call"
+        >
+          <PhoneCall className="h-3.5 w-3.5 text-[#006EF3]" />
+        </a>
+      )}
+    </span>
+  );
+};
 
 export function AdmissionStatusView({
   status,
@@ -509,13 +541,16 @@ export function AdmissionStatusView({
                       </div>
                       <p className="text-slate-600 dark:text-slate-400">
                         Dial: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions?.momoDialCode || '*182*8*1*123456#'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.momoDialCode || '*182*8*1*123456#'} isPhone={true} />
                       </p>
                       <p className="text-slate-600 dark:text-slate-400">
                         Merchant Name: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.momoMerchantName || 'FluentEdge Academy'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.momoMerchantName || 'FluentEdge Academy'} />
                       </p>
                       {status.paymentInstructions?.momoNumber && (
                         <p className="text-slate-600 dark:text-slate-400">
                           MoMo Number: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions.momoNumber}</strong>
+                          <ActionButtons text={status.paymentInstructions.momoNumber} isPhone={true} />
                         </p>
                       )}
                     </div>
@@ -531,13 +566,16 @@ export function AdmissionStatusView({
                       </div>
                       <p className="text-slate-600 dark:text-slate-400">
                         Merchant Code: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions?.airtelMerchantCode || '733123'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.airtelMerchantCode || '733123'} />
                       </p>
                       <p className="text-slate-600 dark:text-slate-400">
                         Recipient: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.airtelRecipient || 'FluentEdge Academy'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.airtelRecipient || 'FluentEdge Academy'} />
                       </p>
                       {status.paymentInstructions?.airtelNumber && (
                         <p className="text-slate-600 dark:text-slate-400">
                           Airtel Number: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions.airtelNumber}</strong>
+                          <ActionButtons text={status.paymentInstructions.airtelNumber} isPhone={true} />
                         </p>
                       )}
                     </div>
@@ -553,13 +591,16 @@ export function AdmissionStatusView({
                       </p>
                       <p className="text-slate-600 dark:text-slate-400">
                         Account: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions?.bankAccountNumber || '4002-8812-9923'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.bankAccountNumber || '4002-8812-9923'} />
                       </p>
                       <p className="text-slate-600 dark:text-slate-400">
                         Beneficiary: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.bankBeneficiary || 'FluentEdge Language Services'}</strong>
+                        <ActionButtons text={status.paymentInstructions?.bankBeneficiary || 'FluentEdge Language Services'} />
                       </p>
                       {status.paymentInstructions?.bankSwiftCode && (
                         <p className="text-slate-600 dark:text-slate-400">
                           SWIFT / BIC: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions.bankSwiftCode}</strong>
+                          <ActionButtons text={status.paymentInstructions.bankSwiftCode} />
                         </p>
                       )}
                     </div>

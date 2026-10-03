@@ -4,6 +4,7 @@ import { UserModel } from '../models/user.model.js';
 import { PasswordResetModel } from '../models/password-reset.model.js';
 import { emailService } from './email.service.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.util.js';
+import { cache } from '../config/cache.js';
 
 export class AuthService {
   /**
@@ -123,6 +124,14 @@ export class AuthService {
    * Helper to generate Access & Refresh token pair
    */
   static async generateTokenPair(user) {
+    const sessionId = crypto.randomUUID();
+    
+    // Revoke all previous refresh tokens to enforce single active session
+    await UserModel.revokeAllRefreshTokens(user.id);
+    
+    await UserModel.update(user.id, { activeSessionId: sessionId });
+    cache.set(`session_${user.id}`, sessionId, 7 * 24 * 60 * 60);
+
     const payload = {
       id: user.id,
       userId: user.id,
@@ -130,6 +139,7 @@ export class AuthService {
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
+      sessionId,
     };
 
     const accessToken = signAccessToken(payload);
