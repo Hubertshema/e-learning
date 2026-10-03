@@ -161,8 +161,10 @@ router.post('/certificates/:code/verify-otp', async (req, res, next) => {
 
     if (!otp) return sendError(res, 'OTP is required', 400, 'VALIDATION_ERROR');
 
+    const cleanOtp = String(otp).trim();
     const storedOtp = cache.get(`cert_otp_${code.toUpperCase()}`);
-    if (!storedOtp || storedOtp !== otp.toString()) {
+    
+    if (!storedOtp || storedOtp !== cleanOtp) {
       return sendError(res, 'Invalid or expired OTP', 400, 'VALIDATION_ERROR');
     }
 

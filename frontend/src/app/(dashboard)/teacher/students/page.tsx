@@ -418,13 +418,18 @@ function CoachingNoteModal({ student, onClose, onSuccess, prefillTitle, prefillC
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Coaching Guidance &amp; Observations</label>
+          <div className="flex justify-between items-center">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Coaching Guidance &amp; Observations</label>
+            <span className={`text-[10px] font-bold ${content.trim().split(/\\s+/).filter(Boolean).length > 50 ? 'text-rose-500' : 'text-slate-400'}`}>
+              {content.trim().split(/\\s+/).filter(Boolean).length} / 50 words
+            </span>
+          </div>
           <textarea
             rows={4}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write constructive, actionable remarks..."
-            className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs resize-none focus:border-[#006EF3] focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+            className={`w-full rounded-xl border bg-white p-3 text-xs resize-none focus:outline-none dark:bg-slate-900 dark:text-white ${content.trim().split(/\\s+/).filter(Boolean).length > 50 ? 'border-rose-500 focus:border-rose-500' : 'border-slate-200 focus:border-[#006EF3] dark:border-slate-800'}`}
             required
           />
         </div>
@@ -456,8 +461,8 @@ function CoachingNoteModal({ student, onClose, onSuccess, prefillTitle, prefillC
           <Button
             type="submit"
             size="sm"
-            disabled={sending}
-            className="text-xs bg-[#012970] hover:bg-[#006EF3] text-white font-bold gap-1.5"
+            disabled={sending || content.trim().split(/\s+/).filter(Boolean).length > 50}
+            className="text-xs bg-[#012970] hover:bg-[#006EF3] text-white font-bold gap-1.5 disabled:opacity-50"
           >
             {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             <span>{sending ? 'Sending...' : 'Send Coaching Note'}</span>
