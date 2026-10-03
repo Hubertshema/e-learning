@@ -1,5 +1,6 @@
 import { LevelModel } from '../models/level.model.js';
 import { LevelCourseModel } from '../models/level_course.model.js';
+import { AdmissionModel } from '../models/admission.model.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 import { query } from '../config/database.js';
 import crypto from 'crypto';
@@ -142,13 +143,14 @@ export class LevelController {
   static async getStudents(req, res) {
     try {
       const levelId = req.params.id;
+      const parsedLevelId = parseInt(levelId, 10);
       const { rows } = await query(
         `SELECT DISTINCT u.id, u.email, u."firstName", u."lastName", u."avatarUrl"
          FROM "public"."users" u
          JOIN "public"."student_profiles" sp ON u.id = sp."userId"
          WHERE sp."levelId" = $1
          ORDER BY u."lastName" ASC, u."firstName" ASC`,
-        [levelId]
+        [isNaN(parsedLevelId) ? levelId : parsedLevelId]
       );
       return sendSuccess(res, rows, 'Students retrieved successfully');
     } catch (error) {
@@ -159,14 +161,18 @@ export class LevelController {
 
   /**
    * POST /api/v1/levels/:id/enroll
-   * Enroll students to a level
+   * Enroll students to a level and assign level curriculum courses
    */
   static async enrollStudents(req, res) {
     try {
       const levelId = req.params.id;
-      const { studentIds } = req.body;
+      const { studentIds, studentId } = req.body;
 
-      if (!Array.isArray(studentIds) || studentIds.length === 0) {
+      const rawStudentIds = Array.isArray(studentIds)
+        ? studentIds
+        : (studentId ? [studentId] : []);
+
+      if (rawStudentIds.length === 0) {
         return sendError(res, 'studentIds array is required', 400);
       }
 
@@ -174,39 +180,53 @@ export class LevelController {
       const level = await LevelModel.findById(levelId);
       if (!level) return sendError(res, 'Level not found', 404);
 
-      // Get old profiles to track level history
-      const oldProfilesRes = await query(
-        `SELECT id, "levelId" FROM "public"."student_profiles" WHERE "userId" = ANY($1)`,
-        [studentIds]
+      const parsedLevelId = parseInt(levelId, 10);
+
+      // Fetch profiles matching either userId or profile id
+      const profilesRes = await query(
+        `SELECT id, "userId", "levelId", "learningAccess"
+         FROM "public"."student_profiles" 
+         WHERE "userId" = ANY($1) OR id = ANY($1)`,
+        [rawStudentIds]
       );
 
-      // We only update users who actually have a student profile
+      if (profilesRes.rows.length === 0) {
+        return sendError(res, 'No student profiles found for the provided IDs', 404);
+      }
+
+      const profileIds = profilesRes.rows.map(r => r.id);
+
+      // Update student profiles
       await query(
         `UPDATE "public"."student_profiles"
          SET "levelId" = $1, "updatedAt" = NOW()
-         WHERE "userId" = ANY($2)`,
-        [levelId, studentIds]
+         WHERE id = ANY($2)`,
+        [parsedLevelId, profileIds]
       );
 
-      // Record level change in audit history
+      // Enroll students in all courses belonging to this level and record status audit
       const changedBy = req.user?.id || 'SYSTEM';
-      for (const row of oldProfilesRes.rows) {
-        if (row.levelId !== parseInt(levelId, 10) && row.levelId !== String(levelId)) {
-          const auditId = crypto.randomUUID();
-          await query(
-            `INSERT INTO "public"."student_status_audits" 
-             (id, "studentId", "changedBy", action, "fromState", "toState", notes, "createdAt")
-             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-            [
-              auditId,
-              row.id,
+      for (const profile of profilesRes.rows) {
+        try {
+          await AdmissionModel.enrollStudentInLevelCourses(profile.userId, parsedLevelId);
+        } catch (courseErr) {
+          console.warn(`Failed to enroll student ${profile.userId} in level courses:`, courseErr.message);
+        }
+
+        // Record audit if level changed
+        if (profile.levelId !== parsedLevelId) {
+          try {
+            await AdmissionModel.recordAudit({
+              studentId: profile.userId, // references users(id)
               changedBy,
-              'LEVEL_CHANGE',
-              JSON.stringify({ levelId: row.levelId }),
-              JSON.stringify({ levelId: levelId }),
-              'Primary level assignment changed'
-            ]
-          );
+              action: 'LEVEL_CHANGE',
+              fromState: { levelId: profile.levelId },
+              toState: { levelId: parsedLevelId },
+              notes: `Student enrolled into level ${level.name || parsedLevelId}`
+            });
+          } catch (auditErr) {
+            console.warn(`Failed to record audit for student ${profile.userId}:`, auditErr.message);
+          }
         }
       }
 
@@ -225,13 +245,14 @@ export class LevelController {
     try {
       const levelId = req.params.id;
       const studentId = req.params.studentId;
+      const parsedLevelId = parseInt(levelId, 10);
 
       const result = await query(
         `UPDATE "public"."student_profiles"
          SET "levelId" = NULL, "updatedAt" = NOW()
-         WHERE "userId" = $1 AND "levelId" = $2
-         RETURNING id`,
-        [studentId, levelId]
+         WHERE ("userId" = $1 OR id = $1) AND "levelId" = $2
+         RETURNING id, "userId"`,
+        [studentId, parsedLevelId]
       );
 
       if (result.rowCount === 0) {
@@ -239,23 +260,21 @@ export class LevelController {
       }
 
       // Record level history audit
-      const profileId = result.rows[0].id;
+      const profile = result.rows[0];
       const changedBy = req.user?.id || 'SYSTEM';
-      const auditId = crypto.randomUUID();
-      await query(
-        `INSERT INTO "public"."student_status_audits" 
-         (id, "studentId", "changedBy", action, "fromState", "toState", notes, "createdAt")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-        [
-          auditId,
-          profileId,
+
+      try {
+        await AdmissionModel.recordAudit({
+          studentId: profile.userId, // references users(id)
           changedBy,
-          'LEVEL_CHANGE',
-          JSON.stringify({ levelId: levelId }),
-          JSON.stringify({ levelId: null }),
-          'Student unenrolled from primary level'
-        ]
-      );
+          action: 'LEVEL_CHANGE',
+          fromState: { levelId: parsedLevelId },
+          toState: { levelId: null },
+          notes: 'Student unenrolled from primary level'
+        });
+      } catch (auditErr) {
+        console.warn(`Failed to record audit for student ${profile.userId}:`, auditErr.message);
+      }
 
       return sendSuccess(res, null, 'Student unenrolled successfully');
     } catch (error) {
