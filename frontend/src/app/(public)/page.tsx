@@ -27,7 +27,6 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { CertificateVerificationSection } from '@/components/certificate/certificate-verification-section';
-import { VocabularyWidget } from '@/components/public/vocabulary-widget';
 import { apiClient } from '@/lib/api-client';
 
 function CountUpNumber({ end, duration = 1800, suffix = '' }: { end: number; duration?: number; suffix?: string }) {
@@ -67,9 +66,90 @@ function CountUpNumber({ end, duration = 1800, suffix = '' }: { end: number; dur
   );
 }
 
+const VOCABULARY_LIST = [
+  {
+    word: 'Mellifluous',
+    phonetic: '/məˈlɪf.lu.əs/',
+    pos: 'Adjective • Advanced (C2)',
+    meaning: 'Sweet or musical; pleasant to hear.',
+    example: 'Her mellifluous voice captivated everyone in the auditorium.',
+  },
+  {
+    word: 'Eloquent',
+    phonetic: '/ˈel.ə.kwənt/',
+    pos: 'Adjective • Advanced (C1)',
+    meaning: 'Fluent or persuasive in speaking or writing.',
+    example: 'She delivered an eloquent keynote on global bilingual education.',
+  },
+  {
+    word: 'Serendipity',
+    phonetic: '/ˌser.ənˈdɪp.ə.ti/',
+    pos: 'Noun • Upper-Intermediate (B2)',
+    meaning: 'The occurrence and development of events by chance in a happy or beneficial way.',
+    example: 'Discovering LinguaChris Academy at this turning point was pure serendipity.',
+  },
+  {
+    word: 'Ephemeral',
+    phonetic: '/ɪˈfem.ər.əl/',
+    pos: 'Adjective • Advanced (C1)',
+    meaning: 'Lasting for a very short time; fleeting.',
+    example: 'Online trends are ephemeral, but strong communication skills last forever.',
+  },
+  {
+    word: 'Luminous',
+    phonetic: '/ˈluː.mɪ.nəs/',
+    pos: 'Adjective • Intermediate (B1)',
+    meaning: 'Full of or shedding light; bright or shining, especially in the dark.',
+    example: 'The students shared luminous ideas during the interactive discussion.',
+  },
+  {
+    word: 'Petrichor',
+    phonetic: '/ˈpet.rɪ.kɔːr/',
+    pos: 'Noun • Advanced (C1)',
+    meaning: 'A pleasant earthy smell that frequently accompanies the first rain after dry weather.',
+    example: 'The scent of petrichor drifted in through the open windows after the afternoon shower.',
+  },
+  {
+    word: 'Halcyon',
+    phonetic: '/ˈhæl.si.ən/',
+    pos: 'Adjective • Advanced (C2)',
+    meaning: 'Denoting a period of time in the past that was idyllically happy and peaceful.',
+    example: 'He fondly recalled the halcyon days of youth and discovery.',
+  },
+  {
+    word: 'Sonorous',
+    phonetic: '/ˈsɒn.ər.əs/',
+    pos: 'Adjective • Advanced (C1)',
+    meaning: 'Imposingly deep, rich, and full-sounding.',
+    example: 'His sonorous voice resonated clearly through the conference hall.',
+  },
+  {
+    word: 'Ineffable',
+    phonetic: '/ɪnˈef.ə.bəl/',
+    pos: 'Adjective • Advanced (C2)',
+    meaning: 'Too great, beautiful, or extreme to be expressed in words.',
+    example: 'She felt an ineffable sense of achievement as she completed her final level.',
+  },
+  {
+    word: 'Alacrity',
+    phonetic: '/əˈlæk.rə.ti/',
+    pos: 'Noun • Advanced (C1)',
+    meaning: 'Brisk and cheerful readiness; enthusiastic promptness.',
+    example: 'The class embarked on their oral presentations with inspiring alacrity.',
+  },
+];
+
 export default function HomePage() {
-  // 1. Interactive Flashcard Demo State
+  // 1. Interactive Vocabulary Flashcard State
+  const [vocabIndex, setVocabIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const currentVocab = VOCABULARY_LIST[vocabIndex];
+
+  const handleNextWord = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsFlipped(false);
+    setVocabIndex((prev) => (prev + 1) % VOCABULARY_LIST.length);
+  };
 
   // 2. Interactive CEFR Level Tab State
   const [activeLevelIndex, setActiveLevelIndex] = useState(3); // Default B1
@@ -458,48 +538,84 @@ export default function HomePage() {
           </div>
 
           {/* Interactive 3D Flippable Flashcard Demo Box */}
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-6 flex flex-col justify-center">
             <div
               onClick={() => setIsFlipped(!isFlipped)}
-              className="cursor-pointer rounded-2xl sm:rounded-3xl border-2 border-dashed border-[#006EF3]/30 bg-[#F3F7FC] p-5 sm:p-8 shadow-xl transition hover:shadow-2xl hover:scale-[1.01]"
+              className="cursor-pointer relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-dashed border-[#006EF3]/30 bg-[#F3F7FC] p-5 sm:p-7 shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] select-none"
             >
-              <div className="flex items-center justify-between text-xs text-[#012970] font-bold">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-[#F5B400]" />
-                  <span>Interactive 3D Flashcard</span>
-                </span>
+              {/* Card Header: Word of the Moment & Audio Pronunciation */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-black tracking-wider uppercase bg-[#006EF3] text-white shadow-xs">
+                    <Sparkles className="h-3.5 w-3.5 text-[#F5B400] animate-pulse" />
+                    Word of the Moment
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-500">
+                    Interactive 3D Flashcard &bull; {vocabIndex + 1}/{VOCABULARY_LIST.length}
+                  </span>
+                </div>
+
                 <button
+                  type="button"
                   onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
-                    playTts('Eloquent');
+                    playTts(currentVocab.word);
                   }}
-                  className="p-1.5 rounded-xl bg-white text-[#006EF3] shadow hover:scale-110 transition border border-[#E2E8F0]"
-                  title="Pronounce Word"
+                  className="p-2 rounded-xl bg-white text-[#006EF3] shadow-xs hover:scale-110 active:scale-95 transition border border-[#E2E8F0] hover:bg-blue-50"
+                  title={`Pronounce ${currentVocab.word}`}
                 >
                   <Volume2 className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="mt-6 sm:mt-8 text-center py-4 sm:py-6">
+              {/* Flashcard Body */}
+              <div className="mt-5 sm:mt-7 text-center py-6 sm:py-8 min-h-[180px] sm:min-h-[210px] flex flex-col items-center justify-center">
                 {!isFlipped ? (
-                  <div className="space-y-2">
-                    <p className="text-3xl sm:text-4xl font-bold text-[#172033] tracking-tight">Eloquent</p>
-                    <p className="text-xs sm:text-sm text-[#667085] font-mono">/ˈel.ə.kwənt/</p>
-                    <p className="text-xs font-bold text-[#006EF3] mt-4">
-                      Click card to reveal Oxford definition &amp; example ➔
+                  <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
+                    <p className="text-3xl sm:text-5xl font-black text-[#172033] tracking-tight">
+                      {currentVocab.word}
+                    </p>
+                    <p className="text-xs sm:text-sm font-mono text-[#006EF3] font-semibold">
+                      {currentVocab.phonetic}
+                    </p>
+                    <p className="text-xs font-bold text-[#006EF3] pt-3 hover:underline">
+                      Click card to reveal Oxford definition &amp; example &rarr;
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3 animate-in fade-in">
-                    <p className="text-xs sm:text-sm font-bold text-[#172033]">
-                      Fluent or persuasive in speaking or writing.
+                  <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300 max-w-md mx-auto">
+                    <span className="inline-block px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-[#012970]">
+                      {currentVocab.pos}
+                    </span>
+                    <p className="text-sm sm:text-base font-bold text-[#172033] leading-relaxed">
+                      &ldquo;{currentVocab.meaning}&rdquo;
                     </p>
-                    <p className="text-xs text-[#667085] italic">
-                      "She delivered an eloquent keynote on cross-border education."
+                    <p className="text-xs text-[#667085] italic leading-relaxed">
+                      &ldquo;{currentVocab.example}&rdquo;
                     </p>
-                    <p className="text-[10px] text-[#006EF3] mt-3 font-semibold">Click to flip back</p>
+                    <p className="text-[10px] text-[#006EF3] font-bold mt-2">
+                      Click to flip back
+                    </p>
                   </div>
                 )}
+              </div>
+
+              {/* Card Footer Controls: Next Word */}
+              <div className="pt-3 border-t border-[#006EF3]/15 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 text-xs text-[#667085]">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[11px] font-medium text-slate-500">Tap card to flip definition</span>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleNextWord}
+                  size="sm"
+                  className="rounded-xl bg-[#006EF3] hover:bg-[#005ed1] text-white text-xs font-black px-4 h-8 shadow-sm transition-all hover:scale-105 active:scale-95 gap-1.5"
+                >
+                  <span>Next Word</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
           </div>
@@ -512,50 +628,43 @@ export default function HomePage() {
       <CertificateVerificationSection />
 
       {/* =========================================================================
-          STATISTICS & VOCABULARY WIDGET
+          STATISTICS SECTION
       ========================================================================= */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-          {/* Statistics Section */}
-          <div className="flex flex-col justify-center space-y-6">
+        <div className="rounded-3xl border border-[#E2E8F0] bg-white p-6 sm:p-10 shadow-sm space-y-6">
+          <div className="max-w-2xl">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#172033]">
               Join our growing community
             </h2>
-            <p className="text-sm text-[#667085]">
+            <p className="text-sm text-[#667085] mt-1">
               Empowering learners across East Africa with world-class education.
             </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-              <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
-                <Users className="h-8 w-8 text-[#006EF3] mb-3" />
-                <span className="text-3xl font-black text-[#172033]">
-                  <CountUpNumber end={platformStats.enrolledStudents} suffix="+" />
-                </span>
-                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Enrolled Students</span>
-              </Card>
-
-              <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
-                <BookOpen className="h-8 w-8 text-[#006EF3] mb-3" />
-                <span className="text-3xl font-black text-[#172033]">
-                  <CountUpNumber end={platformStats.courses} />
-                </span>
-                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Courses</span>
-              </Card>
-
-              <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
-                <FileCheck className="h-8 w-8 text-[#006EF3] mb-3" />
-                <span className="text-3xl font-black text-[#172033]">
-                  <CountUpNumber end={platformStats.lessons} suffix="+" />
-                </span>
-                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Lessons</span>
-              </Card>
-            </div>
           </div>
 
-          {/* Vocabulary Widget */}
-          <div className="flex items-center justify-center">
-            <VocabularyWidget />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
+              <Users className="h-8 w-8 text-[#006EF3] mb-3" />
+              <span className="text-3xl font-black text-[#172033]">
+                <CountUpNumber end={platformStats.enrolledStudents} suffix="+" />
+              </span>
+              <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Enrolled Students</span>
+            </Card>
+
+            <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
+              <BookOpen className="h-8 w-8 text-[#006EF3] mb-3" />
+              <span className="text-3xl font-black text-[#172033]">
+                <CountUpNumber end={platformStats.courses} />
+              </span>
+              <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Courses</span>
+            </Card>
+
+            <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
+              <FileCheck className="h-8 w-8 text-[#006EF3] mb-3" />
+              <span className="text-3xl font-black text-[#172033]">
+                <CountUpNumber end={platformStats.lessons} suffix="+" />
+              </span>
+              <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Lessons</span>
+            </Card>
           </div>
         </div>
       </section>
