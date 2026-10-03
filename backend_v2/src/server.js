@@ -17,8 +17,9 @@ import { ensureInteractiveVideoSchema } from './config/interactive-video-schema.
 import { initAdmissionSchema } from './config/init-admission-schema.js';
 import { ensureLiveSessionSchema } from './config/live-session-schema.js';
 import { ensureEmailSchema } from './config/email-schema.js';
+import { LiveSessionSchedulerService } from './services/live-session-scheduler.service.js';
 
-// Live session schema and routes active
+// Live session schema, scheduler, and routes active
 
 function getLocalIpAddress() {
   const interfaces = os.networkInterfaces();
@@ -68,6 +69,9 @@ async function startServer() {
     console.log(`   - Health:  http://localhost:${env.PORT}/api/v1/health`);
     console.log(`   - DB Mode: Direct SQL (pg.Pool, No ORM)`);
     console.log(`   - Realtime: Socket.IO Enabled\n`);
+
+    // Start background scheduler to auto-activate scheduled live classes and push notifications
+    LiveSessionSchedulerService.startScheduler(10000);
   });
 
   server.on('error', (error) => {
@@ -82,6 +86,7 @@ async function startServer() {
   // Graceful shutdown
   const shutdown = async (signal) => {
     console.log(`\n🛑 ${signal} received. Shutting down gracefully...`);
+    LiveSessionSchedulerService.stopScheduler();
     server.close(async () => {
       console.log('🚪 HTTP & Socket server closed.');
       await pool.end();

@@ -9,6 +9,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { DashboardSkeleton } from '@/components/layout/dashboard-skeleton';
 import { NotificationCenter } from '@/components/notifications/notification-center';
 import { UserDropdown } from '@/components/layout/user-dropdown';
+import { LiveClassAlertListener } from '@/components/live-session/live-class-alert-listener';
 import { Sparkles, ShieldCheck, Menu } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -51,11 +52,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Full-screen standalone mode for preview simulators, live session video rooms & student classroom studio
   if (pathname.includes('/preview') || pathname.startsWith('/student/learn') || pathname.startsWith('/live')) {
-    return <div className="min-h-screen w-full bg-slate-950 overflow-hidden">{children}</div>;
+    return (
+      <div className="min-h-screen w-full bg-slate-950 overflow-hidden">
+        {!pathname.startsWith('/live') && <LiveClassAlertListener />}
+        {children}
+      </div>
+    );
   }
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <LiveClassAlertListener />
       <Sidebar
         role={user.role}
         mobileOpen={mobileSidebarOpen}

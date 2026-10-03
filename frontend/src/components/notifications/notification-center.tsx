@@ -7,6 +7,7 @@ import { Bell, Check, Trash2, ExternalLink, Sparkles, AlertCircle } from 'lucide
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
+import { getSocketClient } from '@/lib/socket-client';
 
 import { fastDeepEqual } from '@/lib/cache';
 
@@ -119,9 +120,38 @@ export function NotificationCenter() {
     };
     document.addEventListener('visibilitychange', onVisible);
 
+    const socket = getSocketClient();
+    let cleanupSocket = () => {};
+
+    if (socket && typeof socket.on === 'function') {
+      const handleNewNotification = (notif: NotificationItem) => {
+        if (!notif) return;
+        setNotifications((prev) => {
+          if (prev.some((n) => n.id === notif.id)) return prev;
+          return [notif, ...prev];
+        });
+        setUnreadCount((c) => c + 1);
+      };
+
+      const handleLiveClassStatus = () => {
+        fetchNotifications(true);
+      };
+
+      socket.on('notification:new', handleNewNotification);
+      socket.on('live:session-started', handleLiveClassStatus);
+      socket.on('live:session-status-changed', handleLiveClassStatus);
+
+      cleanupSocket = () => {
+        socket.off('notification:new', handleNewNotification);
+        socket.off('live:session-started', handleLiveClassStatus);
+        socket.off('live:session-status-changed', handleLiveClassStatus);
+      };
+    }
+
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
+      cleanupSocket();
     };
   }, []);
 
