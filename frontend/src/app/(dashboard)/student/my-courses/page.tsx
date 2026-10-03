@@ -32,6 +32,8 @@ interface EnrolledCourseItem {
   progressPercent: number;
   completedLessonsCount: number;
   totalLessonsCount: number;
+  isCompleted?: boolean;
+  hasCertificate?: boolean;
   course: {
     id: string;
     title: string;
@@ -77,9 +79,38 @@ export default function MyCoursesPage() {
     return true;
   });
 
+  // Strict check whether a course is REALLY completed
+  const isCourseReallyCompleted = (item: EnrolledCourseItem): boolean => {
+    // 1. Explicit verified flag or existing certificate from backend
+    if (item.isCompleted === true || item.hasCertificate === true) {
+      return true;
+    }
+    // 2. If curriculum has lessons configured, student must have completed all of them (or reached 100%)
+    if (item.totalLessonsCount > 0) {
+      return item.completedLessonsCount >= item.totalLessonsCount || item.progressPercent >= 100;
+    }
+    // 3. Fallback only if no lesson count is available: status COMPLETED and progress 100%
+    return item.status === 'COMPLETED' && item.progressPercent >= 100;
+  };
+
+  const allCount = uniqueCourses.length;
+  const activeCount = uniqueCourses.filter((item) => !item.isExpired && !isCourseReallyCompleted(item) && (item.status === 'ACTIVE' || item.status === 'COMPLETED')).length;
+  const completedCount = uniqueCourses.filter((item) => isCourseReallyCompleted(item)).length;
+
   const filteredCourses = uniqueCourses.filter((item) => {
-    if (activeTab === 'ACTIVE' && (item.status !== 'ACTIVE' || item.isExpired)) return false;
-    if (activeTab === 'COMPLETED' && item.status !== 'COMPLETED') return false;
+    const isCompleted = isCourseReallyCompleted(item);
+
+    if (activeTab === 'ACTIVE') {
+      // Must not be expired and must not be already really completed
+      if (item.isExpired || isCompleted) return false;
+      if (item.status !== 'ACTIVE' && item.status !== 'COMPLETED') return false;
+    }
+
+    if (activeTab === 'COMPLETED') {
+      // Completed filter: MUST be really completed!
+      if (!isCompleted) return false;
+    }
+
     if (search && !item.course.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -88,7 +119,9 @@ export default function MyCoursesPage() {
   const additionalCourses = filteredCourses.filter(c => c.course.level !== primaryLevel);
 
   function renderCourseCard(item: EnrolledCourseItem, idx: number) {
-    const isAccessActive = item.status === 'ACTIVE' && !item.isExpired;
+    const isCompleted = isCourseReallyCompleted(item);
+    const isAccessActive = (item.status === 'ACTIVE' || item.status === 'COMPLETED' || isCompleted) && !item.isExpired;
+
     return (
       <Card
         key={`${item.id}-${item.course?.id || ''}-${idx}`}
@@ -101,12 +134,14 @@ export default function MyCoursesPage() {
               <Badge variant="indigo" className="bg-primary-600 text-white">
                 Level {item.course.level}
               </Badge>
-              {item.isExpired ? (
+              {isCompleted ? (
+                <Badge variant="indigo" className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 font-bold shadow-xs">
+                  <CheckCircle2 className="h-3 w-3" /> Completed
+                </Badge>
+              ) : item.isExpired ? (
                 <Badge variant="destructive">Access Expired</Badge>
               ) : item.status === 'ACTIVE' ? (
                 <Badge variant="success">Active</Badge>
-              ) : item.status === 'COMPLETED' ? (
-                <Badge variant="indigo">Completed</Badge>
               ) : (
                 <Badge variant="warning">Verification Pending</Badge>
               )}
@@ -136,16 +171,24 @@ export default function MyCoursesPage() {
             <div>
               <div className="flex items-center justify-between text-xs font-semibold mb-1">
                 <span className="text-slate-600 dark:text-slate-400">Curriculum Progress</span>
-                <span className="text-primary-600">{item.progressPercent}%</span>
+                <span className={isCompleted ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-primary-600"}>
+                  {isCompleted ? 100 : item.progressPercent}%
+                </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                 <div
-                  className="h-full bg-primary-600 rounded-full transition-all duration-500"
-                  style={{ width: `${item.progressPercent}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-emerald-500' : 'bg-primary-600'}`}
+                  style={{ width: `${isCompleted ? 100 : item.progressPercent}%` }}
                 />
               </div>
               <span className="text-[10px] text-slate-400 mt-1 block">
-                {item.completedLessonsCount} of {item.totalLessonsCount} lessons finished
+                {isCompleted && item.totalLessonsCount > 0 ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 inline" /> All {item.totalLessonsCount} lessons completed!
+                  </span>
+                ) : (
+                  `${item.completedLessonsCount} of ${item.totalLessonsCount} lessons finished`
+                )}
               </span>
             </div>
           </CardContent>
@@ -155,9 +198,26 @@ export default function MyCoursesPage() {
         <div className="p-5 pt-0 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 mt-4">
           {isAccessActive ? (
             <Link href={`/student/learn/${item.course.id}`} className="w-full">
-              <Button variant="gradient" size="sm" className="w-full">
-                <Play className="mr-1.5 h-3.5 w-3.5 fill-current" />
-                Continue Learning
+              <Button
+                variant={isCompleted ? "outline" : "gradient"}
+                size="sm"
+                className={`w-full ${
+                  isCompleted
+                    ? 'text-emerald-700 border-emerald-300 dark:border-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-semibold'
+                    : ''
+                }`}
+              >
+                {isCompleted ? (
+                  <>
+                    <FileCheck className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
+                    Review Course
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-1.5 h-3.5 w-3.5 fill-current" />
+                    Continue Learning
+                  </>
+                )}
               </Button>
             </Link>
           ) : item.isExpired ? (
@@ -203,20 +263,48 @@ export default function MyCoursesPage() {
 
       {/* Tabs & Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-          {(['ALL', 'ACTIVE', 'COMPLETED'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                activeTab === tab
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {tab === 'ALL' ? 'All Courses' : tab.charAt(0) + tab.slice(1).toLowerCase()}
-            </button>
-          ))}
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
+          <button
+            onClick={() => setActiveTab('ALL')}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeTab === 'ALL'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>All Courses</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${activeTab === 'ALL' ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>
+              {allCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ACTIVE')}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeTab === 'ACTIVE'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>Active</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${activeTab === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>
+              {activeCount}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('COMPLETED')}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeTab === 'COMPLETED'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>Completed</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${activeTab === 'COMPLETED' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'}`}>
+              {completedCount}
+            </span>
+          </button>
         </div>
 
         <div className="relative w-full sm:w-64">

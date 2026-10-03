@@ -117,7 +117,20 @@ export class StudentController {
         console.warn('Student progress query warning:', err.message);
       }
 
-      // 3. Get enrollments with full course details
+      // 3. Get student certificates to cross-verify certified course completion
+      let certifiedCourseIds = new Set();
+      try {
+        const certRes = await query(
+          `SELECT "courseId" FROM "public"."certificates" 
+           WHERE ("studentId" = $1 OR "studentId" = $2)`,
+          [targetId, studentProfileId]
+        );
+        certifiedCourseIds = new Set(certRes.rows.map((r) => r.courseId));
+      } catch (certErr) {
+        console.warn('Student certificates query warning:', certErr.message);
+      }
+
+      // 4. Get enrollments with full course details
       const enrollmentsRes = await query(
         `SELECT DISTINCT ON (e.id)
            e.id as "enrollmentId", e.status, e."enrolledAt", e."expiresAt",
@@ -151,9 +164,33 @@ export class StudentController {
 
         const totalLessonsCount = courseLessonIds.length;
         const completedLessonsCount = courseLessonIds.filter((id) => completedLessonIds.has(id)).length;
-        const progressPercent = totalLessonsCount > 0
-          ? Math.round((completedLessonsCount / totalLessonsCount) * 100)
-          : (row.status === 'COMPLETED' ? 100 : (completedLessonsCount > 0 ? 25 : 0));
+        const hasCertificate = certifiedCourseIds.has(row.courseId);
+
+        // A course is REALLY completed if all lessons have been finished, progress is 100%, or a certificate exists
+        const isReallyCompleted = (totalLessonsCount > 0 && completedLessonsCount >= totalLessonsCount) ||
+                                  (totalLessonsCount > 0 && completedLessonsCount > 0 && Math.round((completedLessonsCount / totalLessonsCount) * 100) >= 100) ||
+                                  hasCertificate;
+
+        const progressPercent = isReallyCompleted
+          ? 100
+          : (totalLessonsCount > 0
+              ? Math.round((completedLessonsCount / totalLessonsCount) * 100)
+              : (row.status === 'COMPLETED' ? 100 : (completedLessonsCount > 0 ? 25 : 0)));
+
+        const finalStatus = isReallyCompleted ? 'COMPLETED' : (row.status === 'COMPLETED' && totalLessonsCount > 0 && !hasCertificate ? 'ACTIVE' : row.status);
+
+        // Auto-sync database enrollment status
+        if (isReallyCompleted && row.status !== 'COMPLETED') {
+          query(
+            `UPDATE "public"."enrollments" SET status = 'COMPLETED', "updatedAt" = NOW() WHERE id = $1`,
+            [row.enrollmentId]
+          ).catch((e) => console.warn('Failed to auto-sync enrollment to COMPLETED:', e.message));
+        } else if (!isReallyCompleted && row.status === 'COMPLETED' && totalLessonsCount > 0 && !hasCertificate) {
+          query(
+            `UPDATE "public"."enrollments" SET status = 'ACTIVE', "updatedAt" = NOW() WHERE id = $1`,
+            [row.enrollmentId]
+          ).catch((e) => console.warn('Failed to revert false COMPLETED enrollment:', e.message));
+        }
 
         const isExpired = row.expiresAt ? new Date(row.expiresAt).getTime() < Date.now() : false;
         const daysRemaining = row.expiresAt
@@ -162,7 +199,9 @@ export class StudentController {
 
         enrolled.push({
           id: row.enrollmentId,
-          status: row.status,
+          status: finalStatus,
+          isCompleted: isReallyCompleted,
+          hasCertificate,
           enrolledAt: row.enrolledAt,
           expiresAt: row.expiresAt || undefined,
           isExpired,
@@ -189,7 +228,7 @@ export class StudentController {
 
       const enrolledCourseIds = new Set(enrolled.map((e) => e.course.id));
 
-      // 4. Get catalog (primary level courses not enrolled)
+      // 5. Get catalog (primary level courses not enrolled)
       // Per rules: Unenrolled students must never see the course.
       const catalog = [];
 
@@ -351,7 +390,10 @@ export class StudentController {
           ? Math.round((completedInCourse / courseLessons.length) * 100)
           : 0;
 
-        if (!inProgressCourse && e.status === 'ACTIVE') {
+        const isCourseFullyCompleted = (courseLessons.length > 0 && completedInCourse >= courseLessons.length) || progressPercentage >= 100;
+        e.isReallyCompleted = isCourseFullyCompleted;
+
+        if (!inProgressCourse && e.status === 'ACTIVE' && !isCourseFullyCompleted) {
           const nextLesson = courseLessons.find(l => !completedLessonIds.has(l.id)) || courseLessons[0] || null;
 
           inProgressCourse = {
@@ -383,8 +425,8 @@ export class StudentController {
         }
       }
 
-      const activeCoursesCount = enrollmentsRes.rows.filter(e => e.status === 'ACTIVE').length;
-      const completedCoursesCount = enrollmentsRes.rows.filter(e => e.status === 'COMPLETED').length;
+      const activeCoursesCount = enrollmentsRes.rows.filter(e => e.status === 'ACTIVE' && !e.isReallyCompleted).length;
+      const completedCoursesCount = enrollmentsRes.rows.filter(e => e.isReallyCompleted || e.status === 'COMPLETED').length;
       const completedLessonsCount = completedLessonIds.size;
       const overallProgressPercentage = totalLessonsInAllEnrolled > 0
         ? Math.round((completedLessonsCount / totalLessonsInAllEnrolled) * 100)
@@ -1109,7 +1151,14 @@ export class StudentController {
         cert = await CertificateModel.issueCertificate(studentProfileId || studentId, courseId, cLevel, 100);
       }
 
-      // 4. Fetch student details and send congratulatory email
+      // 4. Update enrollment status to COMPLETED
+      await query(
+        `UPDATE "public"."enrollments" SET status = 'COMPLETED', "updatedAt" = NOW() 
+         WHERE ("studentId" = $1 OR "studentId" = $2) AND "courseId" = $3`,
+        [studentId, studentProfileId, courseId]
+      ).catch(() => {});
+
+      // 5. Fetch student details and send congratulatory email
       const studentUserRes = await query(
         `SELECT u.email, u."firstName", u."lastName" FROM "public"."users" u WHERE u.id = $1 LIMIT 1`,
         [studentId]
