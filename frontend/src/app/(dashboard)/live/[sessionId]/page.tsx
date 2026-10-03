@@ -168,7 +168,27 @@ export default function LiveSessionRoomPage() {
     }
   };
 
-  // If user is kicked
+  // 1. Loading state while fetching session & determining status
+  if (isLoading || !session) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAFC] text-slate-900">
+        <div className="flex flex-col items-center gap-4 text-center max-w-sm px-6 animate-in fade-in-50 duration-200">
+          <div className="relative flex items-center justify-center">
+            <div className="h-12 w-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#006EF3]">
+              <Radio className="h-6 w-6 animate-pulse" />
+            </div>
+            <div className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-[#006EF3] rounded-full animate-ping" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-slate-900">Loading Session…</h3>
+            <p className="text-xs text-slate-500">Connecting to classroom and checking session details</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. If user is kicked
   if (isKicked) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4 text-white">
@@ -181,7 +201,7 @@ export default function LiveSessionRoomPage() {
             You have been removed from this live session by the instructor.
           </p>
           <Button
-            onClick={() => router.push(user?.role === 'TEACHER' ? '/teacher' : '/student')}
+            onClick={() => router.push(user?.role === 'TEACHER' ? '/teacher/live-sessions' : '/student/live-sessions')}
             className="w-full bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold"
           >
             Return to Dashboard
@@ -191,8 +211,8 @@ export default function LiveSessionRoomPage() {
     );
   }
 
-  // If session ended
-  if (isEnded) {
+  // 3. If session ended -> Directly show Session Summary (Never loads video room)
+  if (isEnded || session?.status === 'ENDED') {
     return (
       <LiveSessionSummaryView
         session={session}
@@ -203,21 +223,21 @@ export default function LiveSessionRoomPage() {
     );
   }
 
-  // Error state
+  // 4. Error state
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4 text-white">
-        <div className="max-w-md w-full p-6 rounded-2xl bg-slate-900 border border-red-500/40 text-center space-y-4 shadow-2xl">
-          <div className="h-14 w-14 rounded-full bg-red-500/20 text-red-400 mx-auto flex items-center justify-center">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F8FAFC] p-4 text-slate-900">
+        <div className="max-w-md w-full p-6 rounded-3xl bg-white border border-slate-200/90 text-center space-y-4 shadow-sm">
+          <div className="h-14 w-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 mx-auto flex items-center justify-center">
             <AlertCircle className="h-7 w-7" />
           </div>
-          <h2 className="text-xl font-bold text-red-200">Unable to Join Session</h2>
-          <p className="text-sm text-slate-400">{error}</p>
+          <h2 className="text-xl font-bold text-slate-900">Unable to Join Session</h2>
+          <p className="text-xs text-slate-500">{error}</p>
           <Button
-            onClick={() => router.push(user?.role === 'TEACHER' ? '/teacher' : '/student')}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold"
+            onClick={() => router.push(user?.role === 'TEACHER' ? '/teacher/live-sessions' : '/student/live-sessions')}
+            className="w-full bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold"
           >
-            Return to Dashboard
+            Return to Live Sessions
           </Button>
         </div>
       </div>
