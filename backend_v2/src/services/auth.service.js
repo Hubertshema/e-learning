@@ -213,9 +213,17 @@ export class AuthService {
       err.statusCode = 400;
       throw err;
     }
-    if (!password || password.length < 8) {
-      const err = new Error('Password must be at least 8 characters long');
+    const hasLength = typeof password === 'string' && password.length >= 8;
+    const hasUpper = typeof password === 'string' && /[A-Z]/.test(password);
+    const hasNumber = typeof password === 'string' && /[0-9]/.test(password);
+    const hasSymbol = typeof password === 'string' && /[^A-Za-z0-9]/.test(password);
+
+    if (!hasLength || !hasUpper || !hasNumber || !hasSymbol) {
+      const err = new Error(
+        'Weak passwords are prohibited. Only the strongest passwords are accepted (minimum 8 characters with at least one uppercase letter, one number, and one special symbol).'
+      );
       err.statusCode = 400;
+      err.code = 'WEAK_PASSWORD_PROHIBITED';
       throw err;
     }
 

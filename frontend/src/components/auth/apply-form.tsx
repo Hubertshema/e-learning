@@ -121,24 +121,27 @@ export function ApplyForm() {
   const hasNumber = /[0-9]/.test(password);
   const hasSymbol = /[^A-Za-z0-9]/.test(password);
   const score = [hasLength, hasUpper, hasNumber, hasSymbol].filter(Boolean).length;
+  const isStrongest = hasLength && hasUpper && hasNumber && hasSymbol;
+  const isWeakPasswordEntered = Boolean(password && !isStrongest);
+  const isPasswordReady = Boolean(password && isStrongest);
 
   const strengthDetails = (() => {
     if (!password) {
-      return { label: '', color: 'bg-slate-200 dark:bg-slate-700', percent: 0, textClass: 'text-slate-400' };
+      return { label: '', color: 'bg-slate-200 dark:bg-slate-700', percent: 0, textClass: 'text-slate-400', isStrongest: false };
     }
-    if (password.length < 6) {
-      return { label: 'Too short (min 6)', color: 'bg-rose-500', percent: 20, textClass: 'text-rose-500' };
+    if (password.length < 8) {
+      return { label: 'Too short (min 8) • Prohibited', color: 'bg-rose-500', percent: 20, textClass: 'text-rose-500 font-bold', isStrongest: false };
     }
     if (score === 1) {
-      return { label: 'Weak', color: 'bg-rose-500', percent: 35, textClass: 'text-rose-500' };
+      return { label: 'Weak • Prohibited', color: 'bg-rose-500', percent: 25, textClass: 'text-rose-500 font-bold', isStrongest: false };
     }
     if (score === 2) {
-      return { label: 'Fair', color: 'bg-amber-500', percent: 55, textClass: 'text-amber-500' };
+      return { label: 'Fair • Prohibited', color: 'bg-amber-500', percent: 50, textClass: 'text-amber-500 font-bold', isStrongest: false };
     }
     if (score === 3) {
-      return { label: 'Good', color: 'bg-blue-500', percent: 80, textClass: 'text-blue-500' };
+      return { label: 'Moderate • Prohibited', color: 'bg-blue-500', percent: 75, textClass: 'text-blue-500 font-bold', isStrongest: false };
     }
-    return { label: 'Strong & Secure', color: 'bg-emerald-500', percent: 100, textClass: 'text-emerald-500 font-bold' };
+    return { label: 'Strongest & Approved ✓', color: 'bg-emerald-500', percent: 100, textClass: 'text-emerald-500 font-bold', isStrongest: true };
   })();
 
   const handleGoalToggle = (goal: string) => {
@@ -165,8 +168,13 @@ export function ApplyForm() {
       if (!formData.email.trim()) {
         throw new Error('Please enter your email address.');
       }
-      if (!formData.password || formData.password.length < 6) {
-        throw new Error('Password must be at least 6 characters long.');
+      if (!formData.password) {
+        throw new Error('Please enter your password.');
+      }
+      if (!isStrongest) {
+        throw new Error(
+          'Weak passwords are prohibited. You must use the strongest password (minimum 8 characters, with uppercase letters, numbers, and special symbols). Click "Suggest Strongest Password" to auto-generate one.'
+        );
       }
       if (formData.confirmPassword && formData.password !== formData.confirmPassword) {
         throw new Error('Passwords do not match. Please verify your password confirmation.');
@@ -321,10 +329,10 @@ export function ApplyForm() {
               type="button"
               onClick={handleSuggestPassword}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-[#006EF3]/30 text-[#006EF3] dark:text-blue-400 hover:bg-[#006EF3]/10 text-[11px] font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
-              title="Generate a high-security random password and copy to clipboard"
+              title="Generate a high-security strongest password and copy to clipboard"
             >
               <KeyRound className="h-3 w-3" />
-              <span>Suggest Strong Password</span>
+              <span>Suggest Strongest Password</span>
             </button>
           </div>
 
@@ -345,12 +353,18 @@ export function ApplyForm() {
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  minLength={6}
+                  minLength={8}
                   autoComplete="new-password"
-                  placeholder="Min. 8 characters suggested"
+                  placeholder="Min. 8 chars (upper, number, symbol)"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="h-10 text-xs sm:text-sm rounded-xl pr-10 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                  className={`h-10 text-xs sm:text-sm rounded-xl pr-10 bg-white dark:bg-slate-900 transition-colors ${
+                    isWeakPasswordEntered
+                      ? 'border-rose-400 dark:border-rose-700 focus-visible:ring-rose-500'
+                      : isPasswordReady
+                      ? 'border-emerald-400 dark:border-emerald-700 focus-visible:ring-emerald-500'
+                      : 'border-slate-200 dark:border-slate-700'
+                  }`}
                 />
                 <button
                   type="button"
@@ -404,7 +418,7 @@ export function ApplyForm() {
 
           {/* Password Security Strength Bar */}
           {formData.password && (
-            <div className="space-y-1.5 pt-0.5">
+            <div className="space-y-2 pt-0.5">
               <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all duration-300 ${strengthDetails.color}`}
@@ -415,46 +429,74 @@ export function ApplyForm() {
               {/* Password Checklist Chips */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
                 <div
-                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md ${
+                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md transition-colors ${
                     hasLength
                       ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
-                      : 'text-slate-400 bg-white/60 dark:bg-slate-900/60'
+                      : 'text-rose-600 bg-rose-50/70 dark:bg-rose-950/30'
                   }`}
                 >
-                  {hasLength ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center">•</span>}
+                  {hasLength ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center font-bold">✕</span>}
                   <span>8+ Characters</span>
                 </div>
                 <div
-                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md ${
+                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md transition-colors ${
                     hasUpper
                       ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
-                      : 'text-slate-400 bg-white/60 dark:bg-slate-900/60'
+                      : 'text-rose-600 bg-rose-50/70 dark:bg-rose-950/30'
                   }`}
                 >
-                  {hasUpper ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center">•</span>}
+                  {hasUpper ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center font-bold">✕</span>}
                   <span>Uppercase (A-Z)</span>
                 </div>
                 <div
-                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md ${
+                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md transition-colors ${
                     hasNumber
                       ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
-                      : 'text-slate-400 bg-white/60 dark:bg-slate-900/60'
+                      : 'text-rose-600 bg-rose-50/70 dark:bg-rose-950/30'
                   }`}
                 >
-                  {hasNumber ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center">•</span>}
+                  {hasNumber ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center font-bold">✕</span>}
                   <span>Number (0-9)</span>
                 </div>
                 <div
-                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md ${
+                  className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md transition-colors ${
                     hasSymbol
                       ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold'
-                      : 'text-slate-400 bg-white/60 dark:bg-slate-900/60'
+                      : 'text-rose-600 bg-rose-50/70 dark:bg-rose-950/30'
                   }`}
                 >
-                  {hasSymbol ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center">•</span>}
+                  {hasSymbol ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <span className="w-2.5 text-center font-bold">✕</span>}
                   <span>Symbol (!@#$)</span>
                 </div>
               </div>
+
+              {/* Status Alert: Prohibit Weak Passwords or Celebrate Strongest */}
+              {isWeakPasswordEntered && (
+                <div className="flex items-start sm:items-center justify-between gap-2 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-[11px] text-rose-800 dark:text-rose-200">
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                    <span>
+                      <strong>Weak passwords prohibited:</strong> Please fulfill all 4 criteria above.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSuggestPassword}
+                    className="shrink-0 text-[10px] font-bold text-[#006EF3] dark:text-blue-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900 hover:bg-blue-50 dark:hover:bg-blue-950 cursor-pointer shadow-2xs"
+                  >
+                    Auto-fill Strongest
+                  </button>
+                </div>
+              )}
+
+              {isPasswordReady && (
+                <div className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-[11px] text-emerald-800 dark:text-emerald-200">
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <span>
+                    <strong>Strongest password verified:</strong> Meets all security standards for submission.
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -545,13 +587,22 @@ export function ApplyForm() {
         <div className="pt-2 space-y-2">
           <Button
             type="submit"
-            disabled={isLoading}
-            className="w-full bg-[#012970] hover:bg-[#006EF3] text-white font-bold h-11 rounded-xl shadow-md text-xs sm:text-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+            disabled={isLoading || isWeakPasswordEntered || (Boolean(formData.confirmPassword) && formData.password !== formData.confirmPassword)}
+            className={`w-full font-bold h-11 rounded-xl shadow-md text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+              isWeakPasswordEntered
+                ? 'bg-slate-200 dark:bg-slate-800 text-rose-600 dark:text-rose-400 cursor-not-allowed border border-rose-300 dark:border-rose-800 shadow-none'
+                : 'bg-[#012970] hover:bg-[#006EF3] text-white active:scale-[0.99] cursor-pointer'
+            }`}
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 Submitting Application...
+              </span>
+            ) : isWeakPasswordEntered ? (
+              <span className="flex items-center gap-2 font-bold">
+                <Lock className="h-4 w-4" />
+                Strongest Password Required (Weak Prohibited)
               </span>
             ) : (
               <span className="flex items-center gap-2">

@@ -25,8 +25,19 @@ export class AdmissionController {
         return sendError(res, 'First name, last name, email, and password are required', 400);
       }
 
-      if (password.length < 6) {
-        return sendError(res, 'Password must be at least 6 characters long', 400);
+      // Prohibit sending weak passwords; strictly require the strongest passwords only
+      const hasLength = typeof password === 'string' && password.length >= 8;
+      const hasUpper = typeof password === 'string' && /[A-Z]/.test(password);
+      const hasNumber = typeof password === 'string' && /[0-9]/.test(password);
+      const hasSymbol = typeof password === 'string' && /[^A-Za-z0-9]/.test(password);
+
+      if (!hasLength || !hasUpper || !hasNumber || !hasSymbol) {
+        return sendError(
+          res,
+          'Weak passwords are prohibited. Only the strongest passwords are accepted (minimum 8 characters, with at least one uppercase letter, one number, and one special symbol).',
+          400,
+          'WEAK_PASSWORD_PROHIBITED'
+        );
       }
 
       const result = await AdmissionModel.submitApplication({

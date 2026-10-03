@@ -92,8 +92,18 @@ export class AuthController {
       if (!currentPassword || !newPassword) {
         return sendError(res, 'Current password and new password are required', 400, 'VALIDATION_ERROR');
       }
-      if (newPassword.length < 8) {
-        return sendError(res, 'New password must be at least 8 characters long', 400, 'VALIDATION_ERROR');
+      const hasLength = typeof newPassword === 'string' && newPassword.length >= 8;
+      const hasUpper = typeof newPassword === 'string' && /[A-Z]/.test(newPassword);
+      const hasNumber = typeof newPassword === 'string' && /[0-9]/.test(newPassword);
+      const hasSymbol = typeof newPassword === 'string' && /[^A-Za-z0-9]/.test(newPassword);
+
+      if (!hasLength || !hasUpper || !hasNumber || !hasSymbol) {
+        return sendError(
+          res,
+          'Weak passwords are prohibited. Only the strongest passwords are accepted (minimum 8 characters with at least one uppercase letter, one number, and one special symbol).',
+          400,
+          'WEAK_PASSWORD_PROHIBITED'
+        );
       }
 
       await AuthService.changePassword(req.user.id, { currentPassword, newPassword });
