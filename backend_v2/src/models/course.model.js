@@ -153,6 +153,11 @@ export class CourseModel {
           }
         }
       }
+    } else {
+      const fallbackTp = await query(`SELECT id FROM "public"."teacher_profiles" LIMIT 1`);
+      if (fallbackTp.rows[0]) {
+        resolvedTeacherId = fallbackTp.rows[0].id;
+      }
     }
 
     const res = await query(
