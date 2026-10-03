@@ -711,42 +711,49 @@ export default function StudentDashboardPage() {
 
             <CardContent className="p-4 space-y-3">
               {feedbacks.length > 0 ? (
-                feedbacks.slice(0, 3).map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/60 space-y-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#012970] text-white font-bold text-[10px]">
-                          {item.teacher.firstName?.[0] || 'T'}{item.teacher.lastName?.[0] || 'I'}
+                <>
+                  {feedbacks.slice(0, 1).map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/60 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#012970] text-white font-bold text-[10px]">
+                            {item.teacher.firstName?.[0] || 'T'}{item.teacher.lastName?.[0] || 'I'}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 dark:text-white">
+                              {item.teacher.firstName} {item.teacher.lastName}
+                            </p>
+                            <p className="text-[9px] text-slate-400">
+                              {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900 dark:text-white">
-                            {item.teacher.firstName} {item.teacher.lastName}
-                          </p>
-                          <p className="text-[9px] text-slate-400">
-                            {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                          </p>
-                        </div>
+                        <Badge variant="indigo" className="text-[9px]">
+                          {item.title || 'Feedback'}
+                        </Badge>
                       </div>
-                      <Badge variant="indigo" className="text-[9px]">
-                        {item.title || 'Feedback'}
-                      </Badge>
+
+                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-3">
+                        {item.content}
+                      </p>
+
+                      {item.strengths && item.strengths.length > 0 && (
+                        <div className="text-[11px] text-[#006EF3] dark:text-blue-400 font-semibold flex items-center gap-1">
+                          <Check className="h-3 w-3" />
+                          <span>Strength: {item.strengths.join(', ')}</span>
+                        </div>
+                      )}
                     </div>
-
-                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                      {item.content}
-                    </p>
-
-                    {item.strengths && item.strengths.length > 0 && (
-                      <div className="text-[11px] text-[#006EF3] dark:text-blue-400 font-semibold flex items-center gap-1">
-                        <Check className="h-3 w-3" />
-                        <span>Strength: {item.strengths.join(', ')}</span>
-                      </div>
-                    )}
-                  </div>
-                ))
+                  ))}
+                  <Link href="/student/feedback" className="block mt-2">
+                    <Button variant="outline" size="sm" className="w-full text-[11px] h-8 text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                      View all notes ({feedbacks.length})
+                    </Button>
+                  </Link>
+                </>
               ) : (
                 <div className="py-6 text-center space-y-2">
                   <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3F7FC] text-[#006EF3] dark:bg-slate-800 dark:text-blue-400">
