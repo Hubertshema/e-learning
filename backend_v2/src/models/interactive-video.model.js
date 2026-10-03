@@ -492,12 +492,8 @@ export class InteractiveVideoModel {
             const watched = Number(curP.rows[0]?.watchedSeconds || 0);
             const curPct = Number(curP.rows[0]?.completionPercent || 0);
             if (curPct >= 80) {
-              const profile = await query(
-                `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
-                [studentId]
-              );
-              const sIds = [profile.rows[0]?.id, studentId].filter(Boolean);
-              for (const sId of sIds) {
+              const profId = await this.resolveStudentProfileId(studentId);
+              if (profId) {
                 await query(
                   `INSERT INTO "public"."progress" 
                     (id, "studentId", "lessonId", "isCompleted", "timeSpentSec", "completedAt", "updatedAt")
@@ -507,7 +503,7 @@ export class InteractiveVideoModel {
                      "timeSpentSec" = GREATEST("public"."progress"."timeSpentSec", EXCLUDED."timeSpentSec"),
                      "completedAt" = COALESCE("public"."progress"."completedAt", NOW()),
                      "updatedAt" = NOW()`,
-                  [id(), sId, a.lessonId, Math.max(watched, 1800)]
+                  [id(), profId, a.lessonId, Math.max(watched, 1800)]
                 );
               }
             }
@@ -550,12 +546,8 @@ export class InteractiveVideoModel {
     // If >= 90% watched, ensure lesson is marked completed in public.progress
     if (percent >= 90) {
       try {
-        const profile = await query(
-          `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
-          [studentId]
-        );
-        const sIds = [profile.rows[0]?.id, studentId].filter(Boolean);
-        for (const sId of sIds) {
+        const profId = await this.resolveStudentProfileId(studentId);
+        if (profId) {
           await query(
             `INSERT INTO "public"."progress" 
               (id, "studentId", "lessonId", "isCompleted", "timeSpentSec", "completedAt", "updatedAt")
@@ -565,7 +557,7 @@ export class InteractiveVideoModel {
                "timeSpentSec" = GREATEST("public"."progress"."timeSpentSec", EXCLUDED."timeSpentSec"),
                "completedAt" = COALESCE("public"."progress"."completedAt", NOW()),
                "updatedAt" = NOW()`,
-            [id(), sId, lessonId, Math.max(watched, 1800)]
+            [id(), profId, lessonId, Math.max(watched, 1800)]
           );
         }
       } catch (syncErr) {
@@ -581,6 +573,50 @@ export class InteractiveVideoModel {
     }
 
     return result.rows[0];
+  }
+
+  /**
+   * Resolves the student_profiles.id for a student (user.id or profile.id).
+   * Automatically ensures a student_profile row exists to satisfy foreign key constraints on public.progress.
+   */
+  static async resolveStudentProfileId(studentId) {
+    if (!studentId) return null;
+    try {
+      // 1. Look up student_profile by userId
+      const profile = await query(
+        `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
+        [studentId]
+      );
+      if (profile.rows[0]?.id) return profile.rows[0].id;
+
+      // 2. Check if studentId is already a student_profiles.id
+      const direct = await query(
+        `SELECT id FROM "public"."student_profiles" WHERE id = $1 LIMIT 1`,
+        [studentId]
+      );
+      if (direct.rows[0]?.id) return direct.rows[0].id;
+
+      // 3. Ensure student_profile exists for this user
+      const userRes = await query(`SELECT id FROM "public"."users" WHERE id = $1 LIMIT 1`, [studentId]);
+      if (userRes.rows[0]?.id) {
+        const newId = id();
+        await query(
+          `INSERT INTO "public"."student_profiles" (id, "userId", "createdAt", "updatedAt")
+           VALUES ($1, $2, NOW(), NOW())
+           ON CONFLICT DO NOTHING`,
+          [newId, studentId]
+        );
+        const recheck = await query(
+          `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
+          [studentId]
+        );
+        return recheck.rows[0]?.id || null;
+      }
+      return null;
+    } catch (e) {
+      console.warn('resolveStudentProfileId notice:', e.message);
+      return null;
+    }
   }
 
   static async resetProgress(lessonId, studentId, role = 'STUDENT') {
@@ -600,15 +636,11 @@ export class InteractiveVideoModel {
 
     // Delete from public progress
     try {
-      const profile = await query(
-        `SELECT id FROM "public"."student_profiles" WHERE "userId" = $1 LIMIT 1`,
-        [studentId]
-      );
-      const sIds = [profile.rows[0]?.id, studentId].filter(Boolean);
-      for (const sId of sIds) {
+      const profId = await this.resolveStudentProfileId(studentId);
+      if (profId) {
         await query(
           `DELETE FROM "public"."progress" WHERE "studentId" = $1 AND "lessonId" = $2`,
-          [sId, lessonId]
+          [profId, lessonId]
         );
       }
     } catch (syncErr) {

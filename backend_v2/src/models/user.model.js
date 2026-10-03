@@ -144,7 +144,7 @@ export class UserModel {
    * Get student profile
    */
   static async getStudentProfile(userId) {
-    const res = await query(
+    let res = await query(
       `SELECT sp.*, 
               l.id AS "levelId", l.name AS "levelName", l.code AS "levelCode"
        FROM "public"."student_profiles" sp
@@ -153,6 +153,31 @@ export class UserModel {
       [userId]
     );
     
+    if (!res.rows[0]) {
+      try {
+        const u = await query(`SELECT id FROM "public"."users" WHERE id = $1 LIMIT 1`, [userId]);
+        if (u.rows[0]) {
+          const newId = crypto.randomUUID ? crypto.randomUUID() : `sp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+          await query(
+            `INSERT INTO "public"."student_profiles" (id, "userId", "createdAt", "updatedAt")
+             VALUES ($1, $2, NOW(), NOW())
+             ON CONFLICT DO NOTHING`,
+            [newId, userId]
+          );
+          res = await query(
+            `SELECT sp.*, 
+                    l.id AS "levelId", l.name AS "levelName", l.code AS "levelCode"
+             FROM "public"."student_profiles" sp
+             LEFT JOIN "public"."levels" l ON l.id = sp."levelId"
+             WHERE sp."userId" = $1 LIMIT 1`,
+            [userId]
+          );
+        }
+      } catch (e) {
+        // Fallback
+      }
+    }
+
     if (!res.rows[0]) return null;
     
     const profile = res.rows[0];
