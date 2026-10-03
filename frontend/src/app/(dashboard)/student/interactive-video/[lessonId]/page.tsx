@@ -23,6 +23,7 @@ export default function StudentInteractiveVideoPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [previewResource, setPreviewResource] = useState<LessonResource | null>(null);
+  const [showResourcesList, setShowResourcesList] = useState(false);
 
   const lastSavedPosRef = useRef<number>(-1);
   const saveTimeoutRef = useRef<any>(null);
@@ -106,7 +107,6 @@ export default function StudentInteractiveVideoPage() {
     router.push('/teacher/courses');
   };
 
-  const [showResourcesList, setShowResourcesList] = useState(false);
 
   if (error) {
     return (
