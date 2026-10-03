@@ -768,17 +768,67 @@ export function useLiveSession(sessionId: string) {
   }, [sessionId, isAudioMuted, isVideoOff]);
 
   /**
-   * Toggle Screen Sharing with shared tab/system audio
+   * Toggle Screen Sharing with shared tab/system audio (with complete mobile device support)
    */
   const toggleScreenShare = useCallback(async () => {
     try {
       if (isScreenSharingRef.current) {
         await stopScreenShare();
-      } else {
-        let screenStream: MediaStream | null = null;
+        return;
+      }
+
+      // Check browser support for getDisplayMedia
+      const mediaDevices = navigator.mediaDevices;
+      const getDisplayMedia =
+        mediaDevices && typeof mediaDevices.getDisplayMedia === 'function'
+          ? mediaDevices.getDisplayMedia.bind(mediaDevices)
+          : (navigator as any).getDisplayMedia
+          ? (navigator as any).getDisplayMedia.bind(navigator)
+          : null;
+
+      if (!getDisplayMedia) {
+        alert(
+          'Screen sharing is not supported by your browser. On iPhone/iPad, please use Safari (iOS 13+) or Chrome. On Android, please use Chrome.'
+        );
+        return;
+      }
+
+      const isMobile =
+        typeof navigator !== 'undefined' &&
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+
+      let screenStream: MediaStream | null = null;
+
+      if (isMobile) {
+        // Mobile browsers (iOS Safari, Android Chrome) strictly require { video: true }.
+        // Supplying audio constraints or cursor options triggers OverconstrainedError/TypeError on phones!
         try {
-          // Request display media with tab/system audio
-          screenStream = await navigator.mediaDevices.getDisplayMedia({
+          screenStream = await getDisplayMedia({
+            video: true,
+          });
+        } catch (mobileErr: any) {
+          if (
+            mobileErr.name === 'NotAllowedError' ||
+            mobileErr.name === 'AbortError' ||
+            mobileErr.message?.includes('Permission denied') ||
+            mobileErr.message?.includes('cancelled')
+          ) {
+            return;
+          }
+          console.error('Mobile screen share error:', mobileErr);
+          alert(
+            `Unable to start screen share: ${
+              mobileErr.message || 'Permission denied or not supported by this mobile browser'
+            }`
+          );
+          return;
+        }
+      } else {
+        // Desktop browsers: attempt with system/tab audio capture first
+        try {
+          screenStream = await getDisplayMedia({
             video: {
               cursor: 'always',
             } as any,
@@ -789,27 +839,33 @@ export function useLiveSession(sessionId: string) {
             } as any,
           });
         } catch (err: any) {
-          // If the user cancelled the prompt, cleanly return
-          if (err.name === 'NotAllowedError' || err.name === 'AbortError' || err.message?.includes('Permission denied')) {
+          if (
+            err.name === 'NotAllowedError' ||
+            err.name === 'AbortError' ||
+            err.message?.includes('Permission denied')
+          ) {
             return;
           }
-          // Fallback attempt with simple audio: true or video only
+          // Desktop fallback: video only
           try {
-            screenStream = await navigator.mediaDevices.getDisplayMedia({
+            screenStream = await getDisplayMedia({
               video: true,
-              audio: true,
             });
           } catch (err2: any) {
-            if (err2.name === 'NotAllowedError' || err2.name === 'AbortError' || err2.message?.includes('Permission denied')) {
+            if (
+              err2.name === 'NotAllowedError' ||
+              err2.name === 'AbortError' ||
+              err2.message?.includes('Permission denied')
+            ) {
               return;
             }
-            screenStream = await navigator.mediaDevices.getDisplayMedia({
-              video: true,
-            });
+            console.error('Desktop screen share fallback error:', err2);
+            return;
           }
         }
+      }
 
-        if (!screenStream) return;
+      if (!screenStream) return;
 
         screenStreamRef.current = screenStream;
         const screenVideoTrack = screenStream.getVideoTracks()[0];
@@ -905,7 +961,6 @@ export function useLiveSession(sessionId: string) {
             isScreenSharing: true,
           });
         }
-      }
     } catch (err: any) {
       console.warn('Screen share toggle cancelled or failed:', err.message);
     }

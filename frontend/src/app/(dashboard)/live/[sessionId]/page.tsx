@@ -260,8 +260,8 @@ export default function LiveSessionRoomPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white overflow-hidden select-none">
-      {/* ─── Minimalist Floating Top Overlay (Removed bulky header - Google Meet experience) ─── */}
-      <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between pointer-events-none">
+      {/* ─── Minimalist Top Header (Cleanly separated on mobile, floating on desktop) ─── */}
+      <header className="h-12 sm:h-14 shrink-0 px-3 sm:px-4 flex items-center justify-between z-30 bg-slate-950/90 sm:bg-transparent backdrop-blur-md border-b border-slate-800/60 sm:border-none sm:absolute sm:top-3 sm:left-3 sm:right-3 sm:pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
           <button
             onClick={() => {
@@ -270,32 +270,42 @@ export default function LiveSessionRoomPage() {
               }
             }}
             title="Leave session"
-            className="h-9 w-9 rounded-full bg-slate-900/80 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-slate-800 transition-colors shadow-lg"
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-slate-900/80 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-slate-800 transition-colors shadow-lg"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-white/10 backdrop-blur-md text-xs font-semibold text-white shadow-lg">
+          <div className="flex items-center gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-slate-900/80 border border-white/10 backdrop-blur-md text-xs font-semibold text-white shadow-lg">
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
             </span>
-            <span className="font-bold truncate max-w-[140px] sm:max-w-xs">
+            <span className="font-bold truncate max-w-[130px] sm:max-w-xs">
               {session?.title || 'Team meeting'}
             </span>
-            <span className="text-slate-400">({totalParticipants})</span>
+            <span className="text-slate-400 text-[11px] sm:text-xs">({totalParticipants})</span>
           </div>
         </div>
-      </div>
+
+        {/* Presenter Pill Badge in Header on Mobile */}
+        {isAnyScreenShared && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600/20 border border-blue-500/40 text-[11px] font-semibold text-blue-200 pointer-events-auto">
+            <ScreenShare className="h-3 w-3 text-blue-400" />
+            <span className="truncate max-w-[120px] sm:max-w-none">
+              {isScreenSharing ? 'You presenting' : `${sharedRemotePeer?.firstName || 'Screen'} sharing`}
+            </span>
+          </div>
+        )}
+      </header>
 
       {/* ─── Main Room Stage ──────────────────────────────────────────────── */}
-      <div className="relative flex-1 flex flex-col sm:flex-row overflow-hidden pt-12 sm:pt-0">
+      <div className="relative flex-1 flex flex-col sm:flex-row overflow-hidden sm:pt-14">
         {/* Stage Content */}
         {isAnyScreenShared ? (
           /* Presentation Screen Share Layout (Desktop Side-by-Side as in Image 1, Mobile Stacking) */
-          <div className="flex-1 flex flex-col md:flex-row h-full w-full gap-3 p-2 sm:p-3 overflow-hidden">
+          <div className="flex-1 flex flex-col md:flex-row h-full w-full gap-2 sm:gap-3 p-1.5 sm:p-3 overflow-hidden">
             {/* 1. Large Presentation View */}
-            <div className="flex-1 min-w-0 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex items-center justify-center relative h-full">
+            <div className="flex-1 min-w-0 bg-black rounded-xl sm:rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex items-center justify-center relative h-full">
               {isScreenSharing ? (
                 <ScreenSharePlayer stream={screenStream || localStream} />
               ) : (
@@ -310,8 +320,8 @@ export default function LiveSessionRoomPage() {
                 )
               )}
 
-              {/* Presenter Pill Badge (Google Meet style in Image 1) */}
-              <div className="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/85 border border-white/10 backdrop-blur-md text-xs font-semibold text-white shadow-xl pointer-events-none">
+              {/* Presenter Pill Badge (Google Meet style on Desktop) */}
+              <div className="hidden sm:flex absolute top-3 left-3 z-20 items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/85 border border-white/10 backdrop-blur-md text-xs font-semibold text-white shadow-xl pointer-events-none">
                 <div className="h-5 w-5 rounded-full bg-[#006EF3] flex items-center justify-center text-[10px] font-bold">
                   {isScreenSharing ? (user?.firstName?.[0] || 'Y') : (sharedRemotePeer?.firstName?.[0] || 'P')}
                 </div>
@@ -346,16 +356,16 @@ export default function LiveSessionRoomPage() {
             </div>
 
             {/* 3. Mobile Horizontal Participant Strip */}
-            <div className="md:hidden h-28 shrink-0 flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+            <div className="md:hidden h-24 shrink-0 flex gap-2 overflow-x-auto py-1 px-1 custom-scrollbar">
               {!isScreenSharing && (
-                <div className="w-36 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+                <div className="w-32 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
                   {renderLocalVideoTile(true)}
                 </div>
               )}
               {sortedRemotePeers
                 .filter((p) => p.socketId !== sharedRemotePeer?.socketId)
                 .map((peer) => (
-                  <div key={peer.socketId} className="w-36 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+                  <div key={peer.socketId} className="w-32 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
                     <RemoteVideoTile
                       peer={peer}
                       isTeacherViewer={isTeacher}
@@ -636,8 +646,8 @@ export default function LiveSessionRoomPage() {
       )}
 
       {/* ─── Bottom Floating Control Dock (Google Meet style) ──────────────── */}
-      <footer className="h-16 sm:h-20 shrink-0 bg-slate-950/95 border-t border-slate-800/80 px-3 sm:px-6 flex items-center justify-between backdrop-blur-md z-30">
-        {/* Left: Meeting Title */}
+      <footer className="h-16 sm:h-20 shrink-0 bg-slate-950/95 border-t border-slate-800/80 px-2 sm:px-6 flex items-center justify-between backdrop-blur-md z-30 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        {/* Left: Meeting Title (Desktop only) */}
         <div className="hidden md:flex items-center gap-2.5 text-xs text-slate-300 min-w-0 max-w-[200px] truncate">
           <span className="font-bold text-white truncate">{session?.title || 'Team meeting'}</span>
           <span className="text-slate-600">|</span>
@@ -647,13 +657,13 @@ export default function LiveSessionRoomPage() {
           </span>
         </div>
 
-        {/* Center: Core Controls */}
-        <div className="flex items-center gap-2 sm:gap-3 mx-auto">
+        {/* Center: Core Controls (Optimized for Mobile & Desktop) */}
+        <div className="flex items-center gap-1.5 sm:gap-3 mx-auto">
           {/* Mic */}
           <button
             onClick={toggleAudio}
             title={isAudioMuted ? 'Unmute Microphone' : 'Mute Microphone'}
-            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all ${
+            className={`h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-full flex items-center justify-center transition-all ${
               isAudioMuted
                 ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
@@ -666,7 +676,7 @@ export default function LiveSessionRoomPage() {
           <button
             onClick={toggleVideo}
             title={isVideoOff ? 'Turn Video On' : 'Turn Video Off'}
-            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all ${
+            className={`h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-full flex items-center justify-center transition-all ${
               isVideoOff
                 ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
@@ -675,11 +685,11 @@ export default function LiveSessionRoomPage() {
             {isVideoOff ? <VideoOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <VideoIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
           </button>
 
-          {/* Screen Share (With shared tab/system audio) */}
+          {/* Screen Share (With phone screen sharing support) */}
           <button
             onClick={toggleScreenShare}
-            title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen (includes tab audio)'}
-            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all ${
+            title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen (works on phone & PC)'}
+            className={`h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-full flex items-center justify-center transition-all ${
               isScreenSharing
                 ? 'bg-[#006EF3] text-white shadow-lg shadow-blue-600/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
@@ -697,7 +707,7 @@ export default function LiveSessionRoomPage() {
               }
             }}
             title={isHandRaised ? 'Lower Hand (✋ Raised)' : 'Raise Hand'}
-            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all ${
+            className={`h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-full flex items-center justify-center transition-all ${
               isHandRaised
                 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-lg shadow-amber-500/30 ring-2 ring-amber-300 ring-offset-2 ring-offset-slate-900 animate-pulse'
                 : 'bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700'
@@ -706,11 +716,11 @@ export default function LiveSessionRoomPage() {
             <Hand className={`h-4 w-4 sm:h-5 sm:w-5 ${isHandRaised ? 'fill-slate-950 text-slate-950' : ''}`} />
           </button>
           
-          {/* Reaction Button (Toggles Upper Rower) */}
+          {/* Reaction Button */}
           <button
             onClick={() => setShowReactionPicker((prev) => !prev)}
             title="Choose Reaction"
-            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center transition-all border ${
+            className={`h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-full flex items-center justify-center transition-all border ${
               showReactionPicker
                 ? 'bg-[#006EF3] text-white border-[#006EF3]'
                 : 'bg-slate-800 hover:bg-slate-700 text-pink-400 border-slate-700'
@@ -727,7 +737,8 @@ export default function LiveSessionRoomPage() {
                   endSession();
                 }
               }}
-              className="h-10 sm:h-12 px-4 sm:px-6 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30"
+              className="h-9 w-9 sm:h-12 sm:w-auto p-0 sm:px-6 shrink-0 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30 flex items-center justify-center"
+              title="End Session"
             >
               <PhoneOff className="h-4 w-4" />
               <span className="hidden sm:inline">End Session</span>
@@ -739,23 +750,22 @@ export default function LiveSessionRoomPage() {
                   router.push('/student');
                 }
               }}
-              className="h-10 sm:h-12 px-4 sm:px-6 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30"
+              className="h-9 w-9 sm:h-12 sm:w-auto p-0 sm:px-6 shrink-0 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold gap-2 shadow-lg shadow-red-600/30 flex items-center justify-center"
+              title="Leave"
             >
               <PhoneOff className="h-4 w-4" />
               <span className="hidden sm:inline">Leave</span>
             </Button>
           )}
-        </div>
 
-        {/* Right: Drawer Toggles */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Drawer Toggles (Integrated in dock row for compact mobile use) */}
           <button
             onClick={() => {
               setShowParticipantsDrawer(false);
               setShowChatDrawer(!showChatDrawer);
             }}
             title="Chat"
-            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+            className={`h-9 w-9 sm:h-10 sm:w-auto sm:px-3 sm:py-1.5 shrink-0 rounded-full text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
               showChatDrawer
                 ? 'bg-[#006EF3] border-[#006EF3] text-white'
                 : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
@@ -763,8 +773,9 @@ export default function LiveSessionRoomPage() {
           >
             <MessageSquare className="h-4 w-4" />
             {chatMessages.length > 0 && (
-              <span className="h-2 w-2 rounded-full bg-blue-400" />
+              <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-blue-400" />
             )}
+            <span className="hidden sm:inline">Chat</span>
           </button>
 
           <button
@@ -773,20 +784,23 @@ export default function LiveSessionRoomPage() {
               setShowParticipantsDrawer(!showParticipantsDrawer);
             }}
             title="Participants"
-            className={`p-2 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5 ${
+            className={`h-9 w-9 sm:h-10 sm:w-auto sm:px-3 sm:py-1.5 shrink-0 rounded-full text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
               showParticipantsDrawer
                 ? 'bg-[#006EF3] border-[#006EF3] text-white'
                 : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
             }`}
           >
             <Users className="h-4 w-4" />
-            <span className="text-xs">{totalParticipants}</span>
+            <span className="text-[11px] sm:text-xs">{totalParticipants}</span>
           </button>
+        </div>
 
+        {/* Right: Fullscreen (Desktop only) */}
+        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-            className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors hidden sm:flex items-center justify-center"
+            className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors flex items-center justify-center"
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
@@ -1028,7 +1042,7 @@ function ScreenSharePlayer({ stream }: { stream: MediaStream | null }) {
       autoPlay
       playsInline
       muted
-      className="w-full h-full object-contain"
+      className="w-full h-full object-contain bg-black"
     />
   );
 }
@@ -1171,7 +1185,9 @@ function RemoteVideoTile({
         ref={attachVideo}
         autoPlay
         playsInline
-        className={`w-full h-full object-cover transition-opacity duration-300 ${
+        className={`w-full h-full ${
+          isLarge || peer.isScreenSharing ? 'object-contain bg-black' : 'object-cover'
+        } transition-opacity duration-300 ${
           hasVideoTrack ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
         }`}
       />
@@ -1211,17 +1227,19 @@ function RemoteVideoTile({
         </div>
       )}
 
-      {/* Participant Name Tag */}
-      <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold border border-white/10">
-        <span className="text-white">
-          {peer.firstName} {peer.lastName}
-        </span>
-        {peer.isTeacher && (
-          <span className="px-1.5 py-0.2 rounded text-[10px] font-black bg-[#F5B400] text-[#012970]">
-            TEACHER
+      {/* Participant Name Tag (hidden in large presentation view so it doesn't cover documents) */}
+      {!isLarge && (
+        <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold border border-white/10">
+          <span className="text-white">
+            {peer.firstName} {peer.lastName}
           </span>
-        )}
-      </div>
+          {peer.isTeacher && (
+            <span className="px-1.5 py-0.2 rounded text-[10px] font-black bg-[#F5B400] text-[#012970]">
+              TEACHER
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="absolute top-3 right-3 flex items-center gap-1.5">
         {peer.isAudioMuted && (
