@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Mic,
   MicOff,
@@ -26,6 +27,13 @@ import {
   MessageSquare,
   Send,
   ArrowLeft,
+  Calendar,
+  Clock,
+  UserCheck,
+  GraduationCap,
+  Copy,
+  Check,
+  Award,
 } from 'lucide-react';
 import { useLiveSession, ParticipantMedia } from '@/lib/use-live-session';
 import { Button } from '@/components/ui/button';
@@ -186,25 +194,12 @@ export default function LiveSessionRoomPage() {
   // If session ended
   if (isEnded) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4 text-white">
-        <div className="max-w-md w-full p-6 rounded-2xl bg-slate-900 border border-blue-500/40 text-center space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
-          <div className="h-14 w-14 rounded-full bg-blue-500/20 text-[#006EF3] mx-auto flex items-center justify-center">
-            <CheckCircle2 className="h-7 w-7 text-[#F5B400]" />
-          </div>
-          <h2 className="text-xl font-bold text-white">Live Session Concluded</h2>
-          <p className="text-sm text-slate-400">
-            {isTeacher
-              ? 'You have ended this live session. Participant attendance and session duration have been stored.'
-              : 'The teacher has concluded this live session. Thank you for attending!'}
-          </p>
-          <Button
-            onClick={() => router.push(user?.role === 'TEACHER' ? '/teacher' : '/student')}
-            className="w-full bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold"
-          >
-            Return to Dashboard
-          </Button>
-        </div>
-      </div>
+      <LiveSessionSummaryView
+        session={session}
+        isTeacher={isTeacher}
+        user={user}
+        onReturn={() => router.push(user?.role === 'TEACHER' ? '/teacher/live-sessions' : '/student/live-sessions')}
+      />
     );
   }
 
@@ -1320,6 +1315,384 @@ function RemoteVideoTile({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Rich Live Session Concluded & Summary Dashboard View
+ */
+function LiveSessionSummaryView({
+  session,
+  isTeacher,
+  user,
+  onReturn,
+}: {
+  session: any;
+  isTeacher: boolean;
+  user: any;
+  onReturn: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyId = () => {
+    if (session?.id) {
+      navigator.clipboard.writeText(session.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const started = session?.startedAt ? new Date(session.startedAt) : null;
+  const ended = session?.endedAt ? new Date(session.endedAt) : null;
+
+  const durationText = (() => {
+    if (!started || !ended) return 'Completed';
+    const diffSec = Math.max(0, Math.floor((ended.getTime() - started.getTime()) / 1000));
+    const mins = Math.floor(diffSec / 60);
+    const secs = diffSec % 60;
+    if (mins === 0) return `${secs}s`;
+    if (secs === 0) return `${mins}m`;
+    return `${mins}m ${secs}s`;
+  })();
+
+  const participants = session?.participants || [];
+  const attendedCount = participants.filter(
+    (p: any) => p.status === 'JOINED' || p.status === 'LEFT' || p.joinedAt
+  ).length;
+  const totalInvited = participants.length;
+  const attendanceRate = totalInvited > 0 ? Math.round((attendedCount / totalInvited) * 100) : 100;
+
+  const formatTime = (ts?: string) => {
+    if (!ts) return '—';
+    try {
+      return new Date(ts).toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+    } catch {
+      return '—';
+    }
+  };
+
+  const formatDate = (ts?: string) => {
+    if (!ts) return '—';
+    try {
+      return new Date(ts).toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return '—';
+    }
+  };
+
+  const formatParticipantDuration = (joinedAt?: string, leftAt?: string) => {
+    if (!joinedAt) return '—';
+    const jTime = new Date(joinedAt).getTime();
+    const lTime = leftAt ? new Date(leftAt).getTime() : (ended?.getTime() || Date.now());
+    const diffSec = Math.max(0, Math.floor((lTime - jTime) / 1000));
+    const mins = Math.floor(diffSec / 60);
+    const secs = diffSec % 60;
+    if (mins === 0) return `${secs}s`;
+    return `${mins}m ${secs}s`;
+  };
+
+  const returnUrl = isTeacher ? '/teacher/live-sessions' : '/student/live-sessions';
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-slate-100 flex flex-col">
+      {/* Top Header Bar */}
+      <header className="sticky top-0 z-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link
+            href={returnUrl}
+            className="flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors py-1.5 px-3 rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Live Sessions</span>
+          </Link>
+          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs px-2.5 py-0.5 font-bold">
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+              SESSION CONCLUDED
+            </Badge>
+            <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs px-2.5 py-0.5">
+              {session?.type === 'ONE_ON_ONE' ? '1-on-1 Class' : 'Group Class'}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCopyId}
+            className="h-8 text-xs border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 mr-1 text-emerald-400" />
+                <span>Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                <span className="hidden sm:inline">Copy ID</span>
+              </>
+            )}
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={onReturn}
+            className="h-8 text-xs bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold"
+          >
+            Dashboard
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-5xl w-full mx-auto p-6 md:p-10 space-y-8 animate-in fade-in-50 duration-300">
+        {/* Hero Card */}
+        <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 p-6 md:p-8 shadow-2xl">
+          <div className="absolute top-0 right-0 -mt-12 -mr-12 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 -mb-12 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#006EF3]">
+                  Live Class Report
+                </span>
+                <span className="text-slate-600">•</span>
+                <span className="text-xs text-slate-400">{formatDate(session?.scheduledAt)}</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                {session?.title || 'Interactive Live Class'}
+              </h1>
+              {session?.topic ? (
+                <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                  {session.topic}
+                </p>
+              ) : (
+                <p className="text-xs text-slate-400 italic">
+                  No specific topic agenda noted for this session.
+                </p>
+              )}
+            </div>
+
+            {/* Teacher Card */}
+            {session?.teacher && (
+              <div className="shrink-0 flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600/20 text-[#006EF3] font-black text-base border border-blue-500/30">
+                  {session.teacher.firstName?.charAt(0) || 'T'}
+                  {session.teacher.lastName?.charAt(0) || ''}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      Instructor
+                    </span>
+                    <GraduationCap className="h-3.5 w-3.5 text-blue-400" />
+                  </div>
+                  <p className="text-sm font-bold text-white">
+                    {session.teacher.firstName} {session.teacher.lastName}
+                  </p>
+                  <p className="text-[11px] text-slate-400">{session.teacher.email}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 4 KPI Metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Duration */}
+          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-wider">Duration</span>
+              <Clock className="h-4 w-4 text-amber-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-white">{durationText}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Active call time</p>
+            </div>
+          </div>
+
+          {/* Attendance */}
+          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-wider">Attendance</span>
+              <UserCheck className="h-4 w-4 text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-black text-white">
+                {attendedCount} / {totalInvited}
+              </p>
+              <p className="text-[11px] text-emerald-400 font-semibold mt-0.5">
+                {attendanceRate}% Participation
+              </p>
+            </div>
+          </div>
+
+          {/* Started At */}
+          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-wider">Started</span>
+              <Calendar className="h-4 w-4 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white truncate">
+                {formatTime(session?.startedAt)}
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                {formatDate(session?.startedAt)}
+              </p>
+            </div>
+          </div>
+
+          {/* Ended At */}
+          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-wider">Concluded</span>
+              <CheckCircle2 className="h-4 w-4 text-indigo-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white truncate">
+                {formatTime(session?.endedAt)}
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                {formatDate(session?.endedAt)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Participants Table Card */}
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
+          <div className="p-5 md:p-6 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-blue-500/10 text-[#006EF3] flex items-center justify-center font-bold">
+                <Users className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Student Attendance & Activity</h3>
+                <p className="text-xs text-slate-400">
+                  Detailed check-in, checkout, and call duration records
+                </p>
+              </div>
+            </div>
+
+            <Badge variant="outline" className="border-slate-800 text-slate-400 text-xs">
+              {totalInvited} {totalInvited === 1 ? 'Student' : 'Students'}
+            </Badge>
+          </div>
+
+          {participants.length === 0 ? (
+            <div className="p-12 text-center text-slate-500 text-sm">
+              No participants recorded for this session.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-800/80 bg-slate-950/40 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="py-3.5 px-6">Student</th>
+                    <th className="py-3.5 px-6">Status</th>
+                    <th className="py-3.5 px-6">Joined Time</th>
+                    <th className="py-3.5 px-6">Left Time</th>
+                    <th className="py-3.5 px-6 text-right">Time in Call</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {participants.map((p: any) => {
+                    const attended = p.status === 'JOINED' || p.status === 'LEFT' || p.joinedAt;
+                    return (
+                      <tr key={p.participantId || p.studentId} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-slate-800 text-blue-400 font-bold flex items-center justify-center text-xs border border-slate-700">
+                              {p.firstName?.charAt(0) || 'S'}
+                              {p.lastName?.charAt(0) || ''}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-white">
+                                {p.firstName} {p.lastName}
+                              </p>
+                              <p className="text-[11px] text-slate-400">{p.email}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-6">
+                          {attended ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Attended
+                            </span>
+                          ) : p.status === 'REMOVED' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              <UserX className="h-3 w-3" />
+                              Removed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                              Absent
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-4 px-6 text-xs text-slate-300">
+                          {formatTime(p.joinedAt)}
+                        </td>
+
+                        <td className="py-4 px-6 text-xs text-slate-300">
+                          {formatTime(p.leftAt)}
+                        </td>
+
+                        <td className="py-4 px-6 text-xs font-semibold text-right text-white">
+                          {formatParticipantDuration(p.joinedAt, p.leftAt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
+          <p className="text-xs text-slate-500">
+            Session ID: <code className="text-slate-400 font-mono">{session?.id}</code>
+          </p>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Link href={returnUrl} className="w-full sm:w-auto">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto text-xs border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800"
+              >
+                Return to Live Sessions
+              </Button>
+            </Link>
+
+            <Button
+              onClick={onReturn}
+              className="w-full sm:w-auto text-xs bg-[#006EF3] hover:bg-[#0057c2] text-white font-bold"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

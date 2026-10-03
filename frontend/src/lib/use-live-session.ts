@@ -50,6 +50,8 @@ export interface LiveSessionData {
     participantId: string;
     studentId: string;
     status: 'INVITED' | 'JOINED' | 'LEFT' | 'REMOVED';
+    joinedAt?: string;
+    leftAt?: string;
     firstName: string;
     lastName: string;
     email: string;
