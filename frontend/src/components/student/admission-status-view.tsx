@@ -374,7 +374,22 @@ export function AdmissionStatusView({
                 <div>
                   <p className="font-bold text-[#012970] dark:text-slate-200">Have questions regarding your application?</p>
                   <p className="text-slate-500">
-                    Contact the admissions office at <strong className="text-[#006EF3] dark:text-blue-400">admissions@linguachris.com</strong> or via WhatsApp at <strong className="text-[#006EF3] dark:text-blue-400">+250 788 123 456</strong>.
+                    Contact the admissions office at{' '}
+                    <a
+                      href="mailto:linguachrisltd@gmail.com"
+                      className="font-bold text-[#006EF3] dark:text-blue-400 hover:underline"
+                    >
+                      linguachrisltd@gmail.com
+                    </a>{' '}
+                    or via WhatsApp at{' '}
+                    <a
+                      href="https://wa.me/250782572028"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-[#006EF3] dark:text-blue-400 hover:underline"
+                    >
+                      +250 782 572 028
+                    </a>.
                   </p>
                 </div>
               </div>
@@ -430,7 +445,14 @@ export function AdmissionStatusView({
               <div>
                 <p className="font-bold text-slate-800 dark:text-slate-200">Want to appeal or resubmit?</p>
                 <p className="text-slate-500">
-                  Please contact the teaching coordinator at <strong className="text-slate-700 dark:text-slate-300">support@linguachris.com</strong> with your application email.
+                  Please contact the teaching coordinator at{' '}
+                  <a
+                    href="mailto:linguachrisltd@gmail.com"
+                    className="font-bold text-slate-700 dark:text-slate-300 hover:underline"
+                  >
+                    linguachrisltd@gmail.com
+                  </a>{' '}
+                  with your application email.
                 </p>
               </div>
             </div>

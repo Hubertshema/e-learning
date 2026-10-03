@@ -4,9 +4,47 @@ import { CourseController } from '../controllers/course.controller.js';
 import { CertificateModel } from '../models/certificate.model.js';
 import { ContactModel } from '../models/contact.model.js';
 import { emailService } from '../services/email.service.js';
+import { query } from '../config/database.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 
 const router = Router();
+
+// Public Platform Statistics (Real DB Counts)
+router.get('/stats', async (req, res, next) => {
+  try {
+    const [enrollRes, courseRes, lessonRes] = await Promise.all([
+      query(`
+        SELECT COUNT(DISTINCT COALESCE(e."studentId", sp."userId", sp.id)) as count
+        FROM "public"."enrollments" e
+        LEFT JOIN "public"."student_profiles" sp ON (sp.id = e."studentId" OR sp."userId" = e."studentId")
+      `),
+      query(`SELECT COUNT(*) as count FROM "public"."courses" WHERE "isPublished" = true`),
+      query(`SELECT COUNT(*) as count FROM "public"."lessons"`),
+    ]);
+
+    let enrolledStudents = parseInt(enrollRes.rows[0]?.count || 0, 10);
+    if (!enrolledStudents) {
+      const stuRes = await query(`SELECT COUNT(*) as count FROM "public"."users" WHERE role = 'STUDENT'`);
+      enrolledStudents = parseInt(stuRes.rows[0]?.count || 0, 10);
+    }
+
+    let coursesCount = parseInt(courseRes.rows[0]?.count || 0, 10);
+    if (!coursesCount) {
+      const allCourseRes = await query(`SELECT COUNT(*) as count FROM "public"."courses"`);
+      coursesCount = parseInt(allCourseRes.rows[0]?.count || 0, 10);
+    }
+
+    const lessonsCount = parseInt(lessonRes.rows[0]?.count || 0, 10);
+
+    return sendSuccess(res, {
+      enrolledStudents,
+      courses: coursesCount,
+      lessons: lessonsCount,
+    }, 'Public platform statistics retrieved successfully');
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Public Diagnostic Placement Quiz & Captcha
 router.get('/captcha', DiagnosticController.getCaptcha);

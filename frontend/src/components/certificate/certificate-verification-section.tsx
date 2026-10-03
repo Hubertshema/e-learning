@@ -157,25 +157,6 @@ export function CertificateVerificationSection() {
               )}
             </Button>
           </form>
-
-          {/* Quick Demo Chips */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] text-[#667085]">
-            <span className="font-medium text-[#172033]">Quick Test:</span>
-            <button
-              type="button"
-              onClick={() => handleVerify('FE-2026-6NEW')}
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white border border-[#E2E8F0] text-[#006EF3] font-mono font-bold hover:bg-[#F3F7FC] hover:border-[#006EF3]/40 transition shadow-2xs"
-            >
-              FE-2026-6NEW
-            </button>
-            <button
-              type="button"
-              onClick={() => handleVerify('FE-2026-GB0M')}
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white border border-[#E2E8F0] text-[#006EF3] font-mono font-bold hover:bg-[#F3F7FC] hover:border-[#006EF3]/40 transition shadow-2xs"
-            >
-              FE-2026-GB0M
-            </button>
-          </div>
         </div>
 
         {/* Verification Results Display */}

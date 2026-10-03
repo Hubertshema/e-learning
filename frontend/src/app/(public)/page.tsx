@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,6 +28,44 @@ import {
 } from 'lucide-react';
 import { CertificateVerificationSection } from '@/components/certificate/certificate-verification-section';
 import { VocabularyWidget } from '@/components/public/vocabulary-widget';
+import { apiClient } from '@/lib/api-client';
+
+function CountUpNumber({ end, duration = 1800, suffix = '' }: { end: number; duration?: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (end <= 0) {
+      setCount(0);
+      return;
+    }
+    let startTimestamp: number | null = null;
+    let animationFrameId: number;
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const elapsed = timestamp - startTimestamp;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic: 1 - (1 - t)^3
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(easeOut * end));
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      } else {
+        setCount(end);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [end, duration]);
+
+  return (
+    <span>
+      {count.toLocaleString()}{suffix}
+    </span>
+  );
+}
 
 export default function HomePage() {
   // 1. Interactive Flashcard Demo State
@@ -35,6 +73,37 @@ export default function HomePage() {
 
   // 2. Interactive CEFR Level Tab State
   const [activeLevelIndex, setActiveLevelIndex] = useState(3); // Default B1
+
+  // 3. Dynamic Real DB Platform Stats
+  const [platformStats, setPlatformStats] = useState({
+    enrolledStudents: 33,
+    courses: 8,
+    lessons: 4,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    apiClient
+      .get<any>('/public/stats')
+      .then((res) => {
+        if (!isMounted) return;
+        const data = res?.data || res;
+        if (data && typeof data === 'object') {
+          setPlatformStats({
+            enrolledStudents: Number(data.enrolledStudents) || 33,
+            courses: Number(data.courses) || 8,
+            lessons: Number(data.lessons) || 4,
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load dynamic platform statistics:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Text to Speech Audio Helper
   const playTts = (text: string) => {
@@ -470,19 +539,25 @@ export default function HomePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
               <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
                 <Users className="h-8 w-8 text-[#006EF3] mb-3" />
-                <span className="text-3xl font-black text-[#172033]">12.5K+</span>
+                <span className="text-3xl font-black text-[#172033]">
+                  <CountUpNumber end={platformStats.enrolledStudents} suffix="+" />
+                </span>
                 <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Enrolled Students</span>
               </Card>
               
               <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
                 <BookOpen className="h-8 w-8 text-[#006EF3] mb-3" />
-                <span className="text-3xl font-black text-[#172033]">45</span>
+                <span className="text-3xl font-black text-[#172033]">
+                  <CountUpNumber end={platformStats.courses} />
+                </span>
                 <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Courses</span>
               </Card>
               
               <Card className="p-6 border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center text-center">
                 <FileCheck className="h-8 w-8 text-[#006EF3] mb-3" />
-                <span className="text-3xl font-black text-[#172033]">1,200+</span>
+                <span className="text-3xl font-black text-[#172033]">
+                  <CountUpNumber end={platformStats.lessons} suffix="+" />
+                </span>
                 <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider mt-1">Lessons</span>
               </Card>
             </div>
