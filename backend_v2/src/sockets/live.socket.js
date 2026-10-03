@@ -98,6 +98,7 @@ export function registerLiveSessionHandlers(io, socket) {
         isTeacher: access.isTeacher,
         isAudioMuted: false,
         isVideoOff: false,
+        isHandRaised: false,
       };
 
       // Get list of existing peers in the room before adding the new one
@@ -189,6 +190,40 @@ export function registerLiveSessionHandlers(io, socket) {
       userId: socket.user?.id,
       firstName: socket.user?.firstName,
       reaction,
+    });
+  });
+
+  /**
+   * Toggle Hand Raise (persists until lowered like Google Meet)
+   */
+  socket.on('live:hand-toggle', ({ sessionId, isHandRaised, targetUserId }) => {
+    if (!sessionId) return;
+    const roomMap = activeRooms.get(sessionId);
+    const roomName = `room:live-session:${sessionId}`;
+
+    let affectedUserId = socket.user?.id;
+    let affectedSocketId = socket.id;
+
+    if (targetUserId && roomMap) {
+      for (const [sId, p] of roomMap.entries()) {
+        if (p.userId === targetUserId) {
+          p.isHandRaised = Boolean(isHandRaised);
+          affectedUserId = targetUserId;
+          affectedSocketId = sId;
+          break;
+        }
+      }
+    } else if (roomMap && roomMap.has(socket.id)) {
+      const p = roomMap.get(socket.id);
+      p.isHandRaised = Boolean(isHandRaised);
+    }
+
+    io.to(roomName).emit('live:hand-toggled', {
+      socketId: affectedSocketId,
+      userId: affectedUserId,
+      isHandRaised: Boolean(isHandRaised),
+      firstName: socket.user?.firstName,
+      lastName: socket.user?.lastName,
     });
   });
 

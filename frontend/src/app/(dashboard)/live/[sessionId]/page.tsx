@@ -33,6 +33,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/auth-context';
 
+interface FloatingParticle {
+  id: string;
+  emoji: string;
+  left: number;
+  bottom: number;
+  size: number;
+  duration: number;
+  delay: number;
+  swayMid: number;
+  swayEnd: number;
+}
+
 export default function LiveSessionRoomPage() {
   const params = useParams();
   const router = useRouter();
@@ -51,6 +63,8 @@ export default function LiveSessionRoomPage() {
     isAudioMuted,
     isVideoOff,
     isScreenSharing,
+    isHandRaised,
+    toggleHandRaise,
     toggleAudio,
     toggleVideo,
     toggleScreenShare,
@@ -64,12 +78,67 @@ export default function LiveSessionRoomPage() {
 
   const [showParticipantsDrawer, setShowParticipantsDrawer] = useState(false);
   const [showChatDrawer, setShowChatDrawer] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [floatingParticles, setFloatingParticles] = useState<FloatingParticle[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [studentToKick, setStudentToKick] = useState<ParticipantMedia | null>(null);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const reactionPickerRef = useRef<HTMLDivElement>(null);
+
+  // Quick floating emojis spawner (stream upward rapidly)
+  const spawnFloatingEmojis = (emoji: string, count = 8) => {
+    const newParticles: FloatingParticle[] = [];
+    const baseLeft = 52 + (Math.random() * 24 - 12);
+    for (let i = 0; i < count; i++) {
+      newParticles.push({
+        id: `${Date.now()}-${i}-${Math.random()}`,
+        emoji,
+        left: Math.max(6, Math.min(94, baseLeft + (Math.random() * 24 - 12))),
+        bottom: 75 + Math.random() * 25,
+        size: 20 + Math.floor(Math.random() * 8), // small 20px - 28px
+        duration: 1.1 + Math.random() * 0.45, // fast: 1.1s - 1.55s
+        delay: i * 0.045,
+        swayMid: (Math.random() - 0.5) * 45,
+        swayEnd: (Math.random() - 0.5) * 85,
+      });
+    }
+
+    setFloatingParticles((prev) => [...prev, ...newParticles]);
+
+    setTimeout(() => {
+      setFloatingParticles((prev) =>
+        prev.filter((p) => !newParticles.find((np) => np.id === p.id))
+      );
+    }, 2200);
+  };
+
+  // Trigger floating emojis whenever an incoming reaction is received
+  useEffect(() => {
+    if (activeReaction?.emoji) {
+      spawnFloatingEmojis(activeReaction.emoji, 8);
+    }
+  }, [activeReaction?.id]);
+
+  // Close reaction picker on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        reactionPickerRef.current &&
+        !reactionPickerRef.current.contains(event.target as Node)
+      ) {
+        setShowReactionPicker(false);
+      }
+    }
+    if (showReactionPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showReactionPicker]);
 
   // Attach local stream to local video element
   useEffect(() => {
@@ -271,100 +340,143 @@ export default function LiveSessionRoomPage() {
                 {isScreenSharing ? (
                   <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
                 ) : (
-                  sharedRemotePeer && <RemoteVideoTile peer={sharedRemotePeer} isTeacherViewer={isTeacher} onKick={() => setStudentToKick(sharedRemotePeer)} isLarge={true} />
-                )}
-                {activeReaction && (
-                  <div className="absolute bottom-10 animate-bounce text-6xl shadow-2xl drop-shadow-2xl">
-                    {activeReaction.emoji}
-                  </div>
+                  sharedRemotePeer && (
+                    <RemoteVideoTile
+                      peer={sharedRemotePeer}
+                      isTeacherViewer={isTeacher}
+                      onKick={() => setStudentToKick(sharedRemotePeer)}
+                      onLowerHand={() => toggleHandRaise(sharedRemotePeer.userId)}
+                      isLarge={true}
+                    />
+                  )
                 )}
               </div>
               <div className="h-28 sm:h-32 shrink-0 flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                 {/* Minimized Tiles */}
                 {!isScreenSharing && (
-                  <div className="w-40 sm:w-48 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
-                    <video ref={localVideoRef} autoPlay playsInline muted className={`w-full h-full object-cover transform -scale-x-100 ${isVideoOff ? 'hidden' : 'block'}`} />
+                  <div
+                    className={`w-40 sm:w-48 shrink-0 relative rounded-xl bg-slate-900 border overflow-hidden shadow-lg transition-all duration-200 ${
+                      isHandRaised ? 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/20' : 'border-slate-800'
+                    }`}
+                  >
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-cover transform -scale-x-100 ${isVideoOff ? 'hidden' : 'block'}`}
+                    />
                     {isVideoOff && (
                       <div className="flex h-full items-center justify-center bg-slate-800">
-                         <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white">
-                           {user?.firstName?.[0]}
-                         </div>
+                        <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white">
+                          {user?.firstName?.[0]}
+                        </div>
+                      </div>
+                    )}
+                    {isHandRaised && (
+                      <div className="absolute top-1.5 left-1.5 z-20 flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-bold shadow animate-pulse">
+                        <span>✋</span>
                       </div>
                     )}
                   </div>
                 )}
                 {remotePeers.filter(p => p.socketId !== sharedRemotePeer?.socketId).map(peer => (
                   <div key={peer.socketId} className="w-40 sm:w-48 shrink-0 relative rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
-                     <RemoteVideoTile peer={peer} isTeacherViewer={isTeacher} onKick={() => setStudentToKick(peer)} isSmall={true} />
+                    <RemoteVideoTile
+                      peer={peer}
+                      isTeacherViewer={isTeacher}
+                      onKick={() => setStudentToKick(peer)}
+                      onLowerHand={() => toggleHandRaise(peer.userId)}
+                      isSmall={true}
+                    />
                   </div>
                 ))}
               </div>
             </div>
           ) : (
             <div className={`grid gap-3 sm:gap-4 w-full h-full max-h-full ${getGridClasses()}`}>
-            {/* 1. Local Video Tile */}
-            <div className="relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center group min-h-[180px]">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover ${
-                  isScreenSharing ? '' : 'transform -scale-x-100'
-                } ${isVideoOff ? 'hidden' : 'block'}`}
-              />
+              {/* 1. Local Video Tile */}
+              <div
+                className={`relative rounded-2xl bg-slate-900 border overflow-hidden shadow-lg flex items-center justify-center group min-h-[180px] transition-all duration-200 ${
+                  isHandRaised
+                    ? 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/20 shadow-xl'
+                    : 'border-slate-800'
+                }`}
+              >
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`w-full h-full object-cover ${
+                    isScreenSharing ? '' : 'transform -scale-x-100'
+                  } ${isVideoOff ? 'hidden' : 'block'}`}
+                />
 
-              {isVideoOff && (
-                <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
-                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] border-2 border-white/20 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-xl">
-                    {user?.firstName?.[0] || 'U'}
+                {isVideoOff && (
+                  <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-[#012970] to-[#006EF3] border-2 border-white/20 flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-xl">
+                      {user?.firstName?.[0] || 'U'}
+                    </div>
+                    <p className="text-xs font-medium text-slate-400">Camera is paused</p>
                   </div>
-                  <p className="text-xs font-medium text-slate-400">Camera is paused</p>
-                </div>
-              )}
+                )}
 
-              {/* Status Badges Overlay */}
-              <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold border border-white/10">
-                <span className="text-white">
-                  {user?.firstName} {user?.lastName} (You)
-                </span>
-                {isTeacher && (
-                  <span className="px-1.5 py-0.2 rounded text-[10px] font-black bg-[#F5B400] text-[#012970]">
-                    HOST
+                {/* Persistent Hand Raised Badge on Local Tile (Google Meet experience) */}
+                {isHandRaised && (
+                  <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold shadow-lg animate-pulse">
+                    <span>✋</span>
+                    <span>Hand Raised</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleHandRaise();
+                      }}
+                      className="ml-1 text-[10px] bg-slate-950/20 hover:bg-slate-950/40 px-1.5 py-0.5 rounded uppercase font-black tracking-wide text-slate-950 transition-colors"
+                      title="Lower your hand"
+                    >
+                      Lower
+                    </button>
+                  </div>
+                )}
+
+                {/* Status Badges Overlay */}
+                <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold border border-white/10">
+                  <span className="text-white">
+                    {user?.firstName} {user?.lastName} (You)
                   </span>
-                )}
+                  {isTeacher && (
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-black bg-[#F5B400] text-[#012970]">
+                      HOST
+                    </span>
+                  )}
+                </div>
+
+                <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                  {isAudioMuted && (
+                    <div className="p-1.5 rounded-lg bg-red-600/90 text-white shadow-sm" title="Microphone Muted">
+                      <MicOff className="h-3.5 w-3.5" />
+                    </div>
+                  )}
+                  {isScreenSharing && (
+                    <div className="p-1.5 rounded-lg bg-[#006EF3] text-white shadow-sm" title="Sharing Screen">
+                      <ScreenShare className="h-3.5 w-3.5" />
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                {isAudioMuted && (
-                  <div className="p-1.5 rounded-lg bg-red-600/90 text-white shadow-sm" title="Microphone Muted">
-                    <MicOff className="h-3.5 w-3.5" />
-                  </div>
-                )}
-                {isScreenSharing && (
-                  <div className="p-1.5 rounded-lg bg-[#006EF3] text-white shadow-sm" title="Sharing Screen">
-                    <ScreenShare className="h-3.5 w-3.5" />
-                  </div>
-                )}
-              </div>
+              {/* 2. Remote Peer Video Tiles */}
+              {remotePeers.map((peer) => (
+                <RemoteVideoTile
+                  key={peer.socketId}
+                  peer={peer}
+                  isTeacherViewer={isTeacher}
+                  onKick={() => setStudentToKick(peer)}
+                  onLowerHand={() => toggleHandRaise(peer.userId)}
+                />
+              ))}
             </div>
-
-            {/* 2. Remote Peer Video Tiles */}
-            {remotePeers.map((peer) => (
-              <RemoteVideoTile
-                key={peer.socketId}
-                peer={peer}
-                isTeacherViewer={isTeacher}
-                onKick={() => setStudentToKick(peer)}
-              />
-            ))}
-          </div>
-          )}
-          
-          {!isAnyScreenShared && activeReaction && (
-             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
-                <div className="animate-bounce text-8xl shadow-2xl drop-shadow-2xl">{activeReaction.emoji}</div>
-             </div>
           )}
         </div>
 
@@ -402,6 +514,16 @@ export default function LiveSessionRoomPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {isHandRaised && (
+                    <button
+                      onClick={() => toggleHandRaise()}
+                      title="Click to lower your hand"
+                      className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 flex items-center gap-1 hover:bg-amber-400 transition-colors shadow"
+                    >
+                      <span>✋ Raised</span>
+                      <span className="text-[9px] underline">Lower</span>
+                    </button>
+                  )}
                   {isAudioMuted ? (
                     <MicOff className="h-3.5 w-3.5 text-red-400" />
                   ) : (
@@ -442,6 +564,23 @@ export default function LiveSessionRoomPage() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    {peer.isHandRaised && (
+                      <div className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 flex items-center gap-1 shadow">
+                          ✋ Raised
+                        </span>
+                        {isTeacher && (
+                          <button
+                            onClick={() => toggleHandRaise(peer.userId)}
+                            title="Lower student's hand"
+                            className="text-[10px] text-amber-400 hover:text-amber-300 underline font-semibold px-1 transition-colors"
+                          >
+                            Lower
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     {peer.isAudioMuted ? (
                       <MicOff className="h-3.5 w-3.5 text-red-400" />
                     ) : (
@@ -571,23 +710,59 @@ export default function LiveSessionRoomPage() {
             <ScreenShare className="h-5 w-5" />
           </button>
 
-          {/* Raise Hand */}
+          {/* Raise Hand Toggle (Persistent Google Meet experience) */}
           <button
-            onClick={() => sendReaction('✋')}
-            title="Raise Hand"
-            className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700"
+            onClick={() => {
+              toggleHandRaise();
+              if (!isHandRaised) {
+                spawnFloatingEmojis('✋', 8);
+              }
+            }}
+            title={isHandRaised ? 'Lower Hand (✋ Raised)' : 'Raise Hand'}
+            className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all ${
+              isHandRaised
+                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-lg shadow-amber-500/30 ring-2 ring-amber-300 ring-offset-2 ring-offset-slate-900 animate-pulse'
+                : 'bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700'
+            }`}
           >
-            <Hand className="h-5 w-5" />
+            <Hand className={`h-5 w-5 ${isHandRaised ? 'fill-slate-950 text-slate-950' : ''}`} />
           </button>
           
-          {/* Reaction */}
-          <button
-            onClick={() => sendReaction('❤️')}
-            title="Send Heart"
-            className="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all bg-slate-800 hover:bg-slate-700 text-pink-400 border border-slate-700"
-          >
-            <Smile className="h-5 w-5" />
-          </button>
+          {/* Quick Reaction Picker Popover */}
+          <div className="relative">
+            {showReactionPicker && (
+              <div
+                ref={reactionPickerRef}
+                className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl backdrop-blur-md flex items-center gap-1 z-50 animate-in fade-in zoom-in-95 duration-150"
+              >
+                {['❤️', '👍', '👏', '🎉', '🔥', '😂', '💡', '🙌'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => {
+                      sendReaction(emoji);
+                      spawnFloatingEmojis(emoji, 8);
+                      setShowReactionPicker(false);
+                    }}
+                    className="h-9 w-9 rounded-xl hover:bg-slate-800 flex items-center justify-center text-xl hover:scale-125 transition-transform"
+                    title={`React ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={() => setShowReactionPicker((prev) => !prev)}
+              title="Send Reaction"
+              className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all border ${
+                showReactionPicker
+                  ? 'bg-[#006EF3] text-white border-[#006EF3]'
+                  : 'bg-slate-800 hover:bg-slate-700 text-pink-400 border-slate-700'
+              }`}
+            >
+              <Smile className="h-5 w-5" />
+            </button>
+          </div>
 
           {/* Leave / End Button */}
           {isTeacher ? (
@@ -666,6 +841,28 @@ export default function LiveSessionRoomPage() {
           </div>
         </div>
       )}
+
+      {/* ─── Floating Quick Emoji Particles Stream ────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+        {floatingParticles.map((particle) => (
+          <div
+            key={particle.id}
+            className="absolute select-none pointer-events-none animate-float-up-quick"
+            style={{
+              left: `${particle.left}%`,
+              bottom: `${particle.bottom}px`,
+              fontSize: `${particle.size}px`,
+              animationDuration: `${particle.duration}s`,
+              animationDelay: `${particle.delay}s`,
+              // @ts-ignore
+              '--sway-mid': `${particle.swayMid}px`,
+              '--sway-end': `${particle.swayEnd}px`,
+            }}
+          >
+            {particle.emoji}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -677,12 +874,14 @@ function RemoteVideoTile({
   peer,
   isTeacherViewer,
   onKick,
+  onLowerHand,
   isLarge,
   isSmall,
 }: {
   peer: ParticipantMedia;
   isTeacherViewer: boolean;
   onKick: () => void;
+  onLowerHand?: () => void;
   isLarge?: boolean;
   isSmall?: boolean;
 }) {
@@ -738,8 +937,38 @@ function RemoteVideoTile({
   return (
     <div
       onClick={unlockAudio}
-      className={`relative rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center group ${isLarge ? 'w-full h-full' : isSmall ? 'w-full h-full' : 'min-h-[180px]'}`}
+      className={`relative rounded-2xl bg-slate-900 border overflow-hidden shadow-lg flex items-center justify-center group transition-all duration-200 ${
+        peer.isHandRaised
+          ? 'border-amber-400 ring-2 ring-amber-400 shadow-amber-500/20 shadow-xl'
+          : 'border-slate-800'
+      } ${isLarge ? 'w-full h-full' : isSmall ? 'w-full h-full' : 'min-h-[180px]'}`}
     >
+      {/* Hand Raised Persistent Google Meet Badge */}
+      {peer.isHandRaised && (
+        <div
+          className={`absolute z-20 flex items-center gap-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold shadow-lg animate-pulse ${
+            isSmall
+              ? 'top-1.5 left-1.5 px-1.5 py-0.5 text-[10px]'
+              : 'top-3 left-3 px-2.5 py-1 text-xs'
+          }`}
+        >
+          <span>✋</span>
+          {!isSmall && <span>Hand Raised</span>}
+          {isTeacherViewer && onLowerHand && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onLowerHand();
+              }}
+              className="ml-1 text-[10px] bg-slate-950/20 hover:bg-slate-950/40 px-1.5 py-0.5 rounded uppercase font-black tracking-wide text-slate-950 transition-colors"
+              title="Lower student's hand"
+            >
+              Lower
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Dedicated hidden audio playback fallback */}
       <audio ref={audioRef} autoPlay playsInline />
 

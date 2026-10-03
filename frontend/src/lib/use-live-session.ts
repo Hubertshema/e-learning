@@ -15,6 +15,7 @@ export interface ParticipantMedia {
   isAudioMuted: boolean;
   isVideoOff: boolean;
   isScreenSharing?: boolean;
+  isHandRaised?: boolean;
   stream?: MediaStream;
 }
 
@@ -93,6 +94,7 @@ export function useLiveSession(sessionId: string) {
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [isVideoOff, setIsVideoOff] = useState<boolean>(false);
   const [isScreenSharing, setIsScreenSharing] = useState<boolean>(false);
+  const [isHandRaised, setIsHandRaised] = useState<boolean>(false);
 
   // Remote participants map: socketId -> ParticipantMedia
   const [remotePeers, setRemotePeers] = useState<Map<string, ParticipantMedia>>(new Map());
@@ -498,6 +500,25 @@ export function useLiveSession(sessionId: string) {
           setTimeout(() => setActiveReaction(null), 3000);
         });
 
+        // Event: Hand raise toggled (persists like Google Meet)
+        socket.on('live:hand-toggled', ({ socketId, userId, isHandRaised: raised }: any) => {
+          if (socketId === socket.id) {
+            setIsHandRaised(Boolean(raised));
+            return;
+          }
+          setRemotePeers((prev) => {
+            const next = new Map(prev);
+            let updated = false;
+            for (const [sId, p] of next.entries()) {
+              if (sId === socketId || p.userId === userId) {
+                next.set(sId, { ...p, isHandRaised: Boolean(raised) });
+                updated = true;
+              }
+            }
+            return updated ? next : prev;
+          });
+        });
+
         // Event: User left room
         socket.on('live:user-left', ({ socketId }: { socketId: string }) => {
           if (peerConnections.current.has(socketId)) {
@@ -586,6 +607,9 @@ export function useLiveSession(sessionId: string) {
         socket.off('live:session-ended');
         socket.off('live:kicked');
         socket.off('live:participant-removed');
+        socket.off('live:reaction-received');
+        socket.off('live:hand-toggled');
+        socket.off('live:chat-message-received');
         socket.off('live:session-status-changed');
         socket.off('live:error');
       }
@@ -829,6 +853,31 @@ export function useLiveSession(sessionId: string) {
     }
   }, [sessionId]);
 
+  /**
+   * Toggle Hand Raise (persists until lowered like Google Meet)
+   */
+  const toggleHandRaise = useCallback((targetUserId?: string) => {
+    const socket = getSocketClient();
+    if (!socket?.emit) return;
+
+    if (targetUserId) {
+      // Lower someone else's hand (teacher action)
+      socket.emit('live:hand-toggle', {
+        sessionId,
+        isHandRaised: false,
+        targetUserId,
+      });
+      return;
+    }
+
+    const nextState = !isHandRaised;
+    setIsHandRaised(nextState);
+    socket.emit('live:hand-toggle', {
+      sessionId,
+      isHandRaised: nextState,
+    });
+  }, [sessionId, isHandRaised]);
+
   return {
     session,
     isTeacher,
@@ -841,6 +890,8 @@ export function useLiveSession(sessionId: string) {
     isAudioMuted,
     isVideoOff,
     isScreenSharing,
+    isHandRaised,
+    toggleHandRaise,
     toggleAudio,
     toggleVideo,
     toggleScreenShare,
