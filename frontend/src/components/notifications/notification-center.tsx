@@ -21,6 +21,19 @@ interface NotificationItem {
   createdAt: string;
 }
 
+function formatTimeAgo(dateStr: string) {
+  try {
+    const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  } catch {
+    return '';
+  }
+}
+
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -112,42 +125,57 @@ export function NotificationCenter() {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         title="Notifications"
-        className="relative rounded-xl p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+        aria-label="View Notifications"
+        aria-expanded={isOpen}
+        className="relative rounded-xl p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors cursor-pointer"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
+          <span className="absolute top-1 right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Notification Dropdown Popover */}
+      {/* Mobile Backdrop Overlay */}
       {isOpen && (
-        <div className="absolute -right-1 sm:right-0 mt-2 w-[calc(100vw-24px)] sm:w-96 max-w-[380px] rounded-2xl bg-white shadow-2xl border border-slate-200 dark:bg-slate-900 dark:border-slate-800 z-50 overflow-hidden">
-          <div className="p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/80">
+        <div
+          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] sm:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Notification Dropdown Popover (Responsive Fixed on Mobile, Absolute Popover on Desktop) */}
+      {isOpen && (
+        <div className="fixed inset-x-2.5 top-[62px] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-[410px] max-w-[calc(100vw-20px)] sm:max-w-[420px] rounded-2xl bg-white shadow-2xl border border-slate-200/90 dark:bg-slate-900 dark:border-slate-800 z-50 overflow-hidden flex flex-col max-h-[calc(100dvh-80px)] sm:max-h-[520px] animate-in fade-in zoom-in-95 duration-150">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/90 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications</span>
-              {unreadCount > 0 && (
-                <Badge variant="indigo" className="text-[10px] py-0">
+              {unreadCount > 0 ? (
+                <Badge variant="indigo" className="text-[10px] py-0 px-2 font-bold">
                   {unreadCount} New
                 </Badge>
+              ) : (
+                <span className="text-[10px] text-slate-400 font-medium">All caught up</span>
               )}
             </div>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={handleMarkAllAsRead}
-                className="text-[11px] text-primary-600 hover:underline font-semibold"
+                className="text-[11px] text-primary-600 hover:text-primary-700 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
               >
                 Mark all as read
               </button>
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          {/* List Content */}
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 overscroll-contain">
             {loading && notifications.length === 0 ? (
-              <div className="p-3.5 space-y-3">
+              <div className="p-4 space-y-3.5">
                 <div className="space-y-1.5">
                   <Skeleton className="h-3.5 w-32" />
                   <Skeleton className="h-3 w-48" />
@@ -161,31 +189,35 @@ export function NotificationCenter() {
               notifications.map((n) => (
                 <div
                   key={n.id}
-                  className={`p-3.5 transition-colors flex items-start justify-between gap-3 ${
+                  className={`p-3.5 sm:p-4 transition-colors flex items-start justify-between gap-3 ${
                     !n.isRead
                       ? 'bg-primary-50/40 dark:bg-primary-950/20'
                       : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                   }`}
                 >
                   <div className="space-y-1 min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 break-words">
-                      {!n.isRead && <span className="h-2 w-2 rounded-full bg-primary-600 shrink-0" />}
-                      <span className="truncate">{n.title}</span>
-                    </p>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug break-words">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">
+                        {n.title}
+                      </h4>
+                      {!n.isRead && (
+                        <span className="h-2 w-2 rounded-full bg-primary-600 shrink-0 mt-1" />
+                      )}
+                    </div>
+                    <p className="text-[11.5px] text-slate-600 dark:text-slate-400 leading-relaxed break-words">
                       {n.message}
                     </p>
-                    <div className="flex items-center gap-3 pt-1">
-                      <span className="text-[10px] text-slate-400">
-                        {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <div className="flex items-center justify-between gap-2 pt-1.5 mt-1 border-t border-slate-100/60 dark:border-slate-800/60">
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        {formatTimeAgo(n.createdAt)}
                       </span>
                       {n.link && (
                         <Link
                           href={n.link}
                           onClick={() => setIsOpen(false)}
-                          className="text-[11px] text-primary-600 font-semibold flex items-center hover:underline"
+                          className="text-[11px] text-primary-600 dark:text-blue-400 font-semibold flex items-center hover:underline"
                         >
-                          View <ExternalLink className="ml-0.5 h-3 w-3" />
+                          View <ExternalLink className="ml-1 h-3 w-3" />
                         </Link>
                       )}
                     </div>
@@ -196,18 +228,31 @@ export function NotificationCenter() {
                       type="button"
                       title="Mark as read"
                       onClick={(e) => handleMarkAsRead(n.id, e)}
-                      className="text-slate-400 hover:text-emerald-600 p-1 rounded"
+                      className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer self-start"
                     >
-                      <Check className="h-3.5 w-3.5" />
+                      <Check className="h-4 w-4" />
                     </button>
                   )}
                 </div>
               ))
             ) : (
-              <div className="py-8 text-center text-xs text-slate-400">
-                No notifications right now.
+              <div className="py-12 px-4 text-center">
+                <Bell className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-700 mb-2 opacity-60" />
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No notifications</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">You're all caught up with your updates.</p>
               </div>
             )}
+          </div>
+
+          {/* Footer: View All Link */}
+          <div className="px-4 py-2.5 text-center border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/90 shrink-0">
+            <Link
+              href="/student/notifications"
+              onClick={() => setIsOpen(false)}
+              className="text-xs font-bold text-primary-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+            >
+              See all notifications →
+            </Link>
           </div>
         </div>
       )}
