@@ -707,19 +707,8 @@ export default function StudentLearnPage() {
 
         {/* Overall Progress Moved to Sidebar */}
 
-        {/* Right: Actions (PDF Resources & Syllabus Drawer) */}
+        {/* Right: Actions (Syllabus Drawer) */}
         <div className="flex items-center gap-2">
-          {selectedLesson?.type === 'INTERACTIVE_VIDEO' && interactiveVideoData?.resources && interactiveVideoData.resources.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowVideoResourcesModal(true)}
-              className="flex h-9 items-center gap-1.5 rounded-xl border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] dark:border-slate-700 dark:text-slate-300"
-            >
-              <FileText className="h-4 w-4 text-[#006EF3]" />
-              <span>PDFs ({interactiveVideoData.resources.length})</span>
-            </Button>
-          )}
 
           {/* Flexible Syllabus Toggle */}
           {!sidebarOpen && (
@@ -937,15 +926,55 @@ export default function StudentLearnPage() {
                       </div>
                     )}
                     {selectedLesson.type === 'INTERACTIVE_VIDEO' && interactiveVideoData?.resources && interactiveVideoData.resources.length > 0 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowVideoResourcesModal(true)}
-                        className="w-full flex h-8 items-center justify-center rounded-xl border-slate-200 text-xs text-slate-700 hover:bg-[#F3F7FC] hover:text-[#006EF3] dark:border-slate-700 dark:text-slate-300 gap-1.5"
-                      >
-                        <FileText className="h-3.5 w-3.5 text-[#006EF3]" />
-                        <span>Lesson PDFs ({interactiveVideoData.resources.length})</span>
-                      </Button>
+                      <div className="rounded-2xl border border-blue-200/80 dark:border-blue-900/50 bg-[#F3F7FC]/70 dark:bg-blue-950/20 p-2.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-[#012970] dark:text-blue-300">
+                            <FileText className="h-3.5 w-3.5 text-[#006EF3]" />
+                            <span>PDF Resources ({interactiveVideoData.resources.length})</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowVideoResourcesModal(true)}
+                            className="text-[10px] font-semibold text-[#006EF3] hover:underline cursor-pointer"
+                          >
+                            Expand
+                          </button>
+                        </div>
+                        <div className="space-y-1 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+                          {interactiveVideoData.resources.map((res: LessonResource) => (
+                            <div
+                              key={res.id}
+                              className="flex items-center justify-between p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-[11px]"
+                            >
+                              <div className="truncate flex-1 mr-1.5" title={res.title}>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">{res.title}</span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewResource(res)}
+                                  className="p-1 rounded text-slate-500 hover:text-[#006EF3] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                  title="Preview PDF"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </button>
+                                {res.canDownload && (
+                                  <a
+                                    href={res.url}
+                                    download
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1 rounded text-slate-500 hover:text-[#006EF3] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                    title="Download PDF"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
@@ -968,7 +997,7 @@ export default function StudentLearnPage() {
         )}
 
         {/* Right Main Content Area - Expands to 100% when sidebar is closed */}
-        <main className={`flex-1 ${selectedLesson?.type === 'INTERACTIVE_VIDEO' ? 'overflow-hidden p-2 sm:p-3 lg:p-4' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} min-w-0 transition-all duration-300`}>
+        <main className={`flex-1 ${selectedLesson?.type === 'INTERACTIVE_VIDEO' ? 'overflow-y-auto lg:overflow-hidden p-2 sm:p-3 lg:p-4' : 'overflow-y-auto p-4 sm:p-6 lg:p-8'} min-w-0 transition-all duration-300`}>
           <div className={`mx-auto w-full ${selectedLesson?.type === 'INTERACTIVE_VIDEO' ? 'max-w-[1650px] h-full flex flex-col justify-start space-y-2' : 'max-w-[1600px] space-y-6'}`}>
             {/* The congratulations overlay is now rendered over the lesson content below */}
             {/* General feedback banner */}

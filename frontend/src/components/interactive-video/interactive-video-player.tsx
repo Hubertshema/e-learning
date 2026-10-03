@@ -763,7 +763,7 @@ export function InteractiveVideoPlayer({
       {/* Main Screen Stage: Full Width Video by Default, Split Screen When Checkpoint or Transcript Active */}
       <div className={`grid grid-cols-1 gap-4 lg:gap-6 items-start ${active || (showTranscript && transcript.length > 0) ? 'lg:grid-cols-12' : ''} transition-all duration-300 w-full`}>
         {/* VIDEO COLUMN: Full width normally, side-by-side when checkpoint or transcript is active */}
-        <div className={`${active || (showTranscript && transcript.length > 0) ? 'lg:col-span-7 xl:col-span-8' : 'w-full'} flex flex-col justify-start transition-all duration-300 sticky top-0 z-40 bg-white dark:bg-slate-950 pt-1 pb-2 lg:p-0 lg:static lg:bg-transparent -mx-2 px-2 sm:mx-0 sm:px-0`}>
+        <div className={`${active || (showTranscript && transcript.length > 0) ? 'lg:col-span-7 xl:col-span-8' : 'w-full'} flex flex-col justify-start transition-all duration-300 sticky top-0 z-40 bg-white dark:bg-slate-950 pt-1 pb-2 lg:p-0 lg:static lg:bg-transparent`}>
           <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl border border-slate-800 select-none">
             
             {/* Completion Reset Prompt Overlay */}
@@ -830,9 +830,9 @@ export function InteractiveVideoPlayer({
             <div className={`relative w-full aspect-video ${
               active
                 ? feedback
-                  ? 'max-h-[calc(100dvh-18.5rem)]'
-                  : 'max-h-[calc(100dvh-13.5rem)]'
-                : 'max-h-[calc(100dvh-9.5rem)]'
+                  ? 'max-h-[28vh] sm:max-h-[35vh] lg:max-h-[calc(100dvh-18.5rem)]'
+                  : 'max-h-[30vh] sm:max-h-[38vh] lg:max-h-[calc(100dvh-13.5rem)]'
+                : 'max-h-[35vh] sm:max-h-[45vh] lg:max-h-[calc(100dvh-9.5rem)]'
             } bg-black flex items-center justify-center overflow-hidden`}>
               <UniversalVideo
                 ref={videoRef}
@@ -911,7 +911,9 @@ export function InteractiveVideoPlayer({
                     className="flex items-center gap-2 rounded-2xl bg-amber-950/90 backdrop-blur-md px-4 py-2 text-amber-200 border border-amber-500/60 shadow-2xl"
                   >
                     <Lock className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
-                    <span className="text-xs font-bold">Checkpoint Active · Answer on the right</span>
+                    <span className="text-xs font-bold">
+                      Checkpoint Active · <span className="hidden lg:inline">Answer on the right</span><span className="lg:hidden">Answer below</span>
+                    </span>
                   </div>
                 )}
               </div>
@@ -1011,7 +1013,7 @@ export function InteractiveVideoPlayer({
                             <span
                               className={`block rotate-45 transition-all duration-150 ${
                                 isActive
-                                  ? 'w-3.5 h-3.5 bg-white border-2 border-teal-400 ring-4 ring-teal-400/60 shadow-lg scale-125'
+                                  ? 'w-2.5 h-2.5 bg-white border-2 border-teal-400 ring-4 ring-teal-400/60 shadow-lg scale-110'
                                   : isDone
                                   ? 'w-2.5 h-2.5 bg-teal-400 border border-white hover:scale-150 hover:bg-teal-300 shadow-sm'
                                   : isLocked
@@ -1209,10 +1211,10 @@ export function InteractiveVideoPlayer({
 
         {/* RIGHT COLUMN: Question & Interaction Panel - ONLY visible when checkpoint is active, OR Transcript panel */}
         {active ? (
-          <div id="interactive-panel" className="lg:col-span-5 xl:col-span-4 relative flex flex-col h-[calc(100dvh-10rem)] max-h-[calc(100dvh-10rem)] scroll-mt-[350px] lg:scroll-mt-0 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="flex-1 flex flex-col overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-md p-4 sm:p-5">
+          <div id="interactive-panel" className="lg:col-span-5 xl:col-span-4 relative flex flex-col w-full min-h-0 lg:h-[calc(100dvh-6.5rem)] lg:max-h-[calc(100dvh-6.5rem)] scroll-mt-[350px] lg:scroll-mt-0 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="w-full flex-1 flex flex-col overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-md p-4 sm:p-5 max-h-[55vh] lg:max-h-full">
               <div className="flex flex-col h-full overflow-hidden">
-                <div className="flex-1 overflow-y-auto pr-1.5 custom-scrollbar pb-3">
+                <div className="flex-1 overflow-y-auto pr-1.5 custom-scrollbar pb-3 touch-auto">
                   {/* Question Header */}
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-2">
@@ -1336,8 +1338,8 @@ export function InteractiveVideoPlayer({
             </div>
           </div>
         ) : showTranscript && transcript.length > 0 ? (
-          <div id="transcript-panel" className="lg:col-span-5 xl:col-span-4 relative flex flex-col h-[calc(100dvh-10rem)] max-h-[calc(100dvh-10rem)] animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="flex-1 flex flex-col overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-md p-4 sm:p-5">
+          <div id="transcript-panel" className="lg:col-span-5 xl:col-span-4 relative flex flex-col w-full min-h-0 lg:h-[calc(100dvh-6.5rem)] lg:max-h-[calc(100dvh-6.5rem)] animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="w-full flex-1 flex flex-col overflow-hidden rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-md p-4 sm:p-5 max-h-[55vh] lg:max-h-full">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="p-1 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">

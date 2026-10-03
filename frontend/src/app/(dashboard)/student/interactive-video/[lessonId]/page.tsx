@@ -173,7 +173,7 @@ export default function StudentInteractiveVideoPage() {
       </header>
 
       {/* Main Studio Canvas - Takes 100% remaining viewport height without vertical scroll */}
-      <main className="flex-1 min-h-0 overflow-hidden flex flex-col justify-start p-2 sm:p-4 w-full max-w-[1700px] mx-auto">
+      <main className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden flex flex-col justify-start p-2 sm:p-4 w-full max-w-[1700px] mx-auto">
         {!data.videoUrl ? (
           <Card className="m-auto p-12 text-center border-dashed border-slate-800 bg-slate-900 rounded-3xl max-w-md">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800 text-slate-400">
