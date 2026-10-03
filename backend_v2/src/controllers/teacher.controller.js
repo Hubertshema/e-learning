@@ -1,6 +1,7 @@
 import { TeacherModel } from '../models/teacher.model.js';
 import { CourseModel } from '../models/course.model.js';
 import { ClassModel } from '../models/class.model.js';
+import { SocketService } from '../services/socket.service.js';
 import { query } from '../config/database.js';
 import { sendSuccess, sendError } from '../utils/response.util.js';
 
@@ -57,6 +58,7 @@ export class TeacherController {
         ...req.body,
         teacherId,
       });
+      SocketService.broadcast('course:created', newCourse);
       return sendSuccess(res, newCourse, 'Course created successfully', 201);
     } catch (err) {
       next(err);
@@ -90,6 +92,7 @@ export class TeacherController {
       }
 
       const updated = await CourseModel.update(req.params.courseId, req.body);
+      SocketService.broadcast('course:updated', updated);
       return sendSuccess(res, updated, 'Course updated successfully');
     } catch (err) {
       next(err);
@@ -109,6 +112,7 @@ export class TeacherController {
 
       const course = await CourseModel.setPublishStatus(req.params.courseId, true);
       if (!course) return sendError(res, 'Course not found', 404);
+      SocketService.broadcast('course:updated', course);
       return sendSuccess(res, course, 'Course published successfully');
     } catch (err) {
       next(err);
@@ -128,6 +132,7 @@ export class TeacherController {
 
       const course = await CourseModel.setPublishStatus(req.params.courseId, false);
       if (!course) return sendError(res, 'Course not found', 404);
+      SocketService.broadcast('course:updated', course);
       return sendSuccess(res, course, 'Course unpublished successfully');
     } catch (err) {
       next(err);
@@ -147,6 +152,7 @@ export class TeacherController {
 
       const deleted = await CourseModel.delete(req.params.courseId);
       if (!deleted) return sendError(res, 'Course not found', 404);
+      SocketService.broadcast('course:deleted', { courseId: req.params.courseId });
       return sendSuccess(res, deleted, 'Course deleted successfully');
     } catch (err) {
       next(err);
@@ -160,6 +166,7 @@ export class TeacherController {
   static async addUnit(req, res, next) {
     try {
       const unit = await TeacherModel.addUnit(req.params.courseId, req.body);
+      SocketService.broadcast('course:unit_updated', { courseId: req.params.courseId, unit });
       return sendSuccess(res, unit, 'Unit created successfully', 201);
     } catch (err) {
       next(err);

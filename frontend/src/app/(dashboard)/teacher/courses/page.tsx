@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { getSocketClient } from '@/lib/socket-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCachedData, clientCache } from '@/lib/cache';
 
@@ -118,6 +119,27 @@ export default function TeacherCoursesPage() {
     },
     { ttl: 60_000 }
   );
+
+  // Real-time synchronization
+  useEffect(() => {
+    const socket = getSocketClient();
+    if (!socket?.on) return;
+
+    const handleCourseEvent = () => {
+      clientCache.invalidate('teacher_');
+      refreshCourses();
+    };
+
+    socket.on('course:created', handleCourseEvent);
+    socket.on('course:updated', handleCourseEvent);
+    socket.on('course:deleted', handleCourseEvent);
+
+    return () => {
+      socket.off('course:created', handleCourseEvent);
+      socket.off('course:updated', handleCourseEvent);
+      socket.off('course:deleted', handleCourseEvent);
+    };
+  }, [refreshCourses]);
 
   const courses = Array.isArray(rawCourses) ? rawCourses : [];
 

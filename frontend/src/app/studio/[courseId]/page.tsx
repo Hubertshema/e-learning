@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { getSocketClient } from '@/lib/socket-client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -153,6 +154,34 @@ export default function StudioCurriculumPage() {
     },
     { ttl: 60_000 }
   );
+
+  // Real-time synchronization for course and unit updates
+  useEffect(() => {
+    const socket = getSocketClient();
+    if (!socket?.on) return;
+
+    const onCourseUpdated = (updatedCourse: any) => {
+      if (updatedCourse?.id === courseId) {
+        clientCache.invalidate('studio_course_');
+        reload();
+      }
+    };
+
+    const onUnitUpdated = (data: any) => {
+      if (data?.courseId === courseId || data?.unitId) {
+        clientCache.invalidate('studio_course_');
+        reload();
+      }
+    };
+
+    socket.on('course:updated', onCourseUpdated);
+    socket.on('course:unit_updated', onUnitUpdated);
+
+    return () => {
+      socket.off('course:updated', onCourseUpdated);
+      socket.off('course:unit_updated', onUnitUpdated);
+    };
+  }, [courseId, reload]);
 
   const toggleUnitCollapse = (unitId: string) => {
     setCollapsedUnits((prev) => ({

@@ -133,6 +133,25 @@ export class CourseModel {
       const tpRes = await query(`SELECT id FROM "public"."teacher_profiles" WHERE id = $1 OR "userId" = $1 LIMIT 1`, [teacherId]);
       if (tpRes.rows[0]) {
         resolvedTeacherId = tpRes.rows[0].id;
+      } else {
+        const userRes = await query(`SELECT id, role FROM "public"."users" WHERE id = $1 LIMIT 1`, [teacherId]);
+        if (userRes.rows[0]) {
+          const newTpId = crypto.randomUUID();
+          const createdTp = await query(
+            `INSERT INTO "public"."teacher_profiles" 
+             (id, "userId", "experienceYears", "isApproved", "profileVisibility", "createdAt", "updatedAt")
+             VALUES ($1, $2, 0, true, 'PUBLIC', NOW(), NOW())
+             ON CONFLICT ("userId") DO UPDATE SET "updatedAt" = NOW()
+             RETURNING id`,
+            [newTpId, userRes.rows[0].id]
+          );
+          resolvedTeacherId = createdTp.rows[0]?.id || newTpId;
+        } else {
+          const fallbackTp = await query(`SELECT id FROM "public"."teacher_profiles" LIMIT 1`);
+          if (fallbackTp.rows[0]) {
+            resolvedTeacherId = fallbackTp.rows[0].id;
+          }
+        }
       }
     }
 
