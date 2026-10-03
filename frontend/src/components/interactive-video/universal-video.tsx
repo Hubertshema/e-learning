@@ -164,10 +164,16 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
         wrapperRef.current.appendChild(mountNode);
 
         try {
+          const currentOrigin =
+            typeof window !== 'undefined' && window.location?.origin
+              ? window.location.origin
+              : 'https://linguachris.vercel.app';
+
           ytPlayerRef.current = new YT.Player(mountNode, {
             width: '100%',
             height: '100%',
             videoId: youtubeId,
+            host: 'https://www.youtube.com',
             playerVars: {
               autoplay: 0,
               controls: controls ? 1 : 0,
@@ -178,13 +184,20 @@ export const UniversalVideo = forwardRef<UniversalVideoHandle, UniversalVideoPro
               modestbranding: 1,
               playsinline: 1,
               enablejsapi: 1,
-              origin: typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000',
-              widget_referrer: typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000',
+              origin: currentOrigin,
+              widget_referrer: currentOrigin,
             },
             events: {
               onReady: (event: any) => {
                 if (isCancelled) return;
                 try {
+                  // Ensure proper referrerpolicy attribute on the rendered iframe
+                  if (wrapperRef.current) {
+                    const iframe = wrapperRef.current.querySelector('iframe');
+                    if (iframe) {
+                      iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+                    }
+                  }
                   const dur = event.target.getDuration();
                   if (dur && dur > 0) onDurationChangeRef.current?.(dur);
                   if (initialTime && initialTime > 0) {
