@@ -73,6 +73,19 @@ export interface AdmissionStatusData {
     reason: string;
     createdAt: string;
   }>;
+  paymentInstructions?: {
+    momoDialCode?: string;
+    momoMerchantName?: string;
+    momoNumber?: string;
+    airtelMerchantCode?: string;
+    airtelRecipient?: string;
+    airtelNumber?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankBeneficiary?: string;
+    bankSwiftCode?: string;
+    instructionsNote?: string;
+  };
 }
 
 interface AdmissionStatusViewProps {
@@ -486,7 +499,7 @@ export function AdmissionStatusView({
                   </CardHeader>
                   <CardContent className="p-5 space-y-4 text-xs">
                     {/* MTN MoMo */}
-                    <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 space-y-1">
+                    <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                           <Smartphone className="h-3.5 w-3.5" />
@@ -494,12 +507,21 @@ export function AdmissionStatusView({
                         </span>
                         <Badge className="bg-amber-100 text-amber-800 text-[10px]">Instant</Badge>
                       </div>
-                      <p className="text-slate-600 dark:text-slate-400">Dial: <strong className="font-mono text-slate-900 dark:text-white">*182*8*1*123456#</strong></p>
-                      <p className="text-slate-600 dark:text-slate-400">Merchant Name: <strong className="text-slate-900 dark:text-white">FluentEdge Academy</strong></p>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Dial: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions?.momoDialCode || '*182*8*1*123456#'}</strong>
+                      </p>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Merchant Name: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.momoMerchantName || 'FluentEdge Academy'}</strong>
+                      </p>
+                      {status.paymentInstructions?.momoNumber && (
+                        <p className="text-slate-600 dark:text-slate-400">
+                          MoMo Number: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions.momoNumber}</strong>
+                        </p>
+                      )}
                     </div>
 
                     {/* Airtel Money */}
-                    <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/50 space-y-1">
+                    <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/50 space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
                           <Smartphone className="h-3.5 w-3.5" />
@@ -507,20 +529,48 @@ export function AdmissionStatusView({
                         </span>
                         <Badge className="bg-rose-100 text-rose-800 text-[10px]">Instant</Badge>
                       </div>
-                      <p className="text-slate-600 dark:text-slate-400">Merchant Code: <strong className="font-mono text-slate-900 dark:text-white">733123</strong></p>
-                      <p className="text-slate-600 dark:text-slate-400">Recipient: <strong className="text-slate-900 dark:text-white">FluentEdge Academy</strong></p>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Merchant Code: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions?.airtelMerchantCode || '733123'}</strong>
+                      </p>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Recipient: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.airtelRecipient || 'FluentEdge Academy'}</strong>
+                      </p>
+                      {status.paymentInstructions?.airtelNumber && (
+                        <p className="text-slate-600 dark:text-slate-400">
+                          Airtel Number: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions.airtelNumber}</strong>
+                        </p>
+                      )}
                     </div>
 
                     {/* Bank Wire */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 space-y-1">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 space-y-1.5">
                       <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                         <Building className="h-3.5 w-3.5 text-[#006EF3]" />
                         Bank Deposit / Transfer
                       </span>
-                      <p className="text-slate-600 dark:text-slate-400">Bank: <strong className="text-slate-900 dark:text-white">Bank of Kigali / Equity Bank</strong></p>
-                      <p className="text-slate-600 dark:text-slate-400">Account: <strong className="font-mono text-slate-900 dark:text-white">4002-8812-9923</strong></p>
-                      <p className="text-slate-600 dark:text-slate-400">Beneficiary: <strong className="text-slate-900 dark:text-white">FluentEdge Language Services</strong></p>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Bank: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.bankName || 'Bank of Kigali / Equity Bank'}</strong>
+                      </p>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Account: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions?.bankAccountNumber || '4002-8812-9923'}</strong>
+                      </p>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Beneficiary: <strong className="text-slate-900 dark:text-white">{status.paymentInstructions?.bankBeneficiary || 'FluentEdge Language Services'}</strong>
+                      </p>
+                      {status.paymentInstructions?.bankSwiftCode && (
+                        <p className="text-slate-600 dark:text-slate-400">
+                          SWIFT / BIC: <strong className="font-mono text-slate-900 dark:text-white select-all">{status.paymentInstructions.bankSwiftCode}</strong>
+                        </p>
+                      )}
                     </div>
+
+                    {/* Guidance / Instructions note */}
+                    {status.paymentInstructions?.instructionsNote && (
+                      <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/50 text-[11px] text-blue-950 dark:text-blue-200">
+                        <p className="font-bold text-blue-900 dark:text-blue-300 mb-0.5">Instructions Note:</p>
+                        <p>{status.paymentInstructions.instructionsNote}</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

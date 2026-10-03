@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { SuperadminController } from '../controllers/superadmin.controller.js';
+import { AdmissionController } from '../controllers/admission.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
@@ -56,6 +57,8 @@ router.post('/announcements', SuperadminController.broadcastAnnouncement);
 // System Settings & Communication
 router.get('/settings', SuperadminController.getSettings);
 router.patch('/settings', SuperadminController.updateSettings);
+router.get('/payment-settings', AdmissionController.getPaymentSettings);
+router.patch('/payment-settings', AdmissionController.updatePaymentSettings);
 router.get('/email-settings', SuperadminController.getEmailSettings);
 router.post('/email-settings/test', SuperadminController.testEmailSettings);
 router.get('/contact-messages', SuperadminController.getContactMessages);

@@ -420,4 +420,33 @@ export class AdmissionController {
       return sendError(res, error.message || 'Failed to enroll student in level', 400);
     }
   }
+
+  /**
+   * GET /api/v1/teacher/payment-settings
+   * Retrieve current active payment channels and instructions
+   */
+  static async getPaymentSettings(req, res) {
+    try {
+      const settings = await AdmissionModel.getPaymentSettings();
+      return sendSuccess(res, settings, 'Payment settings retrieved successfully');
+    } catch (error) {
+      console.error('Get Payment Settings Error:', error);
+      return sendError(res, error.message || 'Failed to retrieve payment settings', 500);
+    }
+  }
+
+  /**
+   * PATCH /api/v1/teacher/payment-settings
+   * Update active payment channels, numbers, codes, bank accounts
+   */
+  static async updatePaymentSettings(req, res) {
+    try {
+      const settings = await AdmissionModel.updatePaymentSettings(req.body);
+      return sendSuccess(res, settings, 'Payment settings updated successfully');
+    } catch (error) {
+      console.error('Update Payment Settings Error:', error);
+      return sendError(res, error.message || 'Failed to update payment settings', 400);
+    }
+  }
 }
+

@@ -87,6 +87,56 @@ export class AdmissionModel {
     return { user, profile, tokens };
   }
 
+  static DEFAULT_PAYMENT_SETTINGS = {
+    momoDialCode: '*182*8*1*123456#',
+    momoMerchantName: 'FluentEdge Academy',
+    momoNumber: '0788123456',
+    airtelMerchantCode: '733123',
+    airtelRecipient: 'FluentEdge Academy',
+    airtelNumber: '0738123456',
+    bankName: 'Bank of Kigali / Equity Bank',
+    bankAccountNumber: '4002-8812-9923',
+    bankBeneficiary: 'FluentEdge Language Services',
+    bankSwiftCode: 'BOKIRW22',
+    instructionsNote: 'After transferring tuition, upload your SMS confirmation or deposit slip screenshot.',
+  };
+
+  static async getPaymentSettings() {
+    try {
+      const res = await query(
+        `SELECT "paymentSettings" FROM "public"."platform_settings" WHERE id = 'default' LIMIT 1`
+      );
+      const stored = res.rows[0]?.paymentSettings;
+      return {
+        ...this.DEFAULT_PAYMENT_SETTINGS,
+        ...(stored && typeof stored === 'object' ? stored : {}),
+      };
+    } catch (e) {
+      console.warn('Failed to load payment settings from platform_settings:', e.message);
+      return { ...this.DEFAULT_PAYMENT_SETTINGS };
+    }
+  }
+
+  static async updatePaymentSettings(updates = {}) {
+    const current = await this.getPaymentSettings();
+    const merged = {
+      ...current,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await query(
+      `INSERT INTO "public"."platform_settings" (id, "platformName", "paymentSettings", "createdAt", "updatedAt")
+       VALUES ('default', 'FluentEdge Academy', $1::jsonb, NOW(), NOW())
+       ON CONFLICT (id) DO UPDATE SET
+         "paymentSettings" = EXCLUDED."paymentSettings",
+         "updatedAt" = NOW()`,
+      [JSON.stringify(merged)]
+    );
+
+    return merged;
+  }
+
   /**
    * 2. Get full student admission, payment, and learning access status
    */
@@ -136,6 +186,8 @@ export class AdmissionModel {
       [studentUserId]
     );
 
+    const paymentInstructions = await this.getPaymentSettings();
+
     return {
       user: {
         id: row.id,
@@ -158,6 +210,7 @@ export class AdmissionModel {
         reviewedAt: row.reviewedAt,
         reviewedBy: row.reviewedBy,
         level: row.levelId ? { id: row.levelId, name: row.levelName, code: row.levelCode } : null,
+        paymentInstructions,
       },
       // Flat fields for direct frontend/API convenience:
       studentProfileId: row.profileId,
@@ -170,6 +223,7 @@ export class AdmissionModel {
       applicationData: row.applicationData || {},
       level: row.levelId ? { id: row.levelId, name: row.levelName, code: row.levelCode } : null,
       latestPayment,
+      paymentInstructions,
       audits: auditsRes.rows,
       auditTrail: auditsRes.rows,
     };

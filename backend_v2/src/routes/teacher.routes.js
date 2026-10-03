@@ -103,6 +103,10 @@ router.post('/students/:studentId/verify-payment', AdmissionController.verifyPay
 router.post('/students/:studentId/reject-payment', AdmissionController.rejectPaymentProof);
 router.post('/students/:studentId/enroll-level', AdmissionController.enrollStudentInLevel);
 
+// Payment Channels & Instructions Configuration
+router.get('/payment-settings', AdmissionController.getPaymentSettings);
+router.patch('/payment-settings', AdmissionController.updatePaymentSettings);
+
 export default router;
 
 

@@ -29,8 +29,39 @@ import {
   Building,
   ExternalLink,
   Image as ImageIcon,
+  Save,
+  RotateCcw,
+  Check,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+
+export interface PaymentSettingsConfig {
+  momoDialCode: string;
+  momoMerchantName: string;
+  momoNumber: string;
+  airtelMerchantCode: string;
+  airtelRecipient: string;
+  airtelNumber: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankBeneficiary: string;
+  bankSwiftCode: string;
+  instructionsNote: string;
+}
+
+export const DEFAULT_PAYMENT_CONFIG: PaymentSettingsConfig = {
+  momoDialCode: '*182*8*1*123456#',
+  momoMerchantName: 'FluentEdge Academy',
+  momoNumber: '0788123456',
+  airtelMerchantCode: '733123',
+  airtelRecipient: 'FluentEdge Academy',
+  airtelNumber: '0738123456',
+  bankName: 'Bank of Kigali / Equity Bank',
+  bankAccountNumber: '4002-8812-9923',
+  bankBeneficiary: 'FluentEdge Language Services',
+  bankSwiftCode: 'BOKIRW22',
+  instructionsNote: 'After transferring tuition, upload your SMS confirmation or deposit slip screenshot.',
+};
 
 export interface ApplicationItem {
   id: string; // studentProfileId or userId
@@ -125,7 +156,55 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
   const [enrollLevelStudent, setEnrollLevelStudent] = useState<ApplicationItem | null>(null);
   const [selectedEnrollLevelId, setSelectedEnrollLevelId] = useState<string>('');
 
+  // Payment Channels Configuration Modal
+  const [isPaymentSettingsModalOpen, setIsPaymentSettingsModalOpen] = useState(false);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettingsConfig>(DEFAULT_PAYMENT_CONFIG);
+  const [isLoadingPaymentSettings, setIsLoadingPaymentSettings] = useState(false);
+  const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false);
+
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  const fetchPaymentSettings = async () => {
+    setIsLoadingPaymentSettings(true);
+    try {
+      const res = await apiClient.get<any>('/teacher/payment-settings');
+      const data = res?.data || res;
+      if (data && typeof data === 'object') {
+        setPaymentSettings({
+          ...DEFAULT_PAYMENT_CONFIG,
+          ...data,
+        });
+      }
+    } catch (err: any) {
+      console.warn('Could not load payment settings:', err?.message);
+    } finally {
+      setIsLoadingPaymentSettings(false);
+    }
+  };
+
+  const handleSavePaymentSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingPaymentSettings(true);
+    try {
+      const res = await apiClient.patch<any>('/teacher/payment-settings', paymentSettings);
+      const data = res?.data || res;
+      if (data && typeof data === 'object') {
+        setPaymentSettings({
+          ...DEFAULT_PAYMENT_CONFIG,
+          ...data,
+        });
+      }
+      showToast({
+        type: 'success',
+        text: 'Academy payment channels updated! Students will now see these dynamic details on verification.',
+      });
+      setIsPaymentSettingsModalOpen(false);
+    } catch (err: any) {
+      showToast({ type: 'error', text: err?.message || 'Failed to update payment settings.' });
+    } finally {
+      setIsSavingPaymentSettings(false);
+    }
+  };
 
   const fetchApplications = async () => {
     setIsLoading(true);
@@ -177,6 +256,7 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
   }, [statusFilter, search]);
 
   useEffect(() => {
+    fetchPaymentSettings();
     apiClient
       .get<any>('/levels')
       .then((res) => {
@@ -401,14 +481,30 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
 
       {/* ─── Search & Quick Filter Pills ─── */}
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search applicants by name, email, or phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-10 text-xs rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-          />
+        <div className="flex items-center gap-2 flex-1 max-w-xl">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search applicants by name, email, or phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-10 text-xs rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={() => {
+              fetchPaymentSettings();
+              setIsPaymentSettingsModalOpen(true);
+            }}
+            variant="outline"
+            className="h-10 text-xs font-bold rounded-2xl gap-2 border-blue-200 dark:border-blue-900 bg-blue-50/70 hover:bg-blue-100 text-[#012970] dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50 shrink-0 shadow-xs transition-colors"
+            title="Configure academy payment accounts, dial codes, numbers and banks displayed to students"
+          >
+            <CreditCard className="h-4 w-4 text-[#006EF3]" />
+            <span className="hidden sm:inline">Configure Payment Channels</span>
+            <span className="sm:hidden">Payment Channels</span>
+          </Button>
         </div>
 
         {/* Filter Pills with Counts */}
@@ -864,6 +960,23 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
           size="md"
         >
           <div className="space-y-4 pt-1 text-xs">
+            {/* Quick reference to configured channels */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/50 text-[11px] text-[#012970] dark:text-blue-200">
+              <span className="flex items-center gap-1.5 font-medium truncate">
+                <CreditCard className="h-3.5 w-3.5 text-[#006EF3] shrink-0" />
+                <span className="truncate">
+                  Academy Channels: MoMo ({paymentSettings.momoDialCode || '*182*...'}) • Airtel ({paymentSettings.airtelMerchantCode || '...'}) • Bank ({paymentSettings.bankAccountNumber || '...'})
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsPaymentSettingsModalOpen(true)}
+                className="font-bold underline text-[#006EF3] dark:text-blue-400 hover:text-blue-700 ml-2 shrink-0 cursor-pointer"
+              >
+                Edit Accounts
+              </button>
+            </div>
+
             <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-2">
               <p className="font-bold flex items-center gap-1.5">
                 <CreditCard className="h-4 w-4 text-amber-600" />
@@ -1152,6 +1265,375 @@ export function ApplicationsTab({ onRefreshParent, showToast }: ApplicationsTabP
               </Button>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────────────
+          MODAL 6: CONFIGURE ACADEMY PAYMENT CHANNELS & ACCOUNTS
+      ─────────────────────────────────────────────────────────────────── */}
+      {isPaymentSettingsModalOpen && (
+        <Modal
+          isOpen={isPaymentSettingsModalOpen}
+          onClose={() => setIsPaymentSettingsModalOpen(false)}
+          title={
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-950/60 text-[#006EF3]">
+                <CreditCard className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                  Academy Payment Channels &amp; Accounts
+                </h3>
+                <p className="text-[11px] text-slate-500 font-normal">
+                  Configure active codes, merchant names, and bank details displayed to students on verification.
+                </p>
+              </div>
+            </div>
+          }
+          size="full"
+        >
+          <form onSubmit={handleSavePaymentSettings} className="space-y-5 pt-1 text-xs">
+            {isLoadingPaymentSettings && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                <RefreshCw className="h-4 w-4 animate-spin shrink-0" />
+                <span>Fetching latest payment channels from database...</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              {/* Form Inputs (Left Column) */}
+              <div className="lg:col-span-7 space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                {/* 1. MTN Mobile Money */}
+                <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 space-y-3">
+                  <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                    <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5 text-xs">
+                      <Smartphone className="h-4 w-4 text-amber-600" />
+                      MTN Mobile Money Channels
+                    </span>
+                    <Badge className="bg-amber-100 text-amber-800 text-[10px]">Active</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Dial Code / USSD *
+                      </label>
+                      <Input
+                        required
+                        value={paymentSettings.momoDialCode}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, momoDialCode: e.target.value }))
+                        }
+                        placeholder="*182*8*1*123456#"
+                        className="h-9 text-xs rounded-xl font-mono bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Merchant Name *
+                      </label>
+                      <Input
+                        required
+                        value={paymentSettings.momoMerchantName}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, momoMerchantName: e.target.value }))
+                        }
+                        placeholder="FluentEdge Academy"
+                        className="h-9 text-xs rounded-xl bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        MoMo Number / Phone
+                      </label>
+                      <Input
+                        value={paymentSettings.momoNumber}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, momoNumber: e.target.value }))
+                        }
+                        placeholder="0788123456"
+                        className="h-9 text-xs rounded-xl font-mono bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Airtel Money */}
+                <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/50 space-y-3">
+                  <div className="flex items-center justify-between border-b border-rose-200/60 pb-2">
+                    <span className="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5 text-xs">
+                      <Smartphone className="h-4 w-4 text-rose-600" />
+                      Airtel Money Channels
+                    </span>
+                    <Badge className="bg-rose-100 text-rose-800 text-[10px]">Active</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Merchant Code *
+                      </label>
+                      <Input
+                        required
+                        value={paymentSettings.airtelMerchantCode}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, airtelMerchantCode: e.target.value }))
+                        }
+                        placeholder="733123"
+                        className="h-9 text-xs rounded-xl font-mono bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Recipient Name *
+                      </label>
+                      <Input
+                        required
+                        value={paymentSettings.airtelRecipient}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, airtelRecipient: e.target.value }))
+                        }
+                        placeholder="FluentEdge Academy"
+                        className="h-9 text-xs rounded-xl bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Airtel Number / Phone
+                      </label>
+                      <Input
+                        value={paymentSettings.airtelNumber}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, airtelNumber: e.target.value }))
+                        }
+                        placeholder="0738123456"
+                        className="h-9 text-xs rounded-xl font-mono bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Bank Wire / Deposit */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-slate-900/60 dark:border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                    <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs">
+                      <Building className="h-4 w-4 text-[#006EF3]" />
+                      Bank Deposit / Transfer Account
+                    </span>
+                    <Badge className="bg-blue-100 text-blue-800 text-[10px]">Wire / Transfer</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Bank Name *
+                      </label>
+                      <Input
+                        required
+                        value={paymentSettings.bankName}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, bankName: e.target.value }))
+                        }
+                        placeholder="Bank of Kigali / Equity Bank"
+                        className="h-9 text-xs rounded-xl bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Account Number *
+                      </label>
+                      <Input
+                        required
+                        value={paymentSettings.bankAccountNumber}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, bankAccountNumber: e.target.value }))
+                        }
+                        placeholder="4002-8812-9923"
+                        className="h-9 text-xs rounded-xl font-mono bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Beneficiary Name *
+                      </label>
+                      <Input
+                        required
+                        value={paymentSettings.bankBeneficiary}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, bankBeneficiary: e.target.value }))
+                        }
+                        placeholder="FluentEdge Language Services"
+                        className="h-9 text-xs rounded-xl bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        SWIFT / BIC Code (Optional)
+                      </label>
+                      <Input
+                        value={paymentSettings.bankSwiftCode}
+                        onChange={(e) =>
+                          setPaymentSettings((prev) => ({ ...prev, bankSwiftCode: e.target.value }))
+                        }
+                        placeholder="BOKIRW22"
+                        className="h-9 text-xs rounded-xl font-mono bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Student Guidance Note */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    Payment Instructions &amp; Student Guidance
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={paymentSettings.instructionsNote}
+                    onChange={(e) =>
+                      setPaymentSettings((prev) => ({ ...prev, instructionsNote: e.target.value }))
+                    }
+                    placeholder="Instructions visible to student on their payment screen..."
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 text-xs text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+              </div>
+
+              {/* Real-time Student Live Preview (Right Column) */}
+              <div className="lg:col-span-5 flex flex-col space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Live Student View Preview
+                  </span>
+                  <Badge variant="outline" className="border-blue-300 text-blue-700 dark:text-blue-300 text-[10px]">
+                    Instant Sync
+                  </Badge>
+                </div>
+
+                <div className="p-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 shadow-md space-y-3 text-xs">
+                  <div className="border-b pb-2 flex items-center gap-1.5">
+                    <CreditCard className="h-4 w-4 text-[#006EF3]" />
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      Payment Instructions
+                    </span>
+                  </div>
+
+                  {/* MoMo Preview */}
+                  <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                        <Smartphone className="h-3 w-3" />
+                        MTN Mobile Money
+                      </span>
+                      <Badge className="bg-amber-100 text-amber-800 text-[9px]">Instant</Badge>
+                    </div>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                      Dial: <strong className="font-mono text-slate-900 dark:text-white">{paymentSettings.momoDialCode || '*182*8*1*...#'}</strong>
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                      Merchant Name: <strong className="text-slate-900 dark:text-white">{paymentSettings.momoMerchantName || 'Academy Name'}</strong>
+                    </p>
+                    {paymentSettings.momoNumber && (
+                      <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                        MoMo Number: <strong className="font-mono text-slate-900 dark:text-white">{paymentSettings.momoNumber}</strong>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Airtel Preview */}
+                  <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-900/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1">
+                        <Smartphone className="h-3 w-3" />
+                        Airtel Money
+                      </span>
+                      <Badge className="bg-rose-100 text-rose-800 text-[9px]">Instant</Badge>
+                    </div>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                      Merchant Code: <strong className="font-mono text-slate-900 dark:text-white">{paymentSettings.airtelMerchantCode || 'Code'}</strong>
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                      Recipient: <strong className="text-slate-900 dark:text-white">{paymentSettings.airtelRecipient || 'Academy Name'}</strong>
+                    </p>
+                    {paymentSettings.airtelNumber && (
+                      <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                        Airtel Number: <strong className="font-mono text-slate-900 dark:text-white">{paymentSettings.airtelNumber}</strong>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Bank Preview */}
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 space-y-1">
+                    <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                      <Building className="h-3 w-3 text-[#006EF3]" />
+                      Bank Deposit / Transfer
+                    </span>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                      Bank: <strong className="text-slate-900 dark:text-white">{paymentSettings.bankName || 'Bank Name'}</strong>
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                      Account: <strong className="font-mono text-slate-900 dark:text-white">{paymentSettings.bankAccountNumber || 'Account #'}</strong>
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                      Beneficiary: <strong className="text-slate-900 dark:text-white">{paymentSettings.bankBeneficiary || 'Beneficiary'}</strong>
+                    </p>
+                    {paymentSettings.bankSwiftCode && (
+                      <p className="text-slate-600 dark:text-slate-400 text-[11px]">
+                        SWIFT: <strong className="font-mono text-slate-900 dark:text-white">{paymentSettings.bankSwiftCode}</strong>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Guidance Note Preview */}
+                  {paymentSettings.instructionsNote && (
+                    <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 dark:bg-blue-950/20 text-[10px] text-blue-900 dark:text-blue-200">
+                      <p className="font-bold">Instructions Note:</p>
+                      <p>{paymentSettings.instructionsNote}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2 pt-3 border-t">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setPaymentSettings(DEFAULT_PAYMENT_CONFIG)}
+                className="text-xs h-9 gap-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white w-full sm:w-auto"
+                title="Reset all inputs back to original academy defaults"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset Defaults
+              </Button>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsPaymentSettingsModalOpen(false)}
+                  className="text-xs h-9 flex-1 sm:flex-initial"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSavingPaymentSettings}
+                  className="bg-[#012970] hover:bg-[#006EF3] text-white text-xs h-9 font-bold rounded-xl gap-1.5 transition-colors flex-1 sm:flex-initial"
+                >
+                  {isSavingPaymentSettings ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      Save Channels
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </form>
         </Modal>
       )}
     </div>
